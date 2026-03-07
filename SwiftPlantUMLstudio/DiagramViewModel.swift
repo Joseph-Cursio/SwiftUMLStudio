@@ -29,6 +29,8 @@ final class DiagramViewModel {
     var sequenceDepth: Int = 3
     var depsMode: DepsMode = .types
 
+    private var currentTask: Task<Void, Never>?
+
     var currentScript: (any DiagramOutputting)? {
         switch diagramMode {
         case .classDiagram: return script
@@ -38,17 +40,20 @@ final class DiagramViewModel {
     }
 
     func generate() {
-        switch diagramMode {
-        case .classDiagram:
-            generateClassDiagram()
-        case .sequenceDiagram:
-            generateSequenceDiagram()
-        case .dependencyGraph:
-            generateDependencyGraph()
+        currentTask?.cancel()
+        currentTask = Task {
+            switch diagramMode {
+            case .classDiagram:
+                await generateClassDiagram()
+            case .sequenceDiagram:
+                await generateSequenceDiagram()
+            case .dependencyGraph:
+                await generateDependencyGraph()
+            }
         }
     }
 
-    private func generateClassDiagram() {
+    private func generateClassDiagram() async {
         guard !selectedPaths.isEmpty else { return }
         isGenerating = true
         errorMessage = nil
@@ -56,18 +61,19 @@ final class DiagramViewModel {
 
         let paths = selectedPaths
         let format = diagramFormat
-        Task {
-            let result = await Task.detached(priority: .userInitiated) {
-                var config = Configuration.default
-                config.format = format
-                return ClassDiagramGenerator().generateScript(for: paths, with: config)
-            }.value
-            script = result
-            isGenerating = false
-        }
+        
+        let result = await Task.detached(priority: .userInitiated) {
+            var config = Configuration.default
+            config.format = format
+            return ClassDiagramGenerator().generateScript(for: paths, with: config)
+        }.value
+        
+        guard !Task.isCancelled else { return }
+        script = result
+        isGenerating = false
     }
 
-    private func generateDependencyGraph() {
+    private func generateDependencyGraph() async {
         guard !selectedPaths.isEmpty else { return }
         isGenerating = true
         errorMessage = nil
@@ -76,18 +82,19 @@ final class DiagramViewModel {
         let paths = selectedPaths
         let format = diagramFormat
         let mode = depsMode
-        Task {
-            let result = await Task.detached(priority: .userInitiated) {
-                var config = Configuration.default
-                config.format = format
-                return DependencyGraphGenerator().generateScript(for: paths, mode: mode, with: config)
-            }.value
-            depsScript = result
-            isGenerating = false
-        }
+        
+        let result = await Task.detached(priority: .userInitiated) {
+            var config = Configuration.default
+            config.format = format
+            return DependencyGraphGenerator().generateScript(for: paths, mode: mode, with: config)
+        }.value
+        
+        guard !Task.isCancelled else { return }
+        depsScript = result
+        isGenerating = false
     }
 
-    private func generateSequenceDiagram() {
+    private func generateSequenceDiagram() async {
         guard !selectedPaths.isEmpty, !entryPoint.isEmpty else { return }
         let parts = entryPoint.split(separator: ".").map(String.init)
         guard parts.count == 2 else { return }
@@ -101,20 +108,21 @@ final class DiagramViewModel {
         let paths = selectedPaths
         let format = diagramFormat
         let depth = sequenceDepth
-        Task {
-            let result = await Task.detached(priority: .userInitiated) {
-                var config = Configuration.default
-                config.format = format
-                return SequenceDiagramGenerator().generateScript(
-                    for: paths,
-                    entryType: entryType,
-                    entryMethod: entryMethod,
-                    depth: depth,
-                    with: config
-                )
-            }.value
-            sequenceScript = result
-            isGenerating = false
-        }
+        
+        let result = await Task.detached(priority: .userInitiated) {
+            var config = Configuration.default
+            config.format = format
+            return SequenceDiagramGenerator().generateScript(
+                for: paths,
+                entryType: entryType,
+                entryMethod: entryMethod,
+                depth: depth,
+                with: config
+            )
+        }.value
+        
+        guard !Task.isCancelled else { return }
+        sequenceScript = result
+        isGenerating = false
     }
 }
