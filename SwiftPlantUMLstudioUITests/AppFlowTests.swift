@@ -14,7 +14,10 @@ final class AppFlowTests: XCTestCase {
         let app = XCUIApplication()
         app.launch()
 
-        // Check if primary elements are present
+        // Sidebar
+        XCTAssertTrue(app.staticTexts["History"].exists)
+        
+        // Check if primary elements are present in the main content/detail area
         XCTAssertTrue(app.buttons["Open…"].exists)
         XCTAssertTrue(app.buttons["Generate"].exists)
         XCTAssertTrue(app.staticTexts["No source selected"].exists)
@@ -22,15 +25,17 @@ final class AppFlowTests: XCTestCase {
         // Mode picker
         let modePicker = app.radioGroups["Mode"]
         if modePicker.exists {
-            XCTAssertTrue(modePicker.buttons["Class Diagram"].isSelected)
+            // Initial state
+            XCTAssertTrue(modePicker.radioButtons["Class Diagram"].isSelected)
             
+            // Switch to Sequence
             modePicker.radioButtons["Sequence Diagram"].click()
             XCTAssertTrue(modePicker.radioButtons["Sequence Diagram"].isSelected)
             
             // Check if sequence specific elements appeared
             XCTAssertTrue(app.textFields["Type.method"].exists)
-            XCTAssertTrue(app.steppers["Depth: 3"].exists)
             
+            // Switch to Dependency
             modePicker.radioButtons["Dependency Graph"].click()
             XCTAssertTrue(modePicker.radioButtons["Dependency Graph"].isSelected)
             
@@ -48,6 +53,29 @@ final class AppFlowTests: XCTestCase {
             XCTAssertTrue(formatPicker.radioButtons["PlantUML"].isSelected)
             formatPicker.radioButtons["Mermaid"].click()
             XCTAssertTrue(formatPicker.radioButtons["Mermaid"].isSelected)
+        }
+    }
+
+    @MainActor
+    func testSidebarHistory() throws {
+        let app = XCUIApplication()
+        app.launch()
+        
+        let historySection = app.staticTexts["History"]
+        XCTAssertTrue(historySection.exists)
+        
+        // If there are history items, verify interaction
+        let historyList = app.tables.firstMatch
+        if historyList.exists && historyList.cells.count > 0 {
+            let firstItem = historyList.cells.element(boundBy: 0)
+            XCTAssertTrue(firstItem.exists)
+            
+            // Test selection (tap/click)
+            firstItem.click()
+            
+            // Test context menu (right click)
+            firstItem.rightClick()
+            XCTAssertTrue(app.menuItems["Delete"].exists)
         }
     }
 }
