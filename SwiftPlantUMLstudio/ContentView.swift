@@ -17,6 +17,8 @@ struct ContentView: View {
         @Bindable var viewModel = viewModel
 
         NavigationSplitView {
+            historySidebar
+        } content: {
             sourceEditor
                 .navigationSplitViewColumnWidth(min: 300, ideal: 400)
                 .navigationTitle("Markup")
@@ -45,9 +47,46 @@ struct ContentView: View {
         .onReceive(NotificationCenter.default.publisher(for: .openFile)) { _ in
             openPanel()
         }
+        .task {
+            viewModel.loadHistory()
+        }
     }
 
     // MARK: - Subviews
+
+    private var historySidebar: some View {
+        List {
+            Section("History") {
+                if viewModel.history.isEmpty {
+                    Text("No history yet")
+                        .foregroundStyle(.secondary)
+                        .font(.caption)
+                } else {
+                    ForEach(viewModel.history) { item in
+                        VStack(alignment: .leading) {
+                            Text(item.mode ?? "Diagram")
+                                .font(.headline)
+                            if let timestamp = item.timestamp {
+                                Text(timestamp, style: .date)
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            viewModel.loadDiagram(item)
+                        }
+                        .contextMenu {
+                            Button("Delete", role: .destructive) {
+                                viewModel.deleteHistoryItem(item)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        .navigationTitle("SwiftUML Studio")
+    }
 
     private var sourceEditor: some View {
         TextEditor(text: .constant(viewModel.currentScript?.text ?? ""))
