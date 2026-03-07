@@ -19,12 +19,14 @@ struct DiagramWebView: NSViewRepresentable {
     }
 
     func updateNSView(_ webView: WKWebView, context: Context) {
+        updateWebView(webView)
+    }
+
+    func updateWebView(_ webView: WKWebView) {
         guard let script, !script.text.isEmpty else { return }
         switch script.format {
         case .plantuml:
-            let encoded = script.encodeText()
-            let urlString = "https://www.planttext.com/api/plantuml/svg/\(encoded)"
-            if let url = URL(string: urlString) {
+            if let url = plantUMLURL(for: script) {
                 webView.load(URLRequest(url: url))
             }
         case .mermaid:
@@ -32,7 +34,13 @@ struct DiagramWebView: NSViewRepresentable {
         }
     }
 
-    private func mermaidHTML(_ text: String) -> String {
+    func plantUMLURL(for script: any DiagramOutputting) -> URL? {
+        let encoded = script.encodeText()
+        let urlString = "https://www.planttext.com/api/plantuml/svg/\(encoded)"
+        return URL(string: urlString)
+    }
+
+    func mermaidHTML(_ text: String) -> String {
         // swiftlint:disable:next line_length
         "<html><body style=\"background:white; padding:20px;\"><script src=\"https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js\"></script><script>mermaid.initialize({ startOnLoad: true, theme: 'default' });</script><div class=\"mermaid\">\(text)</div></body></html>"
     }
