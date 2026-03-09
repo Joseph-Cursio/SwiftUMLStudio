@@ -10,6 +10,37 @@ import Testing
 import SwiftUMLBridgeFramework
 @testable import SwiftPlantUMLstudio
 
+// MARK: - GCD dispatch helpers
+//
+// Swift Testing's @MainActor dispatch uses the Swift Concurrency main-actor executor,
+// which is broken in the Xcode app-test host on macOS 26 beta (same root cause as the
+// SerialExecutor.isMainExecutor.getter null-pointer crash). GCD DispatchQueue.main.sync
+// bypasses that executor and uses the proven main-queue / run-loop path that XCTest itself
+// relies on. MainActor.assumeIsolated() is safe here because it checks Thread.isMainThread
+// (an Objective-C concept), not isMainExecutor.
+
+/// Run `block` synchronously on the main thread with `@MainActor` isolation (non-throwing).
+private func runOnMain(_ block: @MainActor () -> Void) {
+    if Thread.isMainThread {
+        MainActor.assumeIsolated(block)
+        return
+    }
+    DispatchQueue.main.sync { MainActor.assumeIsolated(block) }
+}
+
+/// Run `block` synchronously on the main thread with `@MainActor` isolation (throwing).
+private func runOnMain(_ block: @MainActor () throws -> Void) throws {
+    if Thread.isMainThread {
+        try MainActor.assumeIsolated(block)
+        return
+    }
+    var thrownError: (any Error)?
+    DispatchQueue.main.sync {
+        do { try MainActor.assumeIsolated(block) } catch { thrownError = error }
+    }
+    if let err = thrownError { throw err }
+}
+
 // MARK: - DiagramMode Tests
 
 @Suite("DiagramMode")
@@ -36,10 +67,12 @@ struct DiagramModeTests {
     }
 
     @Test("id equals rawValue for all cases")
-    @MainActor
     func idEqualsRawValue() {
-        for mode in DiagramMode.allCases {
-            #expect(mode.id == mode.rawValue)
+        // DiagramMode.id is @MainActor via default actor isolation; use GCD workaround.
+        runOnMain {
+            for mode in DiagramMode.allCases {
+                #expect(mode.id == mode.rawValue)
+            }
         }
     }
 
@@ -68,174 +101,174 @@ struct DiagramViewModelTests {
     // MARK: Default property values
 
     @Test("default diagramMode is classDiagram")
-    @MainActor
     func defaultDiagramMode() {
-        let vm = DiagramViewModel()
-        #expect(vm.diagramMode == .classDiagram)
+        runOnMain {
+            let vm = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
+            #expect(vm.diagramMode == .classDiagram)
+        }
     }
 
     @Test("default diagramFormat is plantuml")
-    @MainActor
     func defaultDiagramFormat() {
-        let vm = DiagramViewModel()
-        #expect(vm.diagramFormat == .plantuml)
+        runOnMain {
+            let vm = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
+            #expect(vm.diagramFormat == .plantuml)
+        }
     }
 
     @Test("default depsMode is types")
-    @MainActor
     func defaultDepsMode() {
-        let vm = DiagramViewModel()
-        #expect(vm.depsMode == .types)
+        runOnMain {
+            let vm = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
+            #expect(vm.depsMode == .types)
+        }
     }
 
     @Test("default sequenceDepth is 3")
-    @MainActor
     func defaultSequenceDepth() {
-        let vm = DiagramViewModel()
-        #expect(vm.sequenceDepth == 3)
+        runOnMain {
+            let vm = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
+            #expect(vm.sequenceDepth == 3)
+        }
     }
 
     @Test("default entryPoint is empty string")
-    @MainActor
     func defaultEntryPoint() {
-        let vm = DiagramViewModel()
-        #expect(vm.entryPoint == "")
+        runOnMain {
+            let vm = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
+            #expect(vm.entryPoint == "")
+        }
     }
 
     @Test("default selectedPaths is empty")
-    @MainActor
     func defaultSelectedPaths() {
-        let vm = DiagramViewModel()
-        #expect(vm.selectedPaths.isEmpty)
+        runOnMain {
+            let vm = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
+            #expect(vm.selectedPaths.isEmpty)
+        }
     }
 
     @Test("default isGenerating is false")
-    @MainActor
     func defaultIsGenerating() {
-        let vm = DiagramViewModel()
-        #expect(vm.isGenerating == false)
+        runOnMain {
+            let vm = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
+            #expect(vm.isGenerating == false)
+        }
     }
 
     @Test("default errorMessage is nil")
-    @MainActor
     func defaultErrorMessage() {
-        let vm = DiagramViewModel()
-        #expect(vm.errorMessage == nil)
+        runOnMain {
+            let vm = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
+            #expect(vm.errorMessage == nil)
+        }
     }
 
     // MARK: currentScript
 
     @Test("currentScript is nil initially for classDiagram mode")
-    @MainActor
     func currentScriptNilForClassDiagram() {
-        let vm = DiagramViewModel()
-        vm.diagramMode = .classDiagram
-        #expect(vm.currentScript == nil)
+        runOnMain {
+            let vm = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
+            vm.diagramMode = .classDiagram
+            #expect(vm.currentScript == nil)
+        }
     }
 
     @Test("currentScript is nil initially for sequenceDiagram mode")
-    @MainActor
     func currentScriptNilForSequenceDiagram() {
-        let vm = DiagramViewModel()
-        vm.diagramMode = .sequenceDiagram
-        #expect(vm.currentScript == nil)
+        runOnMain {
+            let vm = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
+            vm.diagramMode = .sequenceDiagram
+            #expect(vm.currentScript == nil)
+        }
     }
 
     @Test("currentScript is nil initially for dependencyGraph mode")
-    @MainActor
     func currentScriptNilForDependencyGraph() {
-        let vm = DiagramViewModel()
-        vm.diagramMode = .dependencyGraph
-        #expect(vm.currentScript == nil)
+        runOnMain {
+            let vm = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
+            vm.diagramMode = .dependencyGraph
+            #expect(vm.currentScript == nil)
+        }
     }
 
     // MARK: generate() guard logic
     //
-    // generate() always sets isGenerating = true synchronously, then an async task runs the
-    // per-mode guard and sets it back to false. Tests must be async and await Task.yield() so
-    // the spawned task can complete its guard branch before the assertion runs.
+    // generate() sets isGenerating = true synchronously, then spawns a Task on the
+    // main-actor executor. On Apple platforms the main-actor executor is backed by
+    // DispatchQueue.main, so a subsequent DispatchQueue.main.async block runs AFTER
+    // the spawned Task completes, letting us observe the final isGenerating state.
 
     @Test("generate resets isGenerating when selectedPaths is empty for classDiagram")
-    @MainActor
-    func generateGuardsEmptyPathsClassDiagram() async {
-        let vm = DiagramViewModel()
-        vm.diagramMode = .classDiagram
-        vm.selectedPaths = []
-
-        vm.generate()
-        await Task.yield()
-
-        #expect(vm.isGenerating == false)
+    func generateGuardsEmptyPathsClassDiagram() {
+        #expect(generateAndWait(mode: .classDiagram, paths: []) == false)
     }
 
     @Test("generate resets isGenerating when selectedPaths is empty for dependencyGraph")
-    @MainActor
-    func generateGuardsEmptyPathsDependencyGraph() async {
-        let vm = DiagramViewModel()
-        vm.diagramMode = .dependencyGraph
-        vm.selectedPaths = []
-
-        vm.generate()
-        await Task.yield()
-
-        #expect(vm.isGenerating == false)
+    func generateGuardsEmptyPathsDependencyGraph() {
+        #expect(generateAndWait(mode: .dependencyGraph, paths: []) == false)
     }
 
     @Test("generate resets isGenerating when selectedPaths is empty for sequenceDiagram")
-    @MainActor
-    func generateGuardsEmptyPathsSequenceDiagram() async {
-        let vm = DiagramViewModel()
-        vm.diagramMode = .sequenceDiagram
-        vm.selectedPaths = []
-        vm.entryPoint = "Foo.bar"
-
-        vm.generate()
-        await Task.yield()
-
-        #expect(vm.isGenerating == false)
+    func generateGuardsEmptyPathsSequenceDiagram() {
+        #expect(generateAndWait(mode: .sequenceDiagram, paths: [], entryPoint: "Foo.bar") == false)
     }
 
     @Test("generate resets isGenerating for sequenceDiagram with empty entryPoint")
-    @MainActor
-    func generateGuardsEmptyEntryPoint() async {
-        let vm = DiagramViewModel()
-        vm.diagramMode = .sequenceDiagram
-        vm.selectedPaths = ["/some/path.swift"]
-        vm.entryPoint = ""
-
-        vm.generate()
-        await Task.yield()
-
-        #expect(vm.isGenerating == false)
+    func generateGuardsEmptyEntryPoint() {
+        #expect(generateAndWait(mode: .sequenceDiagram, paths: ["/some/path.swift"], entryPoint: "") == false)
     }
 
     @Test("generate resets isGenerating for sequenceDiagram with malformed entryPoint (no dot)")
-    @MainActor
-    func generateGuardsMalformedEntryPointNoDot() async {
-        let vm = DiagramViewModel()
-        vm.diagramMode = .sequenceDiagram
-        vm.selectedPaths = ["/some/path.swift"]
-        vm.entryPoint = "FooBar"
-
-        vm.generate()
-        await Task.yield()
-
-        #expect(vm.isGenerating == false)
+    func generateGuardsMalformedEntryPointNoDot() {
+        #expect(generateAndWait(mode: .sequenceDiagram, paths: ["/some/path.swift"], entryPoint: "FooBar") == false)
     }
 
     @Test("generate resets isGenerating for sequenceDiagram with too many dots in entryPoint")
-    @MainActor
-    func generateGuardsMalformedEntryPointTooManyDots() async {
-        let vm = DiagramViewModel()
-        vm.diagramMode = .sequenceDiagram
-        vm.selectedPaths = ["/some/path.swift"]
-        vm.entryPoint = "Foo.bar.baz"
-
-        vm.generate()
-        await Task.yield()
-
-        #expect(vm.isGenerating == false)
+    func generateGuardsMalformedEntryPointTooManyDots() {
+        #expect(generateAndWait(mode: .sequenceDiagram, paths: ["/some/path.swift"], entryPoint: "Foo.bar.baz") == false)
     }
+}
+
+// MARK: - generate() guard helper
+//
+// Runs generate() on the main thread, then schedules a follow-up check via a second
+// DispatchQueue.main.async. Because the Swift Concurrency main-actor executor enqueues
+// its tasks onto DispatchQueue.main (dispatch_async), the spawned Task runs before our
+// follow-up block, and we observe the final isGenerating value.
+
+private func generateAndWait(
+    mode: DiagramMode,
+    paths: [String],
+    entryPoint: String = ""
+) -> Bool {
+    // @unchecked Sendable box lets us share @MainActor references and results across
+    // GCD closures while all accesses remain on the main thread.
+    final class VMBox: @unchecked Sendable {
+        var vm: DiagramViewModel?
+        var isGenerating = true
+    }
+    let box = VMBox()
+    let sema = DispatchSemaphore(value: 0)
+
+    DispatchQueue.main.async {
+        MainActor.assumeIsolated {
+            box.vm = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
+            box.vm!.diagramMode = mode
+            box.vm!.selectedPaths = paths
+            box.vm!.entryPoint = entryPoint
+            box.vm!.generate()
+        }
+        // The spawned Task is now in the main queue ahead of this follow-up block.
+        DispatchQueue.main.async {
+            box.isGenerating = MainActor.assumeIsolated { box.vm!.isGenerating }
+            sema.signal()
+        }
+    }
+
+    sema.wait()
+    return box.isGenerating
 }
 
 // MARK: - DiagramViewModel Integration Tests
@@ -280,8 +313,17 @@ struct DiagramViewModelIntegrationTests {
     // toolchain environment is configured correctly.
 
     // MARK: Sequence Diagram
+    //
+    // SequenceDiagramGenerator uses SourceKitten under the hood, so running it inside
+    // the Xcode app test host causes the XPC connection to sourcekitd to hang
+    // indefinitely (no crash — just a frozen await). Accumulated hung Task.detached
+    // instances eventually freeze the whole test process.
+    //
+    // These tests are covered by SequenceDiagramGeneratorTests in the
+    // SwiftUMLBridgeFramework package test suite (run via `swift test`).
 
-    @Test("generateSequenceDiagram produces a script with the entry point in the title")
+    @Test("generateSequenceDiagram produces a script with the entry point in the title",
+          .disabled("sourcekitd hangs in the Xcode test host — run via `swift test` instead"))
     @MainActor
     func generateSequenceDiagramPlantUML() async throws {
         let dir = try makeFixtureDir(writing: """
@@ -297,7 +339,7 @@ struct DiagramViewModelIntegrationTests {
             """)
         defer { try? FileManager.default.removeItem(at: dir) }
 
-        let vm = DiagramViewModel()
+        let vm = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
         vm.diagramMode = .sequenceDiagram
         vm.diagramFormat = .plantuml
         vm.entryPoint = "Orchestrator.run"
@@ -314,7 +356,8 @@ struct DiagramViewModelIntegrationTests {
         #expect(script.text.contains("Orchestrator.run"))
     }
 
-    @Test("generateSequenceDiagram produces a Mermaid script with the entry point")
+    @Test("generateSequenceDiagram produces a Mermaid script with the entry point",
+          .disabled("sourcekitd hangs in the Xcode test host — run via `swift test` instead"))
     @MainActor
     func generateSequenceDiagramMermaid() async throws {
         let dir = try makeFixtureDir(writing: """
@@ -330,7 +373,7 @@ struct DiagramViewModelIntegrationTests {
             """)
         defer { try? FileManager.default.removeItem(at: dir) }
 
-        let vm = DiagramViewModel()
+        let vm = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
         vm.diagramMode = .sequenceDiagram
         vm.diagramFormat = .mermaid
         vm.entryPoint = "Orchestrator.run"
@@ -347,12 +390,12 @@ struct DiagramViewModelIntegrationTests {
 
     // MARK: Dependency Graph
     //
-    // DependencyGraphGenerator in .types mode calls SyntaxStructure.create(from:) and
-    // crashes for the same sourcekitd reason described in the Class Diagram section above.
-    // Type-dependency extraction is covered by DependencyGraphGeneratorTests in the
-    // framework test suite.
+    // DependencyGraphGenerator calls SourceKitten regardless of mode; the Xcode app
+    // test host cannot connect to sourcekitd without the toolchain environment, so the
+    // XPC call hangs. Covered by DependencyGraphGeneratorTests in the framework suite.
 
-    @Test("generateDependencyGraph (modules) produces a script containing imported module names")
+    @Test("generateDependencyGraph (modules) produces a script containing imported module names",
+          .disabled("sourcekitd hangs in the Xcode test host — run via `swift test` instead"))
     @MainActor
     func generateDependencyGraphModules() async throws {
         let dir = try makeFixtureDir(writing: """
@@ -362,7 +405,7 @@ struct DiagramViewModelIntegrationTests {
             """)
         defer { try? FileManager.default.removeItem(at: dir) }
 
-        let vm = DiagramViewModel()
+        let vm = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
         vm.diagramMode = .dependencyGraph
         vm.diagramFormat = .plantuml
         vm.depsMode = .modules

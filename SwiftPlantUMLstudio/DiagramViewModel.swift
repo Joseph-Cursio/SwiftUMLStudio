@@ -27,7 +27,11 @@ final class DiagramViewModel {
     var history: [DiagramEntity] = []
 
     private var currentTask: Task<Void, Never>?
-    private let context = PersistenceController.shared.container.viewContext
+    private let context: NSManagedObjectContext
+
+    init(persistenceController: PersistenceController = PersistenceController.shared) {
+        self.context = persistenceController.container.viewContext
+    }
 
     var currentScript: (any DiagramOutputting)? {
         switch diagramMode {
@@ -54,20 +58,20 @@ final class DiagramViewModel {
         isGenerating = true
         errorMessage = nil
         
-        currentTask = Task {
-            switch diagramMode {
+        currentTask = Task { [weak self] in
+            guard let self else { return }
+            switch self.diagramMode {
             case .classDiagram:
-                await generateClassDiagram()
+                await self.generateClassDiagram()
             case .sequenceDiagram:
-                await generateSequenceDiagram()
+                await self.generateSequenceDiagram()
             case .dependencyGraph:
-                await generateDependencyGraph()
+                await self.generateDependencyGraph()
             }
-            
-            if !Task.isCancelled {
-                isGenerating = false
-                saveToHistory()
-            }
+
+            guard !Task.isCancelled else { return }
+            self.isGenerating = false
+            self.saveToHistory()
         }
     }
 

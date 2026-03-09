@@ -19,12 +19,14 @@ struct PersistenceController {
         
         if inMemory {
             container.persistentStoreDescriptions.first?.url = URL(fileURLWithPath: "/dev/null")
+        } else {
+            // Enable persistent history tracking only for on-disk stores.
+            // Setting these options on an in-memory store can trigger an internal
+            // dispatch_sync to the main queue, deadlocking when init runs on @MainActor.
+            let description = container.persistentStoreDescriptions.first
+            description?.setOption(true as NSNumber, forKey: NSPersistentHistoryTrackingKey)
+            description?.setOption(true as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
         }
-
-        // Enable persistent history tracking
-        let description = container.persistentStoreDescriptions.first
-        description?.setOption(true as NSNumber, forKey: NSPersistentHistoryTrackingKey)
-        description?.setOption(true as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
 
         container.loadPersistentStores { _, error in
             if let error = error as NSError? {
