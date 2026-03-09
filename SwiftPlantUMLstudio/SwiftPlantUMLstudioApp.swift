@@ -13,7 +13,7 @@ struct SwiftPlantUMLstudioApp: App {
         WindowGroup {
             ContentView()
         }
-        .defaultSize(width: 1100, height: 700)
+        .defaultSize(width: 1500, height: 700)
         .commands {
             CommandGroup(replacing: .newItem) {
                 Button("Open…") {

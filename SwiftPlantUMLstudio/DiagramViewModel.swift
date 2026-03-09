@@ -10,13 +10,6 @@ import Foundation
 import Observation
 import SwiftUMLBridgeFramework
 
-enum DiagramMode: String, CaseIterable, Identifiable {
-    case classDiagram = "Class Diagram"
-    case sequenceDiagram = "Sequence Diagram"
-    case dependencyGraph = "Dependency Graph"
-    var id: String { rawValue }
-}
-
 @Observable @MainActor
 final class DiagramViewModel {
     var selectedPaths: [String] = []

@@ -5,7 +5,6 @@
 //  Created by joe cursio on 2/26/26.
 //
 
-import AppKit
 import SwiftUI
 import SwiftUMLBridgeFramework
 import UniformTypeIdentifiers
@@ -26,21 +25,23 @@ struct ContentView: View {
             diagramPreview
                 .navigationTitle("Preview")
         }
+        // 1 400 px minimum ensures all toolbar items are visible without overflow.
+        .frame(minWidth: 1400)
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
                 openButton
                 pathSummaryText
                 modePicker(viewModel: $viewModel)
                 formatPicker(viewModel: $viewModel)
-                
+
                 if viewModel.diagramMode == .sequenceDiagram {
                     sequenceControls(viewModel: $viewModel)
                 }
-                
+
                 if viewModel.diagramMode == .dependencyGraph {
                     dependencyControls(viewModel: $viewModel)
                 }
-                
+
                 generateButton
             }
         }
@@ -101,22 +102,22 @@ struct ContentView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if viewModel.currentScript != nil {
                 DiagramWebView(script: viewModel.currentScript)
+            } else if viewModel.diagramMode == .sequenceDiagram && viewModel.entryPoint.isEmpty {
+                Text("Enter an entry point (e.g. MyType.myMethod), then click Generate.")
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .accessibilityIdentifier("entryPointPrompt")
             } else {
-                placeholderText
+                Text("Select Swift source files or a folder, then click Generate.")
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .accessibilityIdentifier("fileSelectionPrompt")
             }
         }
-    }
-
-    private var placeholderText: some View {
-        let message = viewModel.diagramMode == .sequenceDiagram && viewModel.entryPoint.isEmpty
-            ? "Enter an entry point (e.g. MyType.myMethod), then click Generate."
-            : "Select Swift source files or a folder, then click Generate."
-        
-        return Text(message)
-            .foregroundStyle(.secondary)
-            .multilineTextAlignment(.center)
-            .padding()
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     // MARK: - Toolbar Items
@@ -144,6 +145,7 @@ struct ContentView: View {
         }
         .pickerStyle(.segmented)
         .frame(width: 360)
+        .accessibilityIdentifier("modePicker")
     }
 
     private func formatPicker(viewModel: Bindable<DiagramViewModel>) -> some View {
@@ -160,13 +162,15 @@ struct ContentView: View {
         TextField("Type.method", text: viewModel.entryPoint)
             .frame(width: 160)
             .textFieldStyle(.roundedBorder)
+            .accessibilityIdentifier("entryPointField")
 
         Stepper(
-            "Depth: \(viewModel.sequenceDepth)",
+            "Depth: \(viewModel.sequenceDepth.wrappedValue)",
             value: viewModel.sequenceDepth,
             in: 1...10
         )
         .frame(width: 120)
+        .accessibilityIdentifier("depthStepper")
     }
 
     private func dependencyControls(viewModel: Bindable<DiagramViewModel>) -> some View {
@@ -177,6 +181,7 @@ struct ContentView: View {
         }
         .pickerStyle(.segmented)
         .frame(width: 160)
+        .accessibilityIdentifier("depsModeControl")
     }
 
     private var generateButton: some View {

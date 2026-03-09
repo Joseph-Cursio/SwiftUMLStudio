@@ -9,83 +9,31 @@ import SwiftUI
 import WebKit
 import SwiftUMLBridgeFramework
 
-/// NSViewRepresentable wrapping WKWebView, rendering the diagram via planttext.com (PlantUML) or
-/// an embedded Mermaid.js page (Mermaid).
-struct DiagramWebView: NSViewRepresentable {
+/// Renders a diagram using the native SwiftUI WebView (macOS 26+).
+/// - PlantUML diagrams load a remote URL via `WebView(url:)`.
+/// - Mermaid diagrams load an HTML string into a `WebPage` instance.
+struct DiagramWebView: View {
     var script: (any DiagramOutputting)?
 
-    func makeCoordinator() -> Coordinator {
-        Coordinator()
-    }
+    @State private var mermaidPage = WebPage()
 
-    func makeNSView(context: Context) -> WKWebView {
-        let webView = WKWebView()
-        webView.setValue(false, forKey: "drawsBackground") // Allow transparency
-        return webView
-    }
-
-    func updateNSView(_ webView: WKWebView, context: Context) {
-        let newText = script?.text ?? ""
-        guard newText != context.coordinator.lastLoadedText else { return }
-        context.coordinator.lastLoadedText = newText
-        updateWebView(webView)
-    }
-
-    func updateWebView(_ webView: WKWebView) {
-        guard let script, !script.text.isEmpty else { return }
-        switch script.format {
-        case .plantuml:
-            if let url = plantUMLURL(for: script) {
-                webView.load(URLRequest(url: url))
+    var body: some View {
+        Group {
+            switch script?.format {
+            case .plantuml:
+                if let encoded = script.map({ $0.encodeText() }),
+                   let url = URL(string: "https://www.planttext.com/api/plantuml/svg/\(encoded)") {
+                    WebView(url: url)
+                }
+            case .mermaid:
+                WebView(mermaidPage)
+                    .task(id: script?.text) {
+                        guard let text = script?.text, !text.isEmpty else { return }
+                        _ = mermaidPage.load(html: MermaidHTMLBuilder.mermaidHTML(text), baseURL: URL(string: "about:blank")!)
+                    }
+            case nil:
+                EmptyView()
             }
-        case .mermaid:
-            webView.loadHTMLString(mermaidHTML(script.text), baseURL: nil)
         }
-    }
-
-    func plantUMLURL(for script: any DiagramOutputting) -> URL? {
-        let encoded = script.encodeText()
-        let urlString = "https://www.planttext.com/api/plantuml/svg/\(encoded)"
-        return URL(string: urlString)
-    }
-
-    func mermaidHTML(_ text: String) -> String {
-        // swiftlint:disable:next line_length
-        """
-        <html>
-        <head>
-            <style>
-                body {
-                    background: transparent;
-                    padding: 20px;
-                    margin: 0;
-                    display: flex;
-                    justify-content: center;
-                }
-                @media (prefers-color-scheme: dark) {
-                    .mermaid { background-color: transparent !important; }
-                }
-            </style>
-        </head>
-        <body>
-            <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
-            <script>
-                const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                mermaid.initialize({
-                    startOnLoad: true,
-                    theme: isDark ? 'dark' : 'default',
-                    securityLevel: 'loose'
-                });
-            </script>
-            <div class="mermaid">
-                \(text)
-            </div>
-        </body>
-        </html>
-        """
-    }
-
-    class Coordinator {
-        var lastLoadedText: String = ""
     }
 }
