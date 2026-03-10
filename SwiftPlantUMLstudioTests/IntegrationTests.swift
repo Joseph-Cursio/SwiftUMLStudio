@@ -23,21 +23,21 @@ import SwiftUMLBridgeFramework
 private func runOnMain(_ block: @MainActor () -> Void) {
     if Thread.isMainThread {
         MainActor.assumeIsolated(block)
-        return
+    } else {
+        DispatchQueue.main.sync { MainActor.assumeIsolated(block) }
     }
-    DispatchQueue.main.sync { MainActor.assumeIsolated(block) }
 }
 
 private func runOnMain(_ block: @MainActor () throws -> Void) throws {
     if Thread.isMainThread {
         try MainActor.assumeIsolated(block)
-        return
+    } else {
+        var thrownError: (any Error)?
+        DispatchQueue.main.sync {
+            do { try MainActor.assumeIsolated(block) } catch { thrownError = error }
+        }
+        if let err = thrownError { throw err }
     }
-    var thrownError: (any Error)?
-    DispatchQueue.main.sync {
-        do { try MainActor.assumeIsolated(block) } catch { thrownError = error }
-    }
-    if let err = thrownError { throw err }
 }
 
 // MARK: - Core Data Stack Tests

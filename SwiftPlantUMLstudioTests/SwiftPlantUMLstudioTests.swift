@@ -23,22 +23,22 @@ import SwiftUMLBridgeFramework
 private func runOnMain(_ block: @MainActor () -> Void) {
     if Thread.isMainThread {
         MainActor.assumeIsolated(block)
-        return
+    } else {
+        DispatchQueue.main.sync { MainActor.assumeIsolated(block) }
     }
-    DispatchQueue.main.sync { MainActor.assumeIsolated(block) }
 }
 
 /// Run `block` synchronously on the main thread with `@MainActor` isolation (throwing).
 private func runOnMain(_ block: @MainActor () throws -> Void) throws {
     if Thread.isMainThread {
         try MainActor.assumeIsolated(block)
-        return
+    } else {
+        var thrownError: (any Error)?
+        DispatchQueue.main.sync {
+            do { try MainActor.assumeIsolated(block) } catch { thrownError = error }
+        }
+        if let err = thrownError { throw err }
     }
-    var thrownError: (any Error)?
-    DispatchQueue.main.sync {
-        do { try MainActor.assumeIsolated(block) } catch { thrownError = error }
-    }
-    if let err = thrownError { throw err }
 }
 
 // MARK: - DiagramMode Tests
@@ -48,7 +48,9 @@ struct DiagramModeTests {
 
     @Test("has exactly three cases")
     func allCasesCount() {
-        #expect(DiagramMode.allCases.count == 3)
+        runOnMain {
+            #expect(DiagramMode.allCases.count == 3)
+        }
     }
 
     @Test("classDiagram raw value is 'Class Diagram'")
@@ -201,33 +203,45 @@ struct DiagramViewModelTests {
     // the spawned Task completes, letting us observe the final isGenerating state.
 
     @Test("generate resets isGenerating when selectedPaths is empty for classDiagram")
-    func generateGuardsEmptyPathsClassDiagram() {
-        #expect(generateAndWait(mode: .classDiagram, paths: []) == false)
+    @MainActor
+    func generateGuardsEmptyPathsClassDiagram() async {
+        let isGenerating = await generateAndWait(mode: .classDiagram, paths: [])
+        #expect(isGenerating == false)
     }
 
     @Test("generate resets isGenerating when selectedPaths is empty for dependencyGraph")
-    func generateGuardsEmptyPathsDependencyGraph() {
-        #expect(generateAndWait(mode: .dependencyGraph, paths: []) == false)
+    @MainActor
+    func generateGuardsEmptyPathsDependencyGraph() async {
+        let isGenerating = await generateAndWait(mode: .dependencyGraph, paths: [])
+        #expect(isGenerating == false)
     }
 
     @Test("generate resets isGenerating when selectedPaths is empty for sequenceDiagram")
-    func generateGuardsEmptyPathsSequenceDiagram() {
-        #expect(generateAndWait(mode: .sequenceDiagram, paths: [], entryPoint: "Foo.bar") == false)
+    @MainActor
+    func generateGuardsEmptyPathsSequenceDiagram() async {
+        let isGenerating = await generateAndWait(mode: .sequenceDiagram, paths: [], entryPoint: "Foo.bar")
+        #expect(isGenerating == false)
     }
 
     @Test("generate resets isGenerating for sequenceDiagram with empty entryPoint")
-    func generateGuardsEmptyEntryPoint() {
-        #expect(generateAndWait(mode: .sequenceDiagram, paths: ["/some/path.swift"], entryPoint: "") == false)
+    @MainActor
+    func generateGuardsEmptyEntryPoint() async {
+        let isGenerating = await generateAndWait(mode: .sequenceDiagram, paths: ["/some/path.swift"], entryPoint: "")
+        #expect(isGenerating == false)
     }
 
     @Test("generate resets isGenerating for sequenceDiagram with malformed entryPoint (no dot)")
-    func generateGuardsMalformedEntryPointNoDot() {
-        #expect(generateAndWait(mode: .sequenceDiagram, paths: ["/some/path.swift"], entryPoint: "FooBar") == false)
+    @MainActor
+    func generateGuardsMalformedEntryPointNoDot() async {
+        let isGenerating = await generateAndWait(mode: .sequenceDiagram, paths: ["/some/path.swift"], entryPoint: "FooBar")
+        #expect(isGenerating == false)
     }
 
     @Test("generate resets isGenerating for sequenceDiagram with too many dots in entryPoint")
-    func generateGuardsMalformedEntryPointTooManyDots() {
-        #expect(generateAndWait(mode: .sequenceDiagram, paths: ["/some/path.swift"], entryPoint: "Foo.bar.baz") == false)
+    @MainActor
+    func generateGuardsMalformedEntryPointTooManyDots() async {
+        let isGenerating = await generateAndWait(mode: .sequenceDiagram, paths: ["/some/path.swift"], entryPoint: "Foo.bar.baz")
+        #expect(isGenerating == false)
     }
 }
 
@@ -238,37 +252,25 @@ struct DiagramViewModelTests {
 // its tasks onto DispatchQueue.main (dispatch_async), the spawned Task runs before our
 // follow-up block, and we observe the final isGenerating value.
 
+@MainActor
 private func generateAndWait(
     mode: DiagramMode,
     paths: [String],
     entryPoint: String = ""
-) -> Bool {
-    // @unchecked Sendable box lets us share @MainActor references and results across
-    // GCD closures while all accesses remain on the main thread.
-    final class VMBox: @unchecked Sendable {
-        var vm: DiagramViewModel?
-        var isGenerating = true
-    }
-    let box = VMBox()
-    let sema = DispatchSemaphore(value: 0)
-
-    DispatchQueue.main.async {
-        MainActor.assumeIsolated {
-            box.vm = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
-            box.vm!.diagramMode = mode
-            box.vm!.selectedPaths = paths
-            box.vm!.entryPoint = entryPoint
-            box.vm!.generate()
-        }
-        // The spawned Task is now in the main queue ahead of this follow-up block.
-        DispatchQueue.main.async {
-            box.isGenerating = MainActor.assumeIsolated { box.vm!.isGenerating }
-            sema.signal()
-        }
-    }
-
-    sema.wait()
-    return box.isGenerating
+) async -> Bool {
+    let vm = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
+    vm.diagramMode = mode
+    vm.selectedPaths = paths
+    vm.entryPoint = entryPoint
+    
+    vm.generate()
+    
+    // Give the Task a moment to start and run its synchronous guard checks.
+    // Since everything is on the @MainActor, yielding allows the spawned Task 
+    // (also on @MainActor) to run.
+    await Task.yield()
+    
+    return vm.isGenerating
 }
 
 // MARK: - DiagramViewModel Integration Tests

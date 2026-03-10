@@ -86,8 +86,11 @@ final class DiagramViewModel {
     }
 
     func loadDiagram(_ entity: DiagramEntity) {
-        diagramMode = DiagramMode(rawValue: entity.mode ?? "") ?? .classDiagram
-        diagramFormat = DiagramFormat(rawValue: entity.format ?? "") ?? .plantuml
+        let modeString = entity.mode ?? ""
+        let formatString = entity.format ?? ""
+        
+        diagramMode = DiagramMode(rawValue: modeString) ?? .classDiagram
+        diagramFormat = DiagramFormat(rawValue: formatString) ?? .plantuml
         entryPoint = entity.entryPoint ?? ""
         sequenceDepth = Int(entity.sequenceDepth)
         
