@@ -17,6 +17,7 @@ struct ContentView: View {
 
         NavigationSplitView {
             historySidebar
+                .navigationSplitViewColumnWidth(min: 200, ideal: 250)
         } content: {
             sourceEditor
                 .navigationSplitViewColumnWidth(min: 300, ideal: 400)
@@ -56,42 +57,68 @@ struct ContentView: View {
     // MARK: - Subviews
 
     private var historySidebar: some View {
-        List {
+        @Bindable var viewModel = viewModel
+        return List(selection: $viewModel.selectedHistoryItem) {
             Section("History") {
                 if viewModel.history.isEmpty {
-                    Text("No history yet")
-                        .foregroundStyle(.secondary)
-                        .font(.caption)
+                    NoHistoryView()
                 } else {
                     ForEach(viewModel.history) { item in
-                        VStack(alignment: .leading) {
-                            Text(item.mode ?? "Diagram")
-                                .font(.headline)
-                            if let timestamp = item.timestamp {
-                                Text(timestamp, style: .date)
-                                    .font(.caption2)
-                                    .foregroundStyle(.secondary)
+                        HistoryItemRow(item: item)
+                            .tag(item)
+                            .contextMenu {
+                                Button("Delete", role: .destructive) {
+                                    viewModel.deleteHistoryItem(item)
+                                }
                             }
-                        }
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            viewModel.loadDiagram(item)
-                        }
-                        .contextMenu {
-                            Button("Delete", role: .destructive) {
-                                viewModel.deleteHistoryItem(item)
-                            }
-                        }
                     }
                 }
             }
         }
         .navigationTitle("SwiftUML Studio")
+        .onChange(of: viewModel.selectedHistoryItem) { _, newValue in
+            if let item = newValue {
+                viewModel.loadDiagram(item)
+            }
+        }
+    }
+
+    private struct NoHistoryView: View {
+        var body: some View {
+            Text("No history yet")
+                .foregroundStyle(.secondary)
+                .font(.caption)
+        }
+    }
+
+    private struct HistoryItemRow: View {
+        let item: DiagramEntity
+        var body: some View {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(item.name ?? "Untitled Diagram")
+                    .font(.headline)
+                    .lineLimit(1)
+                
+                HStack {
+                    Text(item.mode ?? "Diagram")
+                    Text("•")
+                    if let timestamp = item.timestamp {
+                        Text(timestamp, style: .date)
+                    }
+                }
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+            }
+            .padding(.vertical, 4)
+        }
     }
 
     private var sourceEditor: some View {
         TextEditor(text: .constant(viewModel.currentScript?.text ?? ""))
             .font(.system(.body, design: .monospaced))
+            .scrollContentBackground(.hidden)
+            .padding(8)
+            .background(Color(NSColor.textBackgroundColor))
             .disabled(true)
     }
 

@@ -16,6 +16,10 @@ final class DiagramViewModel {
     var script: DiagramScript?
     var sequenceScript: SequenceScript?
     var depsScript: DepsScript?
+    
+    // For restoring from history without needing to re-parse AST
+    private var restoredScript: SimpleDiagramScript?
+    
     var isGenerating: Bool = false
     var errorMessage: String?
     var diagramFormat: DiagramFormat = .plantuml
@@ -25,6 +29,7 @@ final class DiagramViewModel {
     var depsMode: DepsMode = .types
     
     var history: [DiagramEntity] = []
+    var selectedHistoryItem: DiagramEntity?
 
     private var currentTask: Task<Void, Never>?
     private let context: NSManagedObjectContext
@@ -34,6 +39,8 @@ final class DiagramViewModel {
     }
 
     var currentScript: (any DiagramOutputting)? {
+        if let restoredScript { return restoredScript }
+        
         switch diagramMode {
         case .classDiagram: return script
         case .sequenceDiagram: return sequenceScript
@@ -57,6 +64,8 @@ final class DiagramViewModel {
         currentTask?.cancel()
         isGenerating = true
         errorMessage = nil
+        selectedHistoryItem = nil
+        restoredScript = nil
         
         currentTask = Task { [weak self] in
             guard let self else { return }
@@ -98,9 +107,20 @@ final class DiagramViewModel {
            let paths = try? JSONDecoder().decode([String].self, from: pathsData) {
             selectedPaths = paths
         }
+
+        // Restore the script text so the diagram appears immediately
+        if let text = entity.scriptText {
+            restoredScript = SimpleDiagramScript(text: text, format: diagramFormat)
+        } else {
+            restoredScript = nil
+        }
     }
 
     func deleteHistoryItem(_ entity: DiagramEntity) {
+        if selectedHistoryItem == entity {
+            selectedHistoryItem = nil
+            restoredScript = nil
+        }
         context.delete(entity)
         try? context.save()
         loadHistory()
@@ -118,6 +138,18 @@ final class DiagramViewModel {
         entity.sequenceDepth = Int16(sequenceDepth)
         entity.scriptText = currentScript.text
         entity.paths = try? JSONEncoder().encode(selectedPaths)
+        
+        // Generate a descriptive name
+        if let firstPath = selectedPaths.first {
+            let filename = URL(fileURLWithPath: firstPath).lastPathComponent
+            if selectedPaths.count > 1 {
+                entity.name = "\(filename) + \(selectedPaths.count - 1)"
+            } else {
+                entity.name = filename
+            }
+        } else {
+            entity.name = "Untitled Diagram"
+        }
         
         try? context.save()
         loadHistory()
@@ -197,5 +229,17 @@ final class DiagramViewModel {
         
         guard !Task.isCancelled else { return }
         sequenceScript = result
+    }
+}
+
+/// A simple implementation of DiagramOutputting for restoring history items.
+private struct SimpleDiagramScript: DiagramOutputting {
+    let text: String
+    let format: DiagramFormat
+
+    func encodeText() -> String {
+        // Use a simple percent encoding as a fallback for history restoration.
+        // In a real app, we'd expose the framework's encoding more formally.
+        text.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? text
     }
 }
