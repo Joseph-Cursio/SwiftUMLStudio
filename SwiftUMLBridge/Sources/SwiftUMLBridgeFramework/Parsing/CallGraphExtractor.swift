@@ -14,6 +14,7 @@ import SwiftSyntax
 /// - Closures or complex expressions → `isUnresolved = true`
 final class CallGraphExtractor: SyntaxVisitor {
     private var edges: [CallEdge] = []
+    private var methods: Set<String> = []
     private var typeStack: [String] = []
     private var methodStack: [String] = []
 
@@ -59,7 +60,11 @@ final class CallGraphExtractor: SyntaxVisitor {
     // MARK: - Function declarations (push/pop methodStack)
 
     override func visit(_ node: FunctionDeclSyntax) -> SyntaxVisitorContinueKind {
-        methodStack.append(node.name.text)
+        let methodName = node.name.text
+        if let typeName = typeStack.last {
+            methods.insert("\(typeName).\(methodName)")
+        }
+        methodStack.append(methodName)
         return .visitChildren
     }
     override func visitPost(_ node: FunctionDeclSyntax) { methodStack.removeLast() }
@@ -138,11 +143,17 @@ final class CallGraphExtractor: SyntaxVisitor {
 
     // MARK: - Static factory
 
-    /// Parse `source` and extract all call edges.
-    static func extract(from source: String) -> [CallEdge] {
+    /// Result of an extraction run
+    internal struct ExtractionResult {
+        let edges: [CallEdge]
+        let methods: [String]
+    }
+
+    /// Parse `source` and extract all call edges and method definitions.
+    static func extract(from source: String) -> ExtractionResult {
         let sourceFile = Parser.parse(source: source)
         let extractor = CallGraphExtractor(viewMode: .sourceAccurate)
         extractor.walk(sourceFile)
-        return extractor.edges
+        return ExtractionResult(edges: extractor.edges, methods: Array(extractor.methods).sorted())
     }
 }

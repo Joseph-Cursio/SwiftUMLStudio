@@ -100,6 +100,17 @@ final class SwiftPlantUMLstudioUITests: XCTestCase {
     }
 
     @MainActor
+    func testEntryPointMenuAppearsInSequenceMode() throws {
+        let modePicker = app.radioGroups["modePicker"]
+        XCTAssertTrue(modePicker.waitForExistence(timeout: 3), "Mode picker not found")
+        modePicker.radioButtons["Sequence Diagram"].click()
+
+        // Verify the entry point menu chevron is present
+        let menu = app.menuButtons["entryPointMenu"]
+        XCTAssertTrue(menu.waitForExistence(timeout: 2), "Entry point menu not found in Sequence Diagram mode")
+    }
+
+    @MainActor
     func testLaunchPerformance() throws {
         // This measures how long it takes to launch your application.
         measure(metrics: [XCTApplicationLaunchMetric()]) {

@@ -243,6 +243,17 @@ struct DiagramViewModelTests {
         let isGenerating = await generateAndWait(mode: .sequenceDiagram, paths: ["/some/path.swift"], entryPoint: "Foo.bar.baz")
         #expect(isGenerating == false)
     }
+
+    @Test("refreshEntryPoints clears when no paths selected")
+    func refreshEntryPointsClearsWhenNoPathsSelected() {
+        runOnMain {
+            let vm = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
+            vm.availableEntryPoints = ["Foo.bar"]
+            vm.selectedPaths = []
+            vm.refreshEntryPoints()
+            #expect(vm.availableEntryPoints.isEmpty)
+        }
+    }
 }
 
 // MARK: - generate() guard helper

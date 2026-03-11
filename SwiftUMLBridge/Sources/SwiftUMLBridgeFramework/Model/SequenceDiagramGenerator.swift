@@ -4,6 +4,24 @@ import Foundation
 public struct SequenceDiagramGenerator {
     public init() {}
 
+    /// Find all potential entry points (Type.method) in the given source files.
+    ///
+    /// - Parameter paths: Paths to Swift source files or directories.
+    /// - Returns: A sorted list of "Type.method" strings found in the sources.
+    public func findEntryPoints(for paths: [String]) -> [String] {
+        let files = FileCollector().getFiles(for: paths)
+        var allMethods = Set<String>()
+
+        for file in files {
+            if let source = try? String(contentsOf: file, encoding: .utf8) {
+                let result = CallGraphExtractor.extract(from: source)
+                allMethods.formUnion(result.methods)
+            }
+        }
+
+        return allMethods.sorted()
+    }
+
     /// Generate a `SequenceScript` from Swift files at the given paths.
     ///
     /// - Parameters:
@@ -25,8 +43,8 @@ public struct SequenceDiagramGenerator {
 
         for file in files {
             if let source = try? String(contentsOf: file, encoding: .utf8) {
-                let edges = CallGraphExtractor.extract(from: source)
-                allEdges.append(contentsOf: edges)
+                let result = CallGraphExtractor.extract(from: source)
+                allEdges.append(contentsOf: result.edges)
             }
         }
 

@@ -25,6 +25,7 @@ final class DiagramViewModel {
     var diagramFormat: DiagramFormat = .plantuml
     var diagramMode: DiagramMode = .classDiagram
     var entryPoint: String = ""
+    var availableEntryPoints: [String] = []
     var sequenceDepth: Int = 3
     var depsMode: DepsMode = .types
     
@@ -112,6 +113,7 @@ final class DiagramViewModel {
         
         if diagramMode == .sequenceDiagram {
             entryPoint = entity.entryPoint ?? ""
+            refreshEntryPoints()
         } else if diagramMode == .dependencyGraph {
             depsMode = DepsMode(rawValue: entity.entryPoint ?? "") ?? .types
         }
@@ -139,6 +141,17 @@ final class DiagramViewModel {
         context.delete(entity)
         try? context.save()
         loadHistory()
+    }
+
+    func refreshEntryPoints() {
+        guard !selectedPaths.isEmpty else {
+            availableEntryPoints = []
+            return
+        }
+        
+        // This is fast enough to do on the main actor since it's just syntax scanning
+        // without full type checking or SourceKit XPC.
+        availableEntryPoints = SequenceDiagramGenerator().findEntryPoints(for: selectedPaths)
     }
 
     private func saveToHistory() {
