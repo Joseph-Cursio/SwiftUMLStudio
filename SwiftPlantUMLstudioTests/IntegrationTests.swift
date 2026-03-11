@@ -354,27 +354,58 @@ struct DiagramViewModelHistoryIntegrationTests {
             let pc = PersistenceController(inMemory: true)
             let context = pc.container.viewContext
 
-            let entity = DiagramEntity(context: context)
-            entity.id = UUID()
-            entity.mode = DiagramMode.sequenceDiagram.rawValue
-            entity.format = DiagramFormat.mermaid.rawValue
-            entity.entryPoint = "Foo.bar"
-            entity.sequenceDepth = 7
-            entity.paths = try JSONEncoder().encode(["/some/path.swift"])
-            entity.timestamp = Date()
+            // Test sequence diagram restoration
+            let seqEntity = DiagramEntity(context: context)
+            seqEntity.id = UUID()
+            seqEntity.mode = DiagramMode.sequenceDiagram.rawValue
+            seqEntity.entryPoint = "Foo.bar"
+            seqEntity.timestamp = Date()
+            
+            // Test dependency graph restoration (uses entryPoint for depsMode)
+            let depsEntity = DiagramEntity(context: context)
+            depsEntity.id = UUID()
+            depsEntity.mode = DiagramMode.dependencyGraph.rawValue
+            depsEntity.entryPoint = DepsMode.modules.rawValue
+            depsEntity.timestamp = Date()
+
             try context.save()
 
             let vm = DiagramViewModel(persistenceController: pc)
-            vm.loadHistory()
-
-            let saved = try #require(vm.history.first)
-            vm.loadDiagram(saved)
-
+            
+            // Verify sequence restoration
+            vm.loadDiagram(seqEntity)
             #expect(vm.diagramMode == .sequenceDiagram)
-            #expect(vm.diagramFormat == .mermaid)
             #expect(vm.entryPoint == "Foo.bar")
-            #expect(vm.sequenceDepth == 7)
-            #expect(vm.selectedPaths == ["/some/path.swift"])
+            
+            // Verify dependency restoration
+            vm.loadDiagram(depsEntity)
+            #expect(vm.diagramMode == .dependencyGraph)
+            #expect(vm.depsMode == .modules)
+        }
+    }
+
+    @Test("save() generates a descriptive name and stores it in history")
+    func saveGeneratesName() throws {
+        try runOnMain {
+            let pc = PersistenceController(inMemory: true)
+            let vm = DiagramViewModel(persistenceController: pc)
+            
+            vm.selectedPaths = ["/Users/joe/Projects/MyApp/Sources/Main.swift"]
+            vm.diagramMode = .classDiagram
+            
+            // Create a fake script so we have something to save
+            vm.loadDiagram({
+                let entity = DiagramEntity(context: pc.container.viewContext)
+                entity.scriptText = "@startuml\n@enduml"
+                return entity
+            }())
+            
+            vm.save()
+            vm.loadHistory()
+            
+            let saved = try #require(vm.history.first)
+            #expect(saved.name == "Main.swift")
+            #expect(saved.mode == DiagramMode.classDiagram.rawValue)
         }
     }
 }

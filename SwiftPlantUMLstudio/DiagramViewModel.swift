@@ -69,6 +69,12 @@ final class DiagramViewModel {
         
         currentTask = Task { [weak self] in
             guard let self else { return }
+            
+            // Debounce: wait for a short period before starting expensive AST parsing
+            // to handle rapid-fire setting changes smoothly.
+            try? await Task.sleep(nanoseconds: 300_000_000) // 300ms
+            guard !Task.isCancelled else { return }
+
             switch self.diagramMode {
             case .classDiagram:
                 await self.generateClassDiagram()
@@ -80,8 +86,11 @@ final class DiagramViewModel {
 
             guard !Task.isCancelled else { return }
             self.isGenerating = false
-            self.saveToHistory()
         }
+    }
+
+    func save() {
+        saveToHistory()
     }
 
     func loadHistory() {
@@ -100,7 +109,13 @@ final class DiagramViewModel {
         
         diagramMode = DiagramMode(rawValue: modeString) ?? .classDiagram
         diagramFormat = DiagramFormat(rawValue: formatString) ?? .plantuml
-        entryPoint = entity.entryPoint ?? ""
+        
+        if diagramMode == .sequenceDiagram {
+            entryPoint = entity.entryPoint ?? ""
+        } else if diagramMode == .dependencyGraph {
+            depsMode = DepsMode(rawValue: entity.entryPoint ?? "") ?? .types
+        }
+        
         sequenceDepth = Int(entity.sequenceDepth)
         
         if let pathsData = entity.paths,
@@ -134,7 +149,13 @@ final class DiagramViewModel {
         entity.timestamp = Date()
         entity.mode = diagramMode.rawValue
         entity.format = diagramFormat.rawValue
-        entity.entryPoint = entryPoint
+        
+        if diagramMode == .sequenceDiagram {
+            entity.entryPoint = entryPoint
+        } else if diagramMode == .dependencyGraph {
+            entity.entryPoint = depsMode.rawValue
+        }
+        
         entity.sequenceDepth = Int16(sequenceDepth)
         entity.scriptText = currentScript.text
         entity.paths = try? JSONEncoder().encode(selectedPaths)

@@ -52,6 +52,13 @@ struct ContentView: View {
         .task {
             viewModel.loadHistory()
         }
+        // Automatic generation triggers on any configuration change
+        .onChange(of: viewModel.selectedPaths) { viewModel.generate() }
+        .onChange(of: viewModel.diagramMode) { viewModel.generate() }
+        .onChange(of: viewModel.diagramFormat) { viewModel.generate() }
+        .onChange(of: viewModel.entryPoint) { viewModel.generate() }
+        .onChange(of: viewModel.sequenceDepth) { viewModel.generate() }
+        .onChange(of: viewModel.depsMode) { viewModel.generate() }
     }
 
     // MARK: - Subviews
@@ -100,7 +107,7 @@ struct ContentView: View {
                     .lineLimit(1)
                 
                 HStack {
-                    Text(item.mode ?? "Diagram")
+                    Text(displayMode)
                     Text("•")
                     if let timestamp = item.timestamp {
                         Text(timestamp, style: .date)
@@ -110,6 +117,14 @@ struct ContentView: View {
                 .foregroundStyle(.secondary)
             }
             .padding(.vertical, 4)
+        }
+
+        private var displayMode: String {
+            let mode = item.mode ?? "Diagram"
+            if mode == DiagramMode.dependencyGraph.rawValue, let detail = item.entryPoint {
+                return "\(mode) (\(detail))"
+            }
+            return mode
         }
     }
 
@@ -130,14 +145,14 @@ struct ContentView: View {
             } else if viewModel.currentScript != nil {
                 DiagramWebView(script: viewModel.currentScript)
             } else if viewModel.diagramMode == .sequenceDiagram && viewModel.entryPoint.isEmpty {
-                Text("Enter an entry point (e.g. MyType.myMethod), then click Generate.")
+                Text("Enter an entry point (e.g. MyType.myMethod) to generate a diagram.")
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                     .padding()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .accessibilityIdentifier("entryPointPrompt")
             } else {
-                Text("Select Swift source files or a folder, then click Generate.")
+                Text("Select Swift source files or a folder to generate a diagram.")
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                     .padding()
@@ -212,12 +227,12 @@ struct ContentView: View {
     }
 
     private var generateButton: some View {
-        Button("Generate", systemImage: "play.fill") {
-            viewModel.generate()
+        Button("Save", systemImage: "square.and.arrow.down") {
+            viewModel.save()
         }
-        .keyboardShortcut("r", modifiers: .command)
-        .help("Generate diagram (⌘R)")
-        .disabled(viewModel.selectedPaths.isEmpty || viewModel.isGenerating)
+        .keyboardShortcut("s", modifiers: .command)
+        .help("Save to history (⌘S)")
+        .disabled(viewModel.currentScript == nil || viewModel.isGenerating)
     }
 
     // MARK: - Logic
@@ -232,6 +247,7 @@ struct ContentView: View {
 
         guard panel.runModal() == .OK else { return }
         viewModel.selectedPaths = panel.urls.map(\.path)
+        viewModel.generate()
     }
 }
 

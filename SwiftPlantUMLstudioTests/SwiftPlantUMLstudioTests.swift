@@ -266,8 +266,8 @@ private func generateAndWait(
     vm.generate()
     
     // Give the Task a moment to start and run its synchronous guard checks.
-    // Since everything is on the @MainActor, yielding allows the spawned Task 
-    // (also on @MainActor) to run.
+    // The ViewModel now has a 300ms debounce sleep, so we must wait longer than that.
+    try? await Task.sleep(nanoseconds: 400_000_000) // 400ms
     await Task.yield()
     
     return vm.isGenerating

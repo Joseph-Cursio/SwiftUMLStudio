@@ -19,7 +19,7 @@ final class AppFlowTests: XCTestCase {
         
         // Check if primary elements are present in the main content/detail area
         XCTAssertTrue(app.buttons["Open…"].exists)
-        XCTAssertTrue(app.buttons["Generate"].exists)
+        XCTAssertTrue(app.buttons["Save"].exists)
         XCTAssertTrue(app.staticTexts["No source selected"].exists)
 
         // Mode picker
