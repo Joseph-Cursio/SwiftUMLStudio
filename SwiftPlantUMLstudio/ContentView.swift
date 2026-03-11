@@ -16,15 +16,18 @@ struct ContentView: View {
         @Bindable var viewModel = viewModel
 
         NavigationSplitView {
-            HistorySidebar(viewModel: viewModel)
-                .navigationSplitViewColumnWidth(min: 200, ideal: 250)
+            VStack(spacing: 0) {
+                FileBrowserSidebar(viewModel: viewModel)
+                Divider()
+                HistorySidebar(viewModel: viewModel)
+            }
+            .navigationSplitViewColumnWidth(min: 200, ideal: 250)
         } content: {
             sourceEditor
                 .navigationSplitViewColumnWidth(min: 300, ideal: 400)
-                .navigationTitle("Markup")
+                .navigationTitle(viewModel.selectedFileURL?.lastPathComponent ?? "Source")
         } detail: {
-            DiagramPreviewView(viewModel: viewModel)
-                .navigationTitle("Preview")
+            DiagramDetailView(viewModel: viewModel)
         }
         // 1 400 px minimum ensures all toolbar items are visible without overflow.
         .frame(minWidth: 1400)
@@ -54,10 +57,14 @@ struct ContentView: View {
         }
         // Automatic generation triggers on any configuration change
         .onChange(of: viewModel.selectedPaths) {
+            viewModel.rebuildFileTree()
             viewModel.generate()
             if viewModel.diagramMode == .sequenceDiagram {
                 viewModel.refreshEntryPoints()
             }
+        }
+        .onChange(of: viewModel.selectedFileURL) {
+            viewModel.selectFile(viewModel.selectedFileURL)
         }
         .onChange(of: viewModel.diagramMode) {
             viewModel.generate()
@@ -104,12 +111,22 @@ struct ContentView: View {
     }
 
     private var sourceEditor: some View {
-        TextEditor(text: .constant(viewModel.currentScript?.text ?? ""))
-            .font(.system(.body, design: .monospaced))
-            .scrollContentBackground(.hidden)
-            .padding(8)
-            .background(.background)
-            .disabled(true)
+        Group {
+            if viewModel.selectedFileURL != nil {
+                TextEditor(text: .constant(viewModel.selectedFileContent))
+                    .font(.system(.body, design: .monospaced))
+                    .scrollContentBackground(.hidden)
+                    .padding(8)
+                    .background(.background)
+                    .disabled(true)
+            } else {
+                ContentUnavailableView(
+                    "Select a file",
+                    systemImage: "doc.text",
+                    description: Text("Choose a Swift file from the browser to view its source.")
+                )
+            }
+        }
     }
 
     // MARK: - Toolbar Items
@@ -185,7 +202,27 @@ struct ContentView: View {
     }
 }
 
-// MARK: - Extracted Subviews
+// MARK: - Sidebar Views
+
+struct FileBrowserSidebar: View {
+    @Bindable var viewModel: DiagramViewModel
+
+    var body: some View {
+        List(selection: $viewModel.selectedFileURL) {
+            Section("Files") {
+                if viewModel.fileTree.isEmpty {
+                    ContentUnavailableView("No files opened", systemImage: "doc")
+                } else {
+                    OutlineGroup(viewModel.fileTree, children: \.children) { node in
+                        Label(node.name, systemImage: node.isDirectory ? "folder" : "swift")
+                            .tag(node.url)
+                    }
+                }
+            }
+        }
+        .accessibilityIdentifier("fileBrowser")
+    }
+}
 
 struct HistorySidebar: View {
     @Bindable var viewModel: DiagramViewModel
@@ -217,6 +254,31 @@ struct HistorySidebar: View {
     }
 }
 
+// MARK: - Detail Pane
+
+struct DiagramDetailView: View {
+    let viewModel: DiagramViewModel
+    @State private var selectedTab: DetailTab = .preview
+
+    enum DetailTab: String, CaseIterable {
+        case preview = "Preview"
+        case markup = "Markup"
+    }
+
+    var body: some View {
+        TabView(selection: $selectedTab) {
+            DiagramPreviewView(viewModel: viewModel)
+                .tabItem { Label("Preview", systemImage: "eye") }
+                .tag(DetailTab.preview)
+
+            MarkupView(viewModel: viewModel)
+                .tabItem { Label("Markup", systemImage: "chevron.left.forwardslash.chevron.right") }
+                .tag(DetailTab.markup)
+        }
+        .accessibilityIdentifier("detailTabs")
+    }
+}
+
 struct DiagramPreviewView: View {
     let viewModel: DiagramViewModel
 
@@ -241,6 +303,25 @@ struct DiagramPreviewView: View {
                     .padding()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .accessibilityIdentifier("fileSelectionPrompt")
+            }
+        }
+    }
+}
+
+struct MarkupView: View {
+    let viewModel: DiagramViewModel
+
+    var body: some View {
+        Group {
+            if let script = viewModel.currentScript {
+                TextEditor(text: .constant(script.text))
+                    .font(.system(.body, design: .monospaced))
+                    .scrollContentBackground(.hidden)
+                    .padding(8)
+                    .background(.background)
+                    .disabled(true)
+            } else {
+                ContentUnavailableView("No diagram generated", systemImage: "doc.text")
             }
         }
     }

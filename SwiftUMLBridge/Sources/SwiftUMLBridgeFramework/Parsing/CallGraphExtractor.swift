@@ -94,7 +94,15 @@ final class CallGraphExtractor: SyntaxVisitor {
         if let memberAccess = calledExpr.as(MemberAccessExprSyntax.self) {
             let methodName = memberAccess.declName.baseName.text
             if let base = memberAccess.base {
-                let baseText = base.description.trimmingCharacters(in: .whitespacesAndNewlines)
+                let baseText: String
+                // When the base is a function call (e.g. Date().method()),
+                // extract just the callee name, not the full "Date()" expression.
+                if let funcCall = base.as(FunctionCallExprSyntax.self),
+                   let declRef = funcCall.calledExpression.as(DeclReferenceExprSyntax.self) {
+                    baseText = declRef.baseName.text
+                } else {
+                    baseText = base.description.trimmingCharacters(in: .whitespacesAndNewlines)
+                }
                 if baseText == "self" {
                     return CallEdge(
                         callerType: callerType, callerMethod: callerMethod,

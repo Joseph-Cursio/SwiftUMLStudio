@@ -28,7 +28,11 @@ final class DiagramViewModel {
     var availableEntryPoints: [String] = []
     var sequenceDepth: Int = 3
     var depsMode: DepsMode = .types
-    
+
+    var fileTree: [FileNode] = []
+    var selectedFileURL: URL?
+    var selectedFileContent: String = ""
+
     var history: [DiagramEntity] = []
     var selectedHistoryItem: DiagramEntity?
 
@@ -141,6 +145,34 @@ final class DiagramViewModel {
         context.delete(entity)
         try? context.save()
         loadHistory()
+    }
+
+    func rebuildFileTree() {
+        fileTree = FileNode.buildTree(from: selectedPaths)
+        // Clear selection if the file is no longer in the tree
+        if let url = selectedFileURL {
+            let allURLs = FileNode.allLeafURLs(from: fileTree)
+            if !allURLs.contains(url) {
+                selectedFileURL = nil
+                selectedFileContent = ""
+            }
+        }
+        // Auto-select first file if nothing selected
+        if selectedFileURL == nil {
+            if let firstURL = FileNode.allLeafURLs(from: fileTree).first {
+                selectFile(firstURL)
+            }
+        }
+    }
+
+    func selectFile(_ url: URL?) {
+        selectedFileURL = url
+        guard let url else {
+            selectedFileContent = ""
+            return
+        }
+        selectedFileContent = (try? String(contentsOf: url, encoding: .utf8))
+            ?? "// Could not read file"
     }
 
     func refreshEntryPoints() {

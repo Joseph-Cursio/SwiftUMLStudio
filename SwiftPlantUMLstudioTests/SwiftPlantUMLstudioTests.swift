@@ -5,6 +5,7 @@
 //  Created by joe cursio on 2/26/26.
 //
 
+import CoreData
 import Foundation
 import Testing
 import SwiftUMLBridgeFramework
@@ -254,6 +255,144 @@ struct DiagramViewModelTests {
             #expect(vm.availableEntryPoints.isEmpty)
         }
     }
+    // MARK: - pathSummary
+
+    @Test("pathSummary with no paths")
+    func pathSummaryNoPaths() {
+        runOnMain {
+            let vm = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
+            #expect(vm.pathSummary == "No source selected")
+        }
+    }
+
+    @Test("pathSummary with one path shows filename")
+    func pathSummaryOnePath() {
+        runOnMain {
+            let vm = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
+            vm.selectedPaths = ["/Users/test/MyApp/Sources/AppDelegate.swift"]
+            #expect(vm.pathSummary == "AppDelegate.swift")
+        }
+    }
+
+    @Test("pathSummary with multiple paths shows count")
+    func pathSummaryMultiplePaths() {
+        runOnMain {
+            let vm = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
+            vm.selectedPaths = ["/a/First.swift", "/b/Second.swift", "/c/Third.swift"]
+            #expect(vm.pathSummary == "First.swift + 2 more")
+        }
+    }
+
+    // MARK: - save / history
+
+    @Test("save creates a history entity")
+    func saveCreatesHistoryEntity() {
+        runOnMain {
+            let pc = PersistenceController(inMemory: true)
+            let vm = DiagramViewModel(persistenceController: pc)
+            vm.selectedPaths = ["/tmp/Foo.swift"]
+            vm.diagramMode = .classDiagram
+            vm.diagramFormat = .plantuml
+
+            // We need a currentScript for save to work.
+            // Load a fake history item to set restoredScript.
+            let entity = DiagramEntity(context: pc.container.viewContext)
+            entity.id = UUID()
+            entity.timestamp = Date()
+            entity.mode = DiagramMode.classDiagram.rawValue
+            entity.format = DiagramFormat.plantuml.rawValue
+            entity.scriptText = "@startuml\nclass Foo\n@enduml"
+            entity.paths = try? JSONEncoder().encode(["/tmp/Foo.swift"])
+            entity.name = "Foo.swift"
+            try? pc.container.viewContext.save()
+
+            vm.loadHistory()
+            vm.loadDiagram(entity)
+            #expect(vm.currentScript != nil)
+
+            let countBefore = vm.history.count
+            vm.save()
+            #expect(vm.history.count == countBefore + 1)
+        }
+    }
+
+    @Test("loadDiagram restores all properties from entity")
+    func loadDiagramRestoresProperties() {
+        runOnMain {
+            let pc = PersistenceController(inMemory: true)
+            let vm = DiagramViewModel(persistenceController: pc)
+
+            let entity = DiagramEntity(context: pc.container.viewContext)
+            entity.id = UUID()
+            entity.timestamp = Date()
+            entity.mode = DiagramMode.sequenceDiagram.rawValue
+            entity.format = DiagramFormat.mermaid.rawValue
+            entity.entryPoint = "Foo.bar"
+            entity.sequenceDepth = 5
+            entity.scriptText = "sequenceDiagram\nFoo->>Bar: bar()"
+            entity.paths = try? JSONEncoder().encode(["/tmp/Foo.swift"])
+
+            vm.loadDiagram(entity)
+
+            #expect(vm.diagramMode == .sequenceDiagram)
+            #expect(vm.diagramFormat == .mermaid)
+            #expect(vm.entryPoint == "Foo.bar")
+            #expect(vm.sequenceDepth == 5)
+            #expect(vm.selectedPaths == ["/tmp/Foo.swift"])
+            #expect(vm.currentScript?.text == "sequenceDiagram\nFoo->>Bar: bar()")
+        }
+    }
+
+    @Test("deleteHistoryItem removes entity and clears selection")
+    func deleteHistoryItemRemovesAndClears() {
+        runOnMain {
+            let pc = PersistenceController(inMemory: true)
+            let vm = DiagramViewModel(persistenceController: pc)
+
+            let entity = DiagramEntity(context: pc.container.viewContext)
+            entity.id = UUID()
+            entity.timestamp = Date()
+            entity.mode = DiagramMode.classDiagram.rawValue
+            entity.format = DiagramFormat.plantuml.rawValue
+            entity.scriptText = "@startuml\n@enduml"
+            entity.name = "Test"
+            try? pc.container.viewContext.save()
+
+            vm.loadHistory()
+            #expect(vm.history.count == 1)
+
+            vm.selectedHistoryItem = entity
+            vm.deleteHistoryItem(entity)
+
+            #expect(vm.history.isEmpty)
+            #expect(vm.selectedHistoryItem == nil)
+        }
+    }
+
+    @Test("loadHistory returns entities sorted by timestamp descending")
+    func loadHistorySorted() {
+        runOnMain {
+            let pc = PersistenceController(inMemory: true)
+            let vm = DiagramViewModel(persistenceController: pc)
+            let ctx = pc.container.viewContext
+
+            for idx in 0..<3 {
+                let entity = DiagramEntity(context: ctx)
+                entity.id = UUID()
+                entity.timestamp = Date().addingTimeInterval(TimeInterval(idx * 100))
+                entity.mode = DiagramMode.classDiagram.rawValue
+                entity.format = DiagramFormat.plantuml.rawValue
+                entity.name = "Diagram \(idx)"
+            }
+            try? ctx.save()
+
+            vm.loadHistory()
+            #expect(vm.history.count == 3)
+            // Most recent first
+            #expect(vm.history[0].name == "Diagram 2")
+            #expect(vm.history[2].name == "Diagram 0")
+        }
+    }
 }
 
 // MARK: - generate() guard helper
@@ -327,16 +466,10 @@ struct DiagramViewModelIntegrationTests {
 
     // MARK: Sequence Diagram
     //
-    // SequenceDiagramGenerator uses SourceKitten under the hood, so running it inside
-    // the Xcode app test host causes the XPC connection to sourcekitd to hang
-    // indefinitely (no crash — just a frozen await). Accumulated hung Task.detached
-    // instances eventually freeze the whole test process.
-    //
-    // These tests are covered by SequenceDiagramGeneratorTests in the
-    // SwiftUMLBridgeFramework package test suite (run via `swift test`).
+    // SequenceDiagramGenerator uses SwiftSyntax's pure Swift parser (CallGraphExtractor),
+    // NOT SourceKit. These tests run fine in the Xcode test host.
 
-    @Test("generateSequenceDiagram produces a script with the entry point in the title",
-          .disabled("sourcekitd hangs in the Xcode test host — run via `swift test` instead"))
+    @Test("generateSequenceDiagram produces a script with the entry point in the title")
     @MainActor
     func generateSequenceDiagramPlantUML() async throws {
         let dir = try makeFixtureDir(writing: """
@@ -369,8 +502,7 @@ struct DiagramViewModelIntegrationTests {
         #expect(script.text.contains("Orchestrator.run"))
     }
 
-    @Test("generateSequenceDiagram produces a Mermaid script with the entry point",
-          .disabled("sourcekitd hangs in the Xcode test host — run via `swift test` instead"))
+    @Test("generateSequenceDiagram produces a Mermaid script with the entry point")
     @MainActor
     func generateSequenceDiagramMermaid() async throws {
         let dir = try makeFixtureDir(writing: """
@@ -403,12 +535,10 @@ struct DiagramViewModelIntegrationTests {
 
     // MARK: Dependency Graph
     //
-    // DependencyGraphGenerator calls SourceKitten regardless of mode; the Xcode app
-    // test host cannot connect to sourcekitd without the toolchain environment, so the
-    // XPC call hangs. Covered by DependencyGraphGeneratorTests in the framework suite.
+    // DependencyGraphGenerator in .modules mode uses ImportExtractor (plain string parsing,
+    // no SourceKit). The .types mode DOES use SourceKit and hangs in the Xcode test host.
 
-    @Test("generateDependencyGraph (modules) produces a script containing imported module names",
-          .disabled("sourcekitd hangs in the Xcode test host — run via `swift test` instead"))
+    @Test("generateDependencyGraph (modules) produces a script containing imported module names")
     @MainActor
     func generateDependencyGraphModules() async throws {
         let dir = try makeFixtureDir(writing: """
@@ -431,6 +561,190 @@ struct DiagramViewModelIntegrationTests {
         #expect(script.format == .plantuml)
         #expect(script.text.contains("@startuml"))
         #expect(script.text.contains("Foundation"))
+    }
+}
+
+// MARK: - FileNode Tests
+
+@Suite("FileNode")
+struct FileNodeTests {
+
+    private func makeTempDir() throws -> URL {
+        let dir = FileManager.default.temporaryDirectory
+            .appending(path: "FileNodeTests-\(UUID().uuidString)", directoryHint: .isDirectory)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir
+    }
+
+    @Test("buildTree returns empty for empty paths")
+    func buildTreeEmpty() {
+        runOnMain {
+            let tree = FileNode.buildTree(from: [])
+            #expect(tree.isEmpty)
+        }
+    }
+
+    @Test("buildTree returns empty for nonexistent paths")
+    func buildTreeNonexistent() {
+        runOnMain {
+            let tree = FileNode.buildTree(from: ["/nonexistent/path/file.swift"])
+            #expect(tree.isEmpty)
+        }
+    }
+
+    @Test("buildTree returns single file")
+    func buildTreeSingleFile() throws {
+        let dir = try makeTempDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let file = dir.appending(path: "Hello.swift")
+        try "struct Hello {}".write(to: file, atomically: true, encoding: .utf8)
+
+        runOnMain {
+            let tree = FileNode.buildTree(from: [file.path()])
+            #expect(tree.count == 1)
+            #expect(tree[0].name == "Hello.swift")
+            #expect(tree[0].isDirectory == false)
+            #expect(tree[0].children == nil)
+        }
+    }
+
+    @Test("buildTree filters out non-swift files in directories")
+    func buildTreeFiltersNonSwift() throws {
+        let dir = try makeTempDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        try "struct A {}".write(to: dir.appending(path: "A.swift"), atomically: true, encoding: .utf8)
+        try "not swift".write(to: dir.appending(path: "readme.md"), atomically: true, encoding: .utf8)
+        try "{}".write(to: dir.appending(path: "config.json"), atomically: true, encoding: .utf8)
+
+        runOnMain {
+            let tree = FileNode.buildTree(from: [dir.path()])
+            let allURLs = FileNode.allLeafURLs(from: tree)
+            #expect(allURLs.count == 1)
+            #expect(allURLs[0].lastPathComponent == "A.swift")
+        }
+    }
+
+    @Test("buildTree creates directory nodes for nested structures")
+    func buildTreeNested() throws {
+        let dir = try makeTempDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let subdir = dir.appending(path: "Models", directoryHint: .isDirectory)
+        try FileManager.default.createDirectory(at: subdir, withIntermediateDirectories: true)
+        try "struct A {}".write(to: dir.appending(path: "App.swift"), atomically: true, encoding: .utf8)
+        try "struct B {}".write(to: subdir.appending(path: "Model.swift"), atomically: true, encoding: .utf8)
+
+        runOnMain {
+            let tree = FileNode.buildTree(from: [dir.path()])
+            #expect(tree.count == 2) // Models/ directory + App.swift
+            let dirNode = tree.first { $0.isDirectory }
+            #expect(dirNode?.name == "Models")
+            #expect(dirNode?.children?.count == 1)
+            #expect(dirNode?.children?[0].name == "Model.swift")
+        }
+    }
+
+    @Test("allLeafURLs collects all file URLs from nested tree")
+    func allLeafURLsNested() throws {
+        let dir = try makeTempDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let subdir = dir.appending(path: "Sub", directoryHint: .isDirectory)
+        try FileManager.default.createDirectory(at: subdir, withIntermediateDirectories: true)
+        try "struct A {}".write(to: dir.appending(path: "A.swift"), atomically: true, encoding: .utf8)
+        try "struct B {}".write(to: subdir.appending(path: "B.swift"), atomically: true, encoding: .utf8)
+
+        runOnMain {
+            let tree = FileNode.buildTree(from: [dir.path()])
+            let urls = FileNode.allLeafURLs(from: tree)
+            #expect(urls.count == 2)
+        }
+    }
+}
+
+@Suite("DiagramViewModel FileBrowser")
+struct DiagramViewModelFileBrowserTests {
+
+    @Test("rebuildFileTree populates fileTree from selectedPaths")
+    func rebuildFileTreePopulates() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appending(path: "VMFileBrowser-\(UUID().uuidString)", directoryHint: .isDirectory)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        try "struct Foo {}".write(to: dir.appending(path: "Foo.swift"), atomically: true, encoding: .utf8)
+
+        runOnMain {
+            let vm = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
+            vm.selectedPaths = [dir.path()]
+            vm.rebuildFileTree()
+            #expect(!vm.fileTree.isEmpty)
+        }
+    }
+
+    @Test("rebuildFileTree auto-selects first file")
+    func rebuildFileTreeAutoSelects() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appending(path: "VMFileBrowser-\(UUID().uuidString)", directoryHint: .isDirectory)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        try "struct A {}".write(to: dir.appending(path: "A.swift"), atomically: true, encoding: .utf8)
+
+        runOnMain {
+            let vm = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
+            vm.selectedPaths = [dir.path()]
+            vm.rebuildFileTree()
+            #expect(vm.selectedFileURL != nil)
+            #expect(!vm.selectedFileContent.isEmpty)
+        }
+    }
+
+    @Test("selectFile loads content")
+    func selectFileLoadsContent() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appending(path: "VMFileBrowser-\(UUID().uuidString)", directoryHint: .isDirectory)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let file = dir.appending(path: "Test.swift")
+        try "struct Test {}".write(to: file, atomically: true, encoding: .utf8)
+
+        runOnMain {
+            let vm = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
+            vm.selectFile(file)
+            #expect(vm.selectedFileContent == "struct Test {}")
+            #expect(vm.selectedFileURL == file)
+        }
+    }
+
+    @Test("selectFile with nil clears content")
+    func selectFileNilClears() {
+        runOnMain {
+            let vm = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
+            vm.selectedFileContent = "old content"
+            vm.selectFile(nil)
+            #expect(vm.selectedFileContent.isEmpty)
+            #expect(vm.selectedFileURL == nil)
+        }
+    }
+
+    @Test("rebuildFileTree clears selection when file no longer in paths")
+    func rebuildFileTreeClearsStaleSelection() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appending(path: "VMFileBrowser-\(UUID().uuidString)", directoryHint: .isDirectory)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let file = dir.appending(path: "Gone.swift")
+        try "struct Gone {}".write(to: file, atomically: true, encoding: .utf8)
+
+        runOnMain {
+            let vm = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
+            vm.selectedPaths = [dir.path()]
+            vm.rebuildFileTree()
+            #expect(vm.selectedFileURL != nil)
+
+            // Remove the file and rebuild with empty paths
+            vm.selectedPaths = []
+            vm.rebuildFileTree()
+            #expect(vm.selectedFileURL == nil)
+            #expect(vm.selectedFileContent.isEmpty)
+        }
     }
 }
 
