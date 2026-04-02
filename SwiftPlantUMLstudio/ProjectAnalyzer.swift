@@ -14,6 +14,13 @@ struct ProjectSummary {
 
 enum ProjectAnalyzer {
     static func analyze(paths: [String]) -> ProjectSummary {
+        guard paths.isEmpty == false else {
+            return ProjectSummary(
+                totalFiles: 0, totalTypes: 0, typeBreakdown: [:],
+                totalRelationships: 0, moduleImports: [],
+                topConnectedTypes: [], cycleWarnings: [], entryPoints: []
+            )
+        }
         let generator = ClassDiagramGenerator()
         let types = generator.analyzeTypes(for: paths)
 
