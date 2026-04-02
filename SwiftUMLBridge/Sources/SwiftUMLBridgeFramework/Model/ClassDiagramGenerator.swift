@@ -64,6 +64,22 @@ public struct ClassDiagramGenerator {
         return generateScript(for: files, with: configuration, sdkPath: sdkPath)
     }
 
+    /// Analyze types in the given paths without generating diagram output.
+    /// Returns lightweight TypeInfo structs for project-level analysis.
+    public func analyzeTypes(
+        for paths: [String],
+        sdkPath: String? = nil
+    ) -> [TypeInfo] {
+        let files = fileCollector.getFiles(for: paths)
+        var allItems: [SyntaxStructure] = []
+        for aFile in files {
+            if let validItems = SyntaxStructure.create(from: aFile, sdkPath: sdkPath)?.substructure {
+                allItems.append(contentsOf: validItems)
+            }
+        }
+        return allItems.compactMap { TypeInfo(from: $0) }
+    }
+
     func logProcessingDuration(started processingStartDate: Date) {
         let elapsed = Date().timeIntervalSince(processingStartDate)
         BridgeLogger.shared.info("Class diagram generated in \(elapsed) seconds and will be presented now")

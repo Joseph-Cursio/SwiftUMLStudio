@@ -38,6 +38,21 @@ public struct DependencyGraphGenerator {
         return DepsScript(model: model, configuration: configuration)
     }
 
+    /// Extract raw dependency edges without rendering to diagram text.
+    public func extractEdges(
+        for paths: [String],
+        mode: DepsMode,
+        with configuration: Configuration = .default
+    ) -> [DependencyEdge] {
+        let files = FileCollector().getFiles(for: paths)
+        switch mode {
+        case .types:
+            return extractTypeEdges(from: files, configuration: configuration)
+        case .modules:
+            return extractModuleEdges(from: files)
+        }
+    }
+
     // MARK: - Types mode
 
     private func extractTypeEdges(from files: [URL], configuration: Configuration) -> [DependencyEdge] {
