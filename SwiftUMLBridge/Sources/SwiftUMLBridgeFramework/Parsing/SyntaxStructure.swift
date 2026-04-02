@@ -1,6 +1,12 @@
 import Foundation
 
-/// Swift type representing an AST element (analogue to SourceKitten's Structure)
+/// Swift type representing an AST element (analogue to SourceKitten's Structure).
+///
+/// - Concurrency safety: This mutable reference type is marked `@unchecked Sendable` because it is
+///   constructed synchronously on a single thread (inside a `Task.detached` closure) and then handed
+///   back to the `@MainActor` for read-only consumption. No concurrent mutation occurs.
+///   **If parallel file processing is ever added (e.g., via a task group), this type must be
+///   restructured as a value type or actor-isolated type to avoid data races.**
 internal class SyntaxStructure: NSObject, Codable, @unchecked Sendable {
     internal init(
         accessibility: ElementAccessibility? = nil,
