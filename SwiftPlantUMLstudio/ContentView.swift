@@ -277,7 +277,7 @@ struct HistorySidebar: View {
 struct DiagramDetailView: View {
     @Bindable var viewModel: DiagramViewModel
     let subscriptionManager: SubscriptionManager
-    @State private var selectedTab: DetailTab = .dashboard
+    @State private var selectedTab: DetailTab = .preview
     @State private var showPaywall = false
 
     enum DetailTab: String, CaseIterable {
