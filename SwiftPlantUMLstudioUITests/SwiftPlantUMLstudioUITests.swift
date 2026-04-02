@@ -85,8 +85,14 @@ final class SwiftPlantUMLstudioUITests: XCTestCase {
         XCTAssertTrue(modePicker.waitForExistence(timeout: 3))
 
         // Sequence diagram controls should not be visible in Class Diagram mode (default)
-        XCTAssertFalse(app.textFields["entryPointField"].exists, "Entry point field should not exist in Class Diagram mode")
-        XCTAssertFalse(app.radioGroups["depsModeControl"].exists, "Deps mode control should not exist in Class Diagram mode")
+        XCTAssertFalse(
+            app.textFields["entryPointField"].exists,
+            "Entry point field should not exist in Class Diagram mode"
+        )
+        XCTAssertFalse(
+            app.radioGroups["depsModeControl"].exists,
+            "Deps mode control should not exist in Class Diagram mode"
+        )
 
         // Switch to Sequence Diagram — entry point controls appear, deps controls absent
         modePicker.radioButtons["Sequence Diagram"].click()
@@ -95,7 +101,10 @@ final class SwiftPlantUMLstudioUITests: XCTestCase {
 
         // Switch to Dependency Graph — entry point controls gone, deps controls appear
         modePicker.radioButtons["Dependency Graph"].click()
-        XCTAssertFalse(app.textFields["entryPointField"].exists, "Entry point field should not exist in Dependency Graph mode")
+        XCTAssertFalse(
+            app.textFields["entryPointField"].exists,
+            "Entry point field should not exist in Dependency Graph mode"
+        )
         XCTAssertTrue(app.radioGroups["depsModeControl"].waitForExistence(timeout: 2))
     }
 

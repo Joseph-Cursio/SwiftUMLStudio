@@ -92,45 +92,10 @@ final class CallGraphExtractor: SyntaxVisitor {
         let calledExpr = node.calledExpression
 
         if let memberAccess = calledExpr.as(MemberAccessExprSyntax.self) {
-            let methodName = memberAccess.declName.baseName.text
-            if let base = memberAccess.base {
-                let baseText: String
-                // When the base is a function call (e.g. Date().method()),
-                // extract just the callee name, not the full "Date()" expression.
-                if let funcCall = base.as(FunctionCallExprSyntax.self),
-                   let declRef = funcCall.calledExpression.as(DeclReferenceExprSyntax.self) {
-                    baseText = declRef.baseName.text
-                } else {
-                    baseText = base.description.trimmingCharacters(in: .whitespacesAndNewlines)
-                }
-                if baseText == "self" {
-                    return CallEdge(
-                        callerType: callerType, callerMethod: callerMethod,
-                        calleeType: callerType, calleeMethod: methodName,
-                        isAsync: isAsync, isUnresolved: false
-                    )
-                } else if baseText.first?.isUppercase == true {
-                    return CallEdge(
-                        callerType: callerType, callerMethod: callerMethod,
-                        calleeType: baseText, calleeMethod: methodName,
-                        isAsync: isAsync, isUnresolved: false
-                    )
-                } else {
-                    // Lowercase receiver — variable, cannot resolve statically
-                    return CallEdge(
-                        callerType: callerType, callerMethod: callerMethod,
-                        calleeType: nil, calleeMethod: methodName,
-                        isAsync: isAsync, isUnresolved: true
-                    )
-                }
-            } else {
-                // No base (e.g., `.someCase`) — treat as same type
-                return CallEdge(
-                    callerType: callerType, callerMethod: callerMethod,
-                    calleeType: callerType, calleeMethod: methodName,
-                    isAsync: isAsync, isUnresolved: false
-                )
-            }
+            return resolveMemberAccess(
+                memberAccess, callerType: callerType,
+                callerMethod: callerMethod, isAsync: isAsync
+            )
         } else if let declRef = calledExpr.as(DeclReferenceExprSyntax.self) {
             let methodName = declRef.baseName.text
             return CallEdge(
@@ -147,6 +112,35 @@ final class CallGraphExtractor: SyntaxVisitor {
                 isAsync: isAsync, isUnresolved: true
             )
         }
+    }
+
+    private func resolveMemberAccess(
+        _ memberAccess: MemberAccessExprSyntax,
+        callerType: String, callerMethod: String, isAsync: Bool
+    ) -> CallEdge {
+        let methodName = memberAccess.declName.baseName.text
+        guard let base = memberAccess.base else {
+            return CallEdge(
+                callerType: callerType, callerMethod: callerMethod,
+                calleeType: callerType, calleeMethod: methodName,
+                isAsync: isAsync, isUnresolved: false
+            )
+        }
+        let baseText: String
+        if let funcCall = base.as(FunctionCallExprSyntax.self),
+           let declRef = funcCall.calledExpression.as(DeclReferenceExprSyntax.self) {
+            baseText = declRef.baseName.text
+        } else {
+            baseText = base.description.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        let resolvedType: String? = baseText == "self" ? callerType
+            : baseText.first?.isUppercase == true ? baseText : nil
+        let unresolved = resolvedType == nil && baseText != "self"
+        return CallEdge(
+            callerType: callerType, callerMethod: callerMethod,
+            calleeType: resolvedType, calleeMethod: methodName,
+            isAsync: isAsync, isUnresolved: unresolved
+        )
     }
 
     // MARK: - Static factory
