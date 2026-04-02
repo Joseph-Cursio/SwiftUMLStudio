@@ -169,4 +169,30 @@ struct PlantUMLGenerationTests {
         let script = DiagramScript(items: items, configuration: .default)
         #expect(script.text.hasPrefix("@startuml"))
     }
+
+    // MARK: - Macro stereotypes
+
+    @Test("@Observable class shows Observable stereotype in PlantUML output")
+    func observableMacroStereotype() {
+        let source = "@Observable class UserVM { var name: String = \"\" }"
+        let script = generator.generateScript(for: source)
+        #expect(script.text.contains("<<Observable>>"))
+    }
+
+    @Test("@Model class shows Model stereotype in PlantUML output")
+    func modelMacroStereotype() {
+        let source = "@Model class Item { var title: String = \"\" }"
+        let script = generator.generateScript(for: source)
+        #expect(script.text.contains("<<Model>>"))
+    }
+
+    @Test("class without macro attributes has no extra stereotypes")
+    func noMacroStereotype() {
+        let source = "class Plain { var value: Int = 0 }"
+        let script = generator.generateScript(for: source)
+        let text = script.text
+        // Should have the kind stereotype but not any macro stereotype
+        #expect(text.contains("Plain"))
+        #expect(!text.contains("<<Observable>>"))
+    }
 }

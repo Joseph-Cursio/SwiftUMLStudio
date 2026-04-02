@@ -168,4 +168,28 @@ struct MermaidGenerationTests {
         let script = DiagramScript(items: [], configuration: .default)
         #expect(script.format == .plantuml)
     }
+
+    // MARK: - Macro stereotypes
+
+    @Test("@Observable class shows Observable stereotype in Mermaid output")
+    func observableMacroStereotype() {
+        let source = "@Observable class UserVM { var name: String = \"\" }"
+        let script = generator.generateScript(for: source, with: mermaidConfig)
+        #expect(script.text.contains("<<Observable>>"))
+    }
+
+    @Test("@Model class shows Model stereotype in Mermaid output")
+    func modelMacroStereotype() {
+        let source = "@Model class Item { var title: String = \"\" }"
+        let script = generator.generateScript(for: source, with: mermaidConfig)
+        #expect(script.text.contains("<<Model>>"))
+    }
+
+    @Test("class without macro attributes has no extra stereotypes in Mermaid")
+    func noMacroStereotype() {
+        let source = "class Plain { var value: Int = 0 }"
+        let script = generator.generateScript(for: source, with: mermaidConfig)
+        #expect(script.text.contains("Plain"))
+        #expect(!script.text.contains("<<Observable>>"))
+    }
 }

@@ -391,4 +391,47 @@ struct SyntaxStructureBuilderTests {
         #expect(script.text.contains("load"))
         #expect(script.text.contains("throws"))
     }
+
+    // MARK: - Attribute extraction
+
+    @Test("@Observable class has Observable in attributeNames")
+    func observableAttribute() {
+        let items = build("@Observable class Foo {}")
+        #expect(items.first?.attributeNames.contains("Observable") == true)
+    }
+
+    @Test("class with multiple attributes captures all names")
+    func multipleAttributes() {
+        let items = build("@MainActor @Observable class Foo {}")
+        let names = items.first?.attributeNames ?? []
+        #expect(names.contains("Observable"))
+        #expect(names.contains("MainActor"))
+    }
+
+    @Test("class with no attributes has empty attributeNames")
+    func noAttributes() {
+        let items = build("class Foo {}")
+        #expect(items.first?.attributeNames.isEmpty == true)
+    }
+
+    // MARK: - MacroConformanceTable
+
+    @Test("Observable macro returns Observable conformance")
+    func observableConformance() {
+        let result = MacroConformanceTable.syntheticConformances(for: "Observable")
+        #expect(result == ["Observable"])
+    }
+
+    @Test("Model macro returns Observable and PersistentModel")
+    func modelConformance() {
+        let result = MacroConformanceTable.syntheticConformances(for: "Model")
+        #expect(result.contains("Observable"))
+        #expect(result.contains("PersistentModel"))
+    }
+
+    @Test("Unknown macro returns empty array")
+    func unknownMacro() {
+        let result = MacroConformanceTable.syntheticConformances(for: "SomeCustomMacro")
+        #expect(result.isEmpty)
+    }
 }
