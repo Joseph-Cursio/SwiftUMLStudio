@@ -1,31 +1,33 @@
 import Testing
 @testable import SwiftUMLBridgeFramework
 
-// NOTE: As of SourceKitten 0.37.x / SourceKit on macOS 26, actor declarations are
-// reported with kind `source.lang.swift.decl.class`. SourceKit internally treats
-// actors as a subtype of class. Our `ElementKind.actor` case (raw value
-// "source.lang.swift.decl.actor") is present in the enum for future compatibility
-// when SourceKit updates its output, but today actors will parse as `.class`.
-//
-// Actors still appear in diagrams — they just share the class stereotype for now.
-// A future M1 enhancement could detect the `actor` keyword via attributes or
-// SwiftSyntax to render the `<<actor>>` stereotype correctly.
+// Actor declarations are now parsed correctly via SyntaxStructureBuilder (SwiftSyntax).
+// ActorDeclSyntax maps to ElementKind.actor, replacing the previous SourceKit workaround
+// where actors were misclassified as source.lang.swift.decl.class.
 
-@Suite("ActorKindDiagnostic")
+@Suite("ActorKind")
 struct ActorKindDiagnosticTests {
 
-    @Test("actor source parses and appears in diagram as class node")
-    func actorAppearsAsDiagramNode() {
+    @Test("actor source parses with kind .actor")
+    func actorParsesAsActor() {
         let source = "actor ImageCache { var count: Int = 0 }"
-        let generator = ClassDiagramGenerator()
-        let script = generator.generateScript(for: source, with: .default)
-        // Actors are currently parsed as class by SourceKit — they still appear
+        let structure = SyntaxStructure.create(from: source)
+        let item = structure?.substructure?.first
+        #expect(item?.kind == .actor)
+        #expect(item?.name == "ImageCache")
+    }
+
+    @Test("actor appears in PlantUML output with actor stereotype")
+    func actorAppearsWithActorStereotype() {
+        let source = "actor ImageCache { var count: Int = 0 }"
+        let script = ClassDiagramGenerator().generateScript(for: source)
         #expect(script.text.contains("ImageCache"))
+        #expect(script.text.contains("actor"))
         #expect(script.text.hasPrefix("@startuml"))
         #expect(script.text.hasSuffix("@enduml"))
     }
 
-    @Test("ElementKind.actor raw value is ready for future SourceKit support")
+    @Test("ElementKind.actor raw value is the SourceKit actor kind string")
     func actorKindRawValueIsCorrect() {
         #expect(ElementKind.actor.rawValue == "source.lang.swift.decl.actor")
     }
