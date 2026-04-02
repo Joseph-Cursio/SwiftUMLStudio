@@ -28,8 +28,8 @@ internal class SyntaxStructure: NSObject, Codable, @unchecked Sendable {
 
     /// access level
     internal let accessibility: ElementAccessibility?
-    private let attribute: String?
-    private let attributes: [SyntaxStructure]?
+    internal let attribute: String?
+    internal let attributes: [SyntaxStructure]?
     private let elements: [SyntaxStructure]?
     /// inheritedTypes (e.g. superclass)
     internal let inheritedTypes: [SyntaxStructure]?

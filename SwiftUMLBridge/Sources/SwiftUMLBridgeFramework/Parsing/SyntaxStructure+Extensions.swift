@@ -63,6 +63,13 @@ extension Array where Element == SyntaxStructure {
 }
 
 extension SyntaxStructure {
+    /// Attribute names (e.g. ["Observable", "MainActor"]) extracted from this element's declaration.
+    var attributeNames: [String] {
+        attributes?.compactMap(\.attribute) ?? []
+    }
+}
+
+extension SyntaxStructure {
     var fullName: String? {
         var qualifiedName = name
         var aParent: SyntaxStructure?
