@@ -36,16 +36,15 @@ private func makeSummary(
 
 // MARK: - InsightEngine Tests
 
-@Suite("InsightEngine")
 struct InsightEngineTests {
 
     @Test("generates cycle warning when cycles present")
-    func cycleWarning() {
+    func cycleWarning() throws {
         runOnMain {
             let summary = makeSummary(cycleWarnings: ["TypeA", "TypeB"])
             let insights = InsightEngine.generate(from: summary)
             let cycleInsight = insights.first { $0.title.contains("Circular") }
-            #expect(cycleInsight != nil)
+            #expect(cycleInsight != nil, "Expected a cycle warning insight")
             #expect(cycleInsight?.severity == .warning)
         }
     }
@@ -56,7 +55,7 @@ struct InsightEngineTests {
             let summary = makeSummary(totalTypes: 7, typeBreakdown: ["Classes": 4, "Structs": 3])
             let insights = InsightEngine.generate(from: summary)
             let comp = insights.first { $0.title.contains("composition") }
-            #expect(comp != nil)
+            #expect(comp != nil, "Expected a composition insight")
         }
     }
 
@@ -68,7 +67,7 @@ struct InsightEngineTests {
             )
             let insights = InsightEngine.generate(from: summary)
             let conn = insights.first { $0.title.contains("Database") }
-            #expect(conn != nil)
+            #expect(conn != nil, "Expected a connectivity insight for Database")
             #expect(conn?.severity == .noteworthy)
         }
     }
@@ -79,14 +78,13 @@ struct InsightEngineTests {
             let summary = makeSummary(entryPoints: ["Foo.bar", "Baz.qux"])
             let insights = InsightEngine.generate(from: summary)
             let method = insights.first { $0.title.contains("methods") }
-            #expect(method != nil)
+            #expect(method != nil, "Expected an entry points insight")
         }
     }
 }
 
 // MARK: - SuggestionEngine Tests
 
-@Suite("SuggestionEngine")
 struct SuggestionEngineTests {
 
     @Test("always suggests class diagram when types exist")
@@ -95,7 +93,7 @@ struct SuggestionEngineTests {
             let summary = makeSummary()
             let suggestions = SuggestionEngine.generate(from: summary, isProUnlocked: false)
             let classSug = suggestions.first { $0.requiresPro == false }
-            #expect(classSug != nil)
+            #expect(classSug != nil, "Expected a free class diagram suggestion")
         }
     }
 
@@ -105,7 +103,7 @@ struct SuggestionEngineTests {
             let summary = makeSummary(entryPoints: ["Foo.bar"])
             let suggestions = SuggestionEngine.generate(from: summary, isProUnlocked: false)
             let seqSug = suggestions.first { $0.title.contains("Trace") }
-            #expect(seqSug != nil)
+            #expect(seqSug != nil, "Expected a sequence diagram suggestion")
             #expect(seqSug?.requiresPro == true)
         }
     }
@@ -116,7 +114,7 @@ struct SuggestionEngineTests {
             let summary = makeSummary(totalRelationships: 8)
             let suggestions = SuggestionEngine.generate(from: summary, isProUnlocked: true)
             let deps = suggestions.first { $0.title.contains("depend") }
-            #expect(deps != nil)
+            #expect(deps != nil, "Expected a dependency graph suggestion")
         }
     }
 

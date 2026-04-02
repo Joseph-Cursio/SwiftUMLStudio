@@ -14,7 +14,6 @@ private func runOnMain(_ block: @MainActor () -> Void) {
 
 // MARK: - ProFeature Tests
 
-@Suite("ProFeature")
 struct ProFeatureTests {
 
     @Test("has five cases")
@@ -35,14 +34,12 @@ struct ProFeatureTests {
 
 // MARK: - FeatureGate Tests
 
-@Suite("FeatureGate")
 struct FeatureGateTests {
 
     @Test("all features unlocked when Pro is active")
     func proUnlockedAllFeatures() {
         runOnMain {
             let manager = SubscriptionManager()
-            // Default state: isProUnlocked is true (dev mode)
             for feature in ProFeature.allCases {
                 #expect(FeatureGate.isUnlocked(feature, manager: manager))
             }

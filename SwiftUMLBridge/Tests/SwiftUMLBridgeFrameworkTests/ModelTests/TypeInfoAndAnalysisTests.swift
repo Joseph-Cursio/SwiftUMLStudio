@@ -4,37 +4,35 @@ import Testing
 @Suite("TypeInfo and Analysis APIs")
 struct TypeInfoAndAnalysisTests {
 
-    private let generator = ClassDiagramGenerator()
+    // MARK: - TypeInfo
 
-    // MARK: - analyzeTypes
-
-    @Test("analyzeTypes returns TypeInfo for each type in source")
-    func analyzeTypesBasic() {
-        let source = "class Foo {} struct Bar {} enum Baz {}"
-        // analyzeTypes takes paths, so use generateScript + TypeInfo init for unit test
-        let script = generator.generateScript(for: source)
-        #expect(script.text.contains("Foo"))
-        #expect(script.text.contains("Bar"))
-        #expect(script.text.contains("Baz"))
+    @Test("TypeInfo is created for class, struct, and enum")
+    func typeInfoCreation() throws {
+        let classInfo = try #require(TypeInfo(from: SyntaxStructure(kind: .class, name: "Foo")))
+        let structInfo = try #require(TypeInfo(from: SyntaxStructure(kind: .struct, name: "Bar")))
+        let enumInfo = try #require(TypeInfo(from: SyntaxStructure(kind: .enum, name: "Baz")))
+        #expect(classInfo.name == "Foo")
+        #expect(structInfo.name == "Bar")
+        #expect(enumInfo.name == "Baz")
     }
 
     @Test("TypeInfo captures kind correctly")
-    func typeInfoKind() {
-        let info = TypeInfo(from: SyntaxStructure(kind: .class, name: "Foo"))
-        #expect(info?.kind == "class")
-        #expect(info?.name == "Foo")
+    func typeInfoKind() throws {
+        let info = try #require(TypeInfo(from: SyntaxStructure(kind: .class, name: "Foo")))
+        #expect(info.kind == "class")
+        #expect(info.name == "Foo")
     }
 
     @Test("TypeInfo captures struct kind")
-    func typeInfoStructKind() {
-        let info = TypeInfo(from: SyntaxStructure(kind: .struct, name: "Bar"))
-        #expect(info?.kind == "struct")
+    func typeInfoStructKind() throws {
+        let info = try #require(TypeInfo(from: SyntaxStructure(kind: .struct, name: "Bar")))
+        #expect(info.kind == "struct")
     }
 
     @Test("TypeInfo captures actor kind")
-    func typeInfoActorKind() {
-        let info = TypeInfo(from: SyntaxStructure(kind: .actor, name: "Cache"))
-        #expect(info?.kind == "actor")
+    func typeInfoActorKind() throws {
+        let info = try #require(TypeInfo(from: SyntaxStructure(kind: .actor, name: "Cache")))
+        #expect(info.kind == "actor")
     }
 
     @Test("TypeInfo returns nil for unsupported kinds")
@@ -44,19 +42,19 @@ struct TypeInfoAndAnalysisTests {
     }
 
     @Test("TypeInfo captures inherited type names")
-    func typeInfoInheritance() {
+    func typeInfoInheritance() throws {
         let parent = SyntaxStructure(name: "Codable")
         let structure = SyntaxStructure(inheritedTypes: [parent], kind: .struct, name: "Msg")
-        let info = TypeInfo(from: structure)
-        #expect(info?.inheritedTypeNames == ["Codable"])
+        let info = try #require(TypeInfo(from: structure))
+        #expect(info.inheritedTypeNames == ["Codable"])
     }
 
     @Test("TypeInfo captures member count")
-    func typeInfoMembers() {
+    func typeInfoMembers() throws {
         let member = SyntaxStructure(kind: .varInstance, name: "value")
         let structure = SyntaxStructure(kind: .class, name: "Foo", substructure: [member])
-        let info = TypeInfo(from: structure)
-        #expect(info?.memberCount == 1)
+        let info = try #require(TypeInfo(from: structure))
+        #expect(info.memberCount == 1)
     }
 
     // MARK: - extractEdges
