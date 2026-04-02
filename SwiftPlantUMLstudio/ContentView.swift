@@ -29,7 +29,7 @@ struct ContentView: View {
                 .navigationSplitViewColumnWidth(min: 300, ideal: 400)
                 .navigationTitle(viewModel.selectedFileURL?.lastPathComponent ?? "Source")
         } detail: {
-            DiagramDetailView(viewModel: viewModel, subscriptionManager: subscriptionManager)
+            DiagramDetailView(viewModel: viewModel)
         }
         // 1 400 px minimum ensures all toolbar items are visible without overflow.
         .frame(minWidth: 1400)
@@ -129,22 +129,10 @@ struct ContentView: View {
     }
 
     private var sourceEditor: some View {
-        Group {
-            if viewModel.selectedFileURL != nil {
-                TextEditor(text: .constant(viewModel.selectedFileContent))
-                    .font(.system(.body, design: .monospaced))
-                    .scrollContentBackground(.hidden)
-                    .padding(8)
-                    .background(.background)
-                    .disabled(true)
-            } else {
-                ContentUnavailableView(
-                    "Select a file",
-                    systemImage: "doc.text",
-                    description: Text("Choose a Swift file from the browser to view its source.")
-                )
-            }
-        }
+        SourceEditorView(
+            content: viewModel.selectedFileContent,
+            hasSelection: viewModel.selectedFileURL != nil
+        )
     }
 
     // MARK: - Toolbar Items
@@ -317,4 +305,5 @@ extension Notification.Name {
 
 #Preview {
     ContentView()
+        .environment(SubscriptionManager())
 }

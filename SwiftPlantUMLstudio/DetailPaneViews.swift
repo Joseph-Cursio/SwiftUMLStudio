@@ -5,7 +5,7 @@ import SwiftUMLBridgeFramework
 
 struct DiagramDetailView: View {
     @Bindable var viewModel: DiagramViewModel
-    let subscriptionManager: SubscriptionManager
+    @Environment(SubscriptionManager.self) private var subscriptionManager
     @State private var selectedTab: DetailTab = .preview
     @State private var showPaywall = false
 

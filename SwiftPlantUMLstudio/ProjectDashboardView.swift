@@ -11,7 +11,7 @@ struct ProjectDashboardView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
                     statsBar(summary: summary)
-                    typeBreakdownGrid(summary: summary)
+                    TypeBreakdownGrid(summary: summary)
                     if !insights.isEmpty {
                         insightsSection
                     }
@@ -36,14 +36,48 @@ struct ProjectDashboardView: View {
 
     private func statsBar(summary: ProjectSummary) -> some View {
         HStack(spacing: 16) {
-            statCard(value: summary.totalFiles, label: "Files", icon: "doc.text")
-            statCard(value: summary.totalTypes, label: "Types", icon: "rectangle.3.group")
-            statCard(value: summary.totalRelationships, label: "Relationships", icon: "arrow.triangle.branch")
-            statCard(value: summary.entryPoints.count, label: "Methods", icon: "function")
+            StatCardView(value: summary.totalFiles, label: "Files", icon: "doc.text")
+            StatCardView(value: summary.totalTypes, label: "Types", icon: "rectangle.3.group")
+            StatCardView(value: summary.totalRelationships, label: "Relationships", icon: "arrow.triangle.branch")
+            StatCardView(value: summary.entryPoints.count, label: "Methods", icon: "function")
         }
     }
 
-    private func statCard(value: Int, label: String, icon: String) -> some View {
+    // MARK: - Insights
+
+    private var insightsSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Insights")
+                .font(.headline)
+            ForEach(insights) { insight in
+                InsightRowView(insight: insight)
+            }
+        }
+    }
+
+    // MARK: - Suggestions
+
+    private var suggestionsSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Suggested Diagrams")
+                .font(.headline)
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 200))], spacing: 12) {
+                ForEach(suggestions) { suggestion in
+                    SuggestionCardView(suggestion: suggestion, onTap: onSuggestionTap)
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Extracted Subviews
+
+struct StatCardView: View {
+    let value: Int
+    let label: String
+    let icon: String
+
+    var body: some View {
         VStack(spacing: 4) {
             Image(systemName: icon)
                 .font(.title2)
@@ -58,10 +92,12 @@ struct ProjectDashboardView: View {
         .padding(12)
         .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 8))
     }
+}
 
-    // MARK: - Type Breakdown
+struct TypeBreakdownGrid: View {
+    let summary: ProjectSummary
 
-    private func typeBreakdownGrid(summary: ProjectSummary) -> some View {
+    var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Type Breakdown")
                 .font(.headline)
@@ -82,24 +118,16 @@ struct ProjectDashboardView: View {
             }
         }
     }
+}
 
-    // MARK: - Insights
+struct InsightRowView: View {
+    let insight: Insight
 
-    private var insightsSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Insights")
-                .font(.headline)
-            ForEach(insights) { insight in
-                insightRow(insight)
-            }
-        }
-    }
-
-    private func insightRow(_ insight: Insight) -> some View {
+    var body: some View {
         HStack(alignment: .top, spacing: 12) {
             Image(systemName: insight.icon)
                 .font(.title3)
-                .foregroundStyle(insightColor(insight.severity))
+                .foregroundStyle(insightColor)
                 .frame(width: 24)
             VStack(alignment: .leading, spacing: 2) {
                 Text(insight.title)
@@ -114,31 +142,22 @@ struct ProjectDashboardView: View {
         .background(.quaternary.opacity(0.3), in: RoundedRectangle(cornerRadius: 6))
     }
 
-    private func insightColor(_ severity: Insight.Severity) -> Color {
-        switch severity {
+    private var insightColor: Color {
+        switch insight.severity {
         case .info: .blue
         case .noteworthy: .orange
         case .warning: .red
         }
     }
+}
 
-    // MARK: - Suggestions
+struct SuggestionCardView: View {
+    let suggestion: DiagramSuggestion
+    let onTap: (DiagramSuggestion) -> Void
 
-    private var suggestionsSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Suggested Diagrams")
-                .font(.headline)
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 200))], spacing: 12) {
-                ForEach(suggestions) { suggestion in
-                    suggestionCard(suggestion)
-                }
-            }
-        }
-    }
-
-    private func suggestionCard(_ suggestion: DiagramSuggestion) -> some View {
+    var body: some View {
         Button {
-            onSuggestionTap(suggestion)
+            onTap(suggestion)
         } label: {
             HStack(alignment: .top, spacing: 12) {
                 Image(systemName: suggestion.icon)
