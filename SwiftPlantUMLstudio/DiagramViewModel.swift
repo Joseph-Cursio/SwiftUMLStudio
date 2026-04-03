@@ -41,6 +41,10 @@ final class DiagramViewModel {
     var insights: [Insight] = []
     var suggestions: [DiagramSuggestion] = []
 
+    // Architecture Tracking (Phase 4)
+    var snapshots: [ProjectSnapshot] = []
+    var architectureDiff: ArchitectureDiff?
+
     private var currentTask: Task<Void, Never>?
     private let context: NSManagedObjectContext
 
@@ -99,8 +103,9 @@ final class DiagramViewModel {
         }
     }
 
-    func save() {
+    func save(isProUnlocked: Bool = false) {
         saveToHistory()
+        saveSnapshot(isProUnlocked: isProUnlocked)
     }
 
     func loadHistory() {
@@ -170,6 +175,36 @@ final class DiagramViewModel {
         }
     }
 
+    func loadSnapshots() {
+        snapshots = SnapshotManager.fetchSnapshots(context: context)
+    }
+
+    func saveSnapshot(isProUnlocked: Bool) {
+        guard isProUnlocked, let summary = projectSummary else { return }
+        SnapshotManager.saveSnapshot(from: summary, paths: selectedPaths, context: context)
+        loadSnapshots()
+        updateArchitectureDiff()
+        ReviewReminderManager.rescheduleIfEnabled()
+    }
+
+    func deleteSnapshot(_ snapshot: ProjectSnapshot) {
+        SnapshotManager.deleteSnapshot(snapshot, context: context)
+        loadSnapshots()
+        updateArchitectureDiff()
+    }
+
+    func updateArchitectureDiff() {
+        guard let summary = projectSummary, !selectedPaths.isEmpty else {
+            architectureDiff = nil
+            return
+        }
+        if let previous = SnapshotManager.latestSnapshot(for: selectedPaths, context: context) {
+            architectureDiff = SnapshotManager.computeDiff(current: summary, previous: previous)
+        } else {
+            architectureDiff = nil
+        }
+    }
+
     func analyzeProject(isProUnlocked: Bool = true) {
         guard !selectedPaths.isEmpty else {
             projectSummary = nil
@@ -186,6 +221,7 @@ final class DiagramViewModel {
             projectSummary = summary
             insights = newInsights
             suggestions = newSuggestions
+            updateArchitectureDiff()
         }
     }
 

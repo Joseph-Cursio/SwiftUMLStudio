@@ -5,6 +5,7 @@ struct ExplorerSidebar: View {
     @Bindable var viewModel: DiagramViewModel
     @Environment(SubscriptionManager.self) private var subscriptionManager
     @State private var showPaywall = false
+    @State private var reminderEnabled = ReviewReminderManager.isEnabled
 
     var body: some View {
         List {
@@ -33,6 +34,37 @@ struct ExplorerSidebar: View {
                                 onTap: handleSuggestion
                             )
                         }
+                    }
+                }
+            }
+
+            if subscriptionManager.isProUnlocked {
+                if !viewModel.snapshots.isEmpty {
+                    Section("Architecture Snapshots") {
+                        ForEach(viewModel.snapshots) { snapshot in
+                            SnapshotRowView(snapshot: snapshot)
+                                .contextMenu {
+                                    Button("Delete", role: .destructive) {
+                                        viewModel.deleteSnapshot(snapshot)
+                                    }
+                                }
+                        }
+                    }
+                }
+
+                Section("Review Reminders") {
+                    Toggle("Remind me to review", isOn: $reminderEnabled)
+                        .onChange(of: reminderEnabled) {
+                            if reminderEnabled {
+                                ReviewReminderManager.enableReminder()
+                            } else {
+                                ReviewReminderManager.disableReminder()
+                            }
+                        }
+                    if reminderEnabled {
+                        Text("You'll be reminded every 2 weeks if you haven't reviewed.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                     }
                 }
             }

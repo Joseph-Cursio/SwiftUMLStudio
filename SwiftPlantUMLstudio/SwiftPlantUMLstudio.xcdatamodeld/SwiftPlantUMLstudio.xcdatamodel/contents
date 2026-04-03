@@ -11,7 +11,19 @@
         <attribute name="timestamp" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="name" optional="YES" attributeType="String"/>
     </entity>
+    <entity name="ProjectSnapshot" representedClassName="ProjectSnapshot" codeGenerationType="none" syncable="YES">
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="timestamp" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="typeCount" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="relationshipCount" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="moduleCount" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="fileCount" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="typeBreakdown" optional="YES" attributeType="Binary" usesScalarValueType="NO"/>
+        <attribute name="topConnectedTypes" optional="YES" attributeType="Binary" usesScalarValueType="NO"/>
+        <attribute name="projectPaths" optional="YES" attributeType="Binary" usesScalarValueType="NO"/>
+    </entity>
     <elements>
         <element name="DiagramEntity" positionX="0" positionY="0" width="128" height="150"/>
+        <element name="ProjectSnapshot" positionX="200" positionY="0" width="128" height="180"/>
     </elements>
 </model>

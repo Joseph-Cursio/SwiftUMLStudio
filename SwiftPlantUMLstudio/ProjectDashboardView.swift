@@ -4,6 +4,8 @@ struct ProjectDashboardView: View {
     let summary: ProjectSummary?
     let insights: [Insight]
     let suggestions: [DiagramSuggestion]
+    let architectureDiff: ArchitectureDiff?
+    let isProUnlocked: Bool
     let onSuggestionTap: (DiagramSuggestion) -> Void
 
     var body: some View {
@@ -11,6 +13,9 @@ struct ProjectDashboardView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
                     statsBar(summary: summary)
+                    if isProUnlocked, let diff = architectureDiff {
+                        ArchitectureDiffView(diff: diff)
+                    }
                     TypeBreakdownGrid(summary: summary)
                     if !insights.isEmpty {
                         insightsSection

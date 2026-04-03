@@ -22,6 +22,7 @@ struct ContentView: View {
         }
         .task {
             viewModel.loadHistory()
+            viewModel.loadSnapshots()
         }
         .onChange(of: viewModel.selectedPaths) {
             viewModel.rebuildFileTree()
@@ -77,7 +78,7 @@ struct ContentView: View {
                     pathSummary: viewModel.pathSummary,
                     appMode: $appMode,
                     onOpen: openPanel,
-                    onSave: viewModel.save,
+                    onSave: { viewModel.save(isProUnlocked: subscriptionManager.isProUnlocked) },
                     saveDisabled: viewModel.currentScript == nil || viewModel.isGenerating
                 )
             }
@@ -159,7 +160,7 @@ struct ContentView: View {
                 .accessibilityIdentifier("appModePicker")
 
                 Button("Save", systemImage: "square.and.arrow.down") {
-                    viewModel.save()
+                    viewModel.save(isProUnlocked: subscriptionManager.isProUnlocked)
                 }
                 .keyboardShortcut("s", modifiers: .command)
                 .help("Save to history (⌘S)")

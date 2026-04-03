@@ -6,6 +6,7 @@ enum ProFeature: String, CaseIterable {
     case exportMarkup
     case formatSelection
     case unlimitedProjects
+    case architectureTracking
 }
 
 @MainActor

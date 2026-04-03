@@ -21,6 +21,8 @@ struct DiagramDetailView: View {
                 summary: viewModel.projectSummary,
                 insights: viewModel.insights,
                 suggestions: viewModel.suggestions,
+                architectureDiff: viewModel.architectureDiff,
+                isProUnlocked: subscriptionManager.isProUnlocked,
                 onSuggestionTap: handleSuggestion
             )
             .tabItem { Label("Dashboard", systemImage: "chart.bar") }
