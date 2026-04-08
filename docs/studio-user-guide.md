@@ -1,6 +1,6 @@
 # SwiftPlantUML Studio — User Guide
 
-SwiftPlantUML Studio is a macOS GUI for [SwiftUMLBridge](../SwiftUMLBridge/), the Swift-native diagram generator. It lets you point at Swift source files or folders, choose a diagram type and output format, and view the rendered diagram — all without touching the terminal.
+SwiftPlantUML Studio is a macOS GUI for [SwiftUMLBridge](../SwiftUMLBridge/), the Swift-native diagram generator. It lets you point at Swift source files or folders, explore your codebase visually, generate diagrams, and track how your architecture evolves over time — all without touching the terminal.
 
 For CLI usage, see the [SwiftUMLBridge User Guide](user-guide.md).
 
@@ -9,21 +9,38 @@ For CLI usage, see the [SwiftUMLBridge User Guide](user-guide.md).
 ## Table of Contents
 
 1. [Requirements](#requirements)
-2. [Window Layout](#window-layout)
-3. [Opening Swift Source Files](#opening-swift-source-files)
-4. [Choosing a Diagram Mode](#choosing-a-diagram-mode)
-5. [Choosing a Diagram Format](#choosing-a-diagram-format)
-6. [Generating a Class Diagram](#generating-a-class-diagram)
-7. [Generating a Sequence Diagram](#generating-a-sequence-diagram)
+2. [App Modes](#app-modes)
+3. [Explorer Mode](#explorer-mode)
+   - [Explorer Window Layout](#explorer-window-layout)
+   - [Project Dashboard](#project-dashboard)
+   - [Insights](#insights)
+   - [Suggested Diagrams](#suggested-diagrams)
+   - [Explorer Diagram Preview](#explorer-diagram-preview)
+4. [Developer Mode](#developer-mode)
+   - [Developer Window Layout](#developer-window-layout)
+   - [File Browser](#file-browser)
+   - [Source Editor](#source-editor)
+   - [Detail Pane Tabs](#detail-pane-tabs)
+5. [Opening Swift Source Files](#opening-swift-source-files)
+6. [Choosing a Diagram Mode](#choosing-a-diagram-mode)
+7. [Choosing a Diagram Format](#choosing-a-diagram-format)
+8. [Generating a Class Diagram](#generating-a-class-diagram)
+9. [Generating a Sequence Diagram](#generating-a-sequence-diagram)
    - [Entry Point Syntax](#entry-point-syntax)
    - [Traversal Depth](#traversal-depth)
-8. [Generating a Dependency Graph](#generating-a-dependency-graph)
-   - [Types Mode](#types-mode)
-   - [Modules Mode](#modules-mode)
-   - [Cycle Annotation](#cycle-annotation)
-9. [Reading the Results](#reading-the-results)
-10. [Copying the Diagram Markup](#copying-the-diagram-markup)
-11. [Known Limitations](#known-limitations)
+10. [Generating a Dependency Graph](#generating-a-dependency-graph)
+    - [Types Mode](#types-mode)
+    - [Modules Mode](#modules-mode)
+    - [Cycle Annotation](#cycle-annotation)
+11. [Reading the Results](#reading-the-results)
+12. [Copying the Diagram Markup](#copying-the-diagram-markup)
+13. [Diagram History](#diagram-history)
+14. [Pro Features](#pro-features)
+    - [What Pro Unlocks](#what-pro-unlocks)
+    - [Paywall](#paywall)
+    - [Architecture Change Tracking](#architecture-change-tracking)
+    - [Review Reminders](#review-reminders)
+15. [Known Limitations](#known-limitations)
 
 ---
 
@@ -36,35 +53,142 @@ For CLI usage, see the [SwiftUMLBridge User Guide](user-guide.md).
 
 ---
 
-## Window Layout
+## App Modes
 
-The app opens at 1100 × 700 points and is split into two panes.
+The app has two modes, toggled via a picker in the toolbar:
+
+| Mode | Audience | Description |
+|---|---|---|
+| **Explorer** | Everyone (default) | Simplified, insight-driven interface. Focus on understanding your codebase visually without needing to know UML terminology. |
+| **Developer** | Power users | Full-featured interface with file browsing, diagram markup editing, and fine-grained control over diagram type, format, and options. |
+
+The mode selection is persisted between launches. Explorer is the default for new users.
+
+---
+
+## Explorer Mode
+
+Explorer Mode presents your codebase through plain-language insights and one-click suggested diagrams. It is designed for users who want to understand their code structure without configuring diagram options manually.
+
+### Explorer Window Layout
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│  Toolbar                                                            │
-│  [Open…] [path label] [Class Diagram|Sequence Diagram|Dependency Graph] │
-│           [PlantUML|Mermaid]  [Generate]                            │
-│  (sequence mode adds:         [Type.method field] [Depth stepper])  │
-│  (dependency graph mode adds: [Types|Modules])                      │
-├──────────────────────┬──────────────────────────────────────────────┤
-│                      │                                              │
-│   Left pane          │   Right pane                                 │
-│   Raw diagram text   │   Rendered diagram preview                   │
-│   (read-only)        │   (web view)                                 │
-│                      │                                              │
-└──────────────────────┴──────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────┐
+│  Toolbar                                                             │
+│  [Open…] [path label]                    [Explorer | Developer] [Save]│
+├─────────────────────┬────────────────────────────────────────────────┤
+│                     │                                                │
+│  Left sidebar       │  Detail pane                                   │
+│  ┌───────────────┐  │  ┌──────────────────────────────────────────┐  │
+│  │ Insights      │  │  │  Project Dashboard (when no diagram)    │  │
+│  │ ─────────     │  │  │  — or —                                 │  │
+│  │ Suggestions   │  │  │  Rendered diagram preview                │  │
+│  │ ─────────     │  │  └──────────────────────────────────────────┘  │
+│  │ Snapshots     │  │                                                │
+│  │ ─────────     │  │                                                │
+│  │ History       │  │                                                │
+│  └───────────────┘  │                                                │
+│                     │                                                │
+└─────────────────────┴────────────────────────────────────────────────┘
 ```
 
-**Left pane** — shows the raw PlantUML or Mermaid markup produced by the generator. Useful for copying into version control or a diagramming tool.
+**Left sidebar** — Displays insights, suggested diagrams, architecture snapshots (Pro), and saved diagram history.
 
-**Right pane** — renders the diagram inside a web view. PlantUML diagrams are fetched as SVG from [planttext.com](https://www.planttext.com); Mermaid diagrams are rendered locally using an embedded [Mermaid.js](https://mermaid.js.org) CDN script.
+**Detail pane** — Shows the Project Dashboard when no diagram is loaded, or the rendered diagram preview when a suggestion or history item is selected.
+
+### Project Dashboard
+
+When you open a folder in Explorer Mode, the dashboard appears immediately — before any diagram is generated. It provides an at-a-glance summary of your project:
+
+- **Stats cards** — Total files, types, relationships, and methods.
+- **Type breakdown** — Visual grid showing how many structs, classes, enums, protocols, and actors your project contains.
+- **Insights** — Plain-language observations about your codebase (see [Insights](#insights)).
+- **Suggested diagrams** — One-click actions to generate specific diagrams (see [Suggested Diagrams](#suggested-diagrams)).
+
+### Insights
+
+The Insight Engine analyzes your project and generates plain-language observations. Each insight has a severity level:
+
+| Severity | Icon | Example |
+|---|---|---|
+| **Info** | Blue circle | "Your project uses 15 protocols — see how types conform to them" |
+| **Noteworthy** | Yellow triangle | "PaymentProcessor is used by 12 other types — it's a critical dependency" |
+| **Warning** | Red exclamation | "Found a dependency cycle between ModuleA and ModuleB" |
+
+Insights are generated from the project analysis and update whenever you open a new folder.
+
+### Suggested Diagrams
+
+The Suggestion Engine generates actionable one-click diagram options based on your project's structure:
+
+| Suggestion | Description | Pro Required? |
+|---|---|---|
+| See how your types are connected | Class diagram of all types | No |
+| Explore this file's structure | Class diagram of a single file | No |
+| Trace what happens when X runs | Sequence diagram from a detected entry point | Yes |
+| See which parts depend on each other | Dependency graph | Yes |
+| Deep dive into [type name] | Focused class diagram centered on a high-connectivity type | No |
+
+Pro-only suggestions display a lock icon. Tapping them opens the paywall.
+
+### Explorer Diagram Preview
+
+When you select a suggestion or history item, the detail pane switches from the dashboard to a rendered diagram preview. The preview uses the same web view as Developer Mode — PlantUML diagrams are fetched as SVG from planttext.com; Mermaid diagrams are rendered locally via Mermaid.js.
+
+---
+
+## Developer Mode
+
+Developer Mode exposes the full power of the diagram generator with a three-pane layout, file browsing, diagram markup editing, and manual control over all diagram options.
+
+### Developer Window Layout
+
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│  Toolbar                                                             │
+│  [Open…] [path label] [Class|Sequence|Deps] [PlantUML|Mermaid]       │
+│  [sequence/deps controls]           [Explorer | Developer] [Save]    │
+├──────────────┬───────────────┬───────────────────────────────────────┤
+│              │               │                                       │
+│  Left sidebar│  Middle pane  │  Right pane                           │
+│  ┌────────┐  │  Source code  │  [Dashboard | Preview | Markup]       │
+│  │ Files  │  │  (read-only)  │                                       │
+│  │ ─────  │  │               │  Dashboard: project stats             │
+│  │ History│  │               │  Preview: rendered diagram             │
+│  └────────┘  │               │  Markup: raw PlantUML/Mermaid text    │
+│              │               │                                       │
+└──────────────┴───────────────┴───────────────────────────────────────┘
+```
+
+**Left sidebar** — File browser (directory tree of selected paths) and saved diagram history.
+
+**Middle pane** — Read-only source code view for the currently selected file.
+
+**Right pane** — Tabbed detail pane with Dashboard, Preview, and Markup tabs. Defaults to the Preview tab.
+
+### File Browser
+
+The left sidebar displays the selected paths as a hierarchical file tree. Directories expand to show their contents. Clicking a `.swift` file loads its source code in the middle pane.
+
+### Source Editor
+
+The middle pane displays the Swift source code of the file selected in the file browser. It is read-only — you cannot edit source code in the app. This pane is useful for reviewing the code alongside its generated diagram.
+
+### Detail Pane Tabs
+
+The right pane has three tabs:
+
+| Tab | Contents |
+|---|---|
+| **Dashboard** | Same project dashboard as Explorer Mode — stats, type breakdown, insights, suggestions. |
+| **Preview** | Rendered diagram (web view). Shows a progress spinner during generation and an empty-state message when no diagram has been generated. |
+| **Markup** | Raw PlantUML or Mermaid markup text (read-only). Useful for copying into other tools or version control. |
 
 ---
 
 ## Opening Swift Source Files
 
-Click **Open…** in the toolbar. A standard Open panel appears with these options:
+Click **Open...** in the toolbar. A standard Open panel appears with these options:
 
 - **Individual `.swift` files** — select one or more files directly.
 - **Folders** — select a directory; the generator searches it recursively for `.swift` files.
@@ -72,27 +196,31 @@ Click **Open…** in the toolbar. A standard Open panel appears with these optio
 
 After you confirm, the toolbar path label updates to show the selection. If you selected a single item, its filename is shown. If you selected multiple items, the first filename is shown followed by `+ N more`.
 
-To switch to a different set of files, click **Open…** again. The previous selection is replaced.
+To switch to a different set of files, click **Open...** again. The previous selection is replaced.
+
+When you open files, the app automatically runs a project analysis to populate the dashboard, insights, and suggestions.
 
 ---
 
 ## Choosing a Diagram Mode
 
-The **segmented control** in the toolbar selects the diagram type:
+In Developer Mode, the **segmented control** in the toolbar selects the diagram type:
 
-| Mode | What it generates |
-|---|---|
-| **Class Diagram** | Structural overview of types, properties, methods, and relationships |
-| **Sequence Diagram** | Static call-graph trace from a named entry-point method |
-| **Dependency Graph** | Type-to-type or module-to-module dependency graph across the selected source |
+| Mode | What it generates | Pro Required? |
+|---|---|---|
+| **Class Diagram** | Structural overview of types, properties, methods, and relationships | No |
+| **Sequence Diagram** | Static call-graph trace from a named entry-point method | Yes |
+| **Dependency Graph** | Type-to-type or module-to-module dependency graph across the selected source | Yes |
 
 Switching modes clears the current diagram and resets the preview pane. Sequence Diagram mode reveals an entry-point text field and a depth stepper; Dependency Graph mode reveals a **Types / Modules** picker.
+
+In Explorer Mode, the diagram mode is determined by which suggestion you tap — you do not choose it manually.
 
 ---
 
 ## Choosing a Diagram Format
 
-The **PlantUML / Mermaid** segmented control selects the output language. It applies to both diagram modes.
+In Developer Mode, the **PlantUML / Mermaid** segmented control selects the output language:
 
 | Format | Preview rendering | Markup extension |
 |---|---|---|
@@ -101,25 +229,27 @@ The **PlantUML / Mermaid** segmented control selects the output language. It app
 
 You can switch formats after generation — click **Generate** again to re-render in the new format.
 
+In Explorer Mode, the format is not exposed — the app defaults to PlantUML for the visual preview.
+
 ---
 
 ## Generating a Class Diagram
 
-1. Click **Open…** and select Swift files or a folder.
-2. Make sure **Class Diagram** is selected in the mode picker.
-3. Choose **PlantUML** or **Mermaid** in the format picker.
-4. Click **Generate**.
+1. Click **Open...** and select Swift files or a folder.
+2. In Developer Mode, make sure **Class Diagram** is selected in the mode picker. In Explorer Mode, tap a class diagram suggestion.
+3. In Developer Mode, choose **PlantUML** or **Mermaid** in the format picker.
+4. In Developer Mode, click **Generate**.
 
-The **Generate** button is disabled until at least one source path is selected. While the generator runs, a progress spinner fills the right pane. Results appear as soon as generation completes.
-
-The left pane displays the raw markup; the right pane renders it as a diagram.
+The **Generate** button is disabled until at least one source path is selected. While the generator runs, a progress spinner fills the preview pane. Results appear as soon as generation completes.
 
 ---
 
 ## Generating a Sequence Diagram
 
-1. Click **Open…** and select the Swift files or folder that contain the entry-point type.
-2. Select **Sequence Diagram** in the mode picker. Two additional controls appear in the toolbar:
+Sequence diagrams require a Pro subscription.
+
+1. Click **Open...** and select the Swift files or folder that contain the entry-point type.
+2. In Developer Mode, select **Sequence Diagram** in the mode picker. Two additional controls appear in the toolbar:
    - A **text field** for the entry point.
    - A **depth stepper**.
 3. Choose **PlantUML** or **Mermaid**.
@@ -127,7 +257,9 @@ The left pane displays the raw markup; the right pane renders it as a diagram.
 5. Adjust the depth if needed.
 6. Click **Generate**.
 
-If the entry-point field is empty when **Sequence Diagram** mode is active, the right pane shows a reminder: *"Enter an entry point (e.g. MyType.myMethod), then click Generate."*
+In Explorer Mode, sequence diagram suggestions are pre-populated with detected entry points from your code — just tap the suggestion.
+
+If the entry-point field is empty when **Sequence Diagram** mode is active, the preview pane shows a reminder: *"Enter an entry point (e.g. MyType.myMethod), then click Generate."*
 
 ### Entry Point Syntax
 
@@ -157,11 +289,15 @@ Increase depth if you want to see deeper call chains; decrease it for a focused,
 
 ## Generating a Dependency Graph
 
-1. Click **Open…** and select the Swift files or folder you want to analyze.
-2. Select **Dependency Graph** in the mode picker. A **Types / Modules** segmented picker appears in the toolbar.
+Dependency graphs require a Pro subscription.
+
+1. Click **Open...** and select the Swift files or folder you want to analyze.
+2. In Developer Mode, select **Dependency Graph** in the mode picker. A **Types / Modules** segmented picker appears in the toolbar.
 3. Choose **Types** or **Modules** (see below).
 4. Choose **PlantUML** or **Mermaid** in the format picker.
 5. Click **Generate**.
+
+In Explorer Mode, tap a dependency graph suggestion in the sidebar.
 
 No entry point is required. The generator scans all selected source files and builds the full dependency graph in a single pass.
 
@@ -242,10 +378,10 @@ Cyclic nodes — those involved in a dependency cycle — are annotated automati
 
 ## Copying the Diagram Markup
 
-The **left pane** contains the raw PlantUML or Mermaid markup. To copy it:
+In Developer Mode, switch to the **Markup** tab in the right pane to see the raw PlantUML or Mermaid markup. To copy it:
 
-1. Click inside the left pane.
-2. Press **⌘A** to select all, then **⌘C** to copy.
+1. Click inside the Markup tab.
+2. Press **Cmd-A** to select all, then **Cmd-C** to copy.
 
 You can paste the markup into:
 - [planttext.com](https://www.planttext.com) or the PlantUML CLI for PlantUML diagrams.
@@ -254,9 +390,71 @@ You can paste the markup into:
 
 ---
 
+## Diagram History
+
+Every diagram you generate can be saved to history by clicking the **Save** button in the toolbar. Saved diagrams appear in the history section of the sidebar (in both Explorer and Developer modes).
+
+Each history entry records:
+- The diagram name (auto-generated from the selected file/folder names)
+- The diagram mode (class, sequence, or dependency)
+- The timestamp
+
+Click a history entry to reload the diagram. You can also delete history entries by swiping or using the context menu.
+
+History is stored in Core Data and persists between app launches.
+
+---
+
+## Pro Features
+
+SwiftPlantUML Studio uses a freemium model. The free tier provides the full Explorer Mode experience with class diagram generation. Pro unlocks advanced capabilities.
+
+### What Pro Unlocks
+
+| Feature | Free | Pro |
+|---|---|---|
+| Explorer Mode dashboard, insights, suggestions | Yes | Yes |
+| Class diagrams (view only) | Yes | Yes |
+| Sequence diagrams | — | Yes |
+| Dependency graphs | — | Yes |
+| PlantUML/Mermaid format selection | — | Yes |
+| Diagram markup export (copy/save) | — | Yes |
+| Architecture change tracking (snapshots) | — | Yes |
+| Review reminders | — | Yes |
+
+### Paywall
+
+When you attempt to use a Pro-only feature, a paywall sheet appears. It lists what Pro unlocks and offers monthly and annual subscription options, plus a **Restore Purchases** link for existing subscribers.
+
+The paywall is informative, not aggressive — it appears only when you specifically try to access a gated feature.
+
+### Architecture Change Tracking
+
+Pro subscribers can save architecture snapshots that capture the state of your project at a point in time:
+
+- **Type count**, **relationship count**, **module count**, **file count**
+- **Type breakdown** (structs, classes, enums, protocols, actors)
+- **Top connected types** (most-referenced types)
+
+When you save a snapshot, the app compares it against the previous snapshot for the same set of files and shows an **Architecture Diff**:
+
+- Delta values for types, relationships, modules, and files (color-coded: green for increases, red for decreases)
+- Type breakdown deltas (e.g., "+3 structs, -1 class")
+- Complexity changes for individual types
+
+Snapshots appear in the sidebar under the **Snapshots** section in Explorer Mode.
+
+### Review Reminders
+
+Pro subscribers can enable optional reminders to review their architecture on a regular cadence. When enabled, the app sends a local notification every 14 days prompting you to check how your codebase has evolved.
+
+Toggle this in the Snapshots section of the Explorer sidebar.
+
+---
+
 ## Known Limitations
 
-**Internet connection required for rendering.** PlantUML diagrams are rendered by planttext.com. Mermaid diagrams use Mermaid.js loaded from a CDN. Both require an active internet connection for the right-pane preview. The raw markup in the left pane is always available offline.
+**Internet connection required for PlantUML rendering.** PlantUML diagrams are rendered server-side by planttext.com and require an active internet connection. Mermaid diagrams are rendered locally using a bundled copy of Mermaid.js and work fully offline. The raw markup (in Developer Mode's Markup tab) is always available offline regardless of format.
 
 **Actors appear as classes.** SourceKit 6.3 on macOS 26 reports `actor` declarations with kind `source.lang.swift.decl.class`. Actor types are included in class diagrams but show the `<<class>>` stereotype.
 

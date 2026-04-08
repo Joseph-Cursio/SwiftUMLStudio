@@ -58,6 +58,13 @@ Complete reference for all CLI options, YAML configuration fields, element kinds
     - [ImportEdge](#importedge)
     - [BridgeLogger](#bridgelogger)
 13. [Version](#version)
+14. [Studio App Reference](#studio-app-reference)
+    - [App Modes](#app-modes)
+    - [Diagram Modes](#diagram-modes)
+    - [Project Analysis](#project-analysis)
+    - [Subscription and Feature Gating](#subscription-and-feature-gating)
+    - [Core Data Entities](#core-data-entities)
+    - [Architecture Diff](#architecture-diff)
 
 ---
 
@@ -1543,3 +1550,181 @@ public struct Version {
 ```
 
 The CLI version string. Displayed by `swiftumlbridge --version`.
+
+---
+
+## Studio App Reference
+
+The SwiftPlantUML Studio macOS app is a GUI front-end for SwiftUMLBridgeFramework. For usage instructions, see the [Studio User Guide](studio-user-guide.md).
+
+### App Modes
+
+```swift
+enum AppMode: String, CaseIterable
+```
+
+| Case | Description |
+|---|---|
+| `.explorer` | Simplified, insight-driven interface (default for new users) |
+| `.developer` | Full-featured interface with file browsing, markup editing, and fine-grained diagram controls |
+
+Persisted in `@AppStorage`.
+
+---
+
+### Diagram Modes
+
+```swift
+enum DiagramMode: String, CaseIterable
+```
+
+| Case | Raw Value | Pro Required |
+|---|---|---|
+| `.classDiagram` | `"Class Diagram"` | No |
+| `.sequenceDiagram` | `"Sequence Diagram"` | Yes |
+| `.dependencyGraph` | `"Dependency Graph"` | Yes |
+
+---
+
+### Project Analysis
+
+#### ProjectSummary
+
+Produced by `ProjectAnalyzer.analyze(paths:)`. Drives the dashboard, insights, and suggestions.
+
+| Property | Type | Description |
+|---|---|---|
+| `totalFiles` | `Int` | Number of `.swift` files found |
+| `totalTypes` | `Int` | Total type declarations |
+| `typeBreakdown` | `[String: Int]` | Count per type kind (structs, classes, enums, protocols, actors) |
+| `totalRelationships` | `Int` | Total inheritance and conformance edges |
+| `moduleImports` | `[String: Set<String>]` | Import statements grouped by source module |
+| `topConnectedTypes` | `[(String, Int)]` | Types ranked by number of connections |
+| `cycleWarnings` | `[String]` | Detected dependency cycles |
+| `entryPoints` | `[(String, String)]` | Detected `(TypeName, methodName)` pairs for sequence diagrams |
+
+#### InsightEngine
+
+```swift
+enum InsightEngine
+```
+
+Generates `[Insight]` from a `ProjectSummary`. Each `Insight` has:
+
+| Property | Type | Description |
+|---|---|---|
+| `icon` | `String` | SF Symbol name |
+| `title` | `String` | Short heading |
+| `description` | `String` | Plain-language explanation |
+| `severity` | `Severity` | `.info`, `.noteworthy`, or `.warning` |
+
+#### SuggestionEngine
+
+```swift
+enum SuggestionEngine
+```
+
+Generates `[DiagramSuggestion]` from a `ProjectSummary`. Each suggestion has:
+
+| Property | Type | Description |
+|---|---|---|
+| `icon` | `String` | SF Symbol name |
+| `title` | `String` | User-facing label |
+| `description` | `String` | What the diagram will show |
+| `action` | `SuggestionAction` | `.classDiagram`, `.sequenceDiagram`, or `.dependencyGraph` |
+| `requiresPro` | `Bool` | Whether this suggestion requires a Pro subscription |
+
+---
+
+### Subscription and Feature Gating
+
+#### SubscriptionManager
+
+```swift
+@Observable @MainActor final class SubscriptionManager
+```
+
+Manages StoreKit 2 transactions and entitlement state.
+
+| Property / Method | Type | Description |
+|---|---|---|
+| `isProUnlocked` | `Bool` | `true` when user has an active Pro subscription |
+| `products` | `[Product]` | Available StoreKit products |
+| `purchase(_:)` | `async throws` | Initiates a StoreKit purchase |
+| `restorePurchases()` | `async` | Restores previously purchased subscriptions |
+| `checkEntitlement()` | `async` | Verifies current entitlement status |
+
+**Product IDs:** `pro_monthly`, `pro_annual`
+
+#### ProFeature
+
+```swift
+enum ProFeature
+```
+
+Features gated behind a Pro subscription:
+
+| Case | Description |
+|---|---|
+| `.sequenceDiagrams` | Sequence diagram generation |
+| `.dependencyGraphs` | Dependency graph generation |
+| `.exportMarkup` | Copying/saving raw PlantUML or Mermaid markup |
+| `.formatSelection` | Choosing between PlantUML and Mermaid format |
+| `.unlimitedProjects` | Opening more than one project |
+| `.architectureTracking` | Saving and comparing architecture snapshots |
+
+---
+
+### Core Data Entities
+
+#### DiagramEntity
+
+Stores saved diagram history.
+
+| Attribute | Type | Description |
+|---|---|---|
+| `id` | `UUID` | Unique identifier |
+| `name` | `String` | Auto-generated from selected file/folder names |
+| `mode` | `String` | `DiagramMode` raw value |
+| `format` | `String` | `DiagramFormat` raw value |
+| `entryPoint` | `String` | Entry method (sequence) or deps mode |
+| `sequenceDepth` | `Int16` | Traversal depth for sequence diagrams |
+| `paths` | `Binary` | JSON-encoded `[String]` of selected paths |
+| `scriptText` | `String` | Generated PlantUML or Mermaid markup |
+| `timestamp` | `Date` | When the diagram was saved |
+
+#### ProjectSnapshot
+
+Stores architecture state at a point in time (Pro only).
+
+| Attribute | Type | Description |
+|---|---|---|
+| `id` | `UUID` | Unique identifier |
+| `timestamp` | `Date` | When the snapshot was taken |
+| `typeCount` | `Int32` | Total number of types |
+| `relationshipCount` | `Int32` | Total number of relationships |
+| `moduleCount` | `Int16` | Number of modules |
+| `fileCount` | `Int32` | Number of `.swift` files |
+| `typeBreakdown` | `Binary` | JSON-encoded `[String: Int]` |
+| `topConnectedTypes` | `Binary` | JSON-encoded `[[String: Int]]` |
+| `projectPaths` | `Binary` | JSON-encoded `[String]` |
+
+---
+
+### Architecture Diff
+
+```swift
+struct ArchitectureDiff
+```
+
+Computed by `SnapshotManager.computeDiff()` when comparing the current project state against a previous `ProjectSnapshot`.
+
+| Property | Type | Description |
+|---|---|---|
+| `previousTimestamp` | `Date` | When the baseline snapshot was taken |
+| `typeDelta` | `Int` | Change in type count |
+| `relationshipDelta` | `Int` | Change in relationship count |
+| `moduleDelta` | `Int` | Change in module count |
+| `fileDelta` | `Int` | Change in file count |
+| `typeBreakdownDeltas` | `[String: Int]` | Per-kind deltas (e.g., "+3 structs, -1 class") |
+| `complexityChanges` | `[(String, Int)]` | Per-type connectivity changes |

@@ -14,6 +14,8 @@ You will generate diagrams from the SwiftUMLBridgeFramework source itself — a 
 
 **Part 3 (Steps 13–16):** A dependency graph exploring type and module relationships across the framework.
 
+**Part 4 (Steps 17–21):** Using the SwiftPlantUML Studio GUI to explore a project visually without touching the terminal.
+
 ---
 
 ## Prerequisites
@@ -638,8 +640,70 @@ A common workflow when joining a new codebase:
 
 ---
 
+## Part 4 — SwiftPlantUML Studio (GUI)
+
+The Studio app provides the same diagram generation capabilities as the CLI, wrapped in a macOS GUI with two modes: **Explorer** (simplified, insight-driven) and **Developer** (full-featured with markup editing).
+
+### Step 17 — Open the Studio App
+
+Build and run SwiftPlantUML Studio from Xcode. The app opens in **Explorer Mode** by default — a simplified interface designed for understanding your codebase visually.
+
+### Step 18 — Load a Project and See the Dashboard
+
+1. Click **Open...** in the toolbar.
+2. Select the `SwiftUMLBridge/Sources/SwiftUMLBridgeFramework/` folder.
+3. Click **Open**.
+
+The **Project Dashboard** appears immediately in the detail pane, showing:
+
+- **Stats cards** — total files, types, relationships, and methods at a glance.
+- **Type breakdown** — how many structs, classes, enums, protocols, and actors are in the project.
+- **Insights** — plain-language observations like "PaymentProcessor is used by 12 other types" or "Found a dependency cycle between ModuleA and ModuleB."
+- **Suggested diagrams** — one-click actions tailored to your project's structure.
+
+No diagram has been generated yet — the dashboard is a fast analysis pass that runs before any rendering.
+
+### Step 19 — Generate a Diagram from a Suggestion
+
+In the left sidebar, find the **Suggested Diagrams** section. You should see suggestions like:
+
+- "See how your types are connected" — generates a class diagram of all types.
+- "Deep dive into ClassDiagramGenerator" — generates a focused diagram centered on the most-connected type.
+
+Click **"See how your types are connected."** The detail pane switches from the dashboard to a rendered class diagram preview — the same output you produced with the CLI in Part 1, but without typing any commands.
+
+### Step 20 — Switch to Developer Mode
+
+Click the **Explorer / Developer** toggle in the toolbar and select **Developer**.
+
+The layout changes to a three-pane view:
+
+- **Left sidebar** — file browser showing the directory tree of your selected paths, plus diagram history below.
+- **Middle pane** — read-only source code of the currently selected file. Click a `.swift` file in the sidebar to load it.
+- **Right pane** — tabbed detail pane with **Dashboard**, **Preview**, and **Markup** tabs.
+
+Switch to the **Markup** tab to see the raw PlantUML or Mermaid text — useful for copying into version control or another tool.
+
+In Developer Mode you have full control:
+
+- **Diagram mode picker** — switch between Class Diagram, Sequence Diagram, and Dependency Graph.
+- **Format picker** — switch between PlantUML and Mermaid.
+- **Sequence controls** — entry point field and depth stepper (visible in Sequence Diagram mode).
+- **Dependency controls** — Types / Modules picker (visible in Dependency Graph mode).
+
+### Step 21 — Save to History
+
+After generating a diagram you want to keep, click the **Save** button in the toolbar. The diagram is saved to history and appears in the sidebar. You can reload it later by clicking the history entry — in either Explorer or Developer mode.
+
+History entries record the diagram name, mode, format, and timestamp, and persist between app launches.
+
+> **Pro features:** Sequence diagrams, dependency graphs, format selection, markup export, and architecture change tracking require a Pro subscription. Free users get the full Explorer Mode experience with class diagram generation.
+
+---
+
 ## What's Next
 
-- Read the [User Guide](user-guide.md) for full documentation of every flag and option, including the complete `deps`, `sequence`, and `classdiagram` subcommand references.
+- Read the [Studio User Guide](studio-user-guide.md) for full documentation of the macOS app, including Explorer Mode, Developer Mode, Pro features, and architecture change tracking.
+- Read the [User Guide](user-guide.md) for full documentation of every CLI flag and option, including the complete `deps`, `sequence`, and `classdiagram` subcommand references.
 - Read the [Reference Guide](reference.md) for the complete YAML schema, all themes, all element kinds, relationship style options, diagram format details, and the full framework API (`DependencyGraphGenerator`, `SequenceDiagramGenerator`, `CallGraph`, `CallEdge`, `DiagramOutputting`).
 - Check the [Known Limitations](user-guide.md#known-limitations) section for current constraints (actor stereotypes, class-diagram async/throws labeling, sequence diagram variable-receiver resolution).

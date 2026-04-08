@@ -6,6 +6,8 @@ SwiftUMLBridge is a command-line tool and Swift Package that generates architect
 - **Sequence diagrams** — static call-graph traces from a named entry-point method (M3)
 - **Dependency graphs** — directed graphs of type-level or module-level dependencies (M4)
 
+> **Prefer a GUI?** [SwiftPlantUML Studio](studio-user-guide.md) is a macOS app that provides the same diagram generation in a visual interface with project insights, one-click suggestions, and architecture change tracking — no terminal required.
+
 ---
 
 ## Table of Contents
@@ -680,3 +682,11 @@ swiftumlbridge --version
 ```
 
 Report issues at the project repository or file a bug in Xcode.
+
+---
+
+## See Also
+
+- [SwiftPlantUML Studio User Guide](studio-user-guide.md) — macOS GUI with Explorer Mode, project dashboard, and architecture change tracking
+- [Tutorial](tutorial.md) — step-by-step walkthrough of all diagram types (CLI and Studio app)
+- [Reference Guide](reference.md) — complete CLI options, YAML schema, framework API
