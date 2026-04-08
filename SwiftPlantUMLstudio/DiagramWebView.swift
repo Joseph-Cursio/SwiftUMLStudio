@@ -15,7 +15,7 @@ import SwiftUMLBridgeFramework
 struct DiagramWebView: View {
     var script: (any DiagramOutputting)?
 
-    @State private var mermaidPage = WebPage()
+    @State private var localPage = WebPage()
 
     var body: some View {
         Group {
@@ -26,15 +26,21 @@ struct DiagramWebView: View {
                     WebView(url: url)
                 }
             case .mermaid:
-                WebView(mermaidPage)
-                    .task(id: script?.text) {
-                        guard let text = script?.text, !text.isEmpty else { return }
-                        let html = MermaidHTMLBuilder.mermaidHTML(text)
-                        _ = mermaidPage.load(html: html, baseURL: URL(string: "about:blank")!)
-                    }
+                localWebView(html: MermaidHTMLBuilder.mermaidHTML(script?.text ?? ""))
+            case .nomnoml:
+                localWebView(html: NomnomlHTMLBuilder.nomnomlHTML(script?.text ?? ""))
             case nil:
                 EmptyView()
             }
         }
+    }
+
+    private func localWebView(html: String) -> some View {
+        WebView(localPage)
+            .task(id: script?.text) {
+                guard let text = script?.text, !text.isEmpty else { return }
+                let baseURL = Bundle.main.resourceURL ?? URL(string: "about:blank")!
+                _ = localPage.load(html: html, baseURL: baseURL)
+            }
     }
 }
