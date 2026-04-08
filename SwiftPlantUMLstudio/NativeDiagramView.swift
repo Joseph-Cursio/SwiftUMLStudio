@@ -66,6 +66,9 @@ struct NativeDiagramView: View {
                     lastOffset = .zero
                 }
             }
+            .accessibilityAddTraits(.isButton)
+            .accessibilityLabel("Class diagram canvas")
+            .accessibilityHint("Double-tap to reset zoom and position")
             .accessibilityIdentifier("nativeDiagramCanvas")
         }
         .background(Color(nsColor: .textBackgroundColor))
@@ -152,13 +155,13 @@ struct NativeDiagramView: View {
         // Stereotype text
         let stereoText = Text("\u{00AB}\(stereotype)\u{00BB}")
             .font(.system(size: 10, design: .default).italic())
-            .foregroundColor(Self.headerTextColor)
+            .foregroundStyle(Self.headerTextColor)
         context.draw(stereoText, at: CGPoint(x: node.posX, y: topY + 12), anchor: .center)
 
         // Name text
         let nameText = Text(node.label)
             .font(.system(size: 13, weight: .bold))
-            .foregroundColor(Self.headerTextColor)
+            .foregroundStyle(Self.headerTextColor)
         context.draw(nameText, at: CGPoint(x: node.posX, y: topY + 27), anchor: .center)
 
         // Compartments
@@ -175,7 +178,7 @@ struct NativeDiagramView: View {
                 currentY += Self.lineHeight
                 let itemText = Text(item)
                     .font(.system(size: 12, design: .monospaced))
-                    .foregroundColor(Self.bodyTextColor)
+                    .foregroundStyle(Self.bodyTextColor)
                 context.draw(
                     itemText,
                     at: CGPoint(x: leftX + Self.padding, y: currentY - 4),
@@ -222,7 +225,7 @@ struct NativeDiagramView: View {
             let mid = edge.points[edge.points.count / 2]
             let labelText = Text(label)
                 .font(.system(size: 10))
-                .foregroundColor(Self.bodyTextColor)
+                .foregroundStyle(Self.bodyTextColor)
             context.draw(labelText, at: CGPoint(x: mid.posX + 4, y: mid.posY - 6), anchor: .bottomLeading)
         }
     }

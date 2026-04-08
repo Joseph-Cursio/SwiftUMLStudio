@@ -45,6 +45,9 @@ struct NativeSequenceDiagramView: View {
                     lastOffset = .zero
                 }
             }
+            .accessibilityAddTraits(.isButton)
+            .accessibilityLabel("Sequence diagram canvas")
+            .accessibilityHint("Double-tap to reset zoom and position")
             .accessibilityIdentifier("nativeSequenceCanvas")
         }
         .background(Color(nsColor: .textBackgroundColor))
@@ -84,7 +87,7 @@ struct NativeSequenceDiagramView: View {
     private func drawTitle(in context: inout GraphicsContext) {
         let titleText = Text(layout.title)
             .font(.system(size: 14, weight: .bold))
-            .foregroundColor(Self.bodyTextColor)
+            .foregroundStyle(Self.bodyTextColor)
         context.draw(titleText, at: CGPoint(x: layout.totalWidth / 2, y: 14), anchor: .center)
     }
 
@@ -123,7 +126,7 @@ struct NativeSequenceDiagramView: View {
 
             let nameText = Text(participant.name)
                 .font(.system(size: 12, weight: .bold))
-                .foregroundColor(Self.headerTextColor)
+                .foregroundStyle(Self.headerTextColor)
             context.draw(
                 nameText,
                 at: CGPoint(x: participant.centerX, y: topY + participant.height / 2),
@@ -168,7 +171,7 @@ struct NativeSequenceDiagramView: View {
 
             let labelText = Text(message.label)
                 .font(.system(size: 11))
-                .foregroundColor(Self.bodyTextColor)
+                .foregroundStyle(Self.bodyTextColor)
             context.draw(
                 labelText,
                 at: CGPoint(x: message.fromX + loopWidth + 4, y: message.posY + 10),
@@ -194,7 +197,7 @@ struct NativeSequenceDiagramView: View {
             let labelX = (message.fromX + message.toX) / 2
             let labelText = Text(message.label)
                 .font(.system(size: 11))
-                .foregroundColor(Self.bodyTextColor)
+                .foregroundStyle(Self.bodyTextColor)
             context.draw(labelText, at: CGPoint(x: labelX, y: message.posY - 6), anchor: .bottom)
         }
     }
@@ -236,7 +239,7 @@ struct NativeSequenceDiagramView: View {
 
         let noteText = Text(text)
             .font(.system(size: 10).italic())
-            .foregroundColor(Self.bodyTextColor)
+            .foregroundStyle(Self.bodyTextColor)
         context.draw(noteText, at: CGPoint(x: centerX, y: posY), anchor: .center)
     }
 }
