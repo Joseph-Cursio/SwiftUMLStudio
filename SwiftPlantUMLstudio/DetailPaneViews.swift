@@ -17,24 +17,24 @@ struct DiagramDetailView: View {
 
     var body: some View {
         TabView(selection: $selectedTab) {
-            ProjectDashboardView(
-                summary: viewModel.projectSummary,
-                insights: viewModel.insights,
-                suggestions: viewModel.suggestions,
-                architectureDiff: viewModel.architectureDiff,
-                isProUnlocked: subscriptionManager.isProUnlocked,
-                onSuggestionTap: handleSuggestion
-            )
-            .tabItem { Label("Dashboard", systemImage: "chart.bar") }
-            .tag(DetailTab.dashboard)
+            Tab("Dashboard", systemImage: "chart.bar", value: DetailTab.dashboard) {
+                ProjectDashboardView(
+                    summary: viewModel.projectSummary,
+                    insights: viewModel.insights,
+                    suggestions: viewModel.suggestions,
+                    architectureDiff: viewModel.architectureDiff,
+                    isProUnlocked: subscriptionManager.isProUnlocked,
+                    onSuggestionTap: handleSuggestion
+                )
+            }
 
-            DiagramPreviewView(viewModel: viewModel)
-                .tabItem { Label("Preview", systemImage: "eye") }
-                .tag(DetailTab.preview)
+            Tab("Preview", systemImage: "eye", value: DetailTab.preview) {
+                DiagramPreviewView(viewModel: viewModel)
+            }
 
-            MarkupView(viewModel: viewModel)
-                .tabItem { Label("Markup", systemImage: "chevron.left.forwardslash.chevron.right") }
-                .tag(DetailTab.markup)
+            Tab("Markup", systemImage: "chevron.left.forwardslash.chevron.right", value: DetailTab.markup) {
+                MarkupView(viewModel: viewModel)
+            }
         }
         .accessibilityIdentifier("detailTabs")
         .sheet(isPresented: $showPaywall) {
