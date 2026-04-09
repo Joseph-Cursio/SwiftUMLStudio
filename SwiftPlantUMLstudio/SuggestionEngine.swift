@@ -1,7 +1,7 @@
 import Foundation
 import SwiftUMLBridgeFramework
 
-struct DiagramSuggestion: Identifiable {
+struct DiagramSuggestion: Identifiable, Sendable {
     let identifier = UUID()
     let icon: String
     let title: String
@@ -12,13 +12,13 @@ struct DiagramSuggestion: Identifiable {
     var id: UUID { identifier }
 }
 
-enum SuggestionAction {
+enum SuggestionAction: Sendable {
     case classDiagram
     case sequenceDiagram(entryPoint: String)
     case dependencyGraph(mode: DepsMode)
 }
 
-enum SuggestionEngine {
+nonisolated enum SuggestionEngine {
     static func generate(from summary: ProjectSummary, isProUnlocked: Bool) -> [DiagramSuggestion] {
         var suggestions: [DiagramSuggestion] = []
 

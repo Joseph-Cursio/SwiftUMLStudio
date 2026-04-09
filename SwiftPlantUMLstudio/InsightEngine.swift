@@ -1,6 +1,6 @@
 import Foundation
 
-struct Insight: Identifiable {
+struct Insight: Identifiable, Sendable {
     let identifier = UUID()
     let icon: String
     let title: String
@@ -16,7 +16,7 @@ struct Insight: Identifiable {
     }
 }
 
-enum InsightEngine {
+nonisolated enum InsightEngine {
     static func generate(from summary: ProjectSummary) -> [Insight] {
         var insights: [Insight] = []
         appendWarnings(from: summary, to: &insights)

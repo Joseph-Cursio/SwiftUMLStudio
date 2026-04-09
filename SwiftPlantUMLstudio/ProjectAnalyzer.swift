@@ -1,7 +1,7 @@
 import Foundation
 import SwiftUMLBridgeFramework
 
-struct ProjectSummary {
+struct ProjectSummary: Sendable {
     let totalFiles: Int
     let totalTypes: Int
     let typeBreakdown: [String: Int]
@@ -12,7 +12,7 @@ struct ProjectSummary {
     let entryPoints: [String]
 }
 
-enum ProjectAnalyzer {
+nonisolated enum ProjectAnalyzer {
     static func analyze(paths: [String]) -> ProjectSummary {
         guard paths.isEmpty == false else {
             return ProjectSummary(
