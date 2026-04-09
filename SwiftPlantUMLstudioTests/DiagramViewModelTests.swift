@@ -5,8 +5,8 @@
 //  Unit tests for DiagramViewModel default values, guard logic, and path summary.
 //
 
-import CoreData
 import Foundation
+import SwiftData
 import Testing
 import SwiftUMLBridgeFramework
 @testable import SwiftPlantUMLstudio

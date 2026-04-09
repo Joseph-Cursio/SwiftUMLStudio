@@ -1,13 +1,6 @@
-//
-//  DiagramViewModel.swift
-//  SwiftPlantUMLstudio
-//
-//  Created by joe cursio on 2/27/26.
-//
-
-import CoreData
 import Foundation
 import Observation
+import SwiftData
 import SwiftUMLBridgeFramework
 
 @Observable @MainActor
@@ -46,7 +39,7 @@ final class DiagramViewModel {
     var architectureDiff: ArchitectureDiff?
 
     var currentTask: Task<Void, Never>?
-    let context: NSManagedObjectContext
+    let modelContext: ModelContext
     let classGenerator: any ClassDiagramGenerating
     let sequenceGenerator: any SequenceDiagramGenerating
     let depsGenerator: any DependencyGraphGenerating
@@ -57,7 +50,7 @@ final class DiagramViewModel {
         sequenceGenerator: any SequenceDiagramGenerating = SequenceDiagramGenerator(),
         depsGenerator: any DependencyGraphGenerating = DependencyGraphGenerator()
     ) {
-        self.context = persistenceController.container.viewContext
+        self.modelContext = persistenceController.container.mainContext
         self.classGenerator = classGenerator
         self.sequenceGenerator = sequenceGenerator
         self.depsGenerator = depsGenerator
@@ -95,9 +88,7 @@ final class DiagramViewModel {
         currentTask = Task { [weak self] in
             guard let self else { return }
 
-            // Debounce: wait for a short period before starting expensive AST parsing
-            // to handle rapid-fire setting changes smoothly.
-            try? await Task.sleep(nanoseconds: 300_000_000) // 300ms
+            try? await Task.sleep(nanoseconds: 300_000_000)
             guard !Task.isCancelled else { return }
 
             switch self.diagramMode {
@@ -120,13 +111,10 @@ final class DiagramViewModel {
     }
 
     func loadHistory() {
-        let request = NSFetchRequest<DiagramEntity>(entityName: "DiagramEntity")
-        request.sortDescriptors = [NSSortDescriptor(keyPath: \DiagramEntity.timestamp, ascending: false)]
-        do {
-            history = try context.fetch(request)
-        } catch {
-            print("Failed to fetch history: \(error)")
-        }
+        let descriptor = FetchDescriptor<DiagramEntity>(
+            sortBy: [SortDescriptor(\.timestamp, order: .reverse)]
+        )
+        history = (try? modelContext.fetch(descriptor)) ?? []
     }
 
     func loadDiagram(_ entity: DiagramEntity) {
@@ -143,14 +131,13 @@ final class DiagramViewModel {
             depsMode = DepsMode(rawValue: entity.entryPoint ?? "") ?? .types
         }
 
-        sequenceDepth = Int(entity.sequenceDepth)
+        sequenceDepth = entity.sequenceDepth
 
         if let pathsData = entity.paths,
            let paths = try? JSONDecoder().decode([String].self, from: pathsData) {
             selectedPaths = paths
         }
 
-        // Restore the script text so the diagram appears immediately
         if let text = entity.scriptText {
             restoredScript = SimpleDiagramScript(text: text, format: diagramFormat)
         } else {
@@ -163,14 +150,13 @@ final class DiagramViewModel {
             selectedHistoryItem = nil
             restoredScript = nil
         }
-        context.delete(entity)
-        try? context.save()
+        modelContext.delete(entity)
+        try? modelContext.save()
         loadHistory()
     }
 
     func rebuildFileTree() {
         fileTree = FileNode.buildTree(from: selectedPaths)
-        // Clear selection if the file is no longer in the tree
         if let url = selectedFileURL {
             let allURLs = FileNode.allLeafURLs(from: fileTree)
             if !allURLs.contains(url) {
@@ -178,7 +164,6 @@ final class DiagramViewModel {
                 selectedFileContent = ""
             }
         }
-        // Auto-select first file if nothing selected
         if selectedFileURL == nil {
             if let firstURL = FileNode.allLeafURLs(from: fileTree).first {
                 selectFile(firstURL)
@@ -187,19 +172,19 @@ final class DiagramViewModel {
     }
 
     func loadSnapshots() {
-        snapshots = SnapshotManager.fetchSnapshots(context: context)
+        snapshots = SnapshotManager.fetchSnapshots(modelContext: modelContext)
     }
 
     func saveSnapshot(isProUnlocked: Bool) {
         guard isProUnlocked, let summary = projectSummary else { return }
-        SnapshotManager.saveSnapshot(from: summary, paths: selectedPaths, context: context)
+        SnapshotManager.saveSnapshot(from: summary, paths: selectedPaths, modelContext: modelContext)
         loadSnapshots()
         updateArchitectureDiff()
         ReviewReminderManager.rescheduleIfEnabled()
     }
 
     func deleteSnapshot(_ snapshot: ProjectSnapshot) {
-        SnapshotManager.deleteSnapshot(snapshot, context: context)
+        SnapshotManager.deleteSnapshot(snapshot, modelContext: modelContext)
         loadSnapshots()
         updateArchitectureDiff()
     }
@@ -209,7 +194,9 @@ final class DiagramViewModel {
             architectureDiff = nil
             return
         }
-        if let previous = SnapshotManager.latestSnapshot(for: selectedPaths, context: context) {
+        if let previous = SnapshotManager.latestSnapshot(
+            for: selectedPaths, modelContext: modelContext
+        ) {
             architectureDiff = SnapshotManager.computeDiff(current: summary, previous: previous)
         } else {
             architectureDiff = nil
@@ -258,9 +245,6 @@ final class DiagramViewModel {
             availableEntryPoints = []
             return
         }
-
-        // This is fast enough to do on the main actor since it's just syntax scanning
-        // without full type checking or SourceKit XPC.
         availableEntryPoints = sequenceGenerator.findEntryPoints(for: selectedPaths)
     }
 
@@ -272,8 +256,6 @@ private struct SimpleDiagramScript: DiagramOutputting {
     let format: DiagramFormat
 
     func encodeText() -> String {
-        // Use a simple percent encoding as a fallback for history restoration.
-        // In a real app, we'd expose the framework's encoding more formally.
         text.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? text
     }
 }

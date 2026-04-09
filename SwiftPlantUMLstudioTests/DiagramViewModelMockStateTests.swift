@@ -6,8 +6,8 @@
 //  debounce cancellation, state transitions, and mode isolation.
 //
 
-import CoreData
 import Foundation
+import SwiftData
 import Testing
 @testable import SwiftUMLBridgeFramework
 @testable import SwiftPlantUMLstudio
@@ -157,18 +157,20 @@ struct DiagramViewModelMockStateTests {
     @MainActor
     func generateClearsRestoredScript() async throws {
         let persistence = PersistenceController(inMemory: true)
+        let modelContext = persistence.container.mainContext
         let mockClass = MockClassGenerator()
         let viewModel = DiagramViewModel(
             persistenceController: persistence,
             classGenerator: mockClass
         )
 
-        let entity = DiagramEntity(context: persistence.container.viewContext)
-        entity.id = UUID()
+        let entity = DiagramEntity()
+        entity.identifier = UUID()
         entity.timestamp = Date()
         entity.mode = DiagramMode.classDiagram.rawValue
         entity.format = DiagramFormat.plantuml.rawValue
         entity.scriptText = "@startuml\nclass Old\n@enduml"
+        modelContext.insert(entity)
         viewModel.loadDiagram(entity)
         #expect(viewModel.currentScript?.text == "@startuml\nclass Old\n@enduml")
 

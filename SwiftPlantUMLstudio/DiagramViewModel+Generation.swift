@@ -1,5 +1,5 @@
-import CoreData
 import Foundation
+import SwiftData
 import SwiftUMLBridgeFramework
 
 // MARK: - Diagram Generation
@@ -85,8 +85,8 @@ extension DiagramViewModel {
     func saveToHistory() {
         guard let currentScript = currentScript else { return }
 
-        let entity = DiagramEntity(context: context)
-        entity.id = UUID()
+        let entity = DiagramEntity()
+        entity.identifier = UUID()
         entity.timestamp = Date()
         entity.mode = diagramMode.rawValue
         entity.format = diagramFormat.rawValue
@@ -97,7 +97,7 @@ extension DiagramViewModel {
             entity.entryPoint = depsMode.rawValue
         }
 
-        entity.sequenceDepth = Int16(sequenceDepth)
+        entity.sequenceDepth = sequenceDepth
         entity.scriptText = currentScript.text
         entity.paths = try? JSONEncoder().encode(selectedPaths)
 
@@ -110,7 +110,8 @@ extension DiagramViewModel {
             entity.name = "Untitled Diagram"
         }
 
-        try? context.save()
+        modelContext.insert(entity)
+        try? modelContext.save()
         loadHistory()
     }
 }

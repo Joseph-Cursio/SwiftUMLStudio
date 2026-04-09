@@ -1,28 +1,37 @@
-//
-//  DiagramEntity.swift
-//  SwiftPlantUMLstudio
-//
-//  Created by Gemini on 3/7/26.
-//
-
 import Foundation
-import CoreData
+import SwiftData
 
-@objc(DiagramEntity)
-public class DiagramEntity: NSManagedObject, Identifiable {
-    @NSManaged public var id: UUID?
-    @NSManaged public var mode: String?
-    @NSManaged public var format: String?
-    @NSManaged public var entryPoint: String?
-    @NSManaged public var sequenceDepth: Int16
-    @NSManaged public var paths: Data?
-    @NSManaged public var scriptText: String?
-    @NSManaged public var timestamp: Date?
-    @NSManaged public var name: String?
-}
+@Model
+final class DiagramEntity {
+    var identifier: UUID
+    var mode: String?
+    var format: String?
+    var entryPoint: String?
+    var sequenceDepth: Int
+    var paths: Data?
+    var scriptText: String?
+    var timestamp: Date?
+    var name: String?
 
-extension DiagramEntity {
-    @nonobjc public class func fetchRequest() -> NSFetchRequest<DiagramEntity> {
-        return NSFetchRequest<DiagramEntity>(entityName: "DiagramEntity")
+    init(
+        identifier: UUID = UUID(),
+        mode: String? = nil,
+        format: String? = nil,
+        entryPoint: String? = nil,
+        sequenceDepth: Int = 0,
+        paths: Data? = nil,
+        scriptText: String? = nil,
+        timestamp: Date? = nil,
+        name: String? = nil
+    ) {
+        self.identifier = identifier
+        self.mode = mode
+        self.format = format
+        self.entryPoint = entryPoint
+        self.sequenceDepth = sequenceDepth
+        self.paths = paths
+        self.scriptText = scriptText
+        self.timestamp = timestamp
+        self.name = name
     }
 }

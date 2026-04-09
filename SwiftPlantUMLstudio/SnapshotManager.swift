@@ -1,5 +1,5 @@
-import CoreData
 import Foundation
+import SwiftData
 
 /// Represents the difference between a current project state and a previous snapshot.
 struct ArchitectureDiff {
@@ -20,37 +20,39 @@ enum SnapshotManager {
     static func saveSnapshot(
         from summary: ProjectSummary,
         paths: [String],
-        context: NSManagedObjectContext
+        modelContext: ModelContext
     ) {
-        let snapshot = ProjectSnapshot(context: context)
-        snapshot.id = UUID()
-        snapshot.timestamp = Date()
-        snapshot.typeCount = Int32(summary.totalTypes)
-        snapshot.relationshipCount = Int32(summary.totalRelationships)
-        snapshot.moduleCount = Int16(summary.moduleImports.count)
-        snapshot.fileCount = Int32(summary.totalFiles)
-        snapshot.typeBreakdown = try? JSONEncoder().encode(summary.typeBreakdown)
-
-        let topTypes = summary.topConnectedTypes.map { ["\($0.name)": $0.connectionCount] }
-        snapshot.topConnectedTypes = try? JSONEncoder().encode(topTypes)
-        snapshot.projectPaths = try? JSONEncoder().encode(paths)
-
-        try? context.save()
+        let snapshot = ProjectSnapshot(
+            identifier: UUID(),
+            timestamp: Date(),
+            typeCount: summary.totalTypes,
+            relationshipCount: summary.totalRelationships,
+            moduleCount: summary.moduleImports.count,
+            fileCount: summary.totalFiles,
+            typeBreakdown: try? JSONEncoder().encode(summary.typeBreakdown),
+            topConnectedTypes: try? JSONEncoder().encode(
+                summary.topConnectedTypes.map { ["\($0.name)": $0.connectionCount] }
+            ),
+            projectPaths: try? JSONEncoder().encode(paths)
+        )
+        modelContext.insert(snapshot)
+        try? modelContext.save()
     }
 
     /// Fetch all snapshots, newest first.
-    static func fetchSnapshots(context: NSManagedObjectContext) -> [ProjectSnapshot] {
-        let request = ProjectSnapshot.fetchRequest()
-        request.sortDescriptors = [NSSortDescriptor(keyPath: \ProjectSnapshot.timestamp, ascending: false)]
-        return (try? context.fetch(request)) ?? []
+    static func fetchSnapshots(modelContext: ModelContext) -> [ProjectSnapshot] {
+        let descriptor = FetchDescriptor<ProjectSnapshot>(
+            sortBy: [SortDescriptor(\.timestamp, order: .reverse)]
+        )
+        return (try? modelContext.fetch(descriptor)) ?? []
     }
 
     /// Fetch the most recent snapshot for a given set of paths.
     static func latestSnapshot(
         for paths: [String],
-        context: NSManagedObjectContext
+        modelContext: ModelContext
     ) -> ProjectSnapshot? {
-        let snapshots = fetchSnapshots(context: context)
+        let snapshots = fetchSnapshots(modelContext: modelContext)
         let pathSet = Set(paths)
         return snapshots.first { snapshot in
             Set(snapshot.decodedProjectPaths) == pathSet
@@ -62,12 +64,11 @@ enum SnapshotManager {
         current summary: ProjectSummary,
         previous snapshot: ProjectSnapshot
     ) -> ArchitectureDiff {
-        let typeDelta = summary.totalTypes - Int(snapshot.typeCount)
-        let relationshipDelta = summary.totalRelationships - Int(snapshot.relationshipCount)
-        let moduleDelta = summary.moduleImports.count - Int(snapshot.moduleCount)
-        let fileDelta = summary.totalFiles - Int(snapshot.fileCount)
+        let typeDelta = summary.totalTypes - snapshot.typeCount
+        let relationshipDelta = summary.totalRelationships - snapshot.relationshipCount
+        let moduleDelta = summary.moduleImports.count - snapshot.moduleCount
+        let fileDelta = summary.totalFiles - snapshot.fileCount
 
-        // Type breakdown deltas
         let previousBreakdown = snapshot.decodedTypeBreakdown
         var breakdownDeltas: [String: Int] = [:]
         let allKeys = Set(summary.typeBreakdown.keys).union(previousBreakdown.keys)
@@ -80,12 +81,15 @@ enum SnapshotManager {
             }
         }
 
-        // Per-type complexity changes (connection count deltas)
         let previousTopTypes = snapshot.decodedTopConnectedTypes
-        let previousByName = Dictionary(previousTopTypes.map { ($0.name, $0.connectionCount) },
-                                        uniquingKeysWith: { first, _ in first })
-        let currentByName = Dictionary(summary.topConnectedTypes.map { ($0.name, $0.connectionCount) },
-                                       uniquingKeysWith: { first, _ in first })
+        let previousByName = Dictionary(
+            previousTopTypes.map { ($0.name, $0.connectionCount) },
+            uniquingKeysWith: { first, _ in first }
+        )
+        let currentByName = Dictionary(
+            summary.topConnectedTypes.map { ($0.name, $0.connectionCount) },
+            uniquingKeysWith: { first, _ in first }
+        )
         let allTypeNames = Set(previousByName.keys).union(currentByName.keys)
         let complexityChanges: [(name: String, delta: Int)] = allTypeNames.compactMap { name in
             let current = currentByName[name] ?? 0
@@ -107,8 +111,8 @@ enum SnapshotManager {
     }
 
     /// Delete a snapshot.
-    static func deleteSnapshot(_ snapshot: ProjectSnapshot, context: NSManagedObjectContext) {
-        context.delete(snapshot)
-        try? context.save()
+    static func deleteSnapshot(_ snapshot: ProjectSnapshot, modelContext: ModelContext) {
+        modelContext.delete(snapshot)
+        try? modelContext.save()
     }
 }

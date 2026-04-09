@@ -2,11 +2,11 @@
 //  CoreDataIntegrationTests.swift
 //  SwiftPlantUMLstudioTests
 //
-//  Core Data stack and DiagramEntity persistence integration tests.
+//  SwiftData stack and DiagramEntity persistence integration tests.
 //
 
-import CoreData
 import Foundation
+import SwiftData
 import Testing
 import SwiftUMLBridgeFramework
 @testable import SwiftPlantUMLstudio
@@ -33,41 +33,20 @@ private func runOnMain(_ block: @MainActor () throws -> Void) throws {
     }
 }
 
-// MARK: - Core Data Stack Tests
+// MARK: - SwiftData Stack Tests
 
 @Suite("PersistenceController + DiagramEntity Integration")
 struct CoreDataIntegrationTests {
 
-    // MARK: Helpers
-
     // MARK: Container Loading
 
-    @Test("in-memory container loads persistent stores without error")
+    @Test("in-memory container is available")
     func inMemoryContainerLoads() {
         runOnMain {
             let controller = PersistenceController(inMemory: true)
-            let stores = controller.container.persistentStoreCoordinator.persistentStores
-            #expect(stores.count > 0, "Expected at least one persistent store to be loaded")
-        }
-    }
-
-    @Test("in-memory container uses /dev/null store URL")
-    func inMemoryContainerUsesDevNull() {
-        runOnMain {
-            let controller = PersistenceController(inMemory: true)
-            let stores = controller.container.persistentStoreCoordinator.persistentStores
-            let url = stores.first?.url
-            #expect(url == URL(fileURLWithPath: "/dev/null"))
-        }
-    }
-
-    @Test("viewContext is available and has merge policy set")
-    func viewContextConfigured() {
-        runOnMain {
-            let controller = PersistenceController(inMemory: true)
-            let context = controller.container.viewContext
-            #expect(context.automaticallyMergesChangesFromParent == true)
-            #expect(context.mergePolicy is NSMergePolicy)
+            // SwiftData container is successfully created if we get here
+            let context = controller.container.mainContext
+            #expect(context != nil)
         }
     }
 
@@ -77,15 +56,15 @@ struct CoreDataIntegrationTests {
     func createDiagramEntity() throws {
         try runOnMain {
             let controller = PersistenceController(inMemory: true)
-            let context = controller.container.viewContext
+            let modelContext = controller.container.mainContext
 
-            let entity = DiagramEntity(context: context)
-            entity.id = UUID()
+            let entity = DiagramEntity()
+            entity.identifier = UUID()
             entity.name = "Test Diagram"
             entity.timestamp = Date()
+            modelContext.insert(entity)
 
             #expect(entity.name == "Test Diagram")
-            #expect(entity.id != nil)
         }
     }
 
@@ -93,24 +72,25 @@ struct CoreDataIntegrationTests {
     func saveAndFetchDiagramEntity() throws {
         try runOnMain {
             let controller = PersistenceController(inMemory: true)
-            let context = controller.container.viewContext
+            let modelContext = controller.container.mainContext
 
-            let entity = DiagramEntity(context: context)
+            let entity = DiagramEntity()
             let testID = UUID()
-            entity.id = testID
+            entity.identifier = testID
             entity.name = "Saved Diagram"
             entity.mode = DiagramMode.classDiagram.rawValue
             entity.format = DiagramFormat.plantuml.rawValue
             entity.timestamp = Date()
             entity.scriptText = "@startuml\nclass Foo\n@enduml"
+            modelContext.insert(entity)
 
-            try context.save()
+            try modelContext.save()
 
-            let request = DiagramEntity.fetchRequest()
-            let results = try context.fetch(request)
+            let descriptor = FetchDescriptor<DiagramEntity>()
+            let results = try modelContext.fetch(descriptor)
 
             #expect(results.count == 1)
-            #expect(results.first?.id == testID)
+            #expect(results.first?.identifier == testID)
             #expect(results.first?.name == "Saved Diagram")
             #expect(results.first?.scriptText == "@startuml\nclass Foo\n@enduml")
         }
@@ -120,14 +100,14 @@ struct CoreDataIntegrationTests {
     func allAttributesRoundTrip() throws {
         try runOnMain {
             let controller = PersistenceController(inMemory: true)
-            let context = controller.container.viewContext
+            let modelContext = controller.container.mainContext
 
             let testID = UUID()
             let testDate = Date(timeIntervalSince1970: 1_700_000_000)
             let testPaths = try JSONEncoder().encode(["/path/to/file.swift", "/another/file.swift"])
 
-            let entity = DiagramEntity(context: context)
-            entity.id = testID
+            let entity = DiagramEntity()
+            entity.identifier = testID
             entity.name = "Full Round Trip"
             entity.mode = DiagramMode.sequenceDiagram.rawValue
             entity.format = DiagramFormat.mermaid.rawValue
@@ -136,17 +116,15 @@ struct CoreDataIntegrationTests {
             entity.paths = testPaths
             entity.scriptText = "sequenceDiagram\n  A->>B: call"
             entity.timestamp = testDate
+            modelContext.insert(entity)
 
-            try context.save()
+            try modelContext.save()
 
-            // Clear the context cache to force a fetch from the store
-            context.reset()
-
-            let request = DiagramEntity.fetchRequest()
-            let results = try context.fetch(request)
+            let descriptor = FetchDescriptor<DiagramEntity>()
+            let results = try modelContext.fetch(descriptor)
             let fetched = try #require(results.first)
 
-            #expect(fetched.id == testID)
+            #expect(fetched.identifier == testID)
             #expect(fetched.name == "Full Round Trip")
             #expect(fetched.mode == "Sequence Diagram")
             #expect(fetched.format == "mermaid")
@@ -162,25 +140,26 @@ struct CoreDataIntegrationTests {
     func deleteDiagramEntity() throws {
         try runOnMain {
             let controller = PersistenceController(inMemory: true)
-            let context = controller.container.viewContext
+            let modelContext = controller.container.mainContext
 
-            let entity = DiagramEntity(context: context)
-            entity.id = UUID()
+            let entity = DiagramEntity()
+            entity.identifier = UUID()
             entity.name = "To Delete"
             entity.timestamp = Date()
+            modelContext.insert(entity)
 
-            try context.save()
+            try modelContext.save()
 
             // Verify it exists
-            let request = DiagramEntity.fetchRequest()
-            let beforeCount = try context.fetch(request).count
+            let descriptor = FetchDescriptor<DiagramEntity>()
+            let beforeCount = try modelContext.fetch(descriptor).count
             #expect(beforeCount == 1)
 
             // Delete
-            context.delete(entity)
-            try context.save()
+            modelContext.delete(entity)
+            try modelContext.save()
 
-            let afterCount = try context.fetch(request).count
+            let afterCount = try modelContext.fetch(descriptor).count
             #expect(afterCount == 0)
         }
     }
@@ -189,42 +168,45 @@ struct CoreDataIntegrationTests {
     func multipleDiagramEntities() throws {
         try runOnMain {
             let controller = PersistenceController(inMemory: true)
-            let context = controller.container.viewContext
+            let modelContext = controller.container.mainContext
 
             for idx in 0..<5 {
-                let entity = DiagramEntity(context: context)
-                entity.id = UUID()
+                let entity = DiagramEntity()
+                entity.identifier = UUID()
                 entity.name = "Diagram \(idx)"
                 entity.timestamp = Date().addingTimeInterval(TimeInterval(idx))
+                modelContext.insert(entity)
             }
 
-            try context.save()
+            try modelContext.save()
 
-            let request = DiagramEntity.fetchRequest()
-            let results = try context.fetch(request)
+            let descriptor = FetchDescriptor<DiagramEntity>()
+            let results = try modelContext.fetch(descriptor)
             #expect(results.count == 5)
         }
     }
 
-    @Test("fetch request can sort by timestamp descending")
-    func fetchRequestSortsByTimestamp() throws {
+    @Test("fetch descriptor can sort by timestamp descending")
+    func fetchDescriptorSortsByTimestamp() throws {
         try runOnMain {
             let controller = PersistenceController(inMemory: true)
-            let context = controller.container.viewContext
+            let modelContext = controller.container.mainContext
 
             let now = Date()
             for idx in 0..<3 {
-                let entity = DiagramEntity(context: context)
-                entity.id = UUID()
+                let entity = DiagramEntity()
+                entity.identifier = UUID()
                 entity.name = "Diagram \(idx)"
                 entity.timestamp = now.addingTimeInterval(TimeInterval(idx * 100))
+                modelContext.insert(entity)
             }
 
-            try context.save()
+            try modelContext.save()
 
-            let request = NSFetchRequest<DiagramEntity>(entityName: "DiagramEntity")
-            request.sortDescriptors = [NSSortDescriptor(keyPath: \DiagramEntity.timestamp, ascending: false)]
-            let results = try context.fetch(request)
+            let descriptor = FetchDescriptor<DiagramEntity>(
+                sortBy: [SortDescriptor(\.timestamp, order: .reverse)]
+            )
+            let results = try modelContext.fetch(descriptor)
 
             #expect(results.count == 3)
             // Most recent first
@@ -238,23 +220,23 @@ struct CoreDataIntegrationTests {
     func nilAttributesRoundTrip() throws {
         try runOnMain {
             let controller = PersistenceController(inMemory: true)
-            let context = controller.container.viewContext
+            let modelContext = controller.container.mainContext
 
-            let entity = DiagramEntity(context: context)
-            // Only set required-ish fields; leave everything else nil
-            entity.id = UUID()
+            let entity = DiagramEntity()
+            // Only set identifier; leave everything else at defaults/nil
+            entity.identifier = UUID()
+            modelContext.insert(entity)
 
-            try context.save()
-            context.reset()
+            try modelContext.save()
 
-            let request = DiagramEntity.fetchRequest()
-            let fetched = try #require(try context.fetch(request).first)
+            let descriptor = FetchDescriptor<DiagramEntity>()
+            let fetched = try #require(try modelContext.fetch(descriptor).first)
 
             #expect(fetched.name == nil)
             #expect(fetched.mode == nil)
             #expect(fetched.format == nil)
             #expect(fetched.entryPoint == nil)
-            #expect(fetched.sequenceDepth == 0) // Int16 default
+            #expect(fetched.sequenceDepth == 0) // Int default
             #expect(fetched.paths == nil)
             #expect(fetched.scriptText == nil)
             #expect(fetched.timestamp == nil)
@@ -263,69 +245,25 @@ struct CoreDataIntegrationTests {
 
     // MARK: - PersistenceController Additional Tests
 
-    @Test("shared static model is the same instance across calls")
-    func managedObjectModelIsSingleton() {
-        runOnMain {
-            let model1 = PersistenceController.managedObjectModel
-            let model2 = PersistenceController.managedObjectModel
-            #expect(model1 === model2)
-        }
-    }
-
-    @Test("managed object model contains DiagramEntity entity description")
-    func modelContainsDiagramEntity() {
-        runOnMain {
-            let model = PersistenceController.managedObjectModel
-            let entityNames = model.entities.map(\.name)
-            #expect(entityNames.contains("DiagramEntity"))
-        }
-    }
-
-    @Test("managed object model contains ProjectSnapshot entity description")
-    func modelContainsProjectSnapshot() {
-        runOnMain {
-            let model = PersistenceController.managedObjectModel
-            let entityNames = model.entities.map(\.name)
-            #expect(entityNames.contains("ProjectSnapshot"))
-        }
-    }
-
     @Test("two in-memory controllers have independent stores")
     func independentInMemoryStores() throws {
         try runOnMain {
             let controller1 = PersistenceController(inMemory: true)
             let controller2 = PersistenceController(inMemory: true)
 
-            let entity = DiagramEntity(context: controller1.container.viewContext)
-            entity.id = UUID()
+            let entity = DiagramEntity()
+            entity.identifier = UUID()
             entity.name = "Only in controller1"
             entity.timestamp = Date()
-            try controller1.container.viewContext.save()
+            controller1.container.mainContext.insert(entity)
+            try controller1.container.mainContext.save()
 
-            let request = DiagramEntity.fetchRequest()
-            let results1 = try controller1.container.viewContext.fetch(request)
-            let results2 = try controller2.container.viewContext.fetch(request)
+            let descriptor = FetchDescriptor<DiagramEntity>()
+            let results1 = try controller1.container.mainContext.fetch(descriptor)
+            let results2 = try controller2.container.mainContext.fetch(descriptor)
 
             #expect(results1.count == 1)
             #expect(results2.count == 0)
-        }
-    }
-
-    @Test("viewContext merge policy is mergeByPropertyObjectTrump")
-    func viewContextMergePolicy() {
-        runOnMain {
-            let controller = PersistenceController(inMemory: true)
-            let policy = controller.container.viewContext.mergePolicy as? NSMergePolicy
-            #expect(policy === NSMergePolicy.mergeByPropertyObjectTrump)
-        }
-    }
-
-    @Test("in-memory store description URL is /dev/null")
-    func inMemoryStoreDescription() {
-        runOnMain {
-            let controller = PersistenceController(inMemory: true)
-            let desc = controller.container.persistentStoreDescriptions.first
-            #expect(desc?.url == URL(fileURLWithPath: "/dev/null"))
         }
     }
 }

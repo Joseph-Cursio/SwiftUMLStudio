@@ -6,8 +6,8 @@
 //  to verify generation dispatch, argument forwarding, and format propagation.
 //
 
-import CoreData
 import Foundation
+import SwiftData
 import Testing
 @testable import SwiftUMLBridgeFramework
 @testable import SwiftPlantUMLstudio

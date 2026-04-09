@@ -5,8 +5,8 @@
 //  ViewModel history operations and diagram generation pipeline integration tests.
 //
 
-import CoreData
 import Foundation
+import SwiftData
 import Testing
 import SwiftUMLBridgeFramework
 @testable import SwiftPlantUMLstudio
@@ -42,16 +42,17 @@ struct DiagramViewModelHistoryIntegrationTests {
     func loadHistoryAfterSave() throws {
         try runOnMain {
             let persistence = PersistenceController(inMemory: true)
-            let context = persistence.container.viewContext
+            let modelContext = persistence.container.mainContext
 
-            let entity = DiagramEntity(context: context)
-            entity.id = UUID()
+            let entity = DiagramEntity()
+            entity.identifier = UUID()
             entity.name = "History Test"
             entity.mode = DiagramMode.classDiagram.rawValue
             entity.format = DiagramFormat.plantuml.rawValue
             entity.timestamp = Date()
             entity.scriptText = "@startuml\nclass A\n@enduml"
-            try context.save()
+            modelContext.insert(entity)
+            try modelContext.save()
 
             let viewModel = DiagramViewModel(persistenceController: persistence)
             viewModel.loadHistory()
@@ -65,14 +66,15 @@ struct DiagramViewModelHistoryIntegrationTests {
     func deleteHistoryItem() throws {
         try runOnMain {
             let persistence = PersistenceController(inMemory: true)
-            let context = persistence.container.viewContext
+            let modelContext = persistence.container.mainContext
 
-            let entity = DiagramEntity(context: context)
-            entity.id = UUID()
+            let entity = DiagramEntity()
+            entity.identifier = UUID()
             entity.name = "To Be Deleted"
             entity.mode = DiagramMode.classDiagram.rawValue
             entity.timestamp = Date()
-            try context.save()
+            modelContext.insert(entity)
+            try modelContext.save()
 
             let viewModel = DiagramViewModel(persistenceController: persistence)
             viewModel.loadHistory()
@@ -82,8 +84,8 @@ struct DiagramViewModelHistoryIntegrationTests {
 
             #expect(viewModel.history.contains { $0.name == "To Be Deleted" } == false)
 
-            let request = DiagramEntity.fetchRequest()
-            let remaining = try context.fetch(request)
+            let descriptor = FetchDescriptor<DiagramEntity>()
+            let remaining = try modelContext.fetch(descriptor)
             #expect(remaining.contains { $0.name == "To Be Deleted" } == false)
         }
     }
@@ -92,17 +94,18 @@ struct DiagramViewModelHistoryIntegrationTests {
     func loadHistorySortOrder() throws {
         try runOnMain {
             let persistence = PersistenceController(inMemory: true)
-            let context = persistence.container.viewContext
+            let modelContext = persistence.container.mainContext
             let now = Date()
 
             for idx in 0..<3 {
-                let entity = DiagramEntity(context: context)
-                entity.id = UUID()
+                let entity = DiagramEntity()
+                entity.identifier = UUID()
                 entity.name = "Ordered \(idx)"
                 entity.mode = DiagramMode.classDiagram.rawValue
                 entity.timestamp = now.addingTimeInterval(TimeInterval(idx * 100))
+                modelContext.insert(entity)
             }
-            try context.save()
+            try modelContext.save()
 
             let viewModel = DiagramViewModel(persistenceController: persistence)
             viewModel.loadHistory()
@@ -116,23 +119,25 @@ struct DiagramViewModelHistoryIntegrationTests {
     func loadDiagramRestoresState() throws {
         try runOnMain {
             let persistence = PersistenceController(inMemory: true)
-            let context = persistence.container.viewContext
+            let modelContext = persistence.container.mainContext
 
             // Test sequence diagram restoration
-            let seqEntity = DiagramEntity(context: context)
-            seqEntity.id = UUID()
+            let seqEntity = DiagramEntity()
+            seqEntity.identifier = UUID()
             seqEntity.mode = DiagramMode.sequenceDiagram.rawValue
             seqEntity.entryPoint = "Foo.bar"
             seqEntity.timestamp = Date()
+            modelContext.insert(seqEntity)
 
             // Test dependency graph restoration (uses entryPoint for depsMode)
-            let depsEntity = DiagramEntity(context: context)
-            depsEntity.id = UUID()
+            let depsEntity = DiagramEntity()
+            depsEntity.identifier = UUID()
             depsEntity.mode = DiagramMode.dependencyGraph.rawValue
             depsEntity.entryPoint = DepsMode.modules.rawValue
             depsEntity.timestamp = Date()
+            modelContext.insert(depsEntity)
 
-            try context.save()
+            try modelContext.save()
 
             let viewModel = DiagramViewModel(persistenceController: persistence)
 
@@ -158,11 +163,10 @@ struct DiagramViewModelHistoryIntegrationTests {
             viewModel.diagramMode = .classDiagram
 
             // Create a fake script so we have something to save
-            viewModel.loadDiagram({
-                let entity = DiagramEntity(context: persistence.container.viewContext)
-                entity.scriptText = "@startuml\n@enduml"
-                return entity
-            }())
+            let entity = DiagramEntity()
+            entity.scriptText = "@startuml\n@enduml"
+            persistence.container.mainContext.insert(entity)
+            viewModel.loadDiagram(entity)
 
             viewModel.save()
             viewModel.loadHistory()

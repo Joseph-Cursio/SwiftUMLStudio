@@ -1,5 +1,5 @@
-import CoreData
 import Foundation
+import SwiftData
 import Testing
 @testable import SwiftPlantUMLstudio
 
@@ -61,20 +61,21 @@ struct ProjectSnapshotEntityTests {
     func createAndSave() throws {
         try runOnMain {
             let controller = PersistenceController(inMemory: true)
-            let context = controller.container.viewContext
+            let modelContext = controller.container.mainContext
 
-            let snapshot = ProjectSnapshot(context: context)
-            snapshot.id = UUID()
+            let snapshot = ProjectSnapshot()
+            snapshot.identifier = UUID()
             snapshot.timestamp = Date()
             snapshot.typeCount = 10
             snapshot.relationshipCount = 5
             snapshot.moduleCount = 3
             snapshot.fileCount = 20
+            modelContext.insert(snapshot)
 
-            try context.save()
+            try modelContext.save()
 
-            let request = ProjectSnapshot.fetchRequest()
-            let results = try context.fetch(request)
+            let descriptor = FetchDescriptor<ProjectSnapshot>()
+            let results = try modelContext.fetch(descriptor)
             #expect(results.count == 1)
             #expect(results.first?.typeCount == 10)
             #expect(results.first?.relationshipCount == 5)
@@ -87,11 +88,12 @@ struct ProjectSnapshotEntityTests {
     func decodedTypeBreakdown() throws {
         try runOnMain {
             let controller = PersistenceController(inMemory: true)
-            let context = controller.container.viewContext
+            let modelContext = controller.container.mainContext
 
-            let snapshot = ProjectSnapshot(context: context)
-            snapshot.id = UUID()
+            let snapshot = ProjectSnapshot()
+            snapshot.identifier = UUID()
             snapshot.typeBreakdown = try JSONEncoder().encode(["Classes": 3, "Structs": 2])
+            modelContext.insert(snapshot)
 
             let breakdown = snapshot.decodedTypeBreakdown
             #expect(breakdown["Classes"] == 3)
@@ -103,12 +105,13 @@ struct ProjectSnapshotEntityTests {
     func decodedTopConnectedTypes() throws {
         try runOnMain {
             let controller = PersistenceController(inMemory: true)
-            let context = controller.container.viewContext
+            let modelContext = controller.container.mainContext
 
-            let snapshot = ProjectSnapshot(context: context)
-            snapshot.id = UUID()
+            let snapshot = ProjectSnapshot()
+            snapshot.identifier = UUID()
             let encoded: [[String: Int]] = [["ViewModel": 4], ["Service": 3]]
             snapshot.topConnectedTypes = try JSONEncoder().encode(encoded)
+            modelContext.insert(snapshot)
 
             let decoded = snapshot.decodedTopConnectedTypes
             #expect(decoded.count == 2)
@@ -121,11 +124,12 @@ struct ProjectSnapshotEntityTests {
     func decodedProjectPaths() throws {
         try runOnMain {
             let controller = PersistenceController(inMemory: true)
-            let context = controller.container.viewContext
+            let modelContext = controller.container.mainContext
 
-            let snapshot = ProjectSnapshot(context: context)
-            snapshot.id = UUID()
+            let snapshot = ProjectSnapshot()
+            snapshot.identifier = UUID()
             snapshot.projectPaths = try JSONEncoder().encode(["/path/one", "/path/two"])
+            modelContext.insert(snapshot)
 
             let paths = snapshot.decodedProjectPaths
             #expect(paths == ["/path/one", "/path/two"])
@@ -136,10 +140,11 @@ struct ProjectSnapshotEntityTests {
     func nilDataReturnsEmpty() {
         runOnMain {
             let controller = PersistenceController(inMemory: true)
-            let context = controller.container.viewContext
+            let modelContext = controller.container.mainContext
 
-            let snapshot = ProjectSnapshot(context: context)
-            snapshot.id = UUID()
+            let snapshot = ProjectSnapshot()
+            snapshot.identifier = UUID()
+            modelContext.insert(snapshot)
 
             #expect(snapshot.decodedTypeBreakdown.isEmpty)
             #expect(snapshot.decodedTopConnectedTypes.isEmpty)
@@ -157,13 +162,13 @@ struct SnapshotManagerTests {
     func saveSnapshot() throws {
         try runOnMain {
             let controller = PersistenceController(inMemory: true)
-            let context = controller.container.viewContext
+            let modelContext = controller.container.mainContext
             let summary = makeTestSummary()
 
-            SnapshotManager.saveSnapshot(from: summary, paths: ["/test/path"], context: context)
+            SnapshotManager.saveSnapshot(from: summary, paths: ["/test/path"], modelContext: modelContext)
 
-            let request = ProjectSnapshot.fetchRequest()
-            let results = try context.fetch(request)
+            let descriptor = FetchDescriptor<ProjectSnapshot>()
+            let results = try modelContext.fetch(descriptor)
             #expect(results.count == 1)
 
             let snapshot = results.first!
@@ -179,17 +184,18 @@ struct SnapshotManagerTests {
     func fetchSnapshotsOrder() throws {
         try runOnMain {
             let controller = PersistenceController(inMemory: true)
-            let context = controller.container.viewContext
+            let modelContext = controller.container.mainContext
 
             for idx in 0..<3 {
-                let snapshot = ProjectSnapshot(context: context)
-                snapshot.id = UUID()
+                let snapshot = ProjectSnapshot()
+                snapshot.identifier = UUID()
                 snapshot.timestamp = Date().addingTimeInterval(TimeInterval(idx * 100))
-                snapshot.typeCount = Int32(idx)
+                snapshot.typeCount = idx
+                modelContext.insert(snapshot)
             }
-            try context.save()
+            try modelContext.save()
 
-            let results = SnapshotManager.fetchSnapshots(context: context)
+            let results = SnapshotManager.fetchSnapshots(modelContext: modelContext)
             #expect(results.count == 3)
             #expect(results[0].typeCount == 2) // newest
             #expect(results[2].typeCount == 0) // oldest
@@ -200,17 +206,17 @@ struct SnapshotManagerTests {
     func latestSnapshotByPaths() throws {
         try runOnMain {
             let controller = PersistenceController(inMemory: true)
-            let context = controller.container.viewContext
+            let modelContext = controller.container.mainContext
             let targetPaths = ["/project/a", "/project/b"]
 
             // Save snapshot with matching paths
             let summary = makeTestSummary()
-            SnapshotManager.saveSnapshot(from: summary, paths: targetPaths, context: context)
+            SnapshotManager.saveSnapshot(from: summary, paths: targetPaths, modelContext: modelContext)
 
             // Save snapshot with different paths
-            SnapshotManager.saveSnapshot(from: summary, paths: ["/other/path"], context: context)
+            SnapshotManager.saveSnapshot(from: summary, paths: ["/other/path"], modelContext: modelContext)
 
-            let latest = SnapshotManager.latestSnapshot(for: targetPaths, context: context)
+            let latest = SnapshotManager.latestSnapshot(for: targetPaths, modelContext: modelContext)
             #expect(latest != nil)
             #expect(Set(latest!.decodedProjectPaths) == Set(targetPaths))
         }
@@ -220,9 +226,9 @@ struct SnapshotManagerTests {
     func latestSnapshotNoMatch() {
         runOnMain {
             let controller = PersistenceController(inMemory: true)
-            let context = controller.container.viewContext
+            let modelContext = controller.container.mainContext
 
-            let result = SnapshotManager.latestSnapshot(for: ["/nonexistent"], context: context)
+            let result = SnapshotManager.latestSnapshot(for: ["/nonexistent"], modelContext: modelContext)
             #expect(result == nil)
         }
     }
@@ -231,17 +237,17 @@ struct SnapshotManagerTests {
     func deleteSnapshot() throws {
         try runOnMain {
             let controller = PersistenceController(inMemory: true)
-            let context = controller.container.viewContext
+            let modelContext = controller.container.mainContext
 
             let summary = makeTestSummary()
-            SnapshotManager.saveSnapshot(from: summary, paths: ["/test"], context: context)
+            SnapshotManager.saveSnapshot(from: summary, paths: ["/test"], modelContext: modelContext)
 
-            let snapshots = SnapshotManager.fetchSnapshots(context: context)
+            let snapshots = SnapshotManager.fetchSnapshots(modelContext: modelContext)
             #expect(snapshots.count == 1)
 
-            SnapshotManager.deleteSnapshot(snapshots.first!, context: context)
+            SnapshotManager.deleteSnapshot(snapshots.first!, modelContext: modelContext)
 
-            let remaining = SnapshotManager.fetchSnapshots(context: context)
+            let remaining = SnapshotManager.fetchSnapshots(modelContext: modelContext)
             #expect(remaining.isEmpty)
         }
     }
@@ -256,12 +262,12 @@ struct ArchitectureDiffTests {
     func diffWithGrowth() throws {
         try runOnMain {
             let controller = PersistenceController(inMemory: true)
-            let context = controller.container.viewContext
+            let modelContext = controller.container.mainContext
 
             // Previous state: 5 types, 8 relationships, 2 modules, 10 files
             let previousSummary = makeTestSummary()
-            SnapshotManager.saveSnapshot(from: previousSummary, paths: ["/test"], context: context)
-            let snapshot = SnapshotManager.fetchSnapshots(context: context).first!
+            SnapshotManager.saveSnapshot(from: previousSummary, paths: ["/test"], modelContext: modelContext)
+            let snapshot = SnapshotManager.fetchSnapshots(modelContext: modelContext).first!
 
             // Current state: 8 types, 15 relationships, 3 modules, 14 files
             let currentSummary = makeTestSummary(
@@ -285,11 +291,11 @@ struct ArchitectureDiffTests {
     func diffWithShrinkage() throws {
         try runOnMain {
             let controller = PersistenceController(inMemory: true)
-            let context = controller.container.viewContext
+            let modelContext = controller.container.mainContext
 
             let previousSummary = makeTestSummary(totalTypes: 10, totalRelationships: 20)
-            SnapshotManager.saveSnapshot(from: previousSummary, paths: ["/test"], context: context)
-            let snapshot = SnapshotManager.fetchSnapshots(context: context).first!
+            SnapshotManager.saveSnapshot(from: previousSummary, paths: ["/test"], modelContext: modelContext)
+            let snapshot = SnapshotManager.fetchSnapshots(modelContext: modelContext).first!
 
             let currentSummary = makeTestSummary(totalTypes: 7, totalRelationships: 12)
             let diff = SnapshotManager.computeDiff(current: currentSummary, previous: snapshot)
@@ -303,11 +309,11 @@ struct ArchitectureDiffTests {
     func diffTypeBreakdownChanges() throws {
         try runOnMain {
             let controller = PersistenceController(inMemory: true)
-            let context = controller.container.viewContext
+            let modelContext = controller.container.mainContext
 
             let previousSummary = makeTestSummary(typeBreakdown: ["Classes": 3, "Structs": 2])
-            SnapshotManager.saveSnapshot(from: previousSummary, paths: ["/test"], context: context)
-            let snapshot = SnapshotManager.fetchSnapshots(context: context).first!
+            SnapshotManager.saveSnapshot(from: previousSummary, paths: ["/test"], modelContext: modelContext)
+            let snapshot = SnapshotManager.fetchSnapshots(modelContext: modelContext).first!
 
             let currentSummary = makeTestSummary(
                 typeBreakdown: ["Classes": 5, "Structs": 2, "Enums": 1]
@@ -324,13 +330,13 @@ struct ArchitectureDiffTests {
     func diffComplexityChanges() throws {
         try runOnMain {
             let controller = PersistenceController(inMemory: true)
-            let context = controller.container.viewContext
+            let modelContext = controller.container.mainContext
 
             let previousSummary = makeTestSummary(
                 topConnectedTypes: [(name: "ViewModel", connectionCount: 4)]
             )
-            SnapshotManager.saveSnapshot(from: previousSummary, paths: ["/test"], context: context)
-            let snapshot = SnapshotManager.fetchSnapshots(context: context).first!
+            SnapshotManager.saveSnapshot(from: previousSummary, paths: ["/test"], modelContext: modelContext)
+            let snapshot = SnapshotManager.fetchSnapshots(modelContext: modelContext).first!
 
             let currentSummary = makeTestSummary(
                 topConnectedTypes: [(name: "ViewModel", connectionCount: 7)]
@@ -346,11 +352,11 @@ struct ArchitectureDiffTests {
     func diffNoChanges() throws {
         try runOnMain {
             let controller = PersistenceController(inMemory: true)
-            let context = controller.container.viewContext
+            let modelContext = controller.container.mainContext
 
             let summary = makeTestSummary()
-            SnapshotManager.saveSnapshot(from: summary, paths: ["/test"], context: context)
-            let snapshot = SnapshotManager.fetchSnapshots(context: context).first!
+            SnapshotManager.saveSnapshot(from: summary, paths: ["/test"], modelContext: modelContext)
+            let snapshot = SnapshotManager.fetchSnapshots(modelContext: modelContext).first!
 
             let diff = SnapshotManager.computeDiff(current: summary, previous: snapshot)
 

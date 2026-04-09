@@ -1,22 +1,38 @@
 import Foundation
-import CoreData
+import SwiftData
 
-@objc(ProjectSnapshot)
-public class ProjectSnapshot: NSManagedObject, Identifiable {
-    @NSManaged public var id: UUID?
-    @NSManaged public var timestamp: Date?
-    @NSManaged public var typeCount: Int32
-    @NSManaged public var relationshipCount: Int32
-    @NSManaged public var moduleCount: Int16
-    @NSManaged public var fileCount: Int32
-    @NSManaged public var typeBreakdown: Data?
-    @NSManaged public var topConnectedTypes: Data?
-    @NSManaged public var projectPaths: Data?
-}
+@Model
+final class ProjectSnapshot {
+    var identifier: UUID
+    var timestamp: Date?
+    var typeCount: Int
+    var relationshipCount: Int
+    var moduleCount: Int
+    var fileCount: Int
+    var typeBreakdown: Data?
+    var topConnectedTypes: Data?
+    var projectPaths: Data?
 
-extension ProjectSnapshot {
-    @nonobjc public class func fetchRequest() -> NSFetchRequest<ProjectSnapshot> {
-        return NSFetchRequest<ProjectSnapshot>(entityName: "ProjectSnapshot")
+    init(
+        identifier: UUID = UUID(),
+        timestamp: Date? = nil,
+        typeCount: Int = 0,
+        relationshipCount: Int = 0,
+        moduleCount: Int = 0,
+        fileCount: Int = 0,
+        typeBreakdown: Data? = nil,
+        topConnectedTypes: Data? = nil,
+        projectPaths: Data? = nil
+    ) {
+        self.identifier = identifier
+        self.timestamp = timestamp
+        self.typeCount = typeCount
+        self.relationshipCount = relationshipCount
+        self.moduleCount = moduleCount
+        self.fileCount = fileCount
+        self.typeBreakdown = typeBreakdown
+        self.topConnectedTypes = topConnectedTypes
+        self.projectPaths = projectPaths
     }
 
     /// Decoded type breakdown dictionary.

@@ -5,8 +5,8 @@
 //  Unit tests for DiagramViewModel history operations: save, load, delete, and edge cases.
 //
 
-import CoreData
 import Foundation
+import SwiftData
 import Testing
 import SwiftUMLBridgeFramework
 @testable import SwiftPlantUMLstudio
@@ -32,20 +32,22 @@ struct DiagramViewModelHistoryTests {
     func saveCreatesHistoryEntity() {
         runOnMain {
             let persistence = PersistenceController(inMemory: true)
+            let modelContext = persistence.container.mainContext
             let viewModel = DiagramViewModel(persistenceController: persistence)
             viewModel.selectedPaths = ["/tmp/Foo.swift"]
             viewModel.diagramMode = .classDiagram
             viewModel.diagramFormat = .plantuml
 
-            let entity = DiagramEntity(context: persistence.container.viewContext)
-            entity.id = UUID()
+            let entity = DiagramEntity()
+            entity.identifier = UUID()
             entity.timestamp = Date()
             entity.mode = DiagramMode.classDiagram.rawValue
             entity.format = DiagramFormat.plantuml.rawValue
             entity.scriptText = "@startuml\nclass Foo\n@enduml"
             entity.paths = try? JSONEncoder().encode(["/tmp/Foo.swift"])
             entity.name = "Foo.swift"
-            try? persistence.container.viewContext.save()
+            modelContext.insert(entity)
+            try? modelContext.save()
 
             viewModel.loadHistory()
             viewModel.loadDiagram(entity)
@@ -61,10 +63,11 @@ struct DiagramViewModelHistoryTests {
     func loadDiagramRestoresProperties() {
         runOnMain {
             let persistence = PersistenceController(inMemory: true)
+            let modelContext = persistence.container.mainContext
             let viewModel = DiagramViewModel(persistenceController: persistence)
 
-            let entity = DiagramEntity(context: persistence.container.viewContext)
-            entity.id = UUID()
+            let entity = DiagramEntity()
+            entity.identifier = UUID()
             entity.timestamp = Date()
             entity.mode = DiagramMode.sequenceDiagram.rawValue
             entity.format = DiagramFormat.mermaid.rawValue
@@ -72,6 +75,7 @@ struct DiagramViewModelHistoryTests {
             entity.sequenceDepth = 5
             entity.scriptText = "sequenceDiagram\nFoo->>Bar: bar()"
             entity.paths = try? JSONEncoder().encode(["/tmp/Foo.swift"])
+            modelContext.insert(entity)
 
             viewModel.loadDiagram(entity)
 
@@ -88,16 +92,18 @@ struct DiagramViewModelHistoryTests {
     func deleteHistoryItemRemovesAndClears() {
         runOnMain {
             let persistence = PersistenceController(inMemory: true)
+            let modelContext = persistence.container.mainContext
             let viewModel = DiagramViewModel(persistenceController: persistence)
 
-            let entity = DiagramEntity(context: persistence.container.viewContext)
-            entity.id = UUID()
+            let entity = DiagramEntity()
+            entity.identifier = UUID()
             entity.timestamp = Date()
             entity.mode = DiagramMode.classDiagram.rawValue
             entity.format = DiagramFormat.plantuml.rawValue
             entity.scriptText = "@startuml\n@enduml"
             entity.name = "Test"
-            try? persistence.container.viewContext.save()
+            modelContext.insert(entity)
+            try? modelContext.save()
 
             viewModel.loadHistory()
             #expect(viewModel.history.count == 1)
@@ -114,18 +120,19 @@ struct DiagramViewModelHistoryTests {
     func loadHistorySorted() {
         runOnMain {
             let persistence = PersistenceController(inMemory: true)
+            let modelContext = persistence.container.mainContext
             let viewModel = DiagramViewModel(persistenceController: persistence)
-            let ctx = persistence.container.viewContext
 
             for idx in 0..<3 {
-                let entity = DiagramEntity(context: ctx)
-                entity.id = UUID()
+                let entity = DiagramEntity()
+                entity.identifier = UUID()
                 entity.timestamp = Date().addingTimeInterval(TimeInterval(idx * 100))
                 entity.mode = DiagramMode.classDiagram.rawValue
                 entity.format = DiagramFormat.plantuml.rawValue
                 entity.name = "Diagram \(idx)"
+                modelContext.insert(entity)
             }
-            try? ctx.save()
+            try? modelContext.save()
 
             viewModel.loadHistory()
             #expect(viewModel.history.count == 3)
@@ -140,14 +147,16 @@ struct DiagramViewModelHistoryTests {
     func loadDiagramDependencyGraphMode() {
         runOnMain {
             let persistence = PersistenceController(inMemory: true)
+            let modelContext = persistence.container.mainContext
             let viewModel = DiagramViewModel(persistenceController: persistence)
 
-            let entity = DiagramEntity(context: persistence.container.viewContext)
-            entity.id = UUID()
+            let entity = DiagramEntity()
+            entity.identifier = UUID()
             entity.timestamp = Date()
             entity.mode = DiagramMode.dependencyGraph.rawValue
             entity.format = DiagramFormat.plantuml.rawValue
             entity.entryPoint = DepsMode.modules.rawValue
+            modelContext.insert(entity)
 
             viewModel.loadDiagram(entity)
 
@@ -160,14 +169,16 @@ struct DiagramViewModelHistoryTests {
     func loadDiagramNilScriptText() {
         runOnMain {
             let persistence = PersistenceController(inMemory: true)
+            let modelContext = persistence.container.mainContext
             let viewModel = DiagramViewModel(persistenceController: persistence)
 
-            let entity = DiagramEntity(context: persistence.container.viewContext)
-            entity.id = UUID()
+            let entity = DiagramEntity()
+            entity.identifier = UUID()
             entity.timestamp = Date()
             entity.mode = DiagramMode.classDiagram.rawValue
             entity.format = DiagramFormat.plantuml.rawValue
             entity.scriptText = nil
+            modelContext.insert(entity)
 
             viewModel.loadDiagram(entity)
 
@@ -179,13 +190,15 @@ struct DiagramViewModelHistoryTests {
     func loadDiagramInvalidMode() {
         runOnMain {
             let persistence = PersistenceController(inMemory: true)
+            let modelContext = persistence.container.mainContext
             let viewModel = DiagramViewModel(persistenceController: persistence)
 
-            let entity = DiagramEntity(context: persistence.container.viewContext)
-            entity.id = UUID()
+            let entity = DiagramEntity()
+            entity.identifier = UUID()
             entity.timestamp = Date()
             entity.mode = "invalid_mode"
             entity.format = "invalid_format"
+            modelContext.insert(entity)
 
             viewModel.loadDiagram(entity)
 
@@ -198,13 +211,15 @@ struct DiagramViewModelHistoryTests {
     func loadDiagramNilPaths() {
         runOnMain {
             let persistence = PersistenceController(inMemory: true)
+            let modelContext = persistence.container.mainContext
             let viewModel = DiagramViewModel(persistenceController: persistence)
 
-            let entity = DiagramEntity(context: persistence.container.viewContext)
-            entity.id = UUID()
+            let entity = DiagramEntity()
+            entity.identifier = UUID()
             entity.timestamp = Date()
             entity.mode = DiagramMode.classDiagram.rawValue
             entity.paths = nil
+            modelContext.insert(entity)
 
             viewModel.loadDiagram(entity)
 
@@ -218,22 +233,24 @@ struct DiagramViewModelHistoryTests {
     func deleteHistoryItemNotSelected() {
         runOnMain {
             let persistence = PersistenceController(inMemory: true)
+            let modelContext = persistence.container.mainContext
             let viewModel = DiagramViewModel(persistenceController: persistence)
-            let ctx = persistence.container.viewContext
 
-            let entity1 = DiagramEntity(context: ctx)
-            entity1.id = UUID()
+            let entity1 = DiagramEntity()
+            entity1.identifier = UUID()
             entity1.timestamp = Date()
             entity1.mode = DiagramMode.classDiagram.rawValue
             entity1.name = "Entity1"
+            modelContext.insert(entity1)
 
-            let entity2 = DiagramEntity(context: ctx)
-            entity2.id = UUID()
+            let entity2 = DiagramEntity()
+            entity2.identifier = UUID()
             entity2.timestamp = Date().addingTimeInterval(100)
             entity2.mode = DiagramMode.classDiagram.rawValue
             entity2.name = "Entity2"
             entity2.scriptText = "@startuml\n@enduml"
-            try? ctx.save()
+            modelContext.insert(entity2)
+            try? modelContext.save()
 
             viewModel.loadHistory()
             viewModel.selectedHistoryItem = entity2

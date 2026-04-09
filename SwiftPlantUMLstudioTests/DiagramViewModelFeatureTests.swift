@@ -6,8 +6,8 @@
 //  architectureDiff, analyzeProject, and saveSnapshot.
 //
 
-import CoreData
 import Foundation
+import SwiftData
 import Testing
 import SwiftUMLBridgeFramework
 @testable import SwiftPlantUMLstudio
@@ -50,13 +50,15 @@ struct DiagramViewModelFeatureTests {
     func saveMultiplePathsName() {
         runOnMain {
             let persistence = PersistenceController(inMemory: true)
+            let modelContext = persistence.container.mainContext
             let viewModel = DiagramViewModel(persistenceController: persistence)
             viewModel.selectedPaths = ["/a/First.swift", "/b/Second.swift"]
             viewModel.diagramMode = .classDiagram
             viewModel.diagramFormat = .plantuml
 
-            let entity = DiagramEntity(context: persistence.container.viewContext)
+            let entity = DiagramEntity()
             entity.scriptText = "@startuml\n@enduml"
+            modelContext.insert(entity)
             viewModel.loadDiagram(entity)
 
             viewModel.save()
@@ -71,12 +73,14 @@ struct DiagramViewModelFeatureTests {
     func saveNoPathsName() {
         runOnMain {
             let persistence = PersistenceController(inMemory: true)
+            let modelContext = persistence.container.mainContext
             let viewModel = DiagramViewModel(persistenceController: persistence)
             viewModel.selectedPaths = []
             viewModel.diagramMode = .classDiagram
 
-            let entity = DiagramEntity(context: persistence.container.viewContext)
+            let entity = DiagramEntity()
             entity.scriptText = "@startuml\n@enduml"
+            modelContext.insert(entity)
             viewModel.loadDiagram(entity)
 
             viewModel.save()
@@ -91,15 +95,17 @@ struct DiagramViewModelFeatureTests {
     func saveSequenceDiagramStoresEntryPoint() {
         runOnMain {
             let persistence = PersistenceController(inMemory: true)
+            let modelContext = persistence.container.mainContext
             let viewModel = DiagramViewModel(persistenceController: persistence)
             viewModel.selectedPaths = ["/tmp/Foo.swift"]
             viewModel.diagramMode = .sequenceDiagram
             viewModel.entryPoint = "Foo.bar"
             viewModel.diagramFormat = .plantuml
 
-            let entity = DiagramEntity(context: persistence.container.viewContext)
+            let entity = DiagramEntity()
             entity.mode = DiagramMode.sequenceDiagram.rawValue
             entity.scriptText = "sequenceDiagram\nFoo->>Bar: bar()"
+            modelContext.insert(entity)
             viewModel.loadDiagram(entity)
 
             viewModel.save()
@@ -114,16 +120,18 @@ struct DiagramViewModelFeatureTests {
     func saveDependencyGraphStoresDepsMode() {
         runOnMain {
             let persistence = PersistenceController(inMemory: true)
+            let modelContext = persistence.container.mainContext
             let viewModel = DiagramViewModel(persistenceController: persistence)
             viewModel.selectedPaths = ["/tmp/Foo.swift"]
             viewModel.diagramMode = .dependencyGraph
             viewModel.depsMode = .modules
             viewModel.diagramFormat = .plantuml
 
-            let entity = DiagramEntity(context: persistence.container.viewContext)
+            let entity = DiagramEntity()
             entity.mode = DiagramMode.dependencyGraph.rawValue
             entity.entryPoint = DepsMode.modules.rawValue
             entity.scriptText = "@startuml\ndeps\n@enduml"
+            modelContext.insert(entity)
             viewModel.loadDiagram(entity)
 
             viewModel.save()
