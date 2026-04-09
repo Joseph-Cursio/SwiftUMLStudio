@@ -192,4 +192,79 @@ struct MermaidGenerationTests {
         #expect(script.text.contains("Plain"))
         #expect(script.text.contains("<<Observable>>") == false)
     }
+
+    // MARK: - Static members
+
+    @Test("static method renders with $ suffix in Mermaid output")
+    func staticMethodRendersWithDollarSuffix() {
+        let source = "class Factory { static func create() -> Factory { Factory() } }"
+        let script = generator.generateScript(for: source, with: mermaidConfig)
+        #expect(script.text.contains("create()$"))
+    }
+
+    @Test("static property renders with $ suffix in Mermaid output")
+    func staticPropertyRendersWithDollarSuffix() {
+        let source = "class Cache { static var shared: Cache = Cache() }"
+        let script = generator.generateScript(for: source, with: mermaidConfig)
+        #expect(script.text.contains("shared") && script.text.contains("$"))
+    }
+
+    @Test("enum cases render as plain member names in Mermaid output")
+    func enumCasesRenderAsPlainNames() {
+        // SourceKit parses comma-separated cases as one element (first name only);
+        // use separate case declarations so each case appears as its own member.
+        let source = "enum Direction { case north\ncase south\ncase east\ncase west }"
+        let script = generator.generateScript(for: source, with: mermaidConfig)
+        #expect(script.text.contains("north"))
+        #expect(script.text.contains("south"))
+    }
+
+    // MARK: - Members without type annotations
+
+    @Test("instance variable without typename shows only name in Mermaid output")
+    func instanceVarWithoutTypename() {
+        let items = [SyntaxStructure(kind: .struct, name: "Container", substructure: [
+            SyntaxStructure(accessibility: .internal, kind: .varInstance, name: "value")
+        ])]
+        let script = DiagramScript(items: items, configuration: mermaidConfig)
+        #expect(script.text.contains("value"))
+        // No colon-separated type should appear
+        #expect(script.text.contains("value :") == false)
+    }
+
+    @Test("static variable without typename shows name with $ in Mermaid output")
+    func staticVarWithoutTypename() {
+        let items = [SyntaxStructure(kind: .class, name: "Config", substructure: [
+            SyntaxStructure(accessibility: .internal, kind: .varStatic, name: "shared")
+        ])]
+        let script = DiagramScript(items: items, configuration: mermaidConfig)
+        #expect(script.text.contains("shared$"))
+    }
+
+    // MARK: - Member access level filter
+
+    @Test("member with access level outside filter is excluded from Mermaid output")
+    func memberAccessLevelFilteredOut() {
+        let config = Configuration(
+            elements: ElementOptions(showMembersWithAccessLevel: [.public]),
+            format: .mermaid
+        )
+        let items = [SyntaxStructure(kind: .class, name: "Foo", substructure: [
+            SyntaxStructure(accessibility: .internal, kind: .varInstance, name: "hidden", typename: "Int"),
+            SyntaxStructure(accessibility: .public, kind: .varInstance, name: "visible", typename: "String")
+        ])]
+        let script = DiagramScript(items: items, configuration: config)
+        #expect(script.text.contains("visible"))
+        #expect(script.text.contains("hidden") == false)
+    }
+
+    // MARK: - Macro kind rendering
+
+    @Test("macro kind produces comment line in Mermaid output")
+    func macroKindProducesComment() {
+        let items = [SyntaxStructure(kind: .macro, name: "Observable")]
+        let script = DiagramScript(items: items, configuration: mermaidConfig)
+        #expect(script.text.contains("%% macro:"))
+        #expect(script.text.contains("Observable"))
+    }
 }

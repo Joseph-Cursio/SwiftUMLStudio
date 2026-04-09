@@ -1,0 +1,3 @@
+excluded:
+  - SwiftUMLBridge/.build
+  - SwiftUMLBridge/.build/checkouts

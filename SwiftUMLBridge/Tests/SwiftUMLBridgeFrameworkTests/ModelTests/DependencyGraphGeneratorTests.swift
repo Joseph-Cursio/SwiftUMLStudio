@@ -155,4 +155,34 @@ struct DependencyGraphGeneratorTests {
         let script = DepsScript(model: model, configuration: .default)
         #expect(script.text.contains("CyclicDependencies") || script.text.contains("Cyclic"))
     }
+
+    // MARK: - Exclusion patterns
+
+    @Test("excluded type names are omitted from output")
+    func excludedTypeNameOmittedFromOutput() throws {
+        let source = """
+        protocol Internal {}
+        struct Public: Internal {}
+        """
+        let path = try tempSwiftFile(source)
+        defer { try? FileManager.default.removeItem(atPath: path) }
+
+        let config = Configuration(elements: ElementOptions(exclude: ["Internal"]))
+        let script = generator.generateScript(for: [path], mode: .types, with: config)
+        #expect(script.text.contains("Internal") == false)
+    }
+
+    @Test("excluded type name with wildcard pattern is omitted")
+    func excludedWildcardPatternOmitted() throws {
+        let source = """
+        protocol InternalProtocol {}
+        struct MyType: InternalProtocol {}
+        """
+        let path = try tempSwiftFile(source)
+        defer { try? FileManager.default.removeItem(atPath: path) }
+
+        let config = Configuration(elements: ElementOptions(exclude: ["Internal*"]))
+        let script = generator.generateScript(for: [path], mode: .types, with: config)
+        #expect(script.text.contains("InternalProtocol") == false)
+    }
 }

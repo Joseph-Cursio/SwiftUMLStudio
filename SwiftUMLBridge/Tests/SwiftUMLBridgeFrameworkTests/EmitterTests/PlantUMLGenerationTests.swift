@@ -195,4 +195,59 @@ struct PlantUMLGenerationTests {
         #expect(text.contains("Plain"))
         #expect(text.contains("<<Observable>>") == false)
     }
+
+    // MARK: - Macro kind rendering
+
+    @Test("macro kind produces note block in PlantUML output")
+    func macroKindProducesNoteBlock() {
+        let items = [SyntaxStructure(kind: .macro, name: "Observable")]
+        let script = DiagramScript(items: items, configuration: .default)
+        #expect(script.text.contains("note as"))
+        #expect(script.text.contains("<<macro>>"))
+        #expect(script.text.contains("Observable"))
+    }
+
+    // MARK: - Compound inherited type with &
+
+    @Test("compound inherited type with & splits into separate link targets")
+    func compoundInheritanceTypeSplitsAtAmpersand() {
+        let item = SyntaxStructure(
+            inheritedTypes: [SyntaxStructure(name: "Sendable & Codable")],
+            kind: .struct, name: "MyType"
+        )
+        let script = DiagramScript(items: [item], configuration: .default)
+        // Both names should appear in the connection lines
+        #expect(script.text.contains("Sendable"))
+        #expect(script.text.contains("Codable"))
+    }
+
+    // MARK: - Member access level filter
+
+    @Test("member with access level outside filter is excluded from PlantUML output")
+    func memberAccessLevelFilteredOut() {
+        let config = Configuration(
+            elements: ElementOptions(showMembersWithAccessLevel: [.public])
+        )
+        // internal var hidden should be filtered; public var visible should appear
+        let items = [SyntaxStructure(kind: .class, name: "Foo", substructure: [
+            SyntaxStructure(accessibility: .internal, kind: .varInstance, name: "hidden", typename: "Int"),
+            SyntaxStructure(accessibility: .public, kind: .varInstance, name: "visible", typename: "String")
+        ])]
+        let script = DiagramScript(items: items, configuration: config)
+        #expect(script.text.contains("visible"))
+        #expect(script.text.contains("hidden") == false)
+    }
+
+    // MARK: - Constrained generic parameter
+
+    @Test("constrained generic parameter includes constraint in PlantUML output")
+    func constrainedGenericParam() {
+        let param = SyntaxStructure(
+            inheritedTypes: [SyntaxStructure(name: "Comparable")],
+            kind: .genericTypeParam, name: "T"
+        )
+        let item = SyntaxStructure(kind: .class, name: "Container", substructure: [param])
+        let script = DiagramScript(items: [item], configuration: .default)
+        #expect(script.text.contains("T: Comparable"))
+    }
 }

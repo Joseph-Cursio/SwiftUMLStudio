@@ -92,10 +92,18 @@ struct ExplorerSidebar: View {
     }
 
     private func handleSuggestion(_ suggestion: DiagramSuggestion) {
-        if suggestion.requiresPro
-            && !FeatureGate.isUnlocked(.sequenceDiagrams, manager: subscriptionManager) {
-            showPaywall = true
-            return
+        if suggestion.requiresPro {
+            let feature: ProFeature = {
+                switch suggestion.action {
+                case .sequenceDiagram: return .sequenceDiagrams
+                case .dependencyGraph: return .dependencyGraphs
+                case .classDiagram: return .sequenceDiagrams
+                }
+            }()
+            guard FeatureGate.isUnlocked(feature, manager: subscriptionManager) else {
+                showPaywall = true
+                return
+            }
         }
         switch suggestion.action {
         case .classDiagram:

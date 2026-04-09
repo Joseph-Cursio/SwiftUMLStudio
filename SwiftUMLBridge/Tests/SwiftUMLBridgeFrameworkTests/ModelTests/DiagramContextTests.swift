@@ -204,4 +204,53 @@ struct DiagramContextTests {
         ctx.collectNestedTypeConnections(items: [item])
         #expect(ctx.connections.isEmpty)
     }
+
+    @Test("collectNestedTypeConnections uses +- connector for nomnoml format")
+    func collectNestedTypeConnectionsNomnoml() {
+        let config = Configuration(format: .nomnoml)
+        let ctx = DiagramContext(configuration: config)
+        let parent = SyntaxStructure(kind: .class, name: "Outer")
+        let child = SyntaxStructure(kind: .struct, name: "Inner")
+        child.parent = parent
+        _ = ctx.uniqName(item: parent, relationship: "inherits")
+        _ = ctx.uniqName(item: child, relationship: "inherits")
+        ctx.collectNestedTypeConnections(items: [parent, child])
+        #expect(ctx.connections.isEmpty == false)
+        let conn = ctx.connections.first ?? ""
+        #expect(conn.contains("+-"))
+        #expect(conn.contains("Outer"))
+        #expect(conn.contains("Inner"))
+    }
+
+    // MARK: - Relationship style appended to connections
+
+    @Test("addLinking appends plantuml style suffix to connection when style is configured")
+    func addLinkingAppendsPlantumlStyleSuffix() {
+        let style = RelationshipStyle()
+        var config = Configuration.default
+        config.relationships.inheritance = Relationship(label: "inherits", style: style)
+        let ctx = DiagramContext(configuration: config)
+        let child = SyntaxStructure(kind: .class, name: "Child")
+        let parent = SyntaxStructure(kind: .class, name: "Parent")
+        _ = ctx.uniqName(item: child, relationship: "inherits")
+        ctx.addLinking(item: child, parent: parent)
+        let conn = ctx.connections.first ?? ""
+        #expect(conn.contains("#line:"))
+    }
+
+    @Test("uniqName appends plantuml style to extension connection when dependency style is configured")
+    func uniqNameExtensionConnectionWithStyle() {
+        let style = RelationshipStyle()
+        let config = Configuration(
+            relationships: RelationshipOptions(
+                dependency: Relationship(label: "ext", style: style)
+            )
+        )
+        let ctx = DiagramContext(configuration: config)
+        let parent = SyntaxStructure(kind: .class, name: "Foo")
+        let ext = SyntaxStructure(kind: .extension, name: "Foo")
+        _ = ctx.uniqName(item: parent, relationship: "inherits")
+        _ = ctx.uniqName(item: ext, relationship: "ext")
+        #expect(ctx.extnConnections.first?.contains("#line:") == true)
+    }
 }

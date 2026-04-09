@@ -52,4 +52,27 @@ struct DiagramScriptTests {
         let script = DiagramScript(items: [], configuration: .default)
         #expect(script.text.contains("hide empty members"))
     }
+
+    @Test("defaultStyling returns empty string when both command arrays are empty")
+    func defaultStylingEmptyWhenNoCommands() {
+        let config = Configuration(hideShowCommands: [], skinparamCommands: [])
+        let script = DiagramScript(items: [], configuration: config)
+        #expect(script.defaultStyling == "")
+    }
+
+    // MARK: - Nomnoml title and footer comments
+
+    @Test("nomnoml output includes title comment when texts.title is set")
+    func nomnomlTitleComment() {
+        let config = Configuration(texts: PageTexts(title: "My Title"), format: .nomnoml)
+        let script = DiagramScript(items: [], configuration: config)
+        #expect(script.text.contains("// title: My Title"))
+    }
+
+    @Test("nomnoml output includes footer comment when texts.footer is set")
+    func nomnomlFooterComment() {
+        let config = Configuration(texts: PageTexts(footer: "Page 1"), format: .nomnoml)
+        let script = DiagramScript(items: [], configuration: config)
+        #expect(script.text.contains("// footer: Page 1"))
+    }
 }

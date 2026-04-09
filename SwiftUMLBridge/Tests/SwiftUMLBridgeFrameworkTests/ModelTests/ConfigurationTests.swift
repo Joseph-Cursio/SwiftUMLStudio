@@ -53,4 +53,16 @@ struct ConfigurationTests {
     func versionNonEmpty() {
         #expect(Version.current.value.isEmpty == false)
     }
+
+    // MARK: - ExtensionVisualization.from
+
+    @Test("ExtensionVisualization.from(true) returns .all")
+    func extensionVisualizationFromTrue() {
+        #expect(ExtensionVisualization.from(true) == .all)
+    }
+
+    @Test("ExtensionVisualization.from(false) returns .none")
+    func extensionVisualizationFromFalse() {
+        #expect(ExtensionVisualization.from(false) == .none)
+    }
 }

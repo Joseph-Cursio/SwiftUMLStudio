@@ -249,4 +249,42 @@ struct NomnomlEmitterTests {
         let script = DiagramScript(items: [], configuration: nomnomlConfig)
         #expect(script.format == .nomnoml)
     }
+
+    // MARK: - Members without type annotations
+
+    @Test("instance variable without typename shows only name in nomnoml output")
+    func instanceVarWithoutTypename() {
+        let items = [SyntaxStructure(kind: .class, name: "Box", substructure: [
+            SyntaxStructure(accessibility: .internal, kind: .varInstance, name: "value")
+        ])]
+        let script = DiagramScript(items: items, configuration: nomnomlConfig)
+        #expect(script.text.contains("value"))
+        #expect(script.text.contains("value:") == false)
+    }
+
+    @Test("static variable without typename shows 'static name' in nomnoml output")
+    func staticVarWithoutTypename() {
+        let items = [SyntaxStructure(kind: .class, name: "Config", substructure: [
+            SyntaxStructure(accessibility: .internal, kind: .varStatic, name: "shared")
+        ])]
+        let script = DiagramScript(items: items, configuration: nomnomlConfig)
+        #expect(script.text.contains("static shared"))
+    }
+
+    // MARK: - Member access level filter
+
+    @Test("member with access level outside filter is excluded from nomnoml output")
+    func memberAccessLevelFilteredOut() {
+        let config = Configuration(
+            elements: ElementOptions(showMembersWithAccessLevel: [.public]),
+            format: .nomnoml
+        )
+        let items = [SyntaxStructure(kind: .class, name: "Foo", substructure: [
+            SyntaxStructure(accessibility: .internal, kind: .varInstance, name: "hidden", typename: "Int"),
+            SyntaxStructure(accessibility: .public, kind: .varInstance, name: "visible", typename: "String")
+        ])]
+        let script = DiagramScript(items: items, configuration: config)
+        #expect(script.text.contains("visible"))
+        #expect(script.text.contains("hidden") == false)
+    }
 }

@@ -277,4 +277,97 @@ struct LayoutGraphBuilderTests {
         #expect(graph.nodes[0].label == "Apple")
         #expect(graph.nodes[1].label == "Zebra")
     }
+
+    // MARK: - Static members
+
+    @Test("extracts static methods into compartments")
+    func classDiagramStaticMethod() {
+        let method = SyntaxStructure(
+            accessibility: .internal,
+            kind: .functionMethodStatic, name: "create"
+        )
+        let item = SyntaxStructure(kind: .class, name: "Factory", substructure: [method])
+        let graph = LayoutGraphBuilder.buildClassDiagram(from: [item], configuration: .default)
+        let allItems = graph.nodes[0].compartments.flatMap(\.items)
+        #expect(allItems.contains { $0.contains("static") && $0.contains("create") })
+    }
+
+    @Test("extracts static properties into compartments")
+    func classDiagramStaticProperty() {
+        let prop = SyntaxStructure(
+            accessibility: .internal,
+            kind: .varStatic, name: "shared", typename: "MySingleton"
+        )
+        let item = SyntaxStructure(kind: .class, name: "MySingleton", substructure: [prop])
+        let graph = LayoutGraphBuilder.buildClassDiagram(from: [item], configuration: .default)
+        let allItems = graph.nodes[0].compartments.flatMap(\.items)
+        #expect(allItems.contains { $0.contains("static") && $0.contains("shared") })
+    }
+
+    // MARK: - Nested types (composition edge)
+
+    @Test("nested type with parent produces composition edge")
+    func classDiagramNestedTypeCompositionEdge() {
+        // Inner must be in Outer's substructure so populateNestedTypes sets the parent link.
+        // Manually setting child.parent is overwritten by prepareItems → populateNestedTypes.
+        let child = SyntaxStructure(kind: .struct, name: "Inner")
+        let parent = SyntaxStructure(kind: .class, name: "Outer", substructure: [child])
+        let graph = LayoutGraphBuilder.buildClassDiagram(from: [parent], configuration: .default)
+        let compositionEdges = graph.edges.filter { $0.style == .composition }
+        guard !compositionEdges.isEmpty else {
+            #expect(Bool(false), "Expected a composition edge but found none")
+            return
+        }
+        #expect(compositionEdges[0].sourceId == "Outer")
+        // targetId is the child's fullName ("Outer.Inner") used as node ID
+        #expect(compositionEdges[0].targetId == "Outer.Inner")
+    }
+
+    // MARK: - Duplicate names (uniqueId collision)
+
+    @Test("duplicate type names get unique IDs")
+    func classDiagramDuplicateNamesGetUniqueIDs() {
+        let item1 = SyntaxStructure(kind: .class, name: "Foo")
+        let item2 = SyntaxStructure(kind: .struct, name: "Foo")
+        let graph = LayoutGraphBuilder.buildClassDiagram(from: [item1, item2], configuration: .default)
+        #expect(graph.nodes.count == 2)
+        let ids = Set(graph.nodes.map(\.id))
+        #expect(ids.count == 2)
+    }
+
+    @Test("three items with the same name each get a distinct ID")
+    func classDiagramThreeDuplicateNamesGetUniqueIDs() {
+        let items = [
+            SyntaxStructure(kind: .class, name: "Foo"),
+            SyntaxStructure(kind: .struct, name: "Foo"),
+            SyntaxStructure(kind: .enum, name: "Foo")
+        ]
+        let graph = LayoutGraphBuilder.buildClassDiagram(from: items, configuration: .default)
+        #expect(graph.nodes.count == 3)
+        #expect(Set(graph.nodes.map(\.id)).count == 3)
+    }
+
+    // MARK: - Enum element members
+
+    @Test("enum case in substructure appears in node compartments")
+    func classDiagramEnumElementInCompartment() {
+        let enumElement = SyntaxStructure(accessibility: .internal, kind: .enumelement, name: "north")
+        let enumCase = SyntaxStructure(kind: .enumcase, substructure: [enumElement])
+        let item = SyntaxStructure(kind: .enum, name: "Direction", substructure: [enumCase])
+        let graph = LayoutGraphBuilder.buildClassDiagram(from: [item], configuration: .default)
+        let allItems = graph.nodes[0].compartments.flatMap(\.items)
+        #expect(allItems.contains { $0.contains("north") })
+    }
+
+    // MARK: - Merge extensions
+
+    @Test("merged extension config merges extension members into parent node")
+    func classDiagramMergeExtensions() {
+        let config = Configuration(elements: ElementOptions(showExtensions: .merged))
+        let base = SyntaxStructure(kind: .class, name: "Widget")
+        let ext = SyntaxStructure(kind: .extension, name: "Widget")
+        let graph = LayoutGraphBuilder.buildClassDiagram(from: [base, ext], configuration: config)
+        // After merging, extensions should be collapsed; only 1 node for Widget
+        #expect(graph.nodes.count == 1)
+    }
 }
