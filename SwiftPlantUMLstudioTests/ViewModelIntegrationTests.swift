@@ -35,7 +35,7 @@ private func runOnMain(_ block: @MainActor () throws -> Void) throws {
 
 // MARK: - DiagramViewModel History Integration Tests
 
-@Suite("DiagramViewModel History Integration", .serialized)
+@Suite("DiagramViewModel History Integration")
 struct DiagramViewModelHistoryIntegrationTests {
 
     @Test("loadHistory returns entities after saving one via the context")
@@ -176,7 +176,7 @@ struct DiagramViewModelHistoryIntegrationTests {
 
 // MARK: - Diagram Generation Pipeline Integration Tests
 
-@Suite("Diagram Generation Pipeline", .serialized)
+@Suite("Diagram Generation Pipeline")
 struct DiagramGenerationPipelineTests {
 
     // MARK: Helpers

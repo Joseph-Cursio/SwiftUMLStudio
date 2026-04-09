@@ -23,7 +23,7 @@ private func runOnMain(_ block: @MainActor () -> Void) {
 
 // MARK: - DiagramViewModel Integration Tests
 
-@Suite("DiagramViewModel Integration", .serialized)
+@Suite("DiagramViewModel Integration")
 struct DiagramViewModelIntegrationTests {
 
     // MARK: Helpers

@@ -5,7 +5,7 @@ struct ExplorerSidebar: View {
     @Bindable var viewModel: DiagramViewModel
     @Environment(SubscriptionManager.self) private var subscriptionManager
     @State private var showPaywall = false
-    @State private var reminderEnabled = ReviewReminderManager.isEnabled
+    @State private var reminderEnabled = ReviewReminderManager.isEnabled()
 
     var body: some View {
         List {

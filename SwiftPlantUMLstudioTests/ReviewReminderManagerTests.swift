@@ -21,109 +21,106 @@ private func runOnMain(_ block: @MainActor () -> Void) {
 
 // MARK: - ReviewReminderManager Tests
 
-@Suite("ReviewReminderManager", .serialized)
+@Suite("ReviewReminderManager")
 struct ReviewReminderManagerTests {
 
-    /// Reset UserDefaults state before each test by disabling the reminder.
-    private func resetState() {
-        runOnMain {
-            ReviewReminderManager.intervalDays = 0
-        }
+    /// Creates an isolated UserDefaults instance for a single test.
+    private func makeTestDefaults() -> (defaults: UserDefaults, suiteName: String) {
+        let suiteName = "test-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        return (defaults, suiteName)
     }
 
     @Test("isEnabled returns false when intervalDays is zero")
     func isEnabledFalseWhenZero() {
-        resetState()
+        let (defaults, suiteName) = makeTestDefaults()
+        defer { UserDefaults.standard.removePersistentDomain(forName: suiteName) }
         runOnMain {
-            ReviewReminderManager.intervalDays = 0
-            #expect(ReviewReminderManager.isEnabled == false)
+            ReviewReminderManager.setIntervalDays(0, defaults: defaults)
+            #expect(ReviewReminderManager.isEnabled(defaults: defaults) == false)
         }
     }
 
     @Test("isEnabled returns true when intervalDays is positive")
     func isEnabledTrueWhenPositive() {
-        resetState()
+        let (defaults, suiteName) = makeTestDefaults()
+        defer { UserDefaults.standard.removePersistentDomain(forName: suiteName) }
         runOnMain {
-            ReviewReminderManager.intervalDays = 7
-            #expect(ReviewReminderManager.isEnabled == true)
-            // Clean up
-            ReviewReminderManager.intervalDays = 0
+            ReviewReminderManager.setIntervalDays(7, defaults: defaults)
+            #expect(ReviewReminderManager.isEnabled(defaults: defaults) == true)
         }
     }
 
     @Test("intervalDays getter and setter round-trip through UserDefaults")
     func intervalDaysRoundTrip() {
-        resetState()
+        let (defaults, suiteName) = makeTestDefaults()
+        defer { UserDefaults.standard.removePersistentDomain(forName: suiteName) }
         runOnMain {
-            ReviewReminderManager.intervalDays = 14
-            #expect(ReviewReminderManager.intervalDays == 14)
+            ReviewReminderManager.setIntervalDays(14, defaults: defaults)
+            #expect(ReviewReminderManager.intervalDays(defaults: defaults) == 14)
 
-            ReviewReminderManager.intervalDays = 30
-            #expect(ReviewReminderManager.intervalDays == 30)
-
-            // Clean up
-            ReviewReminderManager.intervalDays = 0
+            ReviewReminderManager.setIntervalDays(30, defaults: defaults)
+            #expect(ReviewReminderManager.intervalDays(defaults: defaults) == 30)
         }
     }
 
     @Test("disableReminder sets intervalDays to zero")
     func disableReminderSetsZero() {
-        resetState()
+        let (defaults, suiteName) = makeTestDefaults()
+        defer { UserDefaults.standard.removePersistentDomain(forName: suiteName) }
         runOnMain {
-            ReviewReminderManager.intervalDays = 14
-            #expect(ReviewReminderManager.isEnabled == true)
+            ReviewReminderManager.setIntervalDays(14, defaults: defaults)
+            #expect(ReviewReminderManager.isEnabled(defaults: defaults) == true)
 
-            ReviewReminderManager.disableReminder()
-            #expect(ReviewReminderManager.intervalDays == 0)
-            #expect(ReviewReminderManager.isEnabled == false)
+            ReviewReminderManager.disableReminder(defaults: defaults)
+            #expect(ReviewReminderManager.intervalDays(defaults: defaults) == 0)
+            #expect(ReviewReminderManager.isEnabled(defaults: defaults) == false)
         }
     }
 
     @Test("rescheduleIfEnabled does nothing when disabled")
     func rescheduleIfEnabledNoop() {
-        resetState()
+        let (defaults, suiteName) = makeTestDefaults()
+        defer { UserDefaults.standard.removePersistentDomain(forName: suiteName) }
         runOnMain {
-            ReviewReminderManager.intervalDays = 0
+            ReviewReminderManager.setIntervalDays(0, defaults: defaults)
             // Should not crash or throw
-            ReviewReminderManager.rescheduleIfEnabled()
-            #expect(ReviewReminderManager.isEnabled == false)
+            ReviewReminderManager.rescheduleIfEnabled(defaults: defaults)
+            #expect(ReviewReminderManager.isEnabled(defaults: defaults) == false)
         }
     }
 
     @Test("rescheduleIfEnabled runs when enabled without crashing")
     func rescheduleIfEnabledWhenActive() {
-        resetState()
+        let (defaults, suiteName) = makeTestDefaults()
+        defer { UserDefaults.standard.removePersistentDomain(forName: suiteName) }
         runOnMain {
-            ReviewReminderManager.intervalDays = 7
+            ReviewReminderManager.setIntervalDays(7, defaults: defaults)
             // Should not crash — notification center may deny permission in tests
             // but the method should still complete.
-            ReviewReminderManager.rescheduleIfEnabled()
-            #expect(ReviewReminderManager.isEnabled == true)
-            // Clean up
-            ReviewReminderManager.intervalDays = 0
+            ReviewReminderManager.rescheduleIfEnabled(defaults: defaults)
+            #expect(ReviewReminderManager.isEnabled(defaults: defaults) == true)
         }
     }
 
     @Test("enableReminder sets intervalDays and marks as enabled")
     func enableReminderSetsInterval() {
-        resetState()
+        let (defaults, suiteName) = makeTestDefaults()
+        defer { UserDefaults.standard.removePersistentDomain(forName: suiteName) }
         runOnMain {
-            ReviewReminderManager.enableReminder(intervalDays: 21)
-            #expect(ReviewReminderManager.intervalDays == 21)
-            #expect(ReviewReminderManager.isEnabled == true)
-            // Clean up
-            ReviewReminderManager.disableReminder()
+            ReviewReminderManager.enableReminder(intervalDays: 21, defaults: defaults)
+            #expect(ReviewReminderManager.intervalDays(defaults: defaults) == 21)
+            #expect(ReviewReminderManager.isEnabled(defaults: defaults) == true)
         }
     }
 
     @Test("enableReminder with default interval uses 14 days")
     func enableReminderDefaultInterval() {
-        resetState()
+        let (defaults, suiteName) = makeTestDefaults()
+        defer { UserDefaults.standard.removePersistentDomain(forName: suiteName) }
         runOnMain {
-            ReviewReminderManager.enableReminder()
-            #expect(ReviewReminderManager.intervalDays == 14)
-            // Clean up
-            ReviewReminderManager.disableReminder()
+            ReviewReminderManager.enableReminder(defaults: defaults)
+            #expect(ReviewReminderManager.intervalDays(defaults: defaults) == 14)
         }
     }
 }

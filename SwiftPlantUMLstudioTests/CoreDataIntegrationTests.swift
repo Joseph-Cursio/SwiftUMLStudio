@@ -35,7 +35,7 @@ private func runOnMain(_ block: @MainActor () throws -> Void) throws {
 
 // MARK: - Core Data Stack Tests
 
-@Suite("PersistenceController + DiagramEntity Integration", .serialized)
+@Suite("PersistenceController + DiagramEntity Integration")
 struct CoreDataIntegrationTests {
 
     // MARK: Helpers

@@ -54,7 +54,7 @@ private func makeTestSummary(
 
 // MARK: - ProjectSnapshot Entity Tests
 
-@Suite("ProjectSnapshot Entity", .serialized)
+@Suite("ProjectSnapshot Entity")
 struct ProjectSnapshotEntityTests {
 
     @Test("ProjectSnapshot can be created and saved")
@@ -150,7 +150,7 @@ struct ProjectSnapshotEntityTests {
 
 // MARK: - SnapshotManager Tests
 
-@Suite("SnapshotManager", .serialized)
+@Suite("SnapshotManager")
 struct SnapshotManagerTests {
 
     @Test("saveSnapshot creates a ProjectSnapshot from summary")
@@ -249,7 +249,7 @@ struct SnapshotManagerTests {
 
 // MARK: - ArchitectureDiff Computation Tests
 
-@Suite("ArchitectureDiff Computation", .serialized)
+@Suite("ArchitectureDiff Computation")
 struct ArchitectureDiffTests {
 
     @Test("computeDiff calculates correct deltas for growth")
