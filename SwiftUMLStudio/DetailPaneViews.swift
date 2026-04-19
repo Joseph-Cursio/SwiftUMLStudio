@@ -44,33 +44,13 @@ struct DiagramDetailView: View {
 
     private func handleSuggestion(_ suggestion: DiagramSuggestion) {
         if suggestion.requiresPro {
-            let feature: ProFeature = {
-                switch suggestion.action {
-                case .sequenceDiagram: return .sequenceDiagrams
-                case .dependencyGraph: return .dependencyGraphs
-                case .stateMachine: return .stateMachines
-                case .classDiagram: return .sequenceDiagrams
-                }
-            }()
+            let feature = SuggestionDispatcher.featureRequired(for: suggestion.action)
             guard FeatureGate.isUnlocked(feature, manager: subscriptionManager) else {
                 showPaywall = true
                 return
             }
         }
-        switch suggestion.action {
-        case .classDiagram:
-            viewModel.diagramMode = .classDiagram
-        case .sequenceDiagram(let entryPoint):
-            viewModel.diagramMode = .sequenceDiagram
-            viewModel.entryPoint = entryPoint
-        case .dependencyGraph(let mode):
-            viewModel.diagramMode = .dependencyGraph
-            viewModel.depsMode = mode
-        case .stateMachine(let identifier):
-            viewModel.diagramMode = .stateMachine
-            viewModel.refreshStateMachines()
-            viewModel.stateIdentifier = identifier
-        }
+        SuggestionDispatcher.apply(suggestion, to: viewModel)
         viewModel.generate()
         selectedTab = .preview
     }
@@ -116,8 +96,20 @@ struct DiagramPreviewView: View {
     }
 
     private var lowConfidenceModel: StateMachineModel? {
-        guard viewModel.diagramMode == .stateMachine,
-              let model = viewModel.currentStateMachineModel,
+        DiagramPreviewView.lowConfidenceModel(
+            diagramMode: viewModel.diagramMode,
+            stateMachineModel: viewModel.currentStateMachineModel
+        )
+    }
+
+    /// Returns the state machine model that should drive the confidence banner,
+    /// or `nil` when the banner should stay hidden. Exposed for testing.
+    static func lowConfidenceModel(
+        diagramMode: DiagramMode,
+        stateMachineModel: StateMachineModel?
+    ) -> StateMachineModel? {
+        guard diagramMode == .stateMachine,
+              let model = stateMachineModel,
               model.confidence != .high
         else { return nil }
         return model
