@@ -22,30 +22,40 @@ enum SuggestionAction: Sendable {
 nonisolated enum SuggestionEngine {
     static func generate(from summary: ProjectSummary, isProUnlocked: Bool) -> [DiagramSuggestion] {
         var suggestions: [DiagramSuggestion] = []
-
-        // Always suggest a class diagram if there are types
-        if summary.totalTypes > 0 {
-            suggestions.append(DiagramSuggestion(
-                icon: "rectangle.3.group",
-                title: "See how your types are connected",
-                description: "\(summary.totalTypes) types with \(summary.totalRelationships) relationships.",
-                action: .classDiagram,
-                requiresPro: false
-            ))
+        if let classSuggestion = classDiagramSuggestion(from: summary) {
+            suggestions.append(classSuggestion)
         }
+        suggestions.append(contentsOf: sequenceSuggestions(from: summary))
+        suggestions.append(contentsOf: dependencySuggestions(from: summary))
+        suggestions.append(contentsOf: stateMachineSuggestions(from: summary))
+        return suggestions
+    }
 
-        // Suggest sequence diagrams for top entry points
-        for entryPoint in summary.entryPoints.prefix(3) {
-            suggestions.append(DiagramSuggestion(
+    private static func classDiagramSuggestion(from summary: ProjectSummary) -> DiagramSuggestion? {
+        guard summary.totalTypes > 0 else { return nil }
+        return DiagramSuggestion(
+            icon: "rectangle.3.group",
+            title: "See how your types are connected",
+            description: "\(summary.totalTypes) types with \(summary.totalRelationships) relationships.",
+            action: .classDiagram,
+            requiresPro: false
+        )
+    }
+
+    private static func sequenceSuggestions(from summary: ProjectSummary) -> [DiagramSuggestion] {
+        summary.entryPoints.prefix(3).map { entryPoint in
+            DiagramSuggestion(
                 icon: "arrow.right.arrow.left",
                 title: "Trace \(entryPoint)",
                 description: "See the execution flow when this method runs.",
                 action: .sequenceDiagram(entryPoint: entryPoint),
                 requiresPro: true
-            ))
+            )
         }
+    }
 
-        // Suggest dependency graph if there are relationships
+    private static func dependencySuggestions(from summary: ProjectSummary) -> [DiagramSuggestion] {
+        var suggestions: [DiagramSuggestion] = []
         if summary.totalRelationships > 0 {
             suggestions.append(DiagramSuggestion(
                 icon: "arrow.triangle.branch",
@@ -55,8 +65,6 @@ nonisolated enum SuggestionEngine {
                 requiresPro: true
             ))
         }
-
-        // Suggest module dependency graph if multiple modules imported
         if summary.moduleImports.count >= 2 {
             suggestions.append(DiagramSuggestion(
                 icon: "shippingbox.and.arrow.backward",
@@ -66,31 +74,32 @@ nonisolated enum SuggestionEngine {
                 requiresPro: true
             ))
         }
-
-        // Suggest state machine diagrams for detected candidates, highest-confidence first
-        let sortedStateMachines = summary.stateMachines
-            .sorted { lhs, rhs in lhs.confidence > rhs.confidence }
-            .prefix(3)
-        for model in sortedStateMachines {
-            let transitionCount = model.transitions.count
-            let summaryText: String
-            switch model.confidence {
-            case .high:
-                summaryText = "\(model.states.count) states, \(transitionCount) transitions."
-            case .medium:
-                summaryText = "\(model.states.count) states — type inferred from initializer."
-            case .low:
-                summaryText = "\(transitionCount) transitions — sources unknown."
-            }
-            suggestions.append(DiagramSuggestion(
-                icon: "arrow.triangle.2.circlepath",
-                title: "Diagram \(model.identifier)",
-                description: summaryText,
-                action: .stateMachine(identifier: model.identifier),
-                requiresPro: true
-            ))
-        }
-
         return suggestions
+    }
+
+    private static func stateMachineSuggestions(from summary: ProjectSummary) -> [DiagramSuggestion] {
+        summary.stateMachines
+            .sorted { $0.confidence > $1.confidence }
+            .prefix(3)
+            .map { model in
+                DiagramSuggestion(
+                    icon: "arrow.triangle.2.circlepath",
+                    title: "Diagram \(model.identifier)",
+                    description: stateMachineDescription(for: model),
+                    action: .stateMachine(identifier: model.identifier),
+                    requiresPro: true
+                )
+            }
+    }
+
+    private static func stateMachineDescription(for model: StateMachineModel) -> String {
+        switch model.confidence {
+        case .high:
+            return "\(model.states.count) states, \(model.transitions.count) transitions."
+        case .medium:
+            return "\(model.states.count) states — type inferred from initializer."
+        case .low:
+            return "\(model.transitions.count) transitions — sources unknown."
+        }
     }
 }

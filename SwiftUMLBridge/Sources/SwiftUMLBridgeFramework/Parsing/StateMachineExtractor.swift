@@ -7,7 +7,39 @@ import SwiftSyntax
 /// Heuristic (M1): an enum used as a state property on a host type (class/struct/actor)
 /// where transitions happen via `self.prop = .case` assignments inside `switch self.prop`
 /// branches. Enums with associated values on any case are rejected.
+private struct StateMachineClassifiedTransitions {
+    let transitions: [StateTransition]
+    let confidence: DetectionConfidence
+    let notes: [String]
+}
+
+private struct StateMachinePropertyInfo {
+    let typeName: String
+    /// True when the type came from the initializer fallback rather than an explicit annotation.
+    let typeInferred: Bool
+}
+
+private struct StateMachineSwitchFrame {
+    let subjectPropertyName: String?
+    var currentCaseName: String?
+    var currentGuardText: String?
+}
+
+private struct StateMachineObservedTransition {
+    let typeName: String
+    let funcName: String
+    let propertyName: String
+    let rhsCaseName: String
+    let switchCaseName: String?
+    let switchGuardText: String?
+    let switchSubjectMatches: Bool
+}
+
 final class StateMachineExtractor: SyntaxVisitor {
+
+    fileprivate typealias PropertyInfo = StateMachinePropertyInfo
+    fileprivate typealias SwitchFrame = StateMachineSwitchFrame
+    fileprivate typealias ObservedTransition = StateMachineObservedTransition
 
     // MARK: - Collected data
 
@@ -18,12 +50,6 @@ final class StateMachineExtractor: SyntaxVisitor {
     /// Per host type: property name → (declared type, whether type was inferred).
     private var typeProperties: [String: [String: PropertyInfo]] = [:]
 
-    private struct PropertyInfo {
-        let typeName: String
-        /// True when the type came from the initializer fallback rather than an explicit annotation.
-        let typeInferred: Bool
-    }
-
     /// Records raw transitions observed during the walk.
     private var observedTransitions: [ObservedTransition] = []
 
@@ -32,22 +58,6 @@ final class StateMachineExtractor: SyntaxVisitor {
     private var typeStack: [String] = []
     private var funcStack: [String] = []
     private var switchStack: [SwitchFrame] = []
-
-    private struct SwitchFrame {
-        let subjectPropertyName: String?
-        var currentCaseName: String?
-        var currentGuardText: String?
-    }
-
-    private struct ObservedTransition {
-        let typeName: String
-        let funcName: String
-        let propertyName: String
-        let rhsCaseName: String
-        let switchCaseName: String?
-        let switchGuardText: String?
-        let switchSubjectMatches: Bool
-    }
 
     // MARK: - Type declarations
 
@@ -243,84 +253,81 @@ final class StateMachineExtractor: SyntaxVisitor {
 
     /// Resolve observed data into `StateMachineModel` candidates.
     private func buildCandidates() -> [StateMachineModel] {
-        var result: [StateMachineModel] = []
-
         let bucketed = Dictionary(grouping: observedTransitions) { obs in
             "\(obs.typeName)|\(obs.propertyName)"
         }
-
-        for (_, group) in bucketed {
-            guard let first = group.first else { continue }
-            guard let propertyInfo = typeProperties[first.typeName]?[first.propertyName] else { continue }
-            let enumType = propertyInfo.typeName
-            guard let cases = simpleEnums[enumType] else { continue }
-
-            var notes: [String] = []
-
-            let switchedTransitions: [StateTransition] = group.compactMap { obs in
-                guard obs.switchSubjectMatches, let from = obs.switchCaseName else { return nil }
-                return StateTransition(
-                    from: from,
-                    toState: obs.rhsCaseName,
-                    trigger: obs.funcName,
-                    guardText: obs.switchGuardText
-                )
-            }
-
-            let unknownSourceTransitions: [StateTransition] = group.compactMap { obs in
-                guard !obs.switchSubjectMatches else { return nil }
-                return StateTransition(
-                    from: "*",
-                    toState: obs.rhsCaseName,
-                    trigger: obs.funcName
-                )
-            }
-
-            let transitions: [StateTransition]
-            let confidence: DetectionConfidence
-
-            if !switchedTransitions.isEmpty {
-                transitions = switchedTransitions
-                confidence = propertyInfo.typeInferred ? .medium : .high
-                if propertyInfo.typeInferred {
-                    notes.append("Enum type inferred from initializer; no explicit annotation.")
-                }
-            } else if !unknownSourceTransitions.isEmpty {
-                transitions = unknownSourceTransitions
-                confidence = .low
-                notes.append(
-                    "No switch statement found over \(first.propertyName); transition sources are unknown."
-                )
-            } else {
-                continue
-            }
-
-            let finalNames: Set<String> = ["done", "finished", "completed", "terminated", "error"]
-            let destinations = Set(transitions.map(\.toState))
-            let sources = Set(transitions.map(\.from))
-            let states: [StateMachineState] = cases.enumerated().map { index, caseName in
-                let isInitial = index == 0
-                let isFinal = finalNames.contains(caseName.lowercased())
-                    && !sources.contains(caseName)
-                    && destinations.contains(caseName)
-                return StateMachineState(
-                    name: caseName,
-                    isInitial: isInitial,
-                    isFinal: isFinal
-                )
-            }
-
-            result.append(StateMachineModel(
-                hostType: first.typeName,
-                enumType: enumType,
-                states: states,
-                transitions: transitions,
-                confidence: confidence,
-                notes: notes
-            ))
-        }
-
+        let result = bucketed.values.compactMap(buildCandidate(from:))
         return result.sorted { $0.identifier < $1.identifier }
+    }
+
+    fileprivate typealias ClassifiedTransitions = StateMachineClassifiedTransitions
+
+    private func buildCandidate(from group: [ObservedTransition]) -> StateMachineModel? {
+        guard let first = group.first,
+              let propertyInfo = typeProperties[first.typeName]?[first.propertyName] else {
+            return nil
+        }
+        let enumType = propertyInfo.typeName
+        guard let cases = simpleEnums[enumType] else { return nil }
+
+        guard let classified = classifyTransitions(
+            group: group, propertyInfo: propertyInfo, propertyName: first.propertyName
+        ) else { return nil }
+
+        return StateMachineModel(
+            hostType: first.typeName,
+            enumType: enumType,
+            states: buildStates(cases: cases, transitions: classified.transitions),
+            transitions: classified.transitions,
+            confidence: classified.confidence,
+            notes: classified.notes
+        )
+    }
+
+    private func classifyTransitions(
+        group: [ObservedTransition],
+        propertyInfo: PropertyInfo,
+        propertyName: String
+    ) -> ClassifiedTransitions? {
+        let switched: [StateTransition] = group.compactMap { obs in
+            guard obs.switchSubjectMatches, let from = obs.switchCaseName else { return nil }
+            return StateTransition(
+                from: from, toState: obs.rhsCaseName,
+                trigger: obs.funcName, guardText: obs.switchGuardText
+            )
+        }
+        if !switched.isEmpty {
+            let confidence: DetectionConfidence = propertyInfo.typeInferred ? .medium : .high
+            let notes = propertyInfo.typeInferred
+                ? ["Enum type inferred from initializer; no explicit annotation."]
+                : []
+            return ClassifiedTransitions(transitions: switched, confidence: confidence, notes: notes)
+        }
+        let unknown: [StateTransition] = group.compactMap { obs in
+            guard !obs.switchSubjectMatches else { return nil }
+            return StateTransition(from: "*", toState: obs.rhsCaseName, trigger: obs.funcName)
+        }
+        guard !unknown.isEmpty else { return nil }
+        return ClassifiedTransitions(
+            transitions: unknown,
+            confidence: .low,
+            notes: ["No switch statement found over \(propertyName); transition sources are unknown."]
+        )
+    }
+
+    private static let finalStateNames: Set<String> = [
+        "done", "finished", "completed", "terminated", "error"
+    ]
+
+    private func buildStates(cases: [String], transitions: [StateTransition]) -> [StateMachineState] {
+        let destinations = Set(transitions.map(\.toState))
+        let sources = Set(transitions.map(\.from))
+        return cases.enumerated().map { index, caseName in
+            let isFinal = Self.finalStateNames.contains(caseName.lowercased())
+                && !sources.contains(caseName)
+                && destinations.contains(caseName)
+            return StateMachineState(name: caseName, isInitial: index == 0, isFinal: isFinal)
+        }
     }
 
     // MARK: - Static factory

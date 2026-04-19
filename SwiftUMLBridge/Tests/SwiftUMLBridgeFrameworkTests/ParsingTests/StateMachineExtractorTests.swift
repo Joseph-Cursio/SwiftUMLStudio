@@ -92,7 +92,10 @@ struct StateMachineExtractorTests {
         #expect(models.first?.transitions.count == 2)
     }
 
-    // MARK: - Negative cases
+}
+
+@Suite("StateMachineExtractor — edge cases")
+struct StateMachineExtractorEdgeCaseTests {
 
     @Test("enum with associated values is rejected")
     func enumWithAssociatedValuesRejected() {
