@@ -88,6 +88,31 @@ struct DiagramViewModelHistoryTests {
         }
     }
 
+    @Test("loadDiagram restores state machine identifier from entity")
+    func loadDiagramRestoresStateMachine() {
+        runOnMain {
+            let persistence = PersistenceController(inMemory: true)
+            let modelContext = persistence.container.mainContext
+            let viewModel = DiagramViewModel(persistenceController: persistence)
+
+            let entity = DiagramEntity()
+            entity.identifier = UUID()
+            entity.timestamp = Date()
+            entity.mode = DiagramMode.stateMachine.rawValue
+            entity.format = DiagramFormat.plantuml.rawValue
+            entity.entryPoint = "TrafficLight.Light"
+            entity.scriptText = "@startuml\ntitle TrafficLight.Light\n@enduml"
+            entity.paths = try? JSONEncoder().encode(["/tmp/Foo.swift"])
+            modelContext.insert(entity)
+
+            viewModel.loadDiagram(entity)
+
+            #expect(viewModel.diagramMode == .stateMachine)
+            #expect(viewModel.stateIdentifier == "TrafficLight.Light")
+            #expect(viewModel.currentScript?.text.contains("TrafficLight.Light") == true)
+        }
+    }
+
     @Test("deleteHistoryItem removes entity and clears selection")
     func deleteHistoryItemRemovesAndClears() {
         runOnMain {

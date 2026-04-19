@@ -27,6 +27,12 @@ struct HistoryItemRow: View {
         if mode == DiagramMode.dependencyGraph.rawValue, let detail = item.entryPoint {
             return "\(mode) (\(detail))"
         }
+        if mode == DiagramMode.stateMachine.rawValue, let detail = item.entryPoint, !detail.isEmpty {
+            return "\(mode) (\(detail))"
+        }
+        if mode == DiagramMode.sequenceDiagram.rawValue, let detail = item.entryPoint, !detail.isEmpty {
+            return "\(mode) (\(detail))"
+        }
         return mode
     }
 }
