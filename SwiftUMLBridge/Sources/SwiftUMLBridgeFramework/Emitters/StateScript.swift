@@ -54,12 +54,15 @@ private extension StateScript {
             "title \(model.hostType).\(model.enumType)"
         ]
 
-        if let initial = model.states.first(where: { $0.isInitial }) {
+        let hasWildcardSource = model.transitions.contains { $0.from == "*" }
+        if !hasWildcardSource, let initial = model.states.first(where: { $0.isInitial }) {
             lines.append("[*] --> \(initial.name)")
         }
 
         for transition in model.transitions {
-            lines.append("\(transition.from) --> \(transition.toState)\(transitionLabel(transition))")
+            let from = renderStateToken(transition.from)
+            let toState = renderStateToken(transition.toState)
+            lines.append("\(from) --> \(toState)\(transitionLabel(transition))")
         }
 
         for state in model.states where state.isFinal {
@@ -68,6 +71,12 @@ private extension StateScript {
 
         lines.append("@enduml")
         return lines.joined(separator: "\n")
+    }
+
+    /// Normalize the wildcard source token `*` to PlantUML / Mermaid's initial
+    /// pseudo-state `[*]`.
+    static func renderStateToken(_ name: String) -> String {
+        name == "*" ? "[*]" : name
     }
 
     static func transitionLabel(_ transition: StateTransition) -> String {
@@ -91,12 +100,15 @@ private extension StateScript {
             "%% title: \(model.hostType).\(model.enumType)"
         ]
 
-        if let initial = model.states.first(where: { $0.isInitial }) {
+        let hasWildcardSource = model.transitions.contains { $0.from == "*" }
+        if !hasWildcardSource, let initial = model.states.first(where: { $0.isInitial }) {
             lines.append("[*] --> \(initial.name)")
         }
 
         for transition in model.transitions {
-            lines.append("\(transition.from) --> \(transition.toState)\(transitionLabel(transition))")
+            let from = renderStateToken(transition.from)
+            let toState = renderStateToken(transition.toState)
+            lines.append("\(from) --> \(toState)\(transitionLabel(transition))")
         }
 
         for state in model.states where state.isFinal {

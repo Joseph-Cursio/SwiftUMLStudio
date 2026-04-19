@@ -15,8 +15,14 @@ final class StateMachineExtractor: SyntaxVisitor {
     /// Only present when every case has no associated values.
     private var simpleEnums: [String: [String]] = [:]
 
-    /// Per host type: property name → declared type annotation.
-    private var typeProperties: [String: [String: String]] = [:]
+    /// Per host type: property name → (declared type, whether type was inferred).
+    private var typeProperties: [String: [String: PropertyInfo]] = [:]
+
+    private struct PropertyInfo {
+        let typeName: String
+        /// True when the type came from the initializer fallback rather than an explicit annotation.
+        let typeInferred: Bool
+    }
 
     /// Records raw transitions observed during the walk.
     private var observedTransitions: [ObservedTransition] = []
@@ -112,10 +118,14 @@ final class StateMachineExtractor: SyntaxVisitor {
             if let annotation = binding.typeAnnotation {
                 let annotationText = annotation.type.description
                     .trimmingCharacters(in: .whitespacesAndNewlines)
-                typeProperties[typeName, default: [:]][propertyName] = annotationText
+                typeProperties[typeName, default: [:]][propertyName] = PropertyInfo(
+                    typeName: annotationText, typeInferred: false
+                )
             } else if let inferred = Self.inferTypeFromInitializer(binding.initializer?.value) {
                 // Fallback for property-wrapper inferred types like `@State var state = Light.red`.
-                typeProperties[typeName, default: [:]][propertyName] = inferred
+                typeProperties[typeName, default: [:]][propertyName] = PropertyInfo(
+                    typeName: inferred, typeInferred: true
+                )
             }
         }
         return .visitChildren
@@ -241,10 +251,13 @@ final class StateMachineExtractor: SyntaxVisitor {
 
         for (_, group) in bucketed {
             guard let first = group.first else { continue }
-            guard let enumType = typeProperties[first.typeName]?[first.propertyName] else { continue }
+            guard let propertyInfo = typeProperties[first.typeName]?[first.propertyName] else { continue }
+            let enumType = propertyInfo.typeName
             guard let cases = simpleEnums[enumType] else { continue }
 
-            let transitions: [StateTransition] = group.compactMap { obs in
+            var notes: [String] = []
+
+            let switchedTransitions: [StateTransition] = group.compactMap { obs in
                 guard obs.switchSubjectMatches, let from = obs.switchCaseName else { return nil }
                 return StateTransition(
                     from: from,
@@ -253,7 +266,34 @@ final class StateMachineExtractor: SyntaxVisitor {
                     guardText: obs.switchGuardText
                 )
             }
-            guard !transitions.isEmpty else { continue }
+
+            let unknownSourceTransitions: [StateTransition] = group.compactMap { obs in
+                guard !obs.switchSubjectMatches else { return nil }
+                return StateTransition(
+                    from: "*",
+                    toState: obs.rhsCaseName,
+                    trigger: obs.funcName
+                )
+            }
+
+            let transitions: [StateTransition]
+            let confidence: DetectionConfidence
+
+            if !switchedTransitions.isEmpty {
+                transitions = switchedTransitions
+                confidence = propertyInfo.typeInferred ? .medium : .high
+                if propertyInfo.typeInferred {
+                    notes.append("Enum type inferred from initializer; no explicit annotation.")
+                }
+            } else if !unknownSourceTransitions.isEmpty {
+                transitions = unknownSourceTransitions
+                confidence = .low
+                notes.append(
+                    "No switch statement found over \(first.propertyName); transition sources are unknown."
+                )
+            } else {
+                continue
+            }
 
             let finalNames: Set<String> = ["done", "finished", "completed", "terminated", "error"]
             let destinations = Set(transitions.map(\.toState))
@@ -274,7 +314,9 @@ final class StateMachineExtractor: SyntaxVisitor {
                 hostType: first.typeName,
                 enumType: enumType,
                 states: states,
-                transitions: transitions
+                transitions: transitions,
+                confidence: confidence,
+                notes: notes
             ))
         }
 

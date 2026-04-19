@@ -112,8 +112,8 @@ struct StateMachineExtractorTests {
         #expect(models.isEmpty)
     }
 
-    @Test("property without switch-driven transitions yields no candidate")
-    func noSwitchNoCandidate() {
+    @Test("property without switch-driven transitions yields low-confidence candidate")
+    func noSwitchLowConfidence() {
         let source = """
         enum Light { case red, green }
         class Host {
@@ -122,11 +122,14 @@ struct StateMachineExtractorTests {
         }
         """
         let models = StateMachineExtractor.extract(from: source)
-        #expect(models.isEmpty)
+        #expect(models.count == 1)
+        #expect(models.first?.confidence == .low)
+        #expect(models.first?.transitions.allSatisfy { $0.from == "*" } == true)
+        #expect(models.first?.notes.contains(where: { $0.contains("No switch statement") }) == true)
     }
 
-    @Test("switch on a different property does not produce transitions")
-    func switchOnDifferentPropertyIgnored() {
+    @Test("switch on a different property yields low-confidence candidate")
+    func switchOnDifferentPropertyLowConfidence() {
         let source = """
         enum Light { case red, green }
         enum Other { case a, b }
@@ -142,7 +145,48 @@ struct StateMachineExtractorTests {
         }
         """
         let models = StateMachineExtractor.extract(from: source)
-        #expect(models.isEmpty)
+        let stateModel = models.first(where: { $0.enumType == "Light" })
+        #expect(stateModel != nil)
+        #expect(stateModel?.confidence == .low)
+        #expect(stateModel?.transitions.allSatisfy { $0.from == "*" } == true)
+    }
+
+    @Test("annotated property with switch produces high confidence")
+    func annotatedSwitchIsHighConfidence() {
+        let source = """
+        enum Light { case red, green }
+        class Host {
+            var state: Light = .red
+            func toggle() {
+                switch self.state {
+                case .red: self.state = .green
+                case .green: self.state = .red
+                }
+            }
+        }
+        """
+        let models = StateMachineExtractor.extract(from: source)
+        #expect(models.first?.confidence == .high)
+        #expect(models.first?.notes.isEmpty == true)
+    }
+
+    @Test("inferred type from initializer produces medium confidence")
+    func inferredTypeIsMediumConfidence() {
+        let source = """
+        enum Light { case red, green }
+        struct Host {
+            @State var state = Light.red
+            mutating func toggle() {
+                switch self.state {
+                case .red: self.state = .green
+                case .green: self.state = .red
+                }
+            }
+        }
+        """
+        let models = StateMachineExtractor.extract(from: source)
+        #expect(models.first?.confidence == .medium)
+        #expect(models.first?.notes.contains(where: { $0.contains("inferred") }) == true)
     }
 
     @Test("@Published wrapper with explicit type annotation is detected")

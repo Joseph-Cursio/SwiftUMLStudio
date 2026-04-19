@@ -18,7 +18,8 @@ public struct StateMachineGenerator: StateMachineGenerating, @unchecked Sendable
             }
         }
 
-        // Merge candidates with the same (hostType, enumType) across files: union transitions.
+        // Merge candidates with the same (hostType, enumType) across files: union
+        // transitions, take the lowest confidence, and union notes.
         let bucketed = Dictionary(grouping: all) { $0.identifier }
         var merged: [StateMachineModel] = []
         for (_, group) in bucketed {
@@ -35,11 +36,22 @@ public struct StateMachineGenerator: StateMachineGenerating, @unchecked Sendable
                     transitions.append(transition)
                 }
             }
+            let confidence = group.map(\.confidence).min() ?? first.confidence
+            var seenNotes = Set<String>()
+            var notes: [String] = []
+            for model in group {
+                for note in model.notes where !seenNotes.contains(note) {
+                    seenNotes.insert(note)
+                    notes.append(note)
+                }
+            }
             merged.append(StateMachineModel(
                 hostType: first.hostType,
                 enumType: first.enumType,
                 states: first.states,
-                transitions: transitions
+                transitions: transitions,
+                confidence: confidence,
+                notes: notes
             ))
         }
 

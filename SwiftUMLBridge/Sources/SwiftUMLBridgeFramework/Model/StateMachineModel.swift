@@ -28,6 +28,32 @@ public struct StateTransition: Sendable, Hashable {
     }
 }
 
+/// Confidence that a detected candidate is actually a state machine.
+public enum DetectionConfidence: String, Sendable, Hashable, Comparable {
+    /// Canonical shape: enum with explicit type annotation on the property +
+    /// switch-driven self-assign.
+    case high
+    /// Shape is inferred — e.g., enum type deduced from the initializer
+    /// (`@State var state = Tab.home`).
+    case medium
+    /// Weakest signal — assignments without a switch, or only a subset of
+    /// cases participate in transitions.
+    case low
+
+    public static func < (lhs: DetectionConfidence, rhs: DetectionConfidence) -> Bool {
+        lhs.rank < rhs.rank
+    }
+
+    /// Ordered from lowest to highest for sorting.
+    public var rank: Int {
+        switch self {
+        case .low: return 0
+        case .medium: return 1
+        case .high: return 2
+        }
+    }
+}
+
 /// A candidate state machine detected in Swift source.
 ///
 /// Identifies a `(hostType, enumType)` pair where an enum is used to track
@@ -38,17 +64,23 @@ public struct StateMachineModel: Sendable, Hashable {
     public let enumType: String
     public let states: [StateMachineState]
     public let transitions: [StateTransition]
+    public let confidence: DetectionConfidence
+    public let notes: [String]
 
     public init(
         hostType: String,
         enumType: String,
         states: [StateMachineState],
-        transitions: [StateTransition]
+        transitions: [StateTransition],
+        confidence: DetectionConfidence = .high,
+        notes: [String] = []
     ) {
         self.hostType = hostType
         self.enumType = enumType
         self.states = states
         self.transitions = transitions
+        self.confidence = confidence
+        self.notes = notes
     }
 
     /// Display identifier for the picker: `"HostType.EnumType"`.
