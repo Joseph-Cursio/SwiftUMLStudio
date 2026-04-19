@@ -9,6 +9,7 @@ final class DiagramViewModel {
     var script: DiagramScript?
     var sequenceScript: SequenceScript?
     var depsScript: DepsScript?
+    var stateScript: StateScript?
 
     // For restoring from history without needing to re-parse AST
     private var restoredScript: SimpleDiagramScript?
@@ -21,6 +22,8 @@ final class DiagramViewModel {
     var availableEntryPoints: [String] = []
     var sequenceDepth: Int = 3
     var depsMode: DepsMode = .types
+    var stateIdentifier: String = ""
+    var availableStateMachines: [String] = []
 
     var fileTree: [FileNode] = []
     var selectedFileURL: URL?
@@ -43,17 +46,20 @@ final class DiagramViewModel {
     let classGenerator: any ClassDiagramGenerating
     let sequenceGenerator: any SequenceDiagramGenerating
     let depsGenerator: any DependencyGraphGenerating
+    let stateGenerator: any StateMachineGenerating
 
     init(
         persistenceController: PersistenceController = PersistenceController.shared,
         classGenerator: any ClassDiagramGenerating = ClassDiagramGenerator(),
         sequenceGenerator: any SequenceDiagramGenerating = SequenceDiagramGenerator(),
-        depsGenerator: any DependencyGraphGenerating = DependencyGraphGenerator()
+        depsGenerator: any DependencyGraphGenerating = DependencyGraphGenerator(),
+        stateGenerator: any StateMachineGenerating = StateMachineGenerator()
     ) {
         self.modelContext = persistenceController.container.mainContext
         self.classGenerator = classGenerator
         self.sequenceGenerator = sequenceGenerator
         self.depsGenerator = depsGenerator
+        self.stateGenerator = stateGenerator
     }
 
     var currentScript: (any DiagramOutputting)? {
@@ -63,6 +69,7 @@ final class DiagramViewModel {
         case .classDiagram: return script
         case .sequenceDiagram: return sequenceScript
         case .dependencyGraph: return depsScript
+        case .stateMachine: return stateScript
         }
     }
 
@@ -98,6 +105,8 @@ final class DiagramViewModel {
                 await self.generateSequenceDiagram()
             case .dependencyGraph:
                 await self.generateDependencyGraph()
+            case .stateMachine:
+                await self.generateStateMachineDiagram()
             }
 
             guard !Task.isCancelled else { return }
@@ -129,6 +138,9 @@ final class DiagramViewModel {
             refreshEntryPoints()
         } else if diagramMode == .dependencyGraph {
             depsMode = DepsMode(rawValue: entity.entryPoint ?? "") ?? .types
+        } else if diagramMode == .stateMachine {
+            stateIdentifier = entity.entryPoint ?? ""
+            refreshStateMachines()
         }
 
         sequenceDepth = entity.sequenceDepth
@@ -246,6 +258,18 @@ final class DiagramViewModel {
             return
         }
         availableEntryPoints = sequenceGenerator.findEntryPoints(for: selectedPaths)
+    }
+
+    func refreshStateMachines() {
+        guard !selectedPaths.isEmpty else {
+            availableStateMachines = []
+            return
+        }
+        availableStateMachines = stateGenerator.findCandidates(for: selectedPaths)
+            .map(\.identifier)
+        if !availableStateMachines.contains(stateIdentifier) {
+            stateIdentifier = availableStateMachines.first ?? ""
+        }
     }
 
 }

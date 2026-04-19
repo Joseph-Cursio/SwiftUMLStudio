@@ -31,6 +31,8 @@ struct ContentView: View {
             viewModel.analyzeProject(isProUnlocked: subscriptionManager.isProUnlocked)
             if viewModel.diagramMode == .sequenceDiagram {
                 viewModel.refreshEntryPoints()
+            } else if viewModel.diagramMode == .stateMachine {
+                viewModel.refreshStateMachines()
             }
         }
         .onChange(of: viewModel.selectedFileURL) {
@@ -49,15 +51,24 @@ struct ContentView: View {
                 showPaywall = true
                 return
             }
+            if viewModel.diagramMode == .stateMachine
+                && !FeatureGate.isUnlocked(.stateMachines, manager: subscriptionManager) {
+                viewModel.diagramMode = .classDiagram
+                showPaywall = true
+                return
+            }
             viewModel.generate()
             if viewModel.diagramMode == .sequenceDiagram && !viewModel.selectedPaths.isEmpty {
                 viewModel.refreshEntryPoints()
+            } else if viewModel.diagramMode == .stateMachine && !viewModel.selectedPaths.isEmpty {
+                viewModel.refreshStateMachines()
             }
         }
         .onChange(of: viewModel.diagramFormat) { viewModel.generate() }
         .onChange(of: viewModel.entryPoint) { viewModel.generate() }
         .onChange(of: viewModel.sequenceDepth) { viewModel.generate() }
         .onChange(of: viewModel.depsMode) { viewModel.generate() }
+        .onChange(of: viewModel.stateIdentifier) { viewModel.generate() }
         .sheet(isPresented: $showPaywall) {
             PaywallView(subscriptionManager: subscriptionManager)
         }
@@ -151,6 +162,18 @@ struct ContentView: View {
                     .pickerStyle(.segmented)
                     .frame(width: 160)
                     .accessibilityIdentifier("depsModeControl")
+                }
+
+                if viewModel.diagramMode == .stateMachine {
+                    Picker("State Machine", selection: $bindableVM.stateIdentifier) {
+                        Text("—").tag("")
+                        ForEach(viewModel.availableStateMachines, id: \.self) { identifier in
+                            Text(identifier).tag(identifier)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .frame(width: 220)
+                    .accessibilityIdentifier("stateMachinePicker")
                 }
 
                 Picker("App Mode", selection: $appMode) {

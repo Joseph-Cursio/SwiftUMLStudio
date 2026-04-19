@@ -16,9 +16,9 @@ private func runOnMain(_ block: @MainActor () -> Void) {
 
 struct ProFeatureTests {
 
-    @Test("has six cases")
+    @Test("has seven cases")
     func allCasesCount() {
-        #expect(ProFeature.allCases.count == 6)
+        #expect(ProFeature.allCases.count == 7)
     }
 
     @Test("includes expected features")
@@ -26,6 +26,7 @@ struct ProFeatureTests {
         let cases = Set(ProFeature.allCases)
         #expect(cases.contains(.sequenceDiagrams))
         #expect(cases.contains(.dependencyGraphs))
+        #expect(cases.contains(.stateMachines))
         #expect(cases.contains(.exportMarkup))
         #expect(cases.contains(.formatSelection))
         #expect(cases.contains(.unlimitedProjects))

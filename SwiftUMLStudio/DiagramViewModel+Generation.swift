@@ -49,6 +49,31 @@ extension DiagramViewModel {
         depsScript = result
     }
 
+    func generateStateMachineDiagram() async {
+        guard !selectedPaths.isEmpty, !stateIdentifier.isEmpty else {
+            isGenerating = false
+            return
+        }
+
+        stateScript = nil
+
+        let paths = selectedPaths
+        let format = diagramFormat
+        let identifier = stateIdentifier
+
+        let generator = stateGenerator
+        let result = await Task.detached(priority: .userInitiated) {
+            var config = Configuration.default
+            config.format = format
+            return generator.generateScript(
+                for: paths, stateIdentifier: identifier, with: config
+            )
+        }.value
+
+        guard !Task.isCancelled else { return }
+        stateScript = result
+    }
+
     func generateSequenceDiagram() async {
         guard !selectedPaths.isEmpty, !entryPoint.isEmpty else {
             isGenerating = false
@@ -95,6 +120,8 @@ extension DiagramViewModel {
             entity.entryPoint = entryPoint
         } else if diagramMode == .dependencyGraph {
             entity.entryPoint = depsMode.rawValue
+        } else if diagramMode == .stateMachine {
+            entity.entryPoint = stateIdentifier
         }
 
         entity.sequenceDepth = sequenceDepth

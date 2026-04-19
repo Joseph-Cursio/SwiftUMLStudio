@@ -3,6 +3,7 @@ import Foundation
 enum ProFeature: String, CaseIterable {
     case sequenceDiagrams
     case dependencyGraphs
+    case stateMachines
     case exportMarkup
     case formatSelection
     case unlimitedProjects
