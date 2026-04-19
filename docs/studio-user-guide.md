@@ -1,6 +1,6 @@
-# SwiftPlantUML Studio — User Guide
+# SwiftUML Studio — User Guide
 
-SwiftPlantUML Studio is a macOS GUI for [SwiftUMLBridge](../SwiftUMLBridge/), the Swift-native diagram generator. It lets you point at Swift source files or folders, explore your codebase visually, generate diagrams, and track how your architecture evolves over time — all without touching the terminal.
+SwiftUML Studio is a macOS GUI for [SwiftUMLBridge](../SwiftUMLBridge/), the Swift-native diagram generator. It lets you point at Swift source files or folders, explore your codebase visually, generate diagrams, and track how your architecture evolves over time — all without touching the terminal.
 
 For CLI usage, see the [SwiftUMLBridge User Guide](user-guide.md).
 
@@ -407,7 +407,7 @@ History is stored in Core Data and persists between app launches.
 
 ## Pro Features
 
-SwiftPlantUML Studio uses a freemium model. The free tier provides the full Explorer Mode experience with class diagram generation. Pro unlocks advanced capabilities.
+SwiftUML Studio uses a freemium model. The free tier provides the full Explorer Mode experience with class diagram generation. Pro unlocks advanced capabilities.
 
 ### What Pro Unlocks
 

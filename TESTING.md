@@ -1,6 +1,6 @@
 # Testing Guide
 
-This project consists of a macOS SwiftUI app (**SwiftPlantUMLstudio**) and a core logic framework (**SwiftUMLBridge**). Due to the nature of static analysis and Core Data, different testing strategies apply to each component.
+This project consists of a macOS SwiftUI app (**SwiftUMLStudio**) and a core logic framework (**SwiftUMLBridge**). Due to the nature of static analysis and Core Data, different testing strategies apply to each component.
 
 ## Summary
 
@@ -27,17 +27,17 @@ xcrun swift test
 
 ---
 
-## 2. SwiftPlantUMLstudio (App)
+## 2. SwiftUMLStudio (App)
 
 ### Unit & Integration Tests
-Located in `SwiftPlantUMLstudioTests`. These use **Swift Testing**.
+Located in `SwiftUMLStudioTests`. These use **Swift Testing**.
 
 **Known Issues & Workarounds:**
 *   **Main Actor Executor:** On macOS 26 beta, the Swift Concurrency main-actor executor is unstable in the Xcode test host. We use a `runOnMain` helper (GCD-based) to ensure tests run reliably on the main thread.
 *   **Core Data:** Tests use an in-memory store. Ensure `DiagramEntity` has `representedClassName` set in the `.xcdatamodeld` to avoid runtime mapping errors.
 
 ### UI Tests
-Located in `SwiftPlantUMLstudioUITests`. These use **XCTest** (required for UI automation).
+Located in `SwiftUMLStudioUITests`. These use **XCTest** (required for UI automation).
 
 ---
 
@@ -47,7 +47,7 @@ To run the app-target tests (Unit + UI) from the command line:
 
 ```bash
 xcodebuild test \
-  -scheme SwiftPlantUMLstudio \
+  -scheme SwiftUMLStudio \
   -destination 'platform=macOS,arch=arm64' \
   -parallel-testing-enabled NO
 ```

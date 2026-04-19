@@ -14,14 +14,14 @@ You will generate diagrams from the SwiftUMLBridgeFramework source itself — a 
 
 **Part 3 (Steps 13–16):** A dependency graph exploring type and module relationships across the framework.
 
-**Part 4 (Steps 17–21):** Using the SwiftPlantUML Studio GUI to explore a project visually without touching the terminal.
+**Part 4 (Steps 17–21):** Using the SwiftUML Studio GUI to explore a project visually without touching the terminal.
 
 ---
 
 ## Prerequisites
 
 - SwiftUMLBridge installed and on your `$PATH` (see [User Guide — Installation](user-guide.md#installation))
-- The SwiftPlantUMLstudio project cloned locally
+- The SwiftUMLStudio project cloned locally
 
 Verify everything is ready:
 
@@ -39,7 +39,7 @@ swiftumlbridge --version
 Start with zero configuration to see what the tool produces by default.
 
 ```bash
-cd /path/to/SwiftPlantUMLstudio/SwiftUMLBridge
+cd /path/to/SwiftUMLStudio/SwiftUMLBridge
 
 swiftumlbridge classdiagram Sources/SwiftUMLBridgeFramework/ --output consoleOnly
 ```
@@ -65,7 +65,7 @@ To filter by access level you need a configuration file.
 **Create `.swiftumlbridge.yml` in the package root:**
 
 ```bash
-touch /path/to/SwiftPlantUMLstudio/SwiftUMLBridge/.swiftumlbridge.yml
+touch /path/to/SwiftUMLStudio/SwiftUMLBridge/.swiftumlbridge.yml
 ```
 
 Add these contents:
@@ -82,7 +82,7 @@ elements:
 Now run again from the package directory (so the tool finds the config file):
 
 ```bash
-cd /path/to/SwiftPlantUMLstudio/SwiftUMLBridge
+cd /path/to/SwiftUMLStudio/SwiftUMLBridge
 
 swiftumlbridge classdiagram Sources/SwiftUMLBridgeFramework/ --output consoleOnly
 ```
@@ -357,7 +357,7 @@ Sequence diagrams show how a specific method calls other methods — and how tho
 Trace `ClassDiagramGenerator.generateScript` to see what it calls:
 
 ```bash
-cd /path/to/SwiftPlantUMLstudio/SwiftUMLBridge
+cd /path/to/SwiftUMLStudio/SwiftUMLBridge
 
 swiftumlbridge sequence Sources/ \
   --entry ClassDiagramGenerator.generateScript \
@@ -456,7 +456,7 @@ Dependency graphs show directed edges between types (based on inheritance and co
 Start with the default types mode to see how the framework's public types depend on each other.
 
 ```bash
-cd /path/to/SwiftPlantUMLstudio/SwiftUMLBridge
+cd /path/to/SwiftUMLStudio/SwiftUMLBridge
 
 swiftumlbridge deps Sources/SwiftUMLBridgeFramework/ --output consoleOnly
 ```
@@ -640,13 +640,13 @@ A common workflow when joining a new codebase:
 
 ---
 
-## Part 4 — SwiftPlantUML Studio (GUI)
+## Part 4 — SwiftUML Studio (GUI)
 
 The Studio app provides the same diagram generation capabilities as the CLI, wrapped in a macOS GUI with two modes: **Explorer** (simplified, insight-driven) and **Developer** (full-featured with markup editing).
 
 ### Step 17 — Open the Studio App
 
-Build and run SwiftPlantUML Studio from Xcode. The app opens in **Explorer Mode** by default — a simplified interface designed for understanding your codebase visually.
+Build and run SwiftUML Studio from Xcode. The app opens in **Explorer Mode** by default — a simplified interface designed for understanding your codebase visually.
 
 ### Step 18 — Load a Project and See the Dashboard
 

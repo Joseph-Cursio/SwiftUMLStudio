@@ -1,4 +1,4 @@
-# SwiftPlantUMLstudio
+# SwiftUMLStudio
 
 A macOS SwiftUI app and Swift Package for generating architectural diagrams from Swift source code. Built on **SwiftUMLBridge** — a modern, Swift 6 native evolution of SwiftPlantUML with support for Mermaid.js, sequence diagrams, and dependency graphs.
 
@@ -25,7 +25,7 @@ A macOS SwiftUI app and Swift Package for generating architectural diagrams from
 ## Project Structure
 
 ```
-SwiftPlantUMLstudio/
+SwiftUMLStudio/
 ├── SwiftUMLBridge/                  # Swift Package (CLI + framework)
 │   └── Sources/
 │       ├── SwiftUMLBridgeFramework/ # Three-layer framework
@@ -34,12 +34,12 @@ SwiftPlantUMLstudio/
 │       │   └── Emitters/            # PlantUML and Mermaid.js emitters
 │       └── swiftumlbridge/          # CLI executable
 │           └── Commands/            # classdiagram, sequence, deps
-├── SwiftPlantUMLstudio/             # macOS SwiftUI app
+├── SwiftUMLStudio/             # macOS SwiftUI app
 │   ├── ContentView.swift
 │   ├── DiagramViewModel.swift
 │   └── DiagramWebView.swift
 └── docs/
-    └── Swift PlantUML Studio PRD.md
+    └── SwiftUML Studio PRD.md
 ```
 
 ## Architecture
@@ -116,7 +116,7 @@ swift test
 ### macOS Studio App
 
 ```bash
-xcodebuild -scheme SwiftPlantUMLstudio -destination 'generic/platform=macOS' build
+xcodebuild -scheme SwiftUMLStudio -destination 'generic/platform=macOS' build
 ```
 
 ## Dependencies

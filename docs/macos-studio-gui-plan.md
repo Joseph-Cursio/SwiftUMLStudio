@@ -16,8 +16,8 @@ the macOS SwiftUI front-end for the SwiftUMLBridge framework. The user wants:
 Four files total — three new, one rewritten:
 
 ```
-SwiftPlantUMLstudio/
-├── SwiftPlantUMLstudioApp.swift   (minimal tweak: set window size)
+SwiftUMLStudio/
+├── SwiftUMLStudioApp.swift   (minimal tweak: set window size)
 ├── ContentView.swift              (REWRITE — main window layout)
 ├── DiagramViewModel.swift         (NEW — @Observable state + generation logic)
 ├── SwiftUIPresenter.swift         (NEW — custom DiagramPresenting for SwiftUI)
@@ -131,7 +131,7 @@ Open panel configuration:
 - `allowedContentTypes = [.swiftSource]` (UTType)
 - Map results to `panel.urls.map(\.path)` → `viewModel.selectedPaths`
 
-### 5. `SwiftPlantUMLstudioApp.swift` (minor)
+### 5. `SwiftUMLStudioApp.swift` (minor)
 
 Add `.defaultSize(width: 1100, height: 700)` to `WindowGroup` so the split view
 has a useful default size.
@@ -142,11 +142,11 @@ has a useful default size.
 
 | File | Action | Purpose |
 |---|---|---|
-| `SwiftPlantUMLstudio/ContentView.swift` | Rewrite | Main window with toolbar + HSplitView |
-| `SwiftPlantUMLstudio/SwiftPlantUMLstudioApp.swift` | Minor edit | Set default window size |
-| `SwiftPlantUMLstudio/DiagramViewModel.swift` | Create | State + generation logic |
-| `SwiftPlantUMLstudio/SwiftUIPresenter.swift` | Create | Custom DiagramPresenting |
-| `SwiftPlantUMLstudio/DiagramWebView.swift` | Create | WKWebView wrapper |
+| `SwiftUMLStudio/ContentView.swift` | Rewrite | Main window with toolbar + HSplitView |
+| `SwiftUMLStudio/SwiftUMLStudioApp.swift` | Minor edit | Set default window size |
+| `SwiftUMLStudio/DiagramViewModel.swift` | Create | State + generation logic |
+| `SwiftUMLStudio/SwiftUIPresenter.swift` | Create | Custom DiagramPresenting |
+| `SwiftUMLStudio/DiagramWebView.swift` | Create | WKWebView wrapper |
 
 No changes to SwiftUMLBridge package sources required — public API is sufficient.
 
@@ -167,8 +167,8 @@ No changes to SwiftUMLBridge package sources required — public API is sufficie
 
 ## Verification
 
-1. Build with Xcode: `xcodebuild -scheme SwiftPlantUMLstudio -destination 'generic/platform=macOS' build`
+1. Build with Xcode: `xcodebuild -scheme SwiftUMLStudio -destination 'generic/platform=macOS' build`
 2. Run the app — click "Open..." → select the `SwiftUMLBridge/Sources/SwiftUMLBridgeFramework/Model/` folder
 3. Click "Generate" — left pane should fill with PlantUML script text, right pane should load an SVG diagram
 4. Verify the split view is resizable
-5. Run existing unit tests to confirm no regressions: `xcodebuild test -scheme SwiftPlantUMLstudio -destination 'platform=macOS,arch=arm64'`
+5. Run existing unit tests to confirm no regressions: `xcodebuild test -scheme SwiftUMLStudio -destination 'platform=macOS,arch=arm64'`

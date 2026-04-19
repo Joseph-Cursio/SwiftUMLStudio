@@ -2,7 +2,7 @@
 
 ## Overview
 
-Transform SwiftPlantUMLstudio from a developer-only UML tool into a freemium codebase explorer that serves both developers and vibe-coders. The pivot adds an "Explorer Mode" as the default free experience, with the existing developer features becoming the paid "Pro" tier.
+Transform SwiftUMLStudio from a developer-only UML tool into a freemium codebase explorer that serves both developers and vibe-coders. The pivot adds an "Explorer Mode" as the default free experience, with the existing developer features becoming the paid "Pro" tier.
 
 This plan assumes v1.0 ships first with the current developer feature set. Explorer Mode is the v2.0 headline feature.
 

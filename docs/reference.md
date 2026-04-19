@@ -1555,7 +1555,7 @@ The CLI version string. Displayed by `swiftumlbridge --version`.
 
 ## Studio App Reference
 
-The SwiftPlantUML Studio macOS app is a GUI front-end for SwiftUMLBridgeFramework. For usage instructions, see the [Studio User Guide](studio-user-guide.md).
+The SwiftUML Studio macOS app is a GUI front-end for SwiftUMLBridgeFramework. For usage instructions, see the [Studio User Guide](studio-user-guide.md).
 
 ### App Modes
 
