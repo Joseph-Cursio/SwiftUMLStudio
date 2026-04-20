@@ -10,9 +10,9 @@ final class SubscriptionManager {
 
     private nonisolated(unsafe) var transactionListener: Task<Void, Never>?
 
-    static let proMonthlyID = "pro_monthly"
-    static let proAnnualID = "pro_annual"
-    private static let productIDs: Set<String> = [proMonthlyID, proAnnualID]
+    nonisolated static let proMonthlyID = "pro_monthly"
+    nonisolated static let proAnnualID = "pro_annual"
+    private nonisolated static let productIDs: Set<String> = [proMonthlyID, proAnnualID]
 
     init() {
         transactionListener = listenForTransactions()
@@ -76,8 +76,16 @@ final class SubscriptionManager {
                 break
             }
         }
-        // Default to unlocked when no StoreKit configuration is active (development)
-        isProUnlocked = entitled || products.isEmpty
+        isProUnlocked = Self.entitlementResolved(entitled: entitled, productCount: products.count)
+    }
+
+    /// Decide the effective Pro-unlocked state given an entitlement check.
+    ///
+    /// Real entitlements always unlock Pro. When no products load (development
+    /// builds without a StoreKit configuration), we also default to unlocked so
+    /// the app is usable end-to-end.
+    nonisolated static func entitlementResolved(entitled: Bool, productCount: Int) -> Bool {
+        entitled || productCount == 0
     }
 
     private func listenForTransactions() -> Task<Void, Never> {

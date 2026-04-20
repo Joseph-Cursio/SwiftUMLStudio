@@ -1,6 +1,35 @@
 import StoreKit
 import SwiftUI
 
+nonisolated struct PaywallFeature: Identifiable, Hashable {
+    let id = UUID()
+    let title: String
+    let description: String
+
+    static let all: [PaywallFeature] = [
+        PaywallFeature(
+            title: "Sequence Diagrams",
+            description: "Trace execution flows through your code"
+        ),
+        PaywallFeature(
+            title: "Dependency Graphs",
+            description: "See how your modules depend on each other"
+        ),
+        PaywallFeature(
+            title: "PlantUML & Mermaid Export",
+            description: "Copy or save diagram markup"
+        ),
+        PaywallFeature(
+            title: "Format Selection",
+            description: "Switch between PlantUML and Mermaid"
+        ),
+        PaywallFeature(
+            title: "Unlimited Projects",
+            description: "Explore as many codebases as you want"
+        )
+    ]
+}
+
 struct PaywallView<Manager: SubscriptionProviding>: View {
     let subscriptionManager: Manager
     @Environment(\.dismiss) private var dismiss
@@ -40,11 +69,9 @@ struct PaywallView<Manager: SubscriptionProviding>: View {
 
     private var featureList: some View {
         VStack(alignment: .leading, spacing: 12) {
-            featureRow("Sequence Diagrams", description: "Trace execution flows through your code")
-            featureRow("Dependency Graphs", description: "See how your modules depend on each other")
-            featureRow("PlantUML & Mermaid Export", description: "Copy or save diagram markup")
-            featureRow("Format Selection", description: "Switch between PlantUML and Mermaid")
-            featureRow("Unlimited Projects", description: "Explore as many codebases as you want")
+            ForEach(PaywallFeature.all) { feature in
+                featureRow(feature.title, description: feature.description)
+            }
         }
         .padding(.horizontal, 8)
     }
