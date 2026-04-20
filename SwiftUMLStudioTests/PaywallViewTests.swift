@@ -71,4 +71,3 @@ struct PaywallViewTests {
         #expect(strings.contains("network failed") == false)
     }
 }
-

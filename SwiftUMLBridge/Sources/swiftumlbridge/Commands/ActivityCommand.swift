@@ -2,25 +2,11 @@ import ArgumentParser
 import Foundation
 import SwiftUMLBridgeFramework
 
-enum CLIError: Error, CustomStringConvertible {
-    case invalidEntry
-    case stateCandidateNotFound(identifier: String)
-
-    var description: String {
-        switch self {
-        case .invalidEntry:
-            return "Entry must be in the form 'TypeName.methodName'"
-        case .stateCandidateNotFound(let identifier):
-            return "No state machine candidate '\(identifier)' was found in the sources."
-        }
-    }
-}
-
 extension SwiftUMLBridgeCLI {
-    struct SequenceCommand: AsyncParsableCommand {
+    struct ActivityCommand: AsyncParsableCommand {
         static let configuration = CommandConfiguration(
-            commandName: "sequence",
-            abstract: "Generate a sequence diagram from a Swift entry point",
+            commandName: "activity",
+            abstract: "Generate a control-flow activity diagram for a Swift entry function",
             helpNames: [.short, .long]
         )
 
@@ -29,9 +15,6 @@ extension SwiftUMLBridgeCLI {
 
         @Option(help: "Entry point as Type.method (e.g. MyClass.myMethod)")
         var entry: String
-
-        @Option(help: "Max call depth (default: 3)")
-        var depth: Int = 3
 
         @Option(help: "Diagram format. Options: plantuml, mermaid")
         var format: DiagramFormat?
@@ -44,9 +27,6 @@ extension SwiftUMLBridgeCLI {
 
         @Option(help: "Path to custom configuration file")
         var config: String?
-
-        @Option(help: "macOS SDK path for type inference resolution")
-        var sdk: String?
 
         mutating func run() async throws {
             var bridgeConfig = ConfigurationProvider().getConfiguration(for: self.config)
@@ -61,11 +41,10 @@ extension SwiftUMLBridgeCLI {
             let entryMethod = parts[1]
 
             let sourcePaths = paths.isEmpty ? ["."] : paths
-            let script = SequenceDiagramGenerator().generateScript(
+            let script = ActivityDiagramGenerator().generateScript(
                 for: sourcePaths,
                 entryType: entryType,
                 entryMethod: entryMethod,
-                depth: depth,
                 with: bridgeConfig
             )
 

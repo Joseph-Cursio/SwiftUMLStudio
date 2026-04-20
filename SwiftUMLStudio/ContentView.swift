@@ -29,7 +29,8 @@ struct ContentView: View {
             viewModel.rebuildFileTree()
             viewModel.generate()
             viewModel.analyzeProject(isProUnlocked: subscriptionManager.isProUnlocked)
-            if viewModel.diagramMode == .sequenceDiagram {
+            if viewModel.diagramMode == .sequenceDiagram
+                || viewModel.diagramMode == .activityDiagram {
                 viewModel.refreshEntryPoints()
             } else if viewModel.diagramMode == .stateMachine {
                 viewModel.refreshStateMachines()
@@ -57,8 +58,16 @@ struct ContentView: View {
                 showPaywall = true
                 return
             }
+            if viewModel.diagramMode == .activityDiagram
+                && !FeatureGate.isUnlocked(.activityDiagrams, manager: subscriptionManager) {
+                viewModel.diagramMode = .classDiagram
+                showPaywall = true
+                return
+            }
             viewModel.generate()
-            if viewModel.diagramMode == .sequenceDiagram && !viewModel.selectedPaths.isEmpty {
+            if (viewModel.diagramMode == .sequenceDiagram
+                || viewModel.diagramMode == .activityDiagram)
+                && !viewModel.selectedPaths.isEmpty {
                 viewModel.refreshEntryPoints()
             } else if viewModel.diagramMode == .stateMachine && !viewModel.selectedPaths.isEmpty {
                 viewModel.refreshStateMachines()
@@ -100,15 +109,9 @@ struct ContentView: View {
     // MARK: - Developer Layout
 
     private var developerLayout: some View {
-        @Bindable var bindableVM = viewModel
-
-        return NavigationSplitView {
-            VStack(spacing: 0) {
-                FileBrowserSidebar(viewModel: viewModel)
-                Divider()
-                HistorySidebar(viewModel: viewModel)
-            }
-            .navigationSplitViewColumnWidth(min: 200, ideal: 250)
+        NavigationSplitView {
+            WorkspaceSidebar(viewModel: viewModel)
+                .navigationSplitViewColumnWidth(min: 200, ideal: 250)
         } content: {
             SourceEditorView(
                 content: viewModel.selectedFileContent,
@@ -119,7 +122,7 @@ struct ContentView: View {
         } detail: {
             DiagramDetailView(viewModel: viewModel)
         }
-        .frame(minWidth: 1400)
+        .frame(minWidth: 1200)
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
                 Button("Open…", systemImage: "folder", action: openPanel)
@@ -130,57 +133,6 @@ struct ContentView: View {
                     .lineLimit(1)
                     .truncationMode(.middle)
                     .frame(maxWidth: 300, alignment: .leading)
-
-                Picker("Mode", selection: $bindableVM.diagramMode) {
-                    ForEach(DiagramMode.allCases) { mode in
-                        Text(mode.rawValue).tag(mode)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .frame(width: 360)
-                .accessibilityIdentifier("modePicker")
-
-                Picker("Format", selection: $bindableVM.diagramFormat) {
-                    Text("PlantUML").tag(DiagramFormat.plantuml)
-                    Text("Mermaid").tag(DiagramFormat.mermaid)
-                    Text("Nomnoml").tag(DiagramFormat.nomnoml)
-                    Text("SVG").tag(DiagramFormat.svg)
-                }
-                .pickerStyle(.menu)
-                .frame(width: 120)
-
-                if viewModel.diagramMode == .sequenceDiagram {
-                    SequenceControlsView(viewModel: viewModel)
-                }
-
-                if viewModel.diagramMode == .dependencyGraph {
-                    Picker("Deps Mode", selection: $bindableVM.depsMode) {
-                        ForEach(DepsMode.allCases, id: \.self) { mode in
-                            Text(mode.rawValue).tag(mode)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                    .frame(width: 160)
-                    .accessibilityIdentifier("depsModeControl")
-                }
-
-                if viewModel.diagramMode == .stateMachine {
-                    Picker("State Machine", selection: $bindableVM.stateIdentifier) {
-                        Text("—").tag("")
-                        ForEach(viewModel.availableStateMachines, id: \.identifier) { candidate in
-                            Label {
-                                Text(candidate.identifier)
-                            } icon: {
-                                Image(systemName: confidenceSymbol(candidate.confidence))
-                                    .foregroundStyle(confidenceColor(candidate.confidence))
-                            }
-                            .tag(candidate.identifier)
-                        }
-                    }
-                    .pickerStyle(.menu)
-                    .frame(width: 260)
-                    .accessibilityIdentifier("stateMachinePicker")
-                }
 
                 Picker("App Mode", selection: $appMode) {
                     ForEach(AppMode.allCases, id: \.self) { mode in
@@ -210,22 +162,6 @@ struct ContentView: View {
               idx + 1 < args.count else { return }
         let path = args[idx + 1]
         viewModel.selectedPaths = [path]
-    }
-
-    private func confidenceSymbol(_ confidence: DetectionConfidence) -> String {
-        switch confidence {
-        case .high: return "circle.fill"
-        case .medium: return "circle.lefthalf.filled"
-        case .low: return "exclamationmark.triangle.fill"
-        }
-    }
-
-    private func confidenceColor(_ confidence: DetectionConfidence) -> SwiftUI.Color {
-        switch confidence {
-        case .high: return .green
-        case .medium: return .orange
-        case .low: return .red
-        }
     }
 
     private func openPanel() {

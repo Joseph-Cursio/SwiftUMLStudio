@@ -184,7 +184,7 @@ struct NativeSequenceDiagramView: View {
         path.addLine(to: CGPoint(x: message.toX, y: message.posY))
         context.stroke(path, with: .color(Self.strokeColor), style: strokeStyle)
 
-        let pointsLeft = NativeSequenceGeometry.arrowPointsLeft(from: message.fromX, to: message.toX)
+        let pointsLeft = NativeSequenceGeometry.arrowPointsLeft(from: message.fromX, toX: message.toX)
         drawSmallArrow(
             at: CGPoint(x: message.toX, y: message.posY),
             pointingLeft: pointsLeft,
@@ -192,7 +192,7 @@ struct NativeSequenceDiagramView: View {
             in: &context
         )
 
-        let labelX = NativeSequenceGeometry.labelMidX(from: message.fromX, to: message.toX)
+        let labelX = NativeSequenceGeometry.labelMidX(from: message.fromX, toX: message.toX)
         let labelText = Text(message.label)
             .font(.system(size: 11))
             .foregroundStyle(Self.bodyTextColor)

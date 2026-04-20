@@ -74,6 +74,38 @@ extension DiagramViewModel {
         stateScript = result
     }
 
+    func generateActivityDiagram() async {
+        guard !selectedPaths.isEmpty, !entryPoint.isEmpty else {
+            isGenerating = false
+            return
+        }
+        let parts = entryPoint.split(separator: ".").map(String.init)
+        guard parts.count == 2 else {
+            isGenerating = false
+            return
+        }
+        let entryType = parts[0]
+        let entryMethod = parts[1]
+
+        activityScript = nil
+
+        let paths = selectedPaths
+        let format = diagramFormat
+
+        let generator = activityGenerator
+        let result = await Task.detached(priority: .userInitiated) {
+            var config = Configuration.default
+            config.format = format
+            return generator.generateScript(
+                for: paths, entryType: entryType,
+                entryMethod: entryMethod, with: config
+            )
+        }.value
+
+        guard !Task.isCancelled else { return }
+        activityScript = result
+    }
+
     func generateSequenceDiagram() async {
         guard !selectedPaths.isEmpty, !entryPoint.isEmpty else {
             isGenerating = false
@@ -122,6 +154,8 @@ extension DiagramViewModel {
             entity.entryPoint = depsMode.rawValue
         } else if diagramMode == .stateMachine {
             entity.entryPoint = stateIdentifier
+        } else if diagramMode == .activityDiagram {
+            entity.entryPoint = entryPoint
         }
 
         entity.sequenceDepth = sequenceDepth

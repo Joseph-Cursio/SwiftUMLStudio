@@ -15,8 +15,8 @@ nonisolated enum NativeSequenceGeometry {
     }
 
     /// Whether the arrowhead for a horizontal message should point left.
-    static func arrowPointsLeft(from: Double, to: Double) -> Bool {
-        to < from
+    static func arrowPointsLeft(from: Double, toX: Double) -> Bool {
+        toX < from
     }
 
     // MARK: - Stroke styling
@@ -31,8 +31,8 @@ nonisolated enum NativeSequenceGeometry {
 
     /// Midpoint between two X coordinates — used to center a message label
     /// above its arrow.
-    static func labelMidX(from: Double, to: Double) -> Double {
-        (from + to) / 2
+    static func labelMidX(from: Double, toX: Double) -> Double {
+        (from + toX) / 2
     }
 
     // MARK: - Self-loop geometry

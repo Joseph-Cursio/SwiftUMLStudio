@@ -20,16 +20,16 @@ final class DashboardUITests: XCTestCase {
     @MainActor
     func testFileBrowserSectionExists() throws {
         XCTAssertTrue(
-            app.staticTexts["Files"].waitForExistence(timeout: 3),
-            "Files section header should exist in sidebar"
+            app.radioButtons["Files"].waitForExistence(timeout: 3),
+            "Files tab should exist in sidebar"
         )
     }
 
     @MainActor
     func testHistorySectionExists() throws {
         XCTAssertTrue(
-            app.staticTexts["History"].waitForExistence(timeout: 3),
-            "History section header should exist in sidebar"
+            app.radioButtons["History"].waitForExistence(timeout: 3),
+            "History tab should exist in sidebar"
         )
     }
 
@@ -61,9 +61,9 @@ final class DashboardUITests: XCTestCase {
 
     @MainActor
     func testDepthStepperAppearsInSequenceMode() throws {
-        let modePicker = app.radioGroups["modePicker"]
+        let modePicker = app.outlines["modePicker"]
         XCTAssertTrue(modePicker.waitForExistence(timeout: 3))
-        modePicker.radioButtons["Sequence Diagram"].click()
+        modePicker.staticTexts["Sequence Diagram"].click()
 
         let stepper = app.steppers["depthStepper"]
         XCTAssertTrue(
@@ -82,10 +82,10 @@ final class DashboardUITests: XCTestCase {
 
     @MainActor
     func testModePickerExists() throws {
-        let modePicker = app.radioGroups["modePicker"]
+        let modePicker = app.outlines["modePicker"]
         XCTAssertTrue(modePicker.waitForExistence(timeout: 3), "Mode picker should exist")
         XCTAssertTrue(
-            modePicker.radioButtons.count >= 3,
+            modePicker.outlineRows.count >= 3,
             "Mode picker should have at least 3 options"
         )
     }

@@ -1,3 +1,8 @@
 excluded:
-  - SwiftUMLBridge/.build
-  - SwiftUMLBridge/.build/checkouts
+- SwiftUMLBridge/.build
+- SwiftUMLBridge/.build/checkouts
+opt_in_rules:
+- accessibility_trait_for_button
+- comma_inheritance
+- discouraged_assert
+- fallthrough

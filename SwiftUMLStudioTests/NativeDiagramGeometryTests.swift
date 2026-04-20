@@ -34,10 +34,13 @@ struct NativeDiagramGeometryHeaderColorTests {
 @Suite("NativeDiagramGeometry.nodeRect + headerRect")
 struct NativeDiagramGeometryNodeRectTests {
 
-    private func makeNode(x: Double = 100, y: Double = 200, width: Double = 80, height: Double = 60) -> LayoutNode {
+    private func makeNode(
+        posX: Double = 100, posY: Double = 200,
+        width: Double = 80, height: Double = 60
+    ) -> LayoutNode {
         var node = LayoutNode(id: "n", label: "", stereotype: nil, compartments: [])
-        node.posX = x
-        node.posY = y
+        node.posX = posX
+        node.posY = posY
         node.width = width
         node.height = height
         return node

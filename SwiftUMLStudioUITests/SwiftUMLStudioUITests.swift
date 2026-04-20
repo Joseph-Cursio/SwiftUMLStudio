@@ -28,12 +28,12 @@ final class SwiftUMLStudioUITests: XCTestCase {
     /// (entry-point TextField and depth Stepper) and the "Enter an entry point" right-pane branch.
     @MainActor
     func testSequenceDiagramModeShowsEntryPointControls() throws {
-        // Switch to Sequence Diagram mode (mode picker is a RadioGroup on macOS)
-        let modePicker = app.radioGroups["modePicker"]
+        // Switch to Sequence Diagram mode (mode picker is a sidebar Outline on macOS)
+        let modePicker = app.outlines["modePicker"]
         XCTAssertTrue(modePicker.waitForExistence(timeout: 3), "Mode picker not found")
-        modePicker.radioButtons["Sequence Diagram"].click()
+        modePicker.staticTexts["Sequence Diagram"].click()
 
-        // Entry-point text field must appear in the toolbar
+        // Entry-point text field must appear in the inspector strip
         let entryField = app.textFields["entryPointField"]
         XCTAssertTrue(entryField.waitForExistence(timeout: 2), "Entry point text field not found")
 
@@ -48,7 +48,7 @@ final class SwiftUMLStudioUITests: XCTestCase {
     /// default "Select Swift source files" placeholder instead.
     @MainActor
     func testSequenceDiagramEntryPointTypingUpdatesPlaceholder() throws {
-        app.radioGroups["modePicker"].radioButtons["Sequence Diagram"].click()
+        app.outlines["modePicker"].staticTexts["Sequence Diagram"].click()
 
         let entryField = app.textFields["entryPointField"]
         XCTAssertTrue(entryField.waitForExistence(timeout: 3), "Entry point text field not found")
@@ -63,15 +63,15 @@ final class SwiftUMLStudioUITests: XCTestCase {
     }
 
     /// Switching to Dependency Graph mode exercises the conditional Deps Mode
-    /// picker in the toolbar.
+    /// picker in the inspector strip.
     @MainActor
     func testDependencyGraphModeShowsDepsModeControls() throws {
         // Switch to Dependency Graph mode
-        let modePicker = app.radioGroups["modePicker"]
+        let modePicker = app.outlines["modePicker"]
         XCTAssertTrue(modePicker.waitForExistence(timeout: 3), "Mode picker not found")
-        modePicker.radioButtons["Dependency Graph"].click()
+        modePicker.staticTexts["Dependency Graph"].click()
 
-        // Deps Mode picker must appear (also a RadioGroup on macOS)
+        // Deps Mode picker must appear (segmented RadioGroup)
         XCTAssertTrue(
             app.radioGroups["depsModeControl"].waitForExistence(timeout: 2),
             "Deps mode control not found"
@@ -82,7 +82,7 @@ final class SwiftUMLStudioUITests: XCTestCase {
     /// leaving Sequence Diagram mode.
     @MainActor
     func testModeControlsAreExclusiveToTheirMode() throws {
-        let modePicker = app.radioGroups["modePicker"]
+        let modePicker = app.outlines["modePicker"]
         XCTAssertTrue(modePicker.waitForExistence(timeout: 3))
 
         // Sequence diagram controls should not be visible in Class Diagram mode (default)
@@ -96,12 +96,12 @@ final class SwiftUMLStudioUITests: XCTestCase {
         )
 
         // Switch to Sequence Diagram — entry point controls appear, deps controls absent
-        modePicker.radioButtons["Sequence Diagram"].click()
+        modePicker.staticTexts["Sequence Diagram"].click()
         XCTAssertTrue(app.textFields["entryPointField"].waitForExistence(timeout: 2))
         XCTAssertFalse(app.radioGroups["depsModeControl"].exists)
 
         // Switch to Dependency Graph — entry point controls gone, deps controls appear
-        modePicker.radioButtons["Dependency Graph"].click()
+        modePicker.staticTexts["Dependency Graph"].click()
         XCTAssertFalse(
             app.textFields["entryPointField"].exists,
             "Entry point field should not exist in Dependency Graph mode"
@@ -111,9 +111,9 @@ final class SwiftUMLStudioUITests: XCTestCase {
 
     @MainActor
     func testEntryPointMenuAppearsInSequenceMode() throws {
-        let modePicker = app.radioGroups["modePicker"]
+        let modePicker = app.outlines["modePicker"]
         XCTAssertTrue(modePicker.waitForExistence(timeout: 3), "Mode picker not found")
-        modePicker.radioButtons["Sequence Diagram"].click()
+        modePicker.staticTexts["Sequence Diagram"].click()
 
         // Verify the entry point menu chevron is present
         let menu = app.menuButtons["entryPointMenu"]

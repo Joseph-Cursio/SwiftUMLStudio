@@ -16,27 +16,31 @@ struct DiagramDetailView: View {
     }
 
     var body: some View {
-        TabView(selection: $selectedTab) {
-            Tab("Dashboard", systemImage: "chart.bar", value: DetailTab.dashboard) {
-                ProjectDashboardView(
-                    summary: viewModel.projectSummary,
-                    insights: viewModel.insights,
-                    suggestions: viewModel.suggestions,
-                    architectureDiff: viewModel.architectureDiff,
-                    isProUnlocked: subscriptionManager.isProUnlocked,
-                    onSuggestionTap: handleSuggestion
-                )
-            }
+        VStack(spacing: 0) {
+            DiagramInspectorStrip(viewModel: viewModel)
 
-            Tab("Preview", systemImage: "eye", value: DetailTab.preview) {
-                DiagramPreviewView(viewModel: viewModel)
-            }
+            TabView(selection: $selectedTab) {
+                Tab("Dashboard", systemImage: "chart.bar", value: DetailTab.dashboard) {
+                    ProjectDashboardView(
+                        summary: viewModel.projectSummary,
+                        insights: viewModel.insights,
+                        suggestions: viewModel.suggestions,
+                        architectureDiff: viewModel.architectureDiff,
+                        isProUnlocked: subscriptionManager.isProUnlocked,
+                        onSuggestionTap: handleSuggestion
+                    )
+                }
 
-            Tab("Markup", systemImage: "chevron.left.forwardslash.chevron.right", value: DetailTab.markup) {
-                MarkupView(viewModel: viewModel)
+                Tab("Preview", systemImage: "eye", value: DetailTab.preview) {
+                    DiagramPreviewView(viewModel: viewModel)
+                }
+
+                Tab("Markup", systemImage: "chevron.left.forwardslash.chevron.right", value: DetailTab.markup) {
+                    MarkupView(viewModel: viewModel)
+                }
             }
+            .accessibilityIdentifier("detailTabs")
         }
-        .accessibilityIdentifier("detailTabs")
         .sheet(isPresented: $showPaywall) {
             PaywallView(subscriptionManager: subscriptionManager)
         }
@@ -73,10 +77,14 @@ struct DiagramPreviewView: View {
                         NativeDiagramView(graph: graph)
                     } else if script.format == .svg, let seqLayout = script.sequenceLayout {
                         NativeSequenceDiagramView(layout: seqLayout)
+                    } else if script.format == .svg, let activityLayout = script.activityLayout {
+                        NativeActivityDiagramView(layout: activityLayout)
                     } else {
                         DiagramWebView(script: script)
                     }
-                } else if viewModel.diagramMode == .sequenceDiagram && viewModel.entryPoint.isEmpty {
+                } else if (viewModel.diagramMode == .sequenceDiagram
+                    || viewModel.diagramMode == .activityDiagram)
+                    && viewModel.entryPoint.isEmpty {
                     Text("Enter an entry point (e.g. MyType.myMethod) to generate a diagram.")
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)

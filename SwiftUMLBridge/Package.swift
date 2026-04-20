@@ -1,9 +1,9 @@
-// swift-tools-version: 6.0
+// swift-tools-version: 6.2
 import PackageDescription
 
 let package = Package(
     name: "SwiftUMLBridge",
-    platforms: [.macOS(.v13)],
+    platforms: [.macOS(.v26)],
     products: [
         .library(name: "SwiftUMLBridgeFramework", targets: ["SwiftUMLBridgeFramework"]),
         .executable(name: "swiftumlbridge", targets: ["swiftumlbridge"])

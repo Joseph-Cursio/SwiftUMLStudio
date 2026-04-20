@@ -35,7 +35,7 @@ final class ExplorerModeUITests: XCTestCase {
     func testExplorerModeHidesDeveloperControls() throws {
         // Mode picker should not exist in Explorer mode
         XCTAssertFalse(
-            app.radioGroups["modePicker"].exists,
+            app.outlines["modePicker"].exists,
             "Mode picker should be hidden in Explorer mode"
         )
     }

@@ -12,5 +12,6 @@ enum DiagramMode: String, CaseIterable, Identifiable {
     case sequenceDiagram = "Sequence Diagram"
     case dependencyGraph = "Dependency Graph"
     case stateMachine = "State Machine"
+    case activityDiagram = "Activity Diagram"
     var id: String { rawValue }
 }

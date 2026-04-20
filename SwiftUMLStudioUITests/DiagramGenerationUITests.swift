@@ -44,9 +44,9 @@ final class DiagramGenerationUITests: XCTestCase {
 
     @MainActor
     func testFixturePopulatesFileBrowser() throws {
-        // Wait for file tree to populate
-        let filesSection = app.staticTexts["Files"]
-        XCTAssertTrue(filesSection.waitForExistence(timeout: 3))
+        // Wait for the Files tab to exist (sidebar segmented control)
+        let filesTab = app.radioButtons["Files"]
+        XCTAssertTrue(filesTab.waitForExistence(timeout: 3))
 
         // Should see directory names from the fixture
         let modelsFolder = app.staticTexts["Models"]

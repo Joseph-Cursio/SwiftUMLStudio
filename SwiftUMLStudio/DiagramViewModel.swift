@@ -10,6 +10,7 @@ final class DiagramViewModel {
     var sequenceScript: SequenceScript?
     var depsScript: DepsScript?
     var stateScript: StateScript?
+    var activityScript: ActivityScript?
 
     // For restoring from history without needing to re-parse AST
     private var restoredScript: SimpleDiagramScript?
@@ -52,19 +53,22 @@ final class DiagramViewModel {
     let sequenceGenerator: any SequenceDiagramGenerating
     let depsGenerator: any DependencyGraphGenerating
     let stateGenerator: any StateMachineGenerating
+    let activityGenerator: any ActivityDiagramGenerating
 
     init(
         persistenceController: PersistenceController = PersistenceController.shared,
         classGenerator: any ClassDiagramGenerating = ClassDiagramGenerator(),
         sequenceGenerator: any SequenceDiagramGenerating = SequenceDiagramGenerator(),
         depsGenerator: any DependencyGraphGenerating = DependencyGraphGenerator(),
-        stateGenerator: any StateMachineGenerating = StateMachineGenerator()
+        stateGenerator: any StateMachineGenerating = StateMachineGenerator(),
+        activityGenerator: any ActivityDiagramGenerating = ActivityDiagramGenerator()
     ) {
         self.modelContext = persistenceController.container.mainContext
         self.classGenerator = classGenerator
         self.sequenceGenerator = sequenceGenerator
         self.depsGenerator = depsGenerator
         self.stateGenerator = stateGenerator
+        self.activityGenerator = activityGenerator
     }
 
     var currentScript: (any DiagramOutputting)? {
@@ -75,6 +79,7 @@ final class DiagramViewModel {
         case .sequenceDiagram: return sequenceScript
         case .dependencyGraph: return depsScript
         case .stateMachine: return stateScript
+        case .activityDiagram: return activityScript
         }
     }
 
@@ -112,6 +117,8 @@ final class DiagramViewModel {
                 await self.generateDependencyGraph()
             case .stateMachine:
                 await self.generateStateMachineDiagram()
+            case .activityDiagram:
+                await self.generateActivityDiagram()
             }
 
             guard !Task.isCancelled else { return }
@@ -146,6 +153,9 @@ final class DiagramViewModel {
         } else if diagramMode == .stateMachine {
             stateIdentifier = entity.entryPoint ?? ""
             refreshStateMachines()
+        } else if diagramMode == .activityDiagram {
+            entryPoint = entity.entryPoint ?? ""
+            refreshEntryPoints()
         }
 
         sequenceDepth = entity.sequenceDepth

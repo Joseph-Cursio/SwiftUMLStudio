@@ -12,12 +12,16 @@ public protocol DiagramOutputting: Sendable {
 
     /// Positioned sequence layout (available for sequence diagrams when format is `.svg`).
     var sequenceLayout: SequenceLayout? { get }
+
+    /// Positioned activity layout (available for activity diagrams when format is `.svg`).
+    var activityLayout: ActivityLayout? { get }
 }
 
 /// Default nil implementations for optional layout data.
 public extension DiagramOutputting {
     var layoutGraph: LayoutGraph? { nil }
     var sequenceLayout: SequenceLayout? { nil }
+    var activityLayout: ActivityLayout? { nil }
 }
 
 extension DiagramScript: DiagramOutputting {}
