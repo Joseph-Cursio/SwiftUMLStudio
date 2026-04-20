@@ -19,8 +19,22 @@ public class User: Identifiable, Validatable {
     }
 
     func validate() throws {
+        try self.checkEmailFormat()
+        try self.checkPasswordHash()
         guard isValid else {
             throw ValidationError.invalidUser
+        }
+    }
+
+    func checkEmailFormat() throws {
+        guard email.contains("@") else {
+            throw ValidationError.invalidEmail
+        }
+    }
+
+    func checkPasswordHash() throws {
+        guard !passwordHash.isEmpty else {
+            throw ValidationError.weakPassword
         }
     }
 }
