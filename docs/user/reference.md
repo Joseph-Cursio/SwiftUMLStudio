@@ -11,6 +11,8 @@ Complete reference for all CLI options, YAML configuration fields, element kinds
    - [classdiagram](#classdiagram)
    - [sequence](#sequence)
    - [deps](#deps)
+   - [activity](#activity)
+   - [state](#state)
 2. [Configuration File Schema](#configuration-file-schema)
    - [files](#files)
    - [elements](#elements)
@@ -82,6 +84,8 @@ swiftumlbridge [--version] [--help] <subcommand>
 | `--help` | Print help and exit |
 
 The default subcommand is `classdiagram`. Running `swiftumlbridge` with no verb is equivalent to `swiftumlbridge classdiagram`.
+
+**Subcommands:** `classdiagram`, `sequence`, `deps`, `activity`, `state`.
 
 ---
 
@@ -261,6 +265,102 @@ swiftumlbridge deps Sources/ --modules --exclude Foundation --exclude Swift
 
 # Type-level graph excluding generated types
 swiftumlbridge deps Sources/ --exclude "Generated*" --format mermaid
+```
+
+---
+
+### activity
+
+Generate a PlantUML or Mermaid activity diagram showing the control flow inside a single Swift method.
+
+```
+swiftumlbridge activity [<paths>...] --entry Type.method [options]
+```
+
+**Positional arguments:**
+
+| Argument | Type | Description |
+|---|---|---|
+| `<paths>...` | `[String]` | Paths to `.swift` files or directories. Defaults to the current directory (`.`). |
+
+**Required option:**
+
+| Option | Type | Description |
+|---|---|---|
+| `--entry <Type.method>` | `String` | Entry point in `TypeName.methodName` form (e.g., `--entry AuthService.login`). Case-sensitive. |
+
+**Options:**
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `--format <format>` | `DiagramFormat?` | `plantuml` | Diagram language. One of: `plantuml`, `mermaid`. |
+| `--output <format>` | `ClassDiagramOutput?` | `browser` | Output destination. One of: `browser`, `browserImageOnly`, `consoleOnly`. |
+| `--config <path>` | `String?` | `nil` | Path to a custom `.swiftumlbridge.yml` config file. |
+| `--help` | Flag | — | Print subcommand help and exit. |
+
+**Control-flow constructs rendered:** `if` / `else if` / `else`, `switch`, `for` / `while` / `repeat` loops, `do` / `try` / `catch`, `async` / `await`, and task-group fork / join.
+
+**Examples:**
+
+```bash
+# Activity diagram for AuthService.login, opened in browser (PlantUML)
+swiftumlbridge activity Sources/ --entry AuthService.login
+
+# Mermaid output to stdout
+swiftumlbridge activity Sources/ --entry AuthService.login \
+  --format mermaid --output consoleOnly
+
+# Custom config file
+swiftumlbridge activity Sources/ --entry MyService.run --config ./configs/diagram.yml
+```
+
+---
+
+### state
+
+Detect state machines in Swift source and render the selected one as a PlantUML or Mermaid state diagram. A state machine is recognized when an `enum` with no associated values is held as a property on another type and mutated via `switch`-based assignment.
+
+```
+swiftumlbridge state [<paths>...] [--list | --state HostType.EnumType] [options]
+```
+
+**Positional arguments:**
+
+| Argument | Type | Description |
+|---|---|---|
+| `<paths>...` | `[String]` | Paths to `.swift` files or directories. Defaults to the current directory. |
+
+**Flags:**
+
+| Flag | Short | Description |
+|---|---|---|
+| `--list` | `-l` | List detected candidate state machines and exit. |
+| `--state <HostType.EnumType>` | `-s` | Render the named state machine. When omitted and `--list` is not given, the command lists candidates. |
+
+**Options:**
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `--format <format>` | `DiagramFormat?` | `plantuml` | Diagram language. One of: `plantuml`, `mermaid`. |
+| `--output <format>` | `ClassDiagramOutput?` | `browser` | Output destination. One of: `browser`, `browserImageOnly`, `consoleOnly`. |
+| `--config <path>` | `String?` | `nil` | Path to a custom `.swiftumlbridge.yml` config file. |
+| `--help` | Flag | — | Print subcommand help and exit. |
+
+**Examples:**
+
+```bash
+# List candidate state machines
+swiftumlbridge state Sources/ --list
+
+# Short form
+swiftumlbridge state Sources/ -l
+
+# Render a specific state machine in PlantUML, open in browser
+swiftumlbridge state Sources/ --state TrafficLight.Color
+
+# Mermaid output to stdout
+swiftumlbridge state Sources/ -s TrafficLight.Color \
+  --format mermaid --output consoleOnly > state.mmd
 ```
 
 ---

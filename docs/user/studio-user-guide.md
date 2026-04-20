@@ -18,8 +18,10 @@ For CLI usage, see the [SwiftUMLBridge User Guide](user-guide.md).
    - [Explorer Diagram Preview](#explorer-diagram-preview)
 4. [Developer Mode](#developer-mode)
    - [Developer Window Layout](#developer-window-layout)
+   - [Workspace Sidebar](#workspace-sidebar)
    - [File Browser](#file-browser)
    - [Source Editor](#source-editor)
+   - [Inspector Strip](#inspector-strip)
    - [Detail Pane Tabs](#detail-pane-tabs)
 5. [Opening Swift Source Files](#opening-swift-source-files)
 6. [Choosing a Diagram Mode](#choosing-a-diagram-mode)
@@ -32,15 +34,17 @@ For CLI usage, see the [SwiftUMLBridge User Guide](user-guide.md).
     - [Types Mode](#types-mode)
     - [Modules Mode](#modules-mode)
     - [Cycle Annotation](#cycle-annotation)
-11. [Reading the Results](#reading-the-results)
-12. [Copying the Diagram Markup](#copying-the-diagram-markup)
-13. [Diagram History](#diagram-history)
-14. [Pro Features](#pro-features)
+11. [Generating an Activity Diagram](#generating-an-activity-diagram)
+12. [Generating a State Machine Diagram](#generating-a-state-machine-diagram)
+13. [Reading the Results](#reading-the-results)
+14. [Copying the Diagram Markup](#copying-the-diagram-markup)
+15. [Diagram History](#diagram-history)
+16. [Pro Features](#pro-features)
     - [What Pro Unlocks](#what-pro-unlocks)
     - [Paywall](#paywall)
     - [Architecture Change Tracking](#architecture-change-tracking)
     - [Review Reminders](#review-reminders)
-15. [Known Limitations](#known-limitations)
+17. [Known Limitations](#known-limitations)
 
 ---
 
@@ -146,37 +150,60 @@ Developer Mode exposes the full power of the diagram generator with a three-pane
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
 │  Toolbar                                                             │
-│  [Open…] [path label] [Class|Sequence|Deps] [PlantUML|Mermaid]       │
-│  [sequence/deps controls]           [Explorer | Developer] [Save]    │
+│  [Open…] [path label]                [Explorer | Developer] [Save]   │
 ├──────────────┬───────────────┬───────────────────────────────────────┤
-│              │               │                                       │
-│  Left sidebar│  Middle pane  │  Right pane                           │
-│  ┌────────┐  │  Source code  │  [Dashboard | Preview | Markup]       │
-│  │ Files  │  │  (read-only)  │                                       │
-│  │ ─────  │  │               │  Dashboard: project stats             │
-│  │ History│  │               │  Preview: rendered diagram             │
-│  └────────┘  │               │  Markup: raw PlantUML/Mermaid text    │
+│              │               │  [Format] [mode-specific controls]    │ ← inspector strip
+│  Workspace   │  Middle pane  ├───────────────────────────────────────┤
+│  sidebar     │  Source code  │                                       │
+│  ┌────────┐  │  (read-only)  │  [Dashboard | Preview | Markup]       │
+│  │Diagrams│  │               │                                       │
+│  │────────│  │               │  Dashboard: project stats             │
+│  │ ░ drag │  │               │  Preview: rendered diagram            │
+│  │────────│  │               │  Markup: raw PlantUML/Mermaid text    │
+│  │Files │H│  │               │                                       │
+│  │ tree │i│  │               │                                       │
+│  └────────┘  │               │                                       │
 │              │               │                                       │
 └──────────────┴───────────────┴───────────────────────────────────────┘
 ```
 
-**Left sidebar** — File browser (directory tree of selected paths) and saved diagram history.
+**Workspace sidebar** — Three stacked regions: the Diagrams source list on top, a draggable `VSplitView` divider, and a segmented Files/History tab at the bottom.
 
 **Middle pane** — Read-only source code view for the currently selected file.
 
-**Right pane** — Tabbed detail pane with Dashboard, Preview, and Markup tabs. Defaults to the Preview tab.
+**Right pane** — A thin inspector strip at the top holding the format picker and the active mode's controls, with a tabbed detail pane (Dashboard, Preview, Markup) below it. Defaults to the Preview tab.
+
+### Workspace Sidebar
+
+The Developer-mode sidebar has three regions, top to bottom:
+
+1. **Diagrams source list** — groups every diagram mode under two section headings:
+   - **Structural** — Class Diagram, Dependency Graph
+   - **Behavioral** — Sequence Diagram, Activity Diagram, State Machine
+   Click a row to switch the active diagram mode.
+2. **Draggable divider** — a `VSplitView` handle between the Diagrams list and the region below. Drag it to resize how much room each gets.
+3. **Files / History segmented tab** — a two-option segmented control that swaps the area below between the file browser and the saved diagram history.
 
 ### File Browser
 
-The left sidebar displays the selected paths as a hierarchical file tree. Directories expand to show their contents. Clicking a `.swift` file loads its source code in the middle pane.
+Under the **Files** tab of the sidebar's segmented control, the selected paths are shown as a hierarchical file tree. Directories expand to show their contents. Clicking a `.swift` file loads its source code in the middle pane.
 
 ### Source Editor
 
 The middle pane displays the Swift source code of the file selected in the file browser. It is read-only — you cannot edit source code in the app. This pane is useful for reviewing the code alongside its generated diagram.
 
+### Inspector Strip
+
+A thin horizontal bar sits at the top of the detail pane, above the tabs. It contains:
+
+- The **Format picker** (PlantUML / Mermaid / Nomnoml / SVG).
+- The active mode's specific controls — entry-point field and depth stepper for Sequence Diagram; entry-point field for Activity Diagram; a segmented **Deps Mode** picker for Dependency Graph; a state-machine candidate picker for State Machine.
+
+The inspector strip replaces the per-mode controls that used to live in the toolbar.
+
 ### Detail Pane Tabs
 
-The right pane has three tabs:
+Below the inspector strip, the right pane has three tabs:
 
 | Tab | Contents |
 |---|---|
@@ -204,15 +231,17 @@ When you open files, the app automatically runs a project analysis to populate t
 
 ## Choosing a Diagram Mode
 
-In Developer Mode, the **segmented control** in the toolbar selects the diagram type:
+In Developer Mode, you pick a diagram type by clicking a row in the **Diagrams** list at the top of the workspace sidebar. Rows are grouped into two sections:
 
-| Mode | What it generates | Pro Required? |
-|---|---|---|
-| **Class Diagram** | Structural overview of types, properties, methods, and relationships | No |
-| **Sequence Diagram** | Static call-graph trace from a named entry-point method | Yes |
-| **Dependency Graph** | Type-to-type or module-to-module dependency graph across the selected source | Yes |
+| Group | Mode | What it generates | Pro Required? |
+|---|---|---|---|
+| Structural | **Class Diagram** | Structural overview of types, properties, methods, and relationships | No |
+| Structural | **Dependency Graph** | Type-to-type or module-to-module dependency graph across the selected source | Yes |
+| Behavioral | **Sequence Diagram** | Static call-graph trace from a named entry-point method | Yes |
+| Behavioral | **Activity Diagram** | Control-flow diagram for a single method's body | Yes |
+| Behavioral | **State Machine** | State transitions derived from an enum-typed property | Yes |
 
-Switching modes clears the current diagram and resets the preview pane. Sequence Diagram mode reveals an entry-point text field and a depth stepper; Dependency Graph mode reveals a **Types / Modules** picker.
+Switching modes clears the current diagram and resets the preview pane. The inspector strip above the detail pane updates to show that mode's controls — an entry-point field + depth stepper for Sequence Diagram, an entry-point field for Activity Diagram, a **Types / Modules** picker for Dependency Graph, and a candidate picker for State Machine.
 
 In Explorer Mode, the diagram mode is determined by which suggestion you tap — you do not choose it manually.
 
@@ -220,7 +249,7 @@ In Explorer Mode, the diagram mode is determined by which suggestion you tap —
 
 ## Choosing a Diagram Format
 
-In Developer Mode, the **PlantUML / Mermaid** segmented control selects the output language:
+In Developer Mode, the **Format** picker in the inspector strip (above the detail pane) selects the output language. The available options are **PlantUML**, **Mermaid**, **Nomnoml**, and **SVG**:
 
 | Format | Preview rendering | Markup extension |
 |---|---|---|
@@ -249,10 +278,10 @@ The **Generate** button is disabled until at least one source path is selected. 
 Sequence diagrams require a Pro subscription.
 
 1. Click **Open...** and select the Swift files or folder that contain the entry-point type.
-2. In Developer Mode, select **Sequence Diagram** in the mode picker. Two additional controls appear in the toolbar:
+2. In Developer Mode, click **Sequence Diagram** under **Behavioral** in the sidebar's Diagrams list. Two additional controls appear in the inspector strip above the detail pane:
    - A **text field** for the entry point.
    - A **depth stepper**.
-3. Choose **PlantUML** or **Mermaid**.
+3. Choose **PlantUML** or **Mermaid** in the inspector strip's format picker.
 4. Type the entry point in the text field (see [Entry Point Syntax](#entry-point-syntax) below).
 5. Adjust the depth if needed.
 6. Click **Generate**.
@@ -292,9 +321,9 @@ Increase depth if you want to see deeper call chains; decrease it for a focused,
 Dependency graphs require a Pro subscription.
 
 1. Click **Open...** and select the Swift files or folder you want to analyze.
-2. In Developer Mode, select **Dependency Graph** in the mode picker. A **Types / Modules** segmented picker appears in the toolbar.
+2. In Developer Mode, click **Dependency Graph** under **Structural** in the sidebar's Diagrams list. A **Types / Modules** segmented picker appears in the inspector strip.
 3. Choose **Types** or **Modules** (see below).
-4. Choose **PlantUML** or **Mermaid** in the format picker.
+4. Choose **PlantUML** or **Mermaid** in the inspector strip's format picker.
 5. Click **Generate**.
 
 In Explorer Mode, tap a dependency graph suggestion in the sidebar.
@@ -328,6 +357,53 @@ When the generator detects a dependency cycle, the nodes involved are highlighte
 
 - **Mermaid format** — cyclic nodes receive a red fill (`fill:#ffcccc, stroke:#cc0000`) applied via a `style` directive.
 - **PlantUML format** — a `note as CyclicDependencies` block is appended at the bottom of the diagram listing the names of the cyclic nodes.
+
+---
+
+## Generating an Activity Diagram
+
+Activity diagrams require a Pro subscription. They visualize the control flow inside a single method — decisions, loops, concurrency, and error handling.
+
+1. Click **Open...** and select the Swift files or folder that contain the entry-point type.
+2. In Developer Mode, click **Activity Diagram** under **Behavioral** in the sidebar's Diagrams list. A **text field** for the entry point appears in the inspector strip.
+3. Choose **PlantUML** or **Mermaid** in the inspector strip's format picker.
+4. Type the entry point in the text field as `TypeName.methodName` (same syntax as Sequence Diagram — see [Entry Point Syntax](#entry-point-syntax)).
+5. Click **Generate**.
+
+The generator parses the body of the named method and renders these control-flow constructs:
+
+| Construct | Rendered as |
+|---|---|
+| `if` / `else if` / `else` | Decision node with true/false branches |
+| `switch` | Multi-branch decision node, one branch per case |
+| `for`, `while`, `repeat` | Loop |
+| `do` / `try` / `catch` | Protected block with error branch |
+| `async` / `await` | Async step |
+| Task groups | Fork / join |
+
+If the entry-point field is empty when **Activity Diagram** mode is active, the preview shows the same reminder as Sequence Diagram.
+
+---
+
+## Generating a State Machine Diagram
+
+State machine diagrams require a Pro subscription. The app auto-detects candidate state machines from your Swift source — specifically, enums whose values drive state transitions in another type.
+
+1. Click **Open...** and select the Swift files or folder to analyze.
+2. In Developer Mode, click **State Machine** under **Behavioral** in the sidebar's Diagrams list. The inspector strip shows a **candidate picker** listing every state machine the app detected in the selected source.
+3. Each candidate is annotated with a **confidence indicator**:
+
+   | Indicator | Meaning |
+   |---|---|
+   | Green dot | High confidence — enum, property, and `switch`-based mutations all found |
+   | Orange half | Medium confidence — partial evidence |
+   | Red triangle | Low confidence — weak signal; likely not a state machine |
+
+4. Pick a candidate from the inspector-strip picker.
+5. Choose **PlantUML** or **Mermaid** in the format picker.
+6. Click **Generate**.
+
+When you select a low-confidence candidate, a banner appears above the preview warning that the detection is weak — treat the output as a starting point, not a finished model.
 
 ---
 
@@ -373,6 +449,14 @@ Cyclic nodes — those involved in a dependency cycle — are annotated automati
 |---|---|
 | **Mermaid** | Node background filled red (`fill:#ffcccc, stroke:#cc0000`) |
 | **PlantUML** | `note as CyclicDependencies` block listing affected node names |
+
+### Activity Diagram
+
+The diagram starts at the entry method and flows through its body. Decision nodes branch on `if`/`else` and `switch`. Loops are rendered as looped edges around the loop body. `do`/`try`/`catch` blocks show a protected region with a separate branch for the `catch` path. `async`/`await` steps and task-group fork/join points are called out distinctly so concurrent flow is readable at a glance.
+
+### State Machine Diagram
+
+Nodes are the cases of the detected enum; edges are transitions derived from `switch`-based mutations of the host type's property. The initial state (if one can be inferred) is marked. When the selected candidate is low-confidence, the preview is prefaced by a banner indicating the detection is weak.
 
 ---
 

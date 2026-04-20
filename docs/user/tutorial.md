@@ -14,7 +14,11 @@ You will generate diagrams from the SwiftUMLBridgeFramework source itself — a 
 
 **Part 3 (Steps 13–16):** A dependency graph exploring type and module relationships across the framework.
 
-**Part 4 (Steps 17–21):** Using the SwiftUML Studio GUI to explore a project visually without touching the terminal.
+**Part 4 (Steps 17–18):** An activity diagram showing the control flow of a single method.
+
+**Part 5 (Steps 19–20):** A state machine diagram auto-detected from an enum-driven type.
+
+**Part 6 (Steps 21–25):** Using the SwiftUML Studio GUI to explore a project visually without touching the terminal.
 
 ---
 
@@ -640,15 +644,102 @@ A common workflow when joining a new codebase:
 
 ---
 
-## Part 4 — SwiftUML Studio (GUI)
+## Part 4 — Activity Diagrams
+
+Activity diagrams visualize the control flow *inside* a single method — the branches, loops, error paths, and concurrency points that a class diagram or sequence diagram doesn't show. The extractor reads the named method's body and renders `if`/`else`, `switch`, `for`/`while`/`repeat`, `do`/`try`/`catch`, `async`/`await`, and task-group fork/join as dedicated shapes.
+
+### Step 17 — Your First Activity Diagram
+
+Pick a method that has at least one branch. `ClassDiagramGenerator.generateScript` is a good example — it loops over files, applies filters, and folds extensions.
+
+```bash
+cd /path/to/SwiftUMLStudio/SwiftUMLBridge
+
+swiftumlbridge activity Sources/ \
+  --entry ClassDiagramGenerator.generateScript \
+  --output consoleOnly
+```
+
+Open it in the browser:
+
+```bash
+swiftumlbridge activity Sources/ --entry ClassDiagramGenerator.generateScript
+```
+
+planttext.com opens with the activity diagram. Decision diamonds mark the branches, loop shapes mark iteration, and the flow proceeds from start to stop through the method body.
+
+### Step 18 — Switch Formats
+
+As with the other subcommands, `--format mermaid` emits Mermaid syntax:
+
+```bash
+swiftumlbridge activity Sources/ \
+  --entry ClassDiagramGenerator.generateScript \
+  --format mermaid --output consoleOnly
+```
+
+Save to a file for embedding in documentation:
+
+```bash
+swiftumlbridge activity Sources/ \
+  --entry ClassDiagramGenerator.generateScript \
+  --output consoleOnly > docs/activity-generateScript.puml
+
+swiftumlbridge activity Sources/ \
+  --entry ClassDiagramGenerator.generateScript \
+  --format mermaid --output consoleOnly > docs/activity-generateScript.mmd
+```
+
+The entry-point syntax (`TypeName.methodName`, case-sensitive) and the `--config` / `--output` flags behave exactly as they do in `sequence` and `deps`.
+
+---
+
+## Part 5 — State Machine Diagrams
+
+State machine diagrams are auto-detected. The tool looks for the canonical Swift pattern — an enum with no associated values, another type that holds a property of that enum, and `switch self.prop { case .x: self.prop = .y }` mutations — and renders the resulting transitions.
+
+### Step 19 — List Candidate State Machines
+
+Start by asking the tool what it finds:
+
+```bash
+cd /path/to/SwiftUMLStudio/SwiftUMLBridge
+
+swiftumlbridge state Sources/ --list
+```
+
+Each candidate prints as `HostType.EnumType` along with a confidence level. High-confidence candidates have all three ingredients (enum, property, switch mutations); medium and low confidence indicate partial evidence.
+
+### Step 20 — Render a Specific State Machine
+
+Pick a candidate from the list and pass it with `--state`:
+
+```bash
+swiftumlbridge state Sources/ --state TrafficLight.Color
+```
+
+planttext.com opens with the state machine diagram — nodes are the enum cases and edges are the transitions discovered in the `switch` mutations.
+
+Mermaid output works the same way:
+
+```bash
+swiftumlbridge state Sources/ --state TrafficLight.Color \
+  --format mermaid --output consoleOnly
+```
+
+Omit both `--list` and `--state` to make the command list candidates by default.
+
+---
+
+## Part 6 — SwiftUML Studio (GUI)
 
 The Studio app provides the same diagram generation capabilities as the CLI, wrapped in a macOS GUI with two modes: **Explorer** (simplified, insight-driven) and **Developer** (full-featured with markup editing).
 
-### Step 17 — Open the Studio App
+### Step 21 — Open the Studio App
 
 Build and run SwiftUML Studio from Xcode. The app opens in **Explorer Mode** by default — a simplified interface designed for understanding your codebase visually.
 
-### Step 18 — Load a Project and See the Dashboard
+### Step 22 — Load a Project and See the Dashboard
 
 1. Click **Open...** in the toolbar.
 2. Select the `SwiftUMLBridge/Sources/SwiftUMLBridgeFramework/` folder.
@@ -663,7 +754,7 @@ The **Project Dashboard** appears immediately in the detail pane, showing:
 
 No diagram has been generated yet — the dashboard is a fast analysis pass that runs before any rendering.
 
-### Step 19 — Generate a Diagram from a Suggestion
+### Step 23 — Generate a Diagram from a Suggestion
 
 In the left sidebar, find the **Suggested Diagrams** section. You should see suggestions like:
 
@@ -672,26 +763,28 @@ In the left sidebar, find the **Suggested Diagrams** section. You should see sug
 
 Click **"See how your types are connected."** The detail pane switches from the dashboard to a rendered class diagram preview — the same output you produced with the CLI in Part 1, but without typing any commands.
 
-### Step 20 — Switch to Developer Mode
+### Step 24 — Switch to Developer Mode
 
 Click the **Explorer / Developer** toggle in the toolbar and select **Developer**.
 
 The layout changes to a three-pane view:
 
-- **Left sidebar** — file browser showing the directory tree of your selected paths, plus diagram history below.
-- **Middle pane** — read-only source code of the currently selected file. Click a `.swift` file in the sidebar to load it.
-- **Right pane** — tabbed detail pane with **Dashboard**, **Preview**, and **Markup** tabs.
+- **Workspace sidebar (left)** — three stacked regions: a **Diagrams** source list grouped into **Structural** (Class Diagram, Dependency Graph) and **Behavioral** (Sequence Diagram, Activity Diagram, State Machine), a draggable divider, and a segmented **Files / History** tab below.
+- **Middle pane** — read-only source code of the currently selected file. Click a `.swift` file under the **Files** tab to load it.
+- **Right pane** — a thin **inspector strip** at the top holding the Format picker and the active mode's controls, with tabbed **Dashboard**, **Preview**, and **Markup** tabs below.
 
 Switch to the **Markup** tab to see the raw PlantUML or Mermaid text — useful for copying into version control or another tool.
 
 In Developer Mode you have full control:
 
-- **Diagram mode picker** — switch between Class Diagram, Sequence Diagram, and Dependency Graph.
-- **Format picker** — switch between PlantUML and Mermaid.
-- **Sequence controls** — entry point field and depth stepper (visible in Sequence Diagram mode).
-- **Dependency controls** — Types / Modules picker (visible in Dependency Graph mode).
+- **Diagram mode** — click a row in the sidebar's Diagrams list to switch between Class Diagram, Dependency Graph, Sequence Diagram, Activity Diagram, and State Machine.
+- **Format picker** — in the inspector strip; switch between PlantUML, Mermaid, Nomnoml, and SVG.
+- **Sequence controls** — entry-point field and depth stepper in the inspector strip (visible in Sequence Diagram mode).
+- **Activity controls** — entry-point field in the inspector strip (visible in Activity Diagram mode).
+- **Dependency controls** — Types / Modules picker in the inspector strip (visible in Dependency Graph mode).
+- **State Machine controls** — candidate picker with confidence indicators in the inspector strip (visible in State Machine mode).
 
-### Step 21 — Save to History
+### Step 25 — Save to History
 
 After generating a diagram you want to keep, click the **Save** button in the toolbar. The diagram is saved to history and appears in the sidebar. You can reload it later by clicking the history entry — in either Explorer or Developer mode.
 
@@ -704,6 +797,6 @@ History entries record the diagram name, mode, format, and timestamp, and persis
 ## What's Next
 
 - Read the [Studio User Guide](studio-user-guide.md) for full documentation of the macOS app, including Explorer Mode, Developer Mode, Pro features, and architecture change tracking.
-- Read the [User Guide](user-guide.md) for full documentation of every CLI flag and option, including the complete `deps`, `sequence`, and `classdiagram` subcommand references.
+- Read the [User Guide](user-guide.md) for full documentation of every CLI flag and option, including the complete `classdiagram`, `sequence`, `deps`, `activity`, and `state` subcommand references.
 - Read the [Reference Guide](reference.md) for the complete YAML schema, all themes, all element kinds, relationship style options, diagram format details, and the full framework API (`DependencyGraphGenerator`, `SequenceDiagramGenerator`, `CallGraph`, `CallEdge`, `DiagramOutputting`).
 - Check the [Known Limitations](user-guide.md#known-limitations) section for current constraints (actor stereotypes, class-diagram async/throws labeling, sequence diagram variable-receiver resolution).

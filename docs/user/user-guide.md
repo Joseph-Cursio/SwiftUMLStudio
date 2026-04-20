@@ -1,10 +1,12 @@
 # SwiftUMLBridge User Guide
 
-SwiftUMLBridge is a command-line tool and Swift Package that generates architectural diagrams from Swift source code. It supports **PlantUML** and **Mermaid.js** output for three diagram types:
+SwiftUMLBridge is a command-line tool and Swift Package that generates architectural diagrams from Swift source code. It supports **PlantUML** and **Mermaid.js** output for five diagram types:
 
 - **Class diagrams** — structural overview of types, members, and relationships (M0–M2)
 - **Sequence diagrams** — static call-graph traces from a named entry-point method (M3)
 - **Dependency graphs** — directed graphs of type-level or module-level dependencies (M4)
+- **Activity diagrams** — control flow inside a single method (decisions, loops, async, error handling)
+- **State machine diagrams** — transitions auto-detected from an enum-typed property
 
 > **Prefer a GUI?** [SwiftUML Studio](studio-user-guide.md) is a macOS app that provides the same diagram generation in a visual interface with project insights, one-click suggestions, and architecture change tracking — no terminal required.
 
@@ -33,17 +35,19 @@ SwiftUMLBridge is a command-line tool and Swift Package that generates architect
    - [Filtering and Exclusion](#filtering-and-exclusion)
    - [Cycle Detection](#cycle-detection)
    - [Format and Output](#format-and-output)
-7. [Configuration File](#configuration-file)
+7. [Generating Activity Diagrams](#generating-activity-diagrams)
+8. [Generating State Machine Diagrams](#generating-state-machine-diagrams)
+9. [Configuration File](#configuration-file)
    - [File Discovery](#file-discovery)
    - [Overriding Defaults](#overriding-defaults)
-8. [Output Destinations](#output-destinations)
-9. [Understanding Class Diagrams](#understanding-class-diagrams)
-   - [Element Types](#element-types)
-   - [Relationships](#relationships)
-   - [Access Level Indicators](#access-level-indicators)
-   - [Format Differences](#format-differences)
-10. [Known Limitations](#known-limitations)
-11. [Getting Help](#getting-help)
+10. [Output Destinations](#output-destinations)
+11. [Understanding Class Diagrams](#understanding-class-diagrams)
+    - [Element Types](#element-types)
+    - [Relationships](#relationships)
+    - [Access Level Indicators](#access-level-indicators)
+    - [Format Differences](#format-differences)
+12. [Known Limitations](#known-limitations)
+13. [Getting Help](#getting-help)
 
 ---
 
@@ -464,6 +468,92 @@ swiftumlbridge deps Sources/ --config ./configs/diagram.yml
 
 ---
 
+## Generating Activity Diagrams
+
+The `activity` subcommand renders the control flow inside a single Swift method as an activity diagram. It parses the named method's body and emits nodes for decisions (`if`/`else`, `switch`), loops (`for`/`while`/`repeat`), protected blocks (`do`/`try`/`catch`), async steps (`async`/`await`), and task-group fork/join points.
+
+```
+swiftumlbridge activity [<paths>...] --entry Type.method [options]
+```
+
+### Entry Point Syntax
+
+`--entry` is required and takes the same `TypeName.methodName` form used by `sequence`:
+
+```bash
+swiftumlbridge activity Sources/ --entry AuthService.login
+swiftumlbridge activity Sources/ --entry ClassDiagramGenerator.generateScript
+```
+
+The type and method names are case-sensitive. If no method matches, the resulting diagram is empty.
+
+### Format and Output
+
+The `--format` and `--output` flags behave identically to the other subcommands:
+
+```bash
+# PlantUML (default), opened in browser
+swiftumlbridge activity Sources/ --entry MyService.run
+
+# Mermaid, printed to stdout
+swiftumlbridge activity Sources/ --entry MyService.run \
+  --format mermaid --output consoleOnly
+
+# Custom config
+swiftumlbridge activity Sources/ --entry MyService.run --config ./configs/diagram.yml
+```
+
+---
+
+## Generating State Machine Diagrams
+
+The `state` subcommand auto-detects state machines in your source and renders their transitions. The detection heuristic looks for three pieces of evidence:
+
+1. An `enum` with no associated values whose cases represent states.
+2. A property on another type typed as that enum.
+3. Mutations of that property through a `switch`, such as `switch self.prop { case .x: self.prop = .y }`.
+
+When all three are present, the candidate is reported as HIGH confidence. Partial matches produce medium and low confidence candidates.
+
+```
+swiftumlbridge state [<paths>...] [--list | --state HostType.EnumType] [options]
+```
+
+### Listing Candidates
+
+Use `--list` (or `-l`) to print every detected candidate and exit:
+
+```bash
+swiftumlbridge state Sources/ --list
+```
+
+Each candidate prints as `HostType.EnumType` along with its confidence. If you run `swiftumlbridge state` without either `--list` or `--state`, it defaults to listing candidates — picking a specific machine is always explicit.
+
+### Rendering a Specific State Machine
+
+Pass `--state HostType.EnumType` (or `-s`) to render that candidate:
+
+```bash
+swiftumlbridge state Sources/ --state TrafficLight.Color
+```
+
+The diagram's nodes are the enum cases; the edges are the transitions found in `switch`-based mutations of the host type's property.
+
+### Format and Output
+
+The `--format`, `--output`, and `--config` flags behave identically to the other subcommands:
+
+```bash
+# Mermaid, stdout
+swiftumlbridge state Sources/ --state TrafficLight.Color \
+  --format mermaid --output consoleOnly > state.mmd
+
+# Custom config
+swiftumlbridge state Sources/ --state TrafficLight.Color --config ./configs/diagram.yml
+```
+
+---
+
 ## Configuration File
 
 For repeatable, project-specific settings, place a `.swiftumlbridge.yml` file in the root of your project. The `format` key applies to `classdiagram`, `sequence`, and `deps`. All other keys are class-diagram–specific and are silently ignored by `sequence` and `deps`. For `deps`, only `format` and the `elements.havingAccessLevel` and `elements.exclude` keys have any effect; all other keys are ignored.
@@ -676,6 +766,8 @@ swiftumlbridge --help
 swiftumlbridge classdiagram --help
 swiftumlbridge sequence --help
 swiftumlbridge deps --help
+swiftumlbridge activity --help
+swiftumlbridge state --help
 
 # Version
 swiftumlbridge --version
