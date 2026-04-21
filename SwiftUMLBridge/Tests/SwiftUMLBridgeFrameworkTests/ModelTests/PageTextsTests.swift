@@ -17,73 +17,73 @@ struct PageTextsTests {
     }
 
     @Test("plantuml() includes header keyword and content")
-    func headerSection() {
+    func headerSection() throws {
         let texts = PageTexts(header: "My Header")
-        let result = texts.plantuml()
-        #expect(result?.contains("header") == true)
-        #expect(result?.contains("My Header") == true)
-        #expect(result?.contains("end header") == true)
+        let result = try #require(texts.plantuml())
+        #expect(result.contains("header"))
+        #expect(result.contains("My Header"))
+        #expect(result.contains("end header"))
     }
 
     @Test("plantuml() includes title keyword and content")
-    func titleSection() {
+    func titleSection() throws {
         let texts = PageTexts(title: "My Title")
-        let result = texts.plantuml()
-        #expect(result?.contains("title") == true)
-        #expect(result?.contains("My Title") == true)
-        #expect(result?.contains("end title") == true)
+        let result = try #require(texts.plantuml())
+        #expect(result.contains("title"))
+        #expect(result.contains("My Title"))
+        #expect(result.contains("end title"))
     }
 
     @Test("plantuml() includes legend keyword and content")
-    func legendSection() {
+    func legendSection() throws {
         let texts = PageTexts(legend: "My Legend")
-        let result = texts.plantuml()
-        #expect(result?.contains("legend") == true)
-        #expect(result?.contains("My Legend") == true)
-        #expect(result?.contains("end legend") == true)
+        let result = try #require(texts.plantuml())
+        #expect(result.contains("legend"))
+        #expect(result.contains("My Legend"))
+        #expect(result.contains("end legend"))
     }
 
     @Test("plantuml() includes caption keyword and content")
-    func captionSection() {
+    func captionSection() throws {
         let texts = PageTexts(caption: "My Caption")
-        let result = texts.plantuml()
-        #expect(result?.contains("caption") == true)
-        #expect(result?.contains("My Caption") == true)
-        #expect(result?.contains("end caption") == true)
+        let result = try #require(texts.plantuml())
+        #expect(result.contains("caption"))
+        #expect(result.contains("My Caption"))
+        #expect(result.contains("end caption"))
     }
 
     @Test("plantuml() includes footer keyword and content")
-    func footerSection() {
+    func footerSection() throws {
         let texts = PageTexts(footer: "My Footer")
-        let result = texts.plantuml()
-        #expect(result?.contains("footer") == true)
-        #expect(result?.contains("My Footer") == true)
-        #expect(result?.contains("end footer") == true)
+        let result = try #require(texts.plantuml())
+        #expect(result.contains("footer"))
+        #expect(result.contains("My Footer"))
+        #expect(result.contains("end footer"))
     }
 
     @Test("plantuml() includes all five sections when all fields are set")
-    func allFieldsIncluded() {
+    func allFieldsIncluded() throws {
         let texts = PageTexts(header: "H", title: "T", legend: "L", caption: "C", footer: "F")
-        let result = texts.plantuml()
-        #expect(result?.contains("header") == true)
-        #expect(result?.contains("title") == true)
-        #expect(result?.contains("legend") == true)
-        #expect(result?.contains("caption") == true)
-        #expect(result?.contains("footer") == true)
-        #expect(result?.contains("end header") == true)
-        #expect(result?.contains("end title") == true)
-        #expect(result?.contains("end legend") == true)
-        #expect(result?.contains("end caption") == true)
-        #expect(result?.contains("end footer") == true)
+        let result = try #require(texts.plantuml())
+        #expect(result.contains("header"))
+        #expect(result.contains("title"))
+        #expect(result.contains("legend"))
+        #expect(result.contains("caption"))
+        #expect(result.contains("footer"))
+        #expect(result.contains("end header"))
+        #expect(result.contains("end title"))
+        #expect(result.contains("end legend"))
+        #expect(result.contains("end caption"))
+        #expect(result.contains("end footer"))
     }
 
     @Test("PageTexts respects field mutability")
-    func fieldsAreMutable() {
+    func fieldsAreMutable() throws {
         var texts = PageTexts()
         texts.header = "New Header"
         texts.footer = "New Footer"
-        let result = texts.plantuml()
-        #expect(result?.contains("New Header") == true)
-        #expect(result?.contains("New Footer") == true)
+        let result = try #require(texts.plantuml())
+        #expect(result.contains("New Header"))
+        #expect(result.contains("New Footer"))
     }
 }
