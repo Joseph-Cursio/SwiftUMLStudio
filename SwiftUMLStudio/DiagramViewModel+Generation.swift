@@ -106,6 +106,27 @@ extension DiagramViewModel {
         activityScript = result
     }
 
+    func generateERDiagram() async {
+        guard !selectedPaths.isEmpty else {
+            isGenerating = false
+            return
+        }
+        erScript = nil
+
+        let paths = selectedPaths
+        let format = diagramFormat
+
+        let generator = erGenerator
+        let result = await Task.detached(priority: .userInitiated) {
+            var config = Configuration.default
+            config.format = format
+            return generator.generateScript(for: paths, with: config)
+        }.value
+
+        guard !Task.isCancelled else { return }
+        erScript = result
+    }
+
     func generateSequenceDiagram() async {
         guard !selectedPaths.isEmpty, !entryPoint.isEmpty else {
             isGenerating = false

@@ -11,6 +11,7 @@ final class DiagramViewModel {
     var depsScript: DepsScript?
     var stateScript: StateScript?
     var activityScript: ActivityScript?
+    var erScript: ERScript?
 
     // For restoring from history without needing to re-parse AST
     private var restoredScript: SimpleDiagramScript?
@@ -54,6 +55,7 @@ final class DiagramViewModel {
     let depsGenerator: any DependencyGraphGenerating
     let stateGenerator: any StateMachineGenerating
     let activityGenerator: any ActivityDiagramGenerating
+    let erGenerator: any ERDiagramGenerating
 
     init(
         persistenceController: PersistenceController = PersistenceController.shared,
@@ -61,7 +63,8 @@ final class DiagramViewModel {
         sequenceGenerator: any SequenceDiagramGenerating = SequenceDiagramGenerator(),
         depsGenerator: any DependencyGraphGenerating = DependencyGraphGenerator(),
         stateGenerator: any StateMachineGenerating = StateMachineGenerator(),
-        activityGenerator: any ActivityDiagramGenerating = ActivityDiagramGenerator()
+        activityGenerator: any ActivityDiagramGenerating = ActivityDiagramGenerator(),
+        erGenerator: any ERDiagramGenerating = ERDiagramGenerator()
     ) {
         self.modelContext = persistenceController.container.mainContext
         self.classGenerator = classGenerator
@@ -69,6 +72,7 @@ final class DiagramViewModel {
         self.depsGenerator = depsGenerator
         self.stateGenerator = stateGenerator
         self.activityGenerator = activityGenerator
+        self.erGenerator = erGenerator
     }
 
     var currentScript: (any DiagramOutputting)? {
@@ -80,7 +84,7 @@ final class DiagramViewModel {
         case .dependencyGraph: return depsScript
         case .stateMachine: return stateScript
         case .activityDiagram: return activityScript
-        case .erDiagram: return nil
+        case .erDiagram: return erScript
         }
     }
 
@@ -121,7 +125,7 @@ final class DiagramViewModel {
             case .activityDiagram:
                 await self.generateActivityDiagram()
             case .erDiagram:
-                break
+                await self.generateERDiagram()
             }
 
             guard !Task.isCancelled else { return }
