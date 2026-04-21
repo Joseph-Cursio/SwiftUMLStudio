@@ -65,8 +65,10 @@ final class NativeCanvasCoverageUITests: XCTestCase {
         sleep(2)
         switchFormatToSVG()
 
+        let canvas = app.descendants(matching: .any)
+            .matching(identifier: "nativeDiagramCanvas").firstMatch
         XCTAssertTrue(
-            app.descendants(matching: .any).matching(identifier: "nativeDiagramCanvas").firstMatch.waitForExistence(timeout: 15),
+            canvas.waitForExistence(timeout: 15),
             "Class diagram native canvas should render when format is SVG"
         )
     }
@@ -86,8 +88,10 @@ final class NativeCanvasCoverageUITests: XCTestCase {
         typeEntryPoint("AuthService.login", intoField: "entryPointField")
         switchFormatToSVG()
 
+        let canvas = app.descendants(matching: .any)
+            .matching(identifier: "nativeSequenceCanvas").firstMatch
         XCTAssertTrue(
-            app.descendants(matching: .any).matching(identifier: "nativeSequenceCanvas").firstMatch.waitForExistence(timeout: 15),
+            canvas.waitForExistence(timeout: 15),
             "Sequence diagram native canvas should render when format is SVG"
         )
     }
@@ -107,8 +111,10 @@ final class NativeCanvasCoverageUITests: XCTestCase {
         typeEntryPoint("AuthService.login", intoField: "activityEntryPointField")
         switchFormatToSVG()
 
+        let canvas = app.descendants(matching: .any)
+            .matching(identifier: "nativeActivityCanvas").firstMatch
         XCTAssertTrue(
-            app.descendants(matching: .any).matching(identifier: "nativeActivityCanvas").firstMatch.waitForExistence(timeout: 15),
+            canvas.waitForExistence(timeout: 15),
             "Activity diagram native canvas should render when format is SVG"
         )
     }
