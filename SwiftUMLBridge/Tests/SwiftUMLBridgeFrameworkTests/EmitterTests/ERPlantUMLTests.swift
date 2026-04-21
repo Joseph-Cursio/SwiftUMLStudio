@@ -52,7 +52,7 @@ struct ERPlantUMLTests {
     }
 
     @Test("separator line appears between PK and body when both exist")
-    func separatorBetweenPKAndBody() {
+    func separatorBetweenPKAndBody() throws {
         let model = ERModel(entities: [
             EREntity(name: "User", attributes: [
                 ERAttribute(name: "id", type: "UUID", isPrimaryKey: true),
@@ -61,13 +61,11 @@ struct ERPlantUMLTests {
         ])
         let script = makeScript(model: model)
         let lines = script.text.split(separator: "\n").map(String.init)
-        guard let idIndex = lines.firstIndex(where: { $0.contains("* id") }),
-              let nameIndex = lines.firstIndex(where: { $0.contains("name : String") }),
-              let separatorIndex = lines.firstIndex(where: { $0.trimmingCharacters(in: .whitespaces) == "--" })
-        else {
-            Issue.record("expected id, name, and separator lines")
-            return
-        }
+        let idIndex = try #require(lines.firstIndex(where: { $0.contains("* id") }))
+        let nameIndex = try #require(lines.firstIndex(where: { $0.contains("name : String") }))
+        let separatorIndex = try #require(
+            lines.firstIndex(where: { $0.trimmingCharacters(in: .whitespaces) == "--" })
+        )
         #expect(idIndex < separatorIndex)
         #expect(separatorIndex < nameIndex)
     }
@@ -146,7 +144,7 @@ struct ERPlantUMLTests {
     }
 
     @Test("relationship line appears after the entity blocks")
-    func relationshipAfterEntities() {
+    func relationshipAfterEntities() throws {
         let model = ERModel(
             entities: [EREntity(name: "Author"), EREntity(name: "Book")],
             relationships: [
@@ -159,12 +157,8 @@ struct ERPlantUMLTests {
         )
         let script = makeScript(model: model)
         let lines = script.text.split(separator: "\n").map(String.init)
-        guard let lastClose = lines.lastIndex(of: "}"),
-              let edgeIndex = lines.firstIndex(where: { $0.contains("||--o{") })
-        else {
-            Issue.record("expected entity closing brace and edge line")
-            return
-        }
+        let lastClose = try #require(lines.lastIndex(of: "}"))
+        let edgeIndex = try #require(lines.firstIndex(where: { $0.contains("||--o{") }))
         #expect(lastClose < edgeIndex)
     }
 

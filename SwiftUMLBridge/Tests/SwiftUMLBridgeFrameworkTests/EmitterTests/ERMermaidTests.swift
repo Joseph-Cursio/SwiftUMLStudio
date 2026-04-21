@@ -74,84 +74,29 @@ struct ERMermaidTests {
 
     // MARK: - Relationship symbols
 
-    @Test("one-to-many relationship uses ||--o{")
-    func oneToManyEdge() {
-        let model = ERModel(
-            entities: [EREntity(name: "Author"), EREntity(name: "Book")],
-            relationships: [
-                ERRelationship(
-                    from: "Author", toEntity: "Book",
-                    fromCardinality: .exactlyOne, toCardinality: .zeroOrMany,
-                    label: "books"
-                )
-            ]
-        )
-        let script = makeScript(model: model)
-        #expect(script.text.contains("Author ||--o{ Book : books"))
-    }
-
-    @Test("optional to-one relationship uses }o--o|")
-    func optionalToOneEdge() {
-        let model = ERModel(
-            entities: [EREntity(name: "Book"), EREntity(name: "Author")],
-            relationships: [
-                ERRelationship(
-                    from: "Book", toEntity: "Author",
-                    fromCardinality: .zeroOrMany, toCardinality: .zeroOrOne,
-                    label: "author"
-                )
-            ]
-        )
-        let script = makeScript(model: model)
-        #expect(script.text.contains("Book }o--o| Author : author"))
-    }
-
-    @Test("many-to-many relationship uses }o--o{")
-    func manyToManyEdge() {
-        let model = ERModel(
-            entities: [EREntity(name: "Book"), EREntity(name: "Tag")],
-            relationships: [
-                ERRelationship(
-                    from: "Book", toEntity: "Tag",
-                    fromCardinality: .zeroOrMany, toCardinality: .zeroOrMany,
-                    label: "tags"
-                )
-            ]
-        )
-        let script = makeScript(model: model)
-        #expect(script.text.contains("Book }o--o{ Tag : tags"))
-    }
-
-    @Test("one-to-one mandatory relationship uses ||--||")
-    func oneToOneMandatory() {
-        let model = ERModel(
-            entities: [EREntity(name: "User"), EREntity(name: "Profile")],
-            relationships: [
-                ERRelationship(
-                    from: "User", toEntity: "Profile",
-                    fromCardinality: .exactlyOne, toCardinality: .exactlyOne,
-                    label: "profile"
-                )
-            ]
-        )
-        let script = makeScript(model: model)
-        #expect(script.text.contains("User ||--|| Profile : profile"))
-    }
-
-    @Test("one-or-many right end uses |{")
-    func oneOrManyRight() {
+    @Test(
+        "cardinality pair renders the expected crow's-foot symbols",
+        arguments: [
+            (ERCardinality.exactlyOne, ERCardinality.zeroOrMany, "||--o{"),
+            (ERCardinality.zeroOrMany, ERCardinality.zeroOrOne, "}o--o|"),
+            (ERCardinality.zeroOrMany, ERCardinality.zeroOrMany, "}o--o{"),
+            (ERCardinality.exactlyOne, ERCardinality.exactlyOne, "||--||"),
+            (ERCardinality.exactlyOne, ERCardinality.oneOrMany, "||--|{")
+        ]
+    )
+    func cardinalityPairs(fromCardinality: ERCardinality, toCardinality: ERCardinality, expected: String) {
         let model = ERModel(
             entities: [EREntity(name: "A"), EREntity(name: "B")],
             relationships: [
                 ERRelationship(
                     from: "A", toEntity: "B",
-                    fromCardinality: .exactlyOne, toCardinality: .oneOrMany,
-                    label: "items"
+                    fromCardinality: fromCardinality, toCardinality: toCardinality,
+                    label: "edge"
                 )
             ]
         )
         let script = makeScript(model: model)
-        #expect(script.text.contains("A ||--|{ B : items"))
+        #expect(script.text.contains("A \(expected) B : edge"))
     }
 
     // MARK: - Empty / degenerate
