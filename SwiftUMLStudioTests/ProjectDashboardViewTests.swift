@@ -202,7 +202,7 @@ struct ProjectDashboardViewTests {
             onSuggestionTap: { _ in }
         )
         // Empty state is rendered; populated-state scroll view is not.
-        #expect(throws: (any Error).self) {
+        #expect(throws: InspectionError.self) {
             try view.inspect().find(viewWithAccessibilityIdentifier: "dashboardContent")
         }
         // Five stat cards only render in populated state.

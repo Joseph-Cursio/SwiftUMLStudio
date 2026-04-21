@@ -67,7 +67,7 @@ struct DiagramPreviewViewTests {
             )
         ]
         let view = DiagramPreviewView(viewModel: viewModel)
-        #expect(throws: (any Error).self) {
+        #expect(throws: InspectionError.self) {
             try view.inspect().find(viewWithAccessibilityIdentifier: "stateMachineConfidenceBanner")
         }
     }

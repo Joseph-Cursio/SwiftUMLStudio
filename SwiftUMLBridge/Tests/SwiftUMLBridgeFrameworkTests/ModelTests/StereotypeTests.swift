@@ -26,7 +26,7 @@ struct StereotypeTests {
     @Test("Character decoding fails for empty string")
     func characterDecodingFailsForEmptyString() {
         let json = Data(#"{"character":"","color":"skyBlue"}"#.utf8)
-        #expect(throws: (any Error).self) {
+        #expect(throws: DecodingError.self) {
             try JSONDecoder().decode(Spot.self, from: json)
         }
     }
@@ -34,7 +34,7 @@ struct StereotypeTests {
     @Test("Character decoding fails for multi-character string")
     func characterDecodingFailsForMultiChar() {
         let json = Data(#"{"character":"AB","color":"skyBlue"}"#.utf8)
-        #expect(throws: (any Error).self) {
+        #expect(throws: DecodingError.self) {
             try JSONDecoder().decode(Spot.self, from: json)
         }
     }
