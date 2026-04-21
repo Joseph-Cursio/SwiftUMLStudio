@@ -10,7 +10,8 @@ struct SwiftUMLBridgeCLI: AsyncParsableCommand {
         version: SwiftUMLBridgeFramework.Version.current.value,
         subcommands: [
             ClassDiagramCommand.self, SequenceCommand.self,
-            DepsCommand.self, ActivityCommand.self, StateCommand.self
+            DepsCommand.self, ActivityCommand.self, StateCommand.self,
+            ERCommand.self
         ],
         defaultSubcommand: ClassDiagramCommand.self
     )

@@ -5,6 +5,7 @@ import SwiftUMLBridgeFramework
 enum CLIError: Error, CustomStringConvertible {
     case invalidEntry
     case stateCandidateNotFound(identifier: String)
+    case erModelNotFound
 
     var description: String {
         switch self {
@@ -12,6 +13,8 @@ enum CLIError: Error, CustomStringConvertible {
             return "Entry must be in the form 'TypeName.methodName'"
         case .stateCandidateNotFound(let identifier):
             return "No state machine candidate '\(identifier)' was found in the sources."
+        case .erModelNotFound:
+            return "No SwiftData @Model classes were found in the sources."
         }
     }
 }
