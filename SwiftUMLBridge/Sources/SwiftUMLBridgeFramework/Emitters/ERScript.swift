@@ -42,8 +42,62 @@ public struct ERScript: Sendable {
 // MARK: - PlantUML
 
 private extension ERScript {
-    /// Placeholder — real PlantUML `entity` syntax lands in a follow-up commit.
-    static func buildPlantUMLText(model: ERModel) -> String { "" }
+    static func buildPlantUMLText(model: ERModel) -> String {
+        var lines: [String] = ["@startuml"]
+
+        for entity in model.entities {
+            lines.append(contentsOf: plantUMLEntityLines(entity))
+            lines.append("")
+        }
+
+        for relationship in model.relationships {
+            let leftSymbol = ERScript.mermaidLeftSymbol(for: relationship.fromCardinality)
+            let rightSymbol = ERScript.mermaidRightSymbol(for: relationship.toCardinality)
+            let label = ERScript.sanitizeLabel(relationship.label)
+            lines.append(
+                "\(relationship.from) \(leftSymbol)--\(rightSymbol) \(relationship.toEntity) : \(label)"
+            )
+        }
+
+        lines.append("@enduml")
+        return lines.joined(separator: "\n")
+    }
+
+    static func plantUMLEntityLines(_ entity: EREntity) -> [String] {
+        var lines: [String] = ["entity \"\(entity.name)\" {"]
+        let primaries = entity.attributes.filter(\.isPrimaryKey)
+        let others = entity.attributes.filter { !$0.isPrimaryKey }
+
+        for attribute in primaries {
+            lines.append("  * \(plantUMLAttributeText(attribute))")
+        }
+        if !primaries.isEmpty && !others.isEmpty {
+            lines.append("  --")
+        }
+        for attribute in others {
+            lines.append("  \(plantUMLAttributeText(attribute))")
+        }
+        lines.append("}")
+        return lines
+    }
+
+    static func plantUMLAttributeText(_ attribute: ERAttribute) -> String {
+        var text = "\(attribute.name) : \(attribute.type)"
+        if attribute.isOptional {
+            text += "?"
+        }
+        var stereotypes: [String] = []
+        if attribute.isUnique && !attribute.isPrimaryKey {
+            stereotypes.append("UK")
+        }
+        if attribute.isTransient {
+            stereotypes.append("transient")
+        }
+        if !stereotypes.isEmpty {
+            text += " <<\(stereotypes.joined(separator: ", "))>>"
+        }
+        return text
+    }
 }
 
 // MARK: - Mermaid
