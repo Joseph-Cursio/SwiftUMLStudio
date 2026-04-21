@@ -64,6 +64,12 @@ struct ContentView: View {
                 showPaywall = true
                 return
             }
+            if viewModel.diagramMode == .erDiagram
+                && !FeatureGate.isUnlocked(.erDiagrams, manager: subscriptionManager) {
+                viewModel.diagramMode = .classDiagram
+                showPaywall = true
+                return
+            }
             viewModel.generate()
             if (viewModel.diagramMode == .sequenceDiagram
                 || viewModel.diagramMode == .activityDiagram)

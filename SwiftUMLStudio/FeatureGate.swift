@@ -5,6 +5,7 @@ enum ProFeature: String, CaseIterable {
     case dependencyGraphs
     case stateMachines
     case activityDiagrams
+    case erDiagrams
     case exportMarkup
     case formatSelection
     case unlimitedProjects

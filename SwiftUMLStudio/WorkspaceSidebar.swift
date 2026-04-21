@@ -77,7 +77,7 @@ private struct DiagramPickerSection: View {
     }
 
     private var structuralModes: [DiagramMode] {
-        [.classDiagram, .dependencyGraph]
+        [.classDiagram, .dependencyGraph, .erDiagram]
     }
 
     private var behavioralModes: [DiagramMode] {
@@ -91,6 +91,7 @@ private struct DiagramPickerSection: View {
         case .sequenceDiagram: return "arrow.triangle.branch"
         case .activityDiagram: return "flowchart"
         case .stateMachine: return "circle.hexagonpath"
+        case .erDiagram: return "tablecells"
         }
     }
 }

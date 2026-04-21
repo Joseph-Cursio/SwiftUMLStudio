@@ -40,6 +40,8 @@ struct DiagramInspectorStrip: View {
             stateMachinePicker
         case .classDiagram:
             EmptyView()
+        case .erDiagram:
+            EmptyView()
         }
     }
 

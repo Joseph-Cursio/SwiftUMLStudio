@@ -24,10 +24,10 @@ private func runOnMain(_ block: @MainActor () -> Void) {
 @Suite("DiagramMode")
 struct DiagramModeTests {
 
-    @Test("has exactly five cases")
+    @Test("has exactly six cases")
     func allCasesCount() {
         runOnMain {
-            #expect(DiagramMode.allCases.count == 5)
+            #expect(DiagramMode.allCases.count == 6)
         }
     }
 
@@ -56,6 +56,11 @@ struct DiagramModeTests {
         #expect(DiagramMode.activityDiagram.rawValue == "Activity Diagram")
     }
 
+    @Test("erDiagram raw value is 'ER Diagram'")
+    func erDiagramRawValue() {
+        #expect(DiagramMode.erDiagram.rawValue == "ER Diagram")
+    }
+
     @Test("id equals rawValue for all cases")
     func idEqualsRawValue() {
         runOnMain {
@@ -73,6 +78,7 @@ struct DiagramModeTests {
         #expect(cases.contains(.dependencyGraph))
         #expect(cases.contains(.stateMachine))
         #expect(cases.contains(.activityDiagram))
+        #expect(cases.contains(.erDiagram))
     }
 
     @Test("can be initialized from raw value")
@@ -82,6 +88,7 @@ struct DiagramModeTests {
         #expect(DiagramMode(rawValue: "Dependency Graph") == .dependencyGraph)
         #expect(DiagramMode(rawValue: "State Machine") == .stateMachine)
         #expect(DiagramMode(rawValue: "Activity Diagram") == .activityDiagram)
+        #expect(DiagramMode(rawValue: "ER Diagram") == .erDiagram)
         #expect(DiagramMode(rawValue: "nonexistent") == nil)
     }
 }

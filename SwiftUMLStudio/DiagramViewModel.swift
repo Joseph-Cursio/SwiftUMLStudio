@@ -80,6 +80,7 @@ final class DiagramViewModel {
         case .dependencyGraph: return depsScript
         case .stateMachine: return stateScript
         case .activityDiagram: return activityScript
+        case .erDiagram: return nil
         }
     }
 
@@ -119,6 +120,8 @@ final class DiagramViewModel {
                 await self.generateStateMachineDiagram()
             case .activityDiagram:
                 await self.generateActivityDiagram()
+            case .erDiagram:
+                break
             }
 
             guard !Task.isCancelled else { return }
