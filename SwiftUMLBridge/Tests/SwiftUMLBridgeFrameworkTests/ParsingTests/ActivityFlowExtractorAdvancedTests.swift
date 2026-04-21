@@ -32,7 +32,7 @@ struct ActivityFlowExtractorAdvancedTests {
         let backEdges = graph.edges.filter {
             $0.toId == loopStart.id && $0.fromId != loopStart.id
         }
-        #expect(!backEdges.isEmpty)
+        #expect(backEdges.isEmpty == false)
     }
 
     @Test("while loop emits loopStart")
@@ -105,8 +105,8 @@ struct ActivityFlowExtractorAdvancedTests {
             }
         }
         """)
-        #expect(!nodes(of: .fork, in: graph).isEmpty)
-        #expect(!nodes(of: .join, in: graph).isEmpty)
+        #expect(nodes(of: .fork, in: graph).isEmpty == false)
+        #expect(nodes(of: .join, in: graph).isEmpty == false)
         let asyncActions = graph.nodes.filter { $0.kind == .action && $0.isAsync }
         #expect(asyncActions.count >= 2)
     }
@@ -161,7 +161,7 @@ struct ActivityFlowExtractorAdvancedTests {
         }
         """)
         #expect(nodes(of: .fork, in: graph).isEmpty)
-        #expect(!nodes(of: .action, in: graph).isEmpty)
+        #expect(nodes(of: .action, in: graph).isEmpty == false)
     }
 
     // MARK: - Await (outside task groups)
@@ -189,7 +189,7 @@ struct ActivityFlowExtractorAdvancedTests {
             func run() { doThing() }
         }
         """)
-        #expect(!nodes(of: .action, in: graph).isEmpty)
+        #expect(nodes(of: .action, in: graph).isEmpty == false)
     }
 
     @Test("entry function inside an actor is discovered")
@@ -199,6 +199,6 @@ struct ActivityFlowExtractorAdvancedTests {
             func run() { doThing() }
         }
         """)
-        #expect(!nodes(of: .action, in: graph).isEmpty)
+        #expect(nodes(of: .action, in: graph).isEmpty == false)
     }
 }

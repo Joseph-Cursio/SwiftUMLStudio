@@ -62,7 +62,7 @@ struct ActivityDiagramGeneratorTests {
         let script = generator.generateScript(
             for: [path], entryType: "Foo", entryMethod: "run"
         )
-        #expect(!script.text.isEmpty)
+        #expect(script.text.isEmpty == false)
         #expect(script.text.contains("title Foo.run"))
         #expect(script.text.contains("<<choice>>"))
     }

@@ -190,7 +190,7 @@ struct ActivityFlowExtractorTests {
         """)
         let endId = graph.nodes.first(where: { $0.kind == .end })!.id
         let returnEdges = graph.edges.filter { $0.toId == endId }
-        #expect(!returnEdges.isEmpty)
+        #expect(returnEdges.isEmpty == false)
     }
 
     @Test("throw emits a terminal action going to end")
