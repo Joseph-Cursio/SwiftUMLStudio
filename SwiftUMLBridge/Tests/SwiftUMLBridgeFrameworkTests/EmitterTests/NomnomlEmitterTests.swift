@@ -9,49 +9,21 @@ struct NomnomlEmitterTests {
 
     // MARK: - Type stereotypes
 
-    @Test("class produces <class> stereotype in nomnoml output")
-    func classStereotype() {
-        let script = generator.generateScript(for: "class Vehicle { var speed: Int = 0 }", with: nomnomlConfig)
-        #expect(script.text.contains("<class>"))
-        #expect(script.text.contains("Vehicle"))
-    }
-
-    @Test("struct produces <struct> stereotype in nomnoml output")
-    func structStereotype() {
-        let script = generator.generateScript(for: "struct Point { var xPos: Int = 0 }", with: nomnomlConfig)
-        #expect(script.text.contains("<struct>"))
-        #expect(script.text.contains("Point"))
-    }
-
-    @Test("enum produces <enum> stereotype in nomnoml output")
-    func enumStereotype() {
-        let script = generator.generateScript(for: "enum Direction { case north, south }", with: nomnomlConfig)
-        #expect(script.text.contains("<enum>"))
-        #expect(script.text.contains("Direction"))
-    }
-
-    @Test("protocol produces <interface> stereotype in nomnoml output")
-    func protocolStereotype() {
-        let script = generator.generateScript(for: "protocol Drawable { func draw() }", with: nomnomlConfig)
-        #expect(script.text.contains("<interface>"))
-        #expect(script.text.contains("Drawable"))
-    }
-
-    @Test("actor produces <actor> stereotype in nomnoml output")
-    func actorStereotype() {
-        let script = generator.generateScript(for: "actor BankAccount { var balance: Int = 0 }", with: nomnomlConfig)
-        #expect(script.text.contains("<actor>"))
-        #expect(script.text.contains("BankAccount"))
-    }
-
-    @Test("extension produces <extension> stereotype in nomnoml output")
-    func extensionStereotype() {
-        let script = generator.generateScript(
-            for: "struct Foo {} \nextension Foo { func bar() {} }",
-            with: nomnomlConfig
-        )
-        #expect(script.text.contains("<extension>"))
-        #expect(script.text.contains("Foo"))
+    @Test(
+        "type declarations produce their matching nomnoml stereotype",
+        arguments: [
+            ("class Vehicle { var speed: Int = 0 }", "<class>", "Vehicle"),
+            ("struct Point { var xPos: Int = 0 }", "<struct>", "Point"),
+            ("enum Direction { case north, south }", "<enum>", "Direction"),
+            ("protocol Drawable { func draw() }", "<interface>", "Drawable"),
+            ("actor BankAccount { var balance: Int = 0 }", "<actor>", "BankAccount"),
+            ("struct Foo {} \nextension Foo { func bar() {} }", "<extension>", "Foo")
+        ]
+    )
+    func typeStereotype(source: String, stereotype: String, typeName: String) {
+        let script = generator.generateScript(for: source, with: nomnomlConfig)
+        #expect(script.text.contains(stereotype))
+        #expect(script.text.contains(typeName))
     }
 
     @Test("macro element produces comment line in nomnoml output")
@@ -103,8 +75,15 @@ struct NomnomlEmitterTests {
 
     // MARK: - Access level prefixes
 
-    @Test("public member gets + prefix when access level shown")
-    func publicAccessPrefix() {
+    @Test(
+        "access-level prefix is attached to members when the attribute is shown",
+        arguments: [
+            ("class Api { public var endpoint: String = \"\" }", "+endpoint"),
+            ("class Secret { private var passkey: String = \"\" }", "-passkey"),
+            ("class Worker { var taskCount: Int = 0 }", "~taskCount")
+        ]
+    )
+    func accessLevelPrefix(source: String, expected: String) {
         let config = Configuration(
             elements: ElementOptions(
                 showMembersWithAccessLevel: [.public, .internal, .private],
@@ -112,37 +91,8 @@ struct NomnomlEmitterTests {
             ),
             format: .nomnoml
         )
-        let source = "class Api { public var endpoint: String = \"\" }"
         let script = generator.generateScript(for: source, with: config)
-        #expect(script.text.contains("+endpoint"))
-    }
-
-    @Test("private member gets - prefix when access level shown")
-    func privateAccessPrefix() {
-        let config = Configuration(
-            elements: ElementOptions(
-                showMembersWithAccessLevel: [.public, .internal, .private],
-                showMemberAccessLevelAttribute: true
-            ),
-            format: .nomnoml
-        )
-        let source = "class Secret { private var passkey: String = \"\" }"
-        let script = generator.generateScript(for: source, with: config)
-        #expect(script.text.contains("-passkey"))
-    }
-
-    @Test("internal member gets ~ prefix when access level shown")
-    func internalAccessPrefix() {
-        let config = Configuration(
-            elements: ElementOptions(
-                showMembersWithAccessLevel: [.public, .internal, .private],
-                showMemberAccessLevelAttribute: true
-            ),
-            format: .nomnoml
-        )
-        let source = "class Worker { var taskCount: Int = 0 }"
-        let script = generator.generateScript(for: source, with: config)
-        #expect(script.text.contains("~taskCount"))
+        #expect(script.text.contains(expected))
     }
 
     // MARK: - Escaping

@@ -106,28 +106,19 @@ struct StringExtensionsTests {
 
     // MARK: - addOrSkipMemberAccessLevelAttribute
 
-    @Test("addOrSkipMemberAccessLevelAttribute adds + for public element")
-    func addAccessLevelPublic() {
+    @Test(
+        "addOrSkipMemberAccessLevelAttribute writes the symbol matching accessibility",
+        arguments: [
+            (ElementAccessibility.public, "+"),
+            (ElementAccessibility.internal, "~"),
+            (ElementAccessibility.private, "-")
+        ]
+    )
+    func addAccessLevelSymbol(accessibility: ElementAccessibility, expected: String) {
         var output = ""
-        let element = SyntaxStructure(accessibility: .public, kind: .functionMethodInstance, name: "foo")
+        let element = SyntaxStructure(accessibility: accessibility, kind: .varInstance, name: "foo")
         output.addOrSkipMemberAccessLevelAttribute(for: element, basedOn: .default)
-        #expect(output == "+")
-    }
-
-    @Test("addOrSkipMemberAccessLevelAttribute adds ~ for internal element")
-    func addAccessLevelInternal() {
-        var output = ""
-        let element = SyntaxStructure(accessibility: .internal, kind: .varInstance, name: "foo")
-        output.addOrSkipMemberAccessLevelAttribute(for: element, basedOn: .default)
-        #expect(output == "~")
-    }
-
-    @Test("addOrSkipMemberAccessLevelAttribute adds - for private element")
-    func addAccessLevelPrivate() {
-        var output = ""
-        let element = SyntaxStructure(accessibility: .private, kind: .varInstance, name: "bar")
-        output.addOrSkipMemberAccessLevelAttribute(for: element, basedOn: .default)
-        #expect(output == "-")
+        #expect(output == expected)
     }
 
     @Test("addOrSkipMemberAccessLevelAttribute skips when showMemberAccessLevelAttribute is false")
