@@ -113,28 +113,17 @@ Studio-side: extend `DiagramViewModelTests.swift` and `DiagramViewModelMockState
 
 ## Remaining Gap
 
-### Gap 1 — missing on-disk fixture files (real)
+### Gap 1 — on-disk fixture files (CLOSED 2026-05-09)
 
-The plan (section 5) named five files to live under `TestFixtures/SampleProject/`:
+The plan (section 5) named five files under `TestFixtures/SampleProject/StateMachines/`. All five now exist:
 
 | File | Purpose |
 |---|---|
 | `SimpleTrafficLight.swift` | Classic 3-state enum + switch — canonical positive case |
 | `LoadingStore.swift` | `@Published` enum inside `ObservableObject` — property-wrapper path |
 | `AsyncTaskActor.swift` | `actor` + `TaskState` enum — concurrency path |
-| `NavigationRouter.swift` | `NavigationPath` + route enum — SwiftUI routing path |
-| `NotAStateMachine.swift` | Negative case: discriminated union with associated values, no `self.x = .case` — detector must reject this |
+| `NavigationRouter.swift` | Route enum driven by router class with explicit transitions — SwiftUI routing path |
+| `NotAStateMachine.swift` | Negative case: discriminated union with associated values, no `self.x = .case` — detector rejects this |
 
-None of them exist. The directory only holds the six class-diagram fixtures (`User.swift`, `Document.swift`, `AuthService.swift`, `UserStore.swift`, `NotificationService.swift`, `Identifiable.swift`).
-
-**What's actually covered instead:** the scenarios are tested, but inline as multi-line Swift strings inside `StateMachineExtractorTests.swift`. The `actor Worker` + `TaskState` case lives at lines 264-285, and "NavigationStack route enum is detected" at line 287+. So the detector logic has coverage.
-
-**What's actually lost by not having the files:**
-
-1. **End-to-end pipeline tests** — inline strings exercise the extractor only. A real file on disk would test the whole path (file read → parser → model → emitter → rendered PlantUML/Mermaid), which is what a user actually hits.
-2. **Demo/manual-QA ergonomics** — there's no file you can point the Studio app at to see what a `@Published`-backed state machine renders as. Every scenario is buried inside test source.
-3. **Discoverability** — a new contributor browsing `TestFixtures/SampleProject/` can't see "here are the patterns we detect." The plan's fixture list was also a taxonomy.
-4. **Negative-case assurance** — `NotAStateMachine.swift` specifically guards against mis-classifying `Result`-style or `Action`-style enums. It's the kind of test that's easier to forget if it has no physical home.
-
-None of this is critical. It's documentation + demo + integration-test completeness, not correctness.
+Integration coverage lives in `SwiftUMLBridge/Tests/SwiftUMLBridgeFrameworkTests/ModelTests/StateMachineFixtureTests.swift`. Each fixture is read from disk through `StateMachineGenerator.findCandidates → generateScript`, exercising the full pipeline (file read → SwiftSyntax parse → extractor → model → PlantUML emit). The negative case asserts zero candidates. A whole-directory test asserts the four positive hosts are found together.
 
