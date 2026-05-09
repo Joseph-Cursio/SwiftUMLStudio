@@ -9,10 +9,13 @@ struct NativeDiagramView: View {
 
     @State private var hoveredNodeId: String?
 
+    private static let canvasCoordinateSpace = "nativeDiagramCanvas"
+
     // MARK: - Colors
 
     private static let bodyFill = SwiftUI.Color(white: 0.98)
     private static let strokeColor = SwiftUI.Color(white: 0.2)
+    private static let selectedStrokeColor = SwiftUI.Color.accentColor
     private static let headerTextColor = SwiftUI.Color.white
     private static let bodyTextColor = SwiftUI.Color(white: 0.2)
 
@@ -34,14 +37,17 @@ struct NativeDiagramView: View {
                 }
                 for node in graph.nodes {
                     let isHovered = hoveredNodeId == node.id
-                    drawNode(node, isHovered: isHovered, in: &context)
+                    let isSelected = viewport.selectedNodeId == node.id
+                    drawNode(node, isHovered: isHovered, isSelected: isSelected, in: &context)
                 }
             }
             .frame(width: canvasWidth, height: canvasHeight)
+            .coordinateSpace(name: Self.canvasCoordinateSpace)
             .scaleEffect(viewport.scale)
             .offset(viewport.offset)
             .gesture(magnificationGesture)
             .gesture(dragGesture)
+            .gesture(tapToSelectGesture)
             .onTapGesture(count: 2) { viewport.reset() }
             .accessibilityAddTraits(.isButton)
             .accessibilityLabel("Class diagram canvas")
@@ -72,9 +78,19 @@ struct NativeDiagramView: View {
             .onEnded { _ in viewport.commitOffset() }
     }
 
+    private var tapToSelectGesture: some Gesture {
+        SpatialTapGesture(coordinateSpace: .named(Self.canvasCoordinateSpace))
+            .onEnded { value in
+                viewport.selectedNodeId =
+                    NativeDiagramGeometry.hitNode(in: graph, at: value.location)?.id
+            }
+    }
+
     // MARK: - Node Drawing
 
-    private func drawNode(_ node: LayoutNode, isHovered: Bool, in context: inout GraphicsContext) {
+    private func drawNode(
+        _ node: LayoutNode, isHovered: Bool, isSelected: Bool, in context: inout GraphicsContext
+    ) {
         let stereotype = node.stereotype ?? "class"
         let color = NativeDiagramGeometry.headerColor(for: stereotype)
         let rect = NativeDiagramGeometry.nodeRect(for: node)
@@ -82,7 +98,11 @@ struct NativeDiagramView: View {
 
         drawNodeBox(rect: rect, headerRect: headerRect, color: color,
                     hasCompartments: !node.compartments.isEmpty, in: &context)
-        if isHovered {
+        if isSelected {
+            context.stroke(Path(roundedRect: rect.insetBy(dx: -2, dy: -2),
+                                cornerRadius: Self.cornerRadius + 2),
+                           with: .color(Self.selectedStrokeColor), lineWidth: 3)
+        } else if isHovered {
             context.stroke(Path(roundedRect: rect, cornerRadius: Self.cornerRadius),
                            with: .color(Self.strokeColor), lineWidth: 2.5)
         }

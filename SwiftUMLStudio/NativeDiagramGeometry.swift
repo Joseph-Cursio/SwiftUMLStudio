@@ -47,6 +47,12 @@ nonisolated enum NativeDiagramGeometry {
         )
     }
 
+    /// Returns the topmost node whose bounds contain `point`, or `nil` if none.
+    /// Iterates in reverse so later-drawn nodes win when bounds overlap.
+    static func hitNode(in graph: LayoutGraph, at point: CGPoint) -> LayoutNode? {
+        graph.nodes.reversed().first { nodeRect(for: $0).contains(point) }
+    }
+
     /// Header-band rectangle (top strip of the node) clamped to the node height.
     static func headerRect(for node: LayoutNode) -> CGRect {
         let rect = nodeRect(for: node)
