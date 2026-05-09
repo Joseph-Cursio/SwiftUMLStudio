@@ -54,6 +54,12 @@ internal class SyntaxStructure: NSObject, Codable, @unchecked Sendable {
 
     internal var parent: SyntaxStructure?
 
+    /// Where this declaration lives in the source. Populated by
+    /// `SyntaxStructureBuilder` from a `SourceLocationConverter`; absent for
+    /// synthesized structures (e.g. inheritance-clause type references) and for
+    /// any structure decoded from JSON.
+    internal var sourceLocation: SourceLocation?
+
     private enum CodingKeys: String, CodingKey {
         case accessibility = "key.accessibility"
         case attribute = "key.attribute"

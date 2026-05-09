@@ -22,9 +22,36 @@ final class SyntaxStructureBuilder: SyntaxVisitor {
     /// `qualifiedVarName → resolvedTypeName` from the SourceKit typename supplement.
     private let typenameMap: [String: String]
 
-    init(viewMode: SyntaxTreeViewMode = .sourceAccurate, typenameMap: [String: String] = [:]) {
+    /// File path used when stamping each declaration's `sourceLocation`. May be
+    /// empty when parsing from an in-memory string.
+    private let filePath: String
+
+    /// SwiftSyntax line/column converter for the parsed source file. `nil` when
+    /// no converter was provided (in which case `sourceLocation` is left unset).
+    private let locationConverter: SourceLocationConverter?
+
+    init(
+        viewMode: SyntaxTreeViewMode = .sourceAccurate,
+        typenameMap: [String: String] = [:],
+        filePath: String = "",
+        locationConverter: SourceLocationConverter? = nil
+    ) {
         self.typenameMap = typenameMap
+        self.filePath = filePath
+        self.locationConverter = locationConverter
         super.init(viewMode: viewMode)
+    }
+
+    /// Capture the 1-based line/column of `node`'s identifier and stamp it onto
+    /// `structure.sourceLocation`. No-op if no `locationConverter` was supplied.
+    private func stampLocation(on structure: SyntaxStructure, at position: AbsolutePosition) {
+        guard let converter = locationConverter else { return }
+        let position = converter.location(for: position)
+        structure.sourceLocation = SwiftUMLBridgeFramework.SourceLocation(
+            filePath: filePath,
+            line: position.line,
+            column: position.column
+        )
     }
 
     // MARK: - Type stack
@@ -130,75 +157,87 @@ final class SyntaxStructureBuilder: SyntaxVisitor {
 
     override func visit(_ node: ClassDeclSyntax) -> SyntaxVisitorContinueKind {
         let genericParams = extractGenericParams(from: node.genericParameterClause?.parameters ?? [])
-        pushType(SyntaxStructure(
+        let structure = SyntaxStructure(
             accessibility: extractAccessibility(from: node.modifiers),
             attributes: extractAttributes(from: node.attributes),
             inheritedTypes: extractInheritedTypes(from: node.inheritanceClause),
             kind: .class,
             name: node.name.text
-        ), genericParams: genericParams)
+        )
+        stampLocation(on: structure, at: node.name.positionAfterSkippingLeadingTrivia)
+        pushType(structure, genericParams: genericParams)
         return .visitChildren
     }
     override func visitPost(_ node: ClassDeclSyntax) { _ = node; popType() }
 
     override func visit(_ node: StructDeclSyntax) -> SyntaxVisitorContinueKind {
         let genericParams = extractGenericParams(from: node.genericParameterClause?.parameters ?? [])
-        pushType(SyntaxStructure(
+        let structure = SyntaxStructure(
             accessibility: extractAccessibility(from: node.modifiers),
             attributes: extractAttributes(from: node.attributes),
             inheritedTypes: extractInheritedTypes(from: node.inheritanceClause),
             kind: .struct,
             name: node.name.text
-        ), genericParams: genericParams)
+        )
+        stampLocation(on: structure, at: node.name.positionAfterSkippingLeadingTrivia)
+        pushType(structure, genericParams: genericParams)
         return .visitChildren
     }
     override func visitPost(_ node: StructDeclSyntax) { _ = node; popType() }
 
     override func visit(_ node: EnumDeclSyntax) -> SyntaxVisitorContinueKind {
         let genericParams = extractGenericParams(from: node.genericParameterClause?.parameters ?? [])
-        pushType(SyntaxStructure(
+        let structure = SyntaxStructure(
             accessibility: extractAccessibility(from: node.modifiers),
             attributes: extractAttributes(from: node.attributes),
             inheritedTypes: extractInheritedTypes(from: node.inheritanceClause),
             kind: .enum,
             name: node.name.text
-        ), genericParams: genericParams)
+        )
+        stampLocation(on: structure, at: node.name.positionAfterSkippingLeadingTrivia)
+        pushType(structure, genericParams: genericParams)
         return .visitChildren
     }
     override func visitPost(_ node: EnumDeclSyntax) { _ = node; popType() }
 
     override func visit(_ node: ActorDeclSyntax) -> SyntaxVisitorContinueKind {
         let genericParams = extractGenericParams(from: node.genericParameterClause?.parameters ?? [])
-        pushType(SyntaxStructure(
+        let structure = SyntaxStructure(
             accessibility: extractAccessibility(from: node.modifiers),
             attributes: extractAttributes(from: node.attributes),
             inheritedTypes: extractInheritedTypes(from: node.inheritanceClause),
             kind: .actor,
             name: node.name.text
-        ), genericParams: genericParams)
+        )
+        stampLocation(on: structure, at: node.name.positionAfterSkippingLeadingTrivia)
+        pushType(structure, genericParams: genericParams)
         return .visitChildren
     }
     override func visitPost(_ node: ActorDeclSyntax) { _ = node; popType() }
 
     override func visit(_ node: ProtocolDeclSyntax) -> SyntaxVisitorContinueKind {
-        pushType(SyntaxStructure(
+        let structure = SyntaxStructure(
             accessibility: extractAccessibility(from: node.modifiers),
             attributes: extractAttributes(from: node.attributes),
             inheritedTypes: extractInheritedTypes(from: node.inheritanceClause),
             kind: .protocol,
             name: node.name.text
-        ))
+        )
+        stampLocation(on: structure, at: node.name.positionAfterSkippingLeadingTrivia)
+        pushType(structure)
         return .visitChildren
     }
     override func visitPost(_ node: ProtocolDeclSyntax) { _ = node; popType() }
 
     override func visit(_ node: ExtensionDeclSyntax) -> SyntaxVisitorContinueKind {
-        pushType(SyntaxStructure(
+        let structure = SyntaxStructure(
             accessibility: extractAccessibility(from: node.modifiers),
             inheritedTypes: extractInheritedTypes(from: node.inheritanceClause),
             kind: .extension,
             name: node.extendedType.trimmedDescription
-        ))
+        )
+        stampLocation(on: structure, at: node.extendedType.positionAfterSkippingLeadingTrivia)
+        pushType(structure)
         return .visitChildren
     }
     override func visitPost(_ node: ExtensionDeclSyntax) { _ = node; popType() }

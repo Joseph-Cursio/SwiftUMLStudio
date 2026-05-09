@@ -40,7 +40,14 @@ internal extension SyntaxStructure {
 
         // Step 2 — SwiftSyntax primary parse
         let sourceFile = Parser.parse(source: source)
-        let builder = SyntaxStructureBuilder(viewMode: .sourceAccurate, typenameMap: typenameMap)
+        let filePath = fileURL?.path ?? ""
+        let converter = SourceLocationConverter(fileName: filePath, tree: sourceFile)
+        let builder = SyntaxStructureBuilder(
+            viewMode: .sourceAccurate,
+            typenameMap: typenameMap,
+            filePath: filePath,
+            locationConverter: converter
+        )
         builder.walk(sourceFile)
 
         return SyntaxStructure(substructure: builder.topLevelItems.isEmpty ? nil : builder.topLevelItems)

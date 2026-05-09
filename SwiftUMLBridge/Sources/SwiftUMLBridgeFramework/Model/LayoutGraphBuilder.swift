@@ -57,7 +57,8 @@ struct LayoutGraphBuilder {
             id: nodeId,
             label: item.displayName ?? item.name ?? nodeId,
             stereotype: stereotypeName(for: kind),
-            compartments: compartments
+            compartments: compartments,
+            sourceLocation: item.sourceLocation
         )
     }
 

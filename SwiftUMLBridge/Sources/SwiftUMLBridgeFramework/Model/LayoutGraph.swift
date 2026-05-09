@@ -24,6 +24,11 @@ public struct LayoutNode: Identifiable, Sendable {
     public var stereotype: String?
     public var compartments: [NodeCompartment]
 
+    /// Where the corresponding declaration lives in the source, when known.
+    /// Populated for class-diagram nodes; `nil` for synthetic nodes (e.g. nodes
+    /// derived from a `DependencyGraphModel` that has no per-node source).
+    public var sourceLocation: SourceLocation?
+
     /// Center X (set by layout engine)
     public var posX: Double = 0
     /// Center Y (set by layout engine)
@@ -35,12 +40,14 @@ public struct LayoutNode: Identifiable, Sendable {
         id: String,
         label: String,
         stereotype: String? = nil,
-        compartments: [NodeCompartment] = []
+        compartments: [NodeCompartment] = [],
+        sourceLocation: SourceLocation? = nil
     ) {
         self.id = id
         self.label = label
         self.stereotype = stereotype
         self.compartments = compartments
+        self.sourceLocation = sourceLocation
     }
 }
 
