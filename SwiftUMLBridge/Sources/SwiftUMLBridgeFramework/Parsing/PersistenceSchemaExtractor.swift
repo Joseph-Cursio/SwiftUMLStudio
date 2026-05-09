@@ -3,15 +3,21 @@ import SwiftParser
 import SwiftSyntax
 
 /// Walks a parsed Swift source file and extracts an `ERModel` from
-/// non-SwiftData persistence stacks. v1 covers GRDB; SQLite.swift detection
-/// will follow in milestone G2 of er-diagram-expansion-plan.md.
+/// non-SwiftData persistence stacks. Covers two patterns:
 ///
-/// GRDB heuristic: a class/struct/actor declared to conform to one of
-/// `FetchableRecord` / `PersistableRecord` / `MutablePersistableRecord` /
-/// `EncodableRecord` / `TableRecord` is treated as an entity. Stored
-/// (non-static, non-computed) properties become attributes; `static let`
-/// declarations whose initializer is `belongsTo(X.self)` / `hasMany(X.self)`
-/// / `hasOne(X.self)` become relationships with the documented cardinality.
+/// - **GRDB**: a class/struct/actor declared to conform to one of
+///   `FetchableRecord` / `PersistableRecord` / `MutablePersistableRecord` /
+///   `EncodableRecord` / `TableRecord`. Stored (non-static, non-computed)
+///   properties become attributes; `static let` declarations whose
+///   initializer is `belongsTo(X.self)` / `hasMany(X.self)` / `hasOne(X.self)`
+///   become relationships.
+/// - **SQLite.swift**: a "schema container" type (struct / enum / class) that
+///   declares one or more `static let X = Table("name")` properties. Each
+///   `Table("name")` becomes an entity; `static let X = Expression<T>("col")`
+///   declarations in the same container become its columns when the container
+///   has exactly one table (otherwise columns are emitted as un-owned tables).
+///   SQLite.swift has no built-in association API, so no relationships are
+///   inferred.
 public enum PersistenceSchemaExtractor {
 
     /// Recognised GRDB record protocol names (any of these on a type triggers
@@ -62,13 +68,27 @@ public enum PersistenceSchemaExtractor {
             return .skipChildren
         }
 
+        override func visit(_ node: EnumDeclSyntax) -> SyntaxVisitorContinueKind {
+            // SQLite.swift schema containers are typically enums-as-namespaces.
+            // GRDB never uses enums for record types, so we only check the
+            // SQLite.swift path here.
+            extractSQLiteSwiftTables(name: node.name.text, members: node.memberBlock.members)
+            return .skipChildren
+        }
+
         private func handleType(
             name: String,
             inheritance: InheritanceClauseSyntax?,
             members: MemberBlockItemListSyntax
         ) {
-            guard let inheritance, conformsToGRDBRecord(inheritance) else { return }
+            if let inheritance, conformsToGRDBRecord(inheritance) {
+                handleGRDBType(name: name, members: members)
+                return
+            }
+            extractSQLiteSwiftTables(name: name, members: members)
+        }
 
+        private func handleGRDBType(name: String, members: MemberBlockItemListSyntax) {
             var attributes: [ERAttribute] = []
             for case let member as MemberBlockItemSyntax in members {
                 guard let varDecl = member.decl.as(VariableDeclSyntax.self) else { continue }
@@ -83,6 +103,74 @@ public enum PersistenceSchemaExtractor {
                 attributes.append(contentsOf: columns(from: varDecl))
             }
             entities.append(EREntity(name: name, attributes: attributes))
+        }
+
+        // MARK: - SQLite.swift
+
+        /// Walks a "schema container" type for `static let X = Table("name")`
+        /// and `static let X = Expression<T>("col")` declarations. Each Table
+        /// becomes an entity; Expression columns are attached to the single
+        /// Table sibling when the container has exactly one (the common
+        /// case). When the container has multiple Tables we emit them all
+        /// without columns to avoid mis-attributing.
+        private func extractSQLiteSwiftTables(name _: String, members: MemberBlockItemListSyntax) {
+            var tableNames: [String] = []
+            var columnAttributes: [ERAttribute] = []
+
+            for case let member as MemberBlockItemSyntax in members {
+                guard let varDecl = member.decl.as(VariableDeclSyntax.self),
+                      isStatic(varDecl.modifiers),
+                      let binding = varDecl.bindings.first,
+                      let initializer = binding.initializer?.value.as(FunctionCallExprSyntax.self),
+                      let funcName = associationFunctionName(in: initializer)
+                else { continue }
+
+                if funcName == "Table" {
+                    if let tableName = firstStringLiteral(in: initializer.arguments) {
+                        tableNames.append(tableName)
+                    }
+                    continue
+                }
+
+                if funcName == "Expression",
+                   let columnName = firstStringLiteral(in: initializer.arguments) {
+                    let typeName = expressionGenericType(of: initializer) ?? "Any"
+                    columnAttributes.append(ERAttribute(
+                        name: columnName,
+                        type: typeName,
+                        isPrimaryKey: columnName == "id"
+                    ))
+                }
+            }
+
+            guard !tableNames.isEmpty else { return }
+            if tableNames.count == 1 {
+                entities.append(EREntity(name: tableNames[0], attributes: columnAttributes))
+            } else {
+                for tableName in tableNames {
+                    entities.append(EREntity(name: tableName))
+                }
+            }
+        }
+
+        /// Pull the first string literal out of a function-call argument list.
+        /// Used for `Table("users")` and `Expression<Int64>("id")`.
+        private func firstStringLiteral(in arguments: LabeledExprListSyntax) -> String? {
+            guard let firstArg = arguments.first,
+                  let stringExpr = firstArg.expression.as(StringLiteralExprSyntax.self)
+            else { return nil }
+            return stringExpr.segments
+                .compactMap { ($0.as(StringSegmentSyntax.self))?.content.text }
+                .joined()
+        }
+
+        /// Extract `Int64` from an `Expression<Int64>(...)` call by inspecting
+        /// the generic argument list on the called expression.
+        private func expressionGenericType(of call: FunctionCallExprSyntax) -> String? {
+            if let generic = call.calledExpression.as(GenericSpecializationExprSyntax.self) {
+                return generic.genericArgumentClause.arguments.first?.argument.trimmedDescription
+            }
+            return nil
         }
 
         // MARK: - Inheritance check
@@ -162,6 +250,13 @@ public enum PersistenceSchemaExtractor {
             }
             if let memberAccess = call.calledExpression.as(MemberAccessExprSyntax.self) {
                 return memberAccess.declName.baseName.text
+            }
+            // Generic specialization, e.g. `Expression<Int64>("id")`. The
+            // .expression slot holds the bare DeclReference under the type
+            // arguments — unwrap to get the function name.
+            if let generic = call.calledExpression.as(GenericSpecializationExprSyntax.self),
+               let baseRef = generic.expression.as(DeclReferenceExprSyntax.self) {
+                return baseRef.baseName.text
             }
             return nil
         }
