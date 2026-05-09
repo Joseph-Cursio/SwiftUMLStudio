@@ -67,7 +67,6 @@ struct DiagramViewportControls: View {
             RoundedRectangle(cornerRadius: 8)
                 .stroke(Color.secondary.opacity(0.2), lineWidth: 0.5)
         )
-        .padding(12)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("diagramViewportControls")
     }

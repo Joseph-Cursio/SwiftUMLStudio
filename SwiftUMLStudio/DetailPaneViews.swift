@@ -103,8 +103,17 @@ struct DiagramPreviewView: View {
                     }
                 }
 
-                if showsViewportControls {
-                    DiagramViewportControls(viewport: viewport)
+                if showsExportMenu || showsViewportControls {
+                    HStack(spacing: 8) {
+                        if showsExportMenu {
+                            DiagramExportMenu(viewModel: viewModel, viewport: viewport)
+                        }
+                        if showsViewportControls {
+                            DiagramViewportControls(viewport: viewport)
+                        }
+                    }
+                    .padding(12)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
                 }
 
                 if let revealable = revealableSelection {
@@ -135,6 +144,13 @@ struct DiagramPreviewView: View {
         return script.layoutGraph != nil
             || script.sequenceLayout != nil
             || script.activityLayout != nil
+    }
+
+    /// Show the Export menu whenever a script is present — even WebView-only
+    /// formats (PlantUML / Mermaid / Nomnoml) can export their source text.
+    private var showsExportMenu: Bool {
+        guard let script = viewModel.currentScript else { return false }
+        return !script.text.isEmpty
     }
 
     /// The currently-selected class-diagram node, paired with its source
