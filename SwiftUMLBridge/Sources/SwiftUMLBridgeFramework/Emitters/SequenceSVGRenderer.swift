@@ -25,10 +25,14 @@ public struct SequenceSVGRenderer: Sendable {
     // MARK: - Layout Computation
 
     /// Compute the positioned layout for a sequence diagram.
+    /// `typeLocations` is consulted (if non-empty) to stamp each participant's
+    /// `sourceLocation` so the Studio app can support reveal-in-source on
+    /// participant clicks.
     public static func computeLayout(
         traversedEdges: [CallEdge],
         entryType: String,
-        entryMethod: String
+        entryMethod: String,
+        typeLocations: [String: SourceLocation] = [:]
     ) -> SequenceLayout {
         let participantNames = collectParticipants(from: traversedEdges, entryType: entryType)
 
@@ -43,8 +47,15 @@ public struct SequenceSVGRenderer: Sendable {
         }
 
         let participants = participantNames.map { name in
-            SequenceParticipant(name: name, centerX: participantX[name]!, topY: topMargin,
-                                width: participantWidth, height: participantHeight, bottomTopY: lifelinesEndY)
+            SequenceParticipant(
+                name: name,
+                centerX: participantX[name]!,
+                topY: topMargin,
+                width: participantWidth,
+                height: participantHeight,
+                bottomTopY: lifelinesEndY,
+                sourceLocation: typeLocations[name]
+            )
         }
         let messages = buildMessages(from: traversedEdges, participantX: participantX,
                                      entryType: entryType, startY: messagesStartY)

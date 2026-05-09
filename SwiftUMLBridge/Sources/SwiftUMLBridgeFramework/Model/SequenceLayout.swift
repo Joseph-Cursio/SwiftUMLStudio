@@ -43,13 +43,19 @@ public struct SequenceParticipant: Identifiable, Sendable {
     public var height: Double
     public var bottomTopY: Double
 
+    /// Where the type backing this participant is declared in the source, when
+    /// known. Populated by `SequenceSVGRenderer.computeLayout` from the
+    /// `typeLocations` map handed in by `SequenceDiagramGenerator`.
+    public var sourceLocation: SourceLocation?
+
     public init(
         name: String,
         centerX: Double = 0,
         topY: Double = 0,
         width: Double = 120,
         height: Double = 36,
-        bottomTopY: Double = 0
+        bottomTopY: Double = 0,
+        sourceLocation: SourceLocation? = nil
     ) {
         self.id = name
         self.name = name
@@ -58,6 +64,7 @@ public struct SequenceParticipant: Identifiable, Sendable {
         self.width = width
         self.height = height
         self.bottomTopY = bottomTopY
+        self.sourceLocation = sourceLocation
     }
 }
 

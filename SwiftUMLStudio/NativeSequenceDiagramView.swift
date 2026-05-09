@@ -7,12 +7,16 @@ struct NativeSequenceDiagramView: View {
     let layout: SequenceLayout
     let viewport: DiagramViewport
 
+    private static let canvasCoordinateSpace = "nativeSequenceCanvas"
+
     // MARK: - Colors
 
     /// Saturated participant header — stays the same in both modes.
     private static let headerFill = SwiftUI.Color(red: 0.29, green: 0.56, blue: 0.85)
     /// Lifelines + arrows — adapts to system label color.
     private static let strokeColor = SwiftUI.Color(nsColor: .labelColor).opacity(0.7)
+    /// Selection ring drawn around the selected participant box.
+    private static let selectedStrokeColor = SwiftUI.Color.accentColor
     /// Stays white on the saturated header background.
     private static let headerTextColor = SwiftUI.Color.white
     /// Message labels and note text — adapts to system text color.
@@ -34,11 +38,22 @@ struct NativeSequenceDiagramView: View {
                 drawParticipantBoxes(top: false, in: &context)
             }
             .frame(width: canvasWidth, height: canvasHeight)
+            .coordinateSpace(name: Self.canvasCoordinateSpace)
             .scaleEffect(viewport.scale)
             .offset(viewport.offset)
             .gesture(magnificationGesture)
             .gesture(dragGesture)
+            .gesture(tapToSelectGesture)
             .onTapGesture(count: 2) { viewport.reset() }
+            .onContinuousHover(coordinateSpace: .named(Self.canvasCoordinateSpace)) { phase in
+                switch phase {
+                case .active(let location):
+                    viewport.hoveredNodeId =
+                        NativeSequenceGeometry.hitParticipant(in: layout, at: location)?.id
+                case .ended:
+                    viewport.hoveredNodeId = nil
+                }
+            }
             .accessibilityAddTraits(.isButton)
             .accessibilityLabel("Sequence diagram canvas")
             .accessibilityHint("Double-tap to reset zoom and position")
@@ -66,6 +81,14 @@ struct NativeSequenceDiagramView: View {
         DragGesture()
             .onChanged { value in viewport.updateOffset(translation: value.translation) }
             .onEnded { _ in viewport.commitOffset() }
+    }
+
+    private var tapToSelectGesture: some Gesture {
+        SpatialTapGesture(coordinateSpace: .named(Self.canvasCoordinateSpace))
+            .onEnded { value in
+                viewport.selectedNodeId =
+                    NativeSequenceGeometry.hitParticipant(in: layout, at: value.location)?.id
+            }
     }
 
     // MARK: - Drawing
@@ -109,6 +132,20 @@ struct NativeSequenceDiagramView: View {
                 with: .color(Self.strokeColor),
                 lineWidth: 1.5
             )
+
+            if viewport.selectedNodeId == participant.id {
+                context.stroke(
+                    Path(roundedRect: rect.insetBy(dx: -3, dy: -3), cornerRadius: 6),
+                    with: .color(Self.selectedStrokeColor),
+                    lineWidth: 3
+                )
+            } else if viewport.hoveredNodeId == participant.id {
+                context.stroke(
+                    Path(roundedRect: rect.insetBy(dx: -1, dy: -1), cornerRadius: 5),
+                    with: .color(Self.strokeColor),
+                    lineWidth: 2.5
+                )
+            }
 
             let nameText = Text(participant.name)
                 .font(.system(size: 12, weight: .bold))

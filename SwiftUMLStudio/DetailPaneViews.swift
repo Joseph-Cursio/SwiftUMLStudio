@@ -120,7 +120,7 @@ struct DiagramPreviewView: View {
                     revealInSourceButton(for: revealable)
                 }
 
-                if let hovered = hoveredNode {
+                if let hovered = hoveredInfo {
                     NodeInfoTooltip(
                         label: hovered.label,
                         stereotype: hovered.stereotype,
@@ -153,25 +153,38 @@ struct DiagramPreviewView: View {
         return !script.text.isEmpty
     }
 
-    /// The currently-selected class-diagram node, paired with its source
-    /// location, when both are present. Used to decide whether to surface the
-    /// "Reveal in Source" affordance.
+    /// The currently-selected node (class-diagram LayoutNode or
+    /// sequence-diagram participant), paired with its source location when
+    /// available. Used to decide whether to surface the "Reveal in Source"
+    /// affordance.
     private var revealableSelection: (label: String, location: SourceLocation)? {
-        guard let id = viewport.selectedNodeId,
-              let graph = viewModel.currentScript?.layoutGraph,
-              let node = graph.nodes.first(where: { $0.id == id }),
-              let location = node.sourceLocation
-        else { return nil }
-        return (node.label, location)
+        guard let id = viewport.selectedNodeId else { return nil }
+        if let graph = viewModel.currentScript?.layoutGraph,
+           let node = graph.nodes.first(where: { $0.id == id }),
+           let location = node.sourceLocation {
+            return (node.label, location)
+        }
+        if let layout = viewModel.currentScript?.sequenceLayout,
+           let participant = layout.participants.first(where: { $0.id == id }),
+           let location = participant.sourceLocation {
+            return (participant.name, location)
+        }
+        return nil
     }
 
-    /// The class-diagram node currently under the cursor, if any. Drives the
-    /// `NodeInfoTooltip` overlay.
-    private var hoveredNode: LayoutNode? {
-        guard let id = viewport.hoveredNodeId,
-              let graph = viewModel.currentScript?.layoutGraph
-        else { return nil }
-        return graph.nodes.first { $0.id == id }
+    /// Information about whichever class-diagram node or sequence-diagram
+    /// participant is under the cursor. Drives the `NodeInfoTooltip` overlay.
+    private var hoveredInfo: (label: String, stereotype: String?, sourceLocation: SourceLocation?)? {
+        guard let id = viewport.hoveredNodeId else { return nil }
+        if let graph = viewModel.currentScript?.layoutGraph,
+           let node = graph.nodes.first(where: { $0.id == id }) {
+            return (node.label, node.stereotype, node.sourceLocation)
+        }
+        if let layout = viewModel.currentScript?.sequenceLayout,
+           let participant = layout.participants.first(where: { $0.id == id }) {
+            return (participant.name, "participant", participant.sourceLocation)
+        }
+        return nil
     }
 
     @ViewBuilder

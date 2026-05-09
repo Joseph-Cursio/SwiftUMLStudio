@@ -6,6 +6,38 @@ import SwiftUMLBridgeFramework
 /// Canvas draw calls so the math is unit-testable.
 nonisolated enum NativeSequenceGeometry {
 
+    // MARK: - Participant geometry
+
+    /// Bounding rect of a participant box in canvas coordinates. Only the
+    /// top header band is hit-testable — the lifeline below it is fair game
+    /// for tap-through to the canvas background.
+    static func participantRect(for participant: SequenceParticipant) -> CGRect {
+        CGRect(
+            x: participant.centerX - participant.width / 2,
+            y: participant.topY,
+            width: participant.width,
+            height: participant.height
+        )
+    }
+
+    /// Bounding rect of the bottom-row mirror of a participant box.
+    static func participantBottomRect(for participant: SequenceParticipant) -> CGRect {
+        CGRect(
+            x: participant.centerX - participant.width / 2,
+            y: participant.bottomTopY,
+            width: participant.width,
+            height: participant.height
+        )
+    }
+
+    /// Returns the participant whose top OR bottom box contains `point`.
+    static func hitParticipant(in layout: SequenceLayout, at point: CGPoint) -> SequenceParticipant? {
+        layout.participants.first { participant in
+            participantRect(for: participant).contains(point)
+                || participantBottomRect(for: participant).contains(point)
+        }
+    }
+
     // MARK: - Message classification
 
     /// Two messages are considered a self-call loop when the from/to X coordinates

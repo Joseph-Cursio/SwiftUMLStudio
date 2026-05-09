@@ -40,11 +40,21 @@ public struct SequenceDiagramGenerator: SequenceDiagramGenerating, @unchecked Se
     ) -> SequenceScript {
         let files = FileCollector().getFiles(for: paths)
         var allEdges: [CallEdge] = []
+        var typeLocations: [String: SourceLocation] = [:]
 
         for file in files {
             if let source = try? String(contentsOf: file, encoding: .utf8) {
                 let result = CallGraphExtractor.extract(from: source)
                 allEdges.append(contentsOf: result.edges)
+            }
+            if let structure = SyntaxStructure.create(from: file),
+               let topLevel = structure.substructure {
+                for item in topLevel {
+                    if let name = item.name, let location = item.sourceLocation,
+                       typeLocations[name] == nil {
+                        typeLocations[name] = location
+                    }
+                }
             }
         }
 
@@ -54,7 +64,8 @@ public struct SequenceDiagramGenerator: SequenceDiagramGenerating, @unchecked Se
             traversedEdges: traversed,
             entryType: entryType,
             entryMethod: entryMethod,
-            configuration: configuration
+            configuration: configuration,
+            typeLocations: typeLocations
         )
     }
 }

@@ -23,7 +23,8 @@ public struct SequenceScript: Sendable {
         traversedEdges: [CallEdge],
         entryType: String,
         entryMethod: String,
-        configuration: Configuration
+        configuration: Configuration,
+        typeLocations: [String: SourceLocation] = [:]
     ) {
         self.format = configuration.format
         switch configuration.format {
@@ -40,7 +41,10 @@ public struct SequenceScript: Sendable {
             self.sequenceLayout = nil
         case .svg:
             let layout = SequenceSVGRenderer.computeLayout(
-                traversedEdges: traversedEdges, entryType: entryType, entryMethod: entryMethod
+                traversedEdges: traversedEdges,
+                entryType: entryType,
+                entryMethod: entryMethod,
+                typeLocations: typeLocations
             )
             self.text = SequenceSVGRenderer.renderFromLayout(layout)
             self.sequenceLayout = layout
