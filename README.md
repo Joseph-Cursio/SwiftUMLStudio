@@ -18,6 +18,7 @@ This repository contains two related products:
 | Activity | ✓ | — | — | ✓ |
 | State machine | ✓ | ✓ | — | ✓ |
 | Entity-Relationship (SwiftData / Core Data / GRDB / SQLite.swift) | ✓ | ✓ | — | — |
+| Component (SPM targets + provided interfaces) | ✓ | ✓ | — | — |
 | Dependency graph (modules + types) | ✓ | ✓ | — | ✓ |
 
 ### Bridge highlights
@@ -27,6 +28,7 @@ This repository contains two related products:
 - **Activity diagrams** — control-flow extraction from imperative function bodies
 - **State machine diagrams** — enum-driven state machine detection with confidence scoring
 - **ER diagrams** — SwiftData `@Model` + `@Relationship`, Core Data `.xcdatamodeld`, GRDB record types (`belongsTo` / `hasMany` / `hasOne`), and SQLite.swift `Table` + `Expression` schemas
+- **Component diagrams** — SPM targets as UML components with public types as provided interfaces and `target_dependencies` as wiring edges
 - **Dependency graphs** — type-level and module-level analysis with cycle detection
 - **Macro-aware stereotypes** (`@Observable`, `@Model`, etc.) surfaced in diagrams
 - **Swift 6 strict concurrency** throughout the framework and CLI
@@ -140,6 +142,14 @@ swiftumlbridge er Sources/Database/Schema.swift --format plantuml
 swiftumlbridge deps Sources/ --modules
 swiftumlbridge deps Sources/ --types --public-only
 swiftumlbridge deps Sources/ --exclude Tests --format mermaid
+```
+
+### Component diagram (SPM-aware)
+
+```bash
+swiftumlbridge component --package /path/to/MyPackage           # PlantUML by default
+swiftumlbridge component --package . --format mermaid           # Mermaid flowchart fallback
+swiftumlbridge component --package . --include-test-targets     # opt in to test components
 ```
 
 ### Common flags

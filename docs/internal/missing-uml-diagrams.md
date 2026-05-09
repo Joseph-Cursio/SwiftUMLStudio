@@ -5,7 +5,7 @@
 
 ## Current coverage (baseline)
 
-SwiftUMLBridge ships **six** diagram types today:
+SwiftUMLBridge ships **seven** diagram types today:
 
 | Diagram | Status | Command |
 |---|---|---|
@@ -14,7 +14,8 @@ SwiftUMLBridge ships **six** diagram types today:
 | Dependency graph | Shipped | `swiftumlbridge deps` |
 | Activity diagram | Shipped (concurrency-aware) | `swiftumlbridge activity` |
 | State machine diagram | Shipped | `swiftumlbridge state` |
-| Entity-Relationship diagram | Shipped (SwiftData `@Model`) | `swiftumlbridge er` |
+| Entity-Relationship diagram | Shipped (SwiftData / Core Data / GRDB / SQLite.swift) | `swiftumlbridge er` |
+| Component diagram | Shipped (SPM targets + provided interfaces) | `swiftumlbridge component` |
 
 Output formats: PlantUML, Mermaid.js, Nomnoml (class only), SVG.
 
@@ -24,14 +25,16 @@ UML 2.x defines **14** official diagram types (7 structural + 7 behavioral). The
 
 ## Structural diagrams — gaps
 
-### 1. Component diagram — **high value, recommended**
+### 1. Component diagram — **SHIPPED 2026-05-09**
 
 Shows high-level software components, their interfaces (provided/required), and wiring between modules. In Swift terms this maps naturally onto **Swift packages, SPM products, and target boundaries**.
 
-- **Why it's popular:** standard architecture artifact in almost every enterprise/review deck; the "one diagram" most engineering managers expect to see.
-- **Swift relevance:** very high. `Package.swift` already declares products, targets, and dependencies — the raw graph exists.
-- **Differs from current `deps`:** `deps --modules` draws a dependency arrow graph; a component diagram adds *ball-and-socket* interface semantics (what each component exposes and requires), not just "A imports B".
-- **Implementation cost:** low–medium. Parse `Package.swift` manifests; extend the Dependency layer with an interface-detection pass (public API surface per target).
+- **Command:** `swiftumlbridge component --package <Package.swift> [--format plantuml|mermaid] [--include-test-targets]`
+- **Parser:** `ComponentExtractor` walks an `SPMPackageDescription` (loaded by `SPMPackageReader` from M12) and lists each non-test target as a component. Per-target public types come from `ClassDiagramGenerator.analyzeTypes` filtered to `public`/`open` access level.
+- **Edges:** `target_dependencies` from `Package.swift` become directed `..>` arrows. Edges into hidden targets (e.g. test → app when tests are excluded) are pruned automatically.
+- **Emitters:** PlantUML emits the standard `component "Name" as Alias <<library>> { [Iface] }` syntax with dashed dependency arrows. Mermaid lacks a dedicated component dialect, so it falls back to a `flowchart TD` with `subgraph` clusters.
+- **Differs from current `deps`:** `deps --modules` draws a dependency arrow graph; the component diagram adds the per-target list of public types and the SPM-derived target/library/executable stereotypes.
+- **Studio integration:** deferred to a follow-up.
 
 ### 2. Package diagram — **medium value**
 
@@ -154,8 +157,8 @@ If the goal is to maximize "popular diagrams a Swift dev actually wants," ranked
 1. ~~**Activity diagram**~~ — **SHIPPED 2026-04-20** (concurrency-aware: async let, TaskGroup).
 2. ~~**State machine diagram**~~ — **SHIPPED 2026-04-20** (CLI subcommand closes the remaining gap; framework was already in place).
 3. ~~**ER / data-model diagram**~~ — **SHIPPED 2026-04 (SwiftData) and 2026-05 (Core Data + GRDB + SQLite.swift)**. All three persistence stacks named in §12 are covered.
-4. **Component diagram** — natural extension of the existing `deps` command; adds interface semantics that architects expect.
-5. **C4 model views** — layered on top of (4); low incremental cost once component data exists.
+4. ~~**Component diagram**~~ — **SHIPPED 2026-05** (`swiftumlbridge component --package …`). PlantUML + Mermaid; Studio integration deferred.
+5. **C4 model views** — layered on top of (4); low incremental cost now that component data exists.
 6. **Package diagram** — minor extension of `deps --modules`; low priority.
 7. *(Defer / skip)* Object, Deployment, Composite Structure, Profile, Communication, Timing, Interaction Overview, Use Case, Gantt.
 
@@ -192,7 +195,7 @@ For UML specifically, PlantUML handles
 * _**COVERED**_ state diagrams, and 
 * timing diagrams 
 
-That's the core nine UML diagram types. SwiftUMLStudio now ships six of them (class, sequence, activity, state, ER, plus the non-UML dependency graph) as first-class CLI subcommands and Studio modes.
+That's the core nine UML diagram types. SwiftUMLStudio now ships seven of them (class, sequence, activity, state, ER, component, plus the non-UML dependency graph) as first-class CLI subcommands; six of those have first-class Studio modes (component is CLI-only for now).
 
 Beyond standard UML, it also supports 
 
