@@ -28,16 +28,24 @@ public struct ERDiagramGenerator: ERDiagramGenerating, @unchecked Sendable {
                     seenEntity: &seenEntity, seenRelationship: &seenRelationship)
         }
 
-        // Step 2 — fall through to SwiftData @Model parsing for everything else.
-        // Skip the FileCollector pass entirely when there are no Swift sources;
-        // FileCollector defaults to the cwd on an empty list, which produces
-        // a runaway directory walk under sandboxed test hosts.
+        // Step 2 — fall through to Swift-source parsing. Each file is
+        // examined by both ERModelExtractor (SwiftData @Model) and
+        // PersistenceSchemaExtractor (GRDB). The two extractors look for
+        // mutually-exclusive signals so a file is only ever an entity in one
+        // of them; running both per file is simpler than trying to predict
+        // which one applies. Skipping the pass entirely when there are no
+        // Swift sources avoids FileCollector's empty-paths fallback, which
+        // walks the cwd and overflows the stack under sandboxed test hosts.
         if !swiftSourcePaths.isEmpty {
             let files = FileCollector().getFiles(for: swiftSourcePaths)
             for file in files {
                 guard let source = try? String(contentsOf: file, encoding: .utf8) else { continue }
-                let model = ERModelExtractor.extract(from: source)
-                mergeIn(model, entities: &entities, relationships: &relationships,
+                let swiftDataModel = ERModelExtractor.extract(from: source)
+                mergeIn(swiftDataModel, entities: &entities, relationships: &relationships,
+                        seenEntity: &seenEntity, seenRelationship: &seenRelationship)
+
+                let grdbModel = PersistenceSchemaExtractor.extract(from: source)
+                mergeIn(grdbModel, entities: &entities, relationships: &relationships,
                         seenEntity: &seenEntity, seenRelationship: &seenRelationship)
             }
         }
