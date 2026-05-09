@@ -5,11 +5,7 @@ import SwiftUMLBridgeFramework
 /// Draws from a positioned `SequenceLayout` with pan, zoom support.
 struct NativeSequenceDiagramView: View {
     let layout: SequenceLayout
-
-    @State private var scale: CGFloat = 1.0
-    @State private var lastScale: CGFloat = 1.0
-    @State private var offset: CGSize = .zero
-    @State private var lastOffset: CGSize = .zero
+    let viewport: DiagramViewport
 
     // MARK: - Colors
 
@@ -33,22 +29,22 @@ struct NativeSequenceDiagramView: View {
                 drawParticipantBoxes(top: false, in: &context)
             }
             .frame(width: canvasWidth, height: canvasHeight)
-            .scaleEffect(scale)
-            .offset(offset)
+            .scaleEffect(viewport.scale)
+            .offset(viewport.offset)
             .gesture(magnificationGesture)
             .gesture(dragGesture)
-            .onTapGesture(count: 2) {
-                withAnimation(.easeInOut(duration: 0.3)) {
-                    scale = 1.0
-                    lastScale = 1.0
-                    offset = .zero
-                    lastOffset = .zero
-                }
-            }
+            .onTapGesture(count: 2) { viewport.reset() }
             .accessibilityAddTraits(.isButton)
             .accessibilityLabel("Sequence diagram canvas")
             .accessibilityHint("Double-tap to reset zoom and position")
             .accessibilityIdentifier("nativeSequenceCanvas")
+            .onAppear {
+                viewport.contentSize = CGSize(width: layout.totalWidth, height: layout.totalHeight)
+                viewport.visibleSize = geometry.size
+            }
+            .onChange(of: geometry.size) { _, newSize in
+                viewport.visibleSize = newSize
+            }
         }
         .background(Color(nsColor: .textBackgroundColor))
     }
@@ -57,26 +53,14 @@ struct NativeSequenceDiagramView: View {
 
     private var magnificationGesture: some Gesture {
         MagnifyGesture()
-            .onChanged { value in
-                scale = lastScale * value.magnification
-            }
-            .onEnded { value in
-                lastScale *= value.magnification
-                scale = lastScale
-            }
+            .onChanged { value in viewport.updateScale(magnification: value.magnification) }
+            .onEnded { _ in viewport.commitScale() }
     }
 
     private var dragGesture: some Gesture {
         DragGesture()
-            .onChanged { value in
-                offset = CGSize(
-                    width: lastOffset.width + value.translation.width,
-                    height: lastOffset.height + value.translation.height
-                )
-            }
-            .onEnded { _ in
-                lastOffset = offset
-            }
+            .onChanged { value in viewport.updateOffset(translation: value.translation) }
+            .onEnded { _ in viewport.commitOffset() }
     }
 
     // MARK: - Drawing

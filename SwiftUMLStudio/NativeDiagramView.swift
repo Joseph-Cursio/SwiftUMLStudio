@@ -5,11 +5,8 @@ import SwiftUMLBridgeFramework
 /// Draws from a positioned `LayoutGraph` with pan, zoom, and hover support.
 struct NativeDiagramView: View {
     let graph: LayoutGraph
+    let viewport: DiagramViewport
 
-    @State private var scale: CGFloat = 1.0
-    @State private var lastScale: CGFloat = 1.0
-    @State private var offset: CGSize = .zero
-    @State private var lastOffset: CGSize = .zero
     @State private var hoveredNodeId: String?
 
     // MARK: - Colors
@@ -32,33 +29,31 @@ struct NativeDiagramView: View {
             let canvasHeight = max(graph.height + 40, Double(geometry.size.height))
 
             Canvas { context, _ in
-                // Draw edges first (behind nodes)
                 for edge in graph.edges {
                     drawEdge(edge, in: &context)
                 }
-                // Draw nodes
                 for node in graph.nodes {
                     let isHovered = hoveredNodeId == node.id
                     drawNode(node, isHovered: isHovered, in: &context)
                 }
             }
             .frame(width: canvasWidth, height: canvasHeight)
-            .scaleEffect(scale)
-            .offset(offset)
+            .scaleEffect(viewport.scale)
+            .offset(viewport.offset)
             .gesture(magnificationGesture)
             .gesture(dragGesture)
-            .onTapGesture(count: 2) {
-                withAnimation(.easeInOut(duration: 0.3)) {
-                    scale = 1.0
-                    lastScale = 1.0
-                    offset = .zero
-                    lastOffset = .zero
-                }
-            }
+            .onTapGesture(count: 2) { viewport.reset() }
             .accessibilityAddTraits(.isButton)
             .accessibilityLabel("Class diagram canvas")
             .accessibilityHint("Double-tap to reset zoom and position")
             .accessibilityIdentifier("nativeDiagramCanvas")
+            .onAppear {
+                viewport.contentSize = CGSize(width: graph.width, height: graph.height)
+                viewport.visibleSize = geometry.size
+            }
+            .onChange(of: geometry.size) { _, newSize in
+                viewport.visibleSize = newSize
+            }
         }
         .background(Color(nsColor: .textBackgroundColor))
     }
@@ -67,26 +62,14 @@ struct NativeDiagramView: View {
 
     private var magnificationGesture: some Gesture {
         MagnifyGesture()
-            .onChanged { value in
-                scale = lastScale * value.magnification
-            }
-            .onEnded { value in
-                lastScale *= value.magnification
-                scale = lastScale
-            }
+            .onChanged { value in viewport.updateScale(magnification: value.magnification) }
+            .onEnded { _ in viewport.commitScale() }
     }
 
     private var dragGesture: some Gesture {
         DragGesture()
-            .onChanged { value in
-                offset = CGSize(
-                    width: lastOffset.width + value.translation.width,
-                    height: lastOffset.height + value.translation.height
-                )
-            }
-            .onEnded { _ in
-                lastOffset = offset
-            }
+            .onChanged { value in viewport.updateOffset(translation: value.translation) }
+            .onEnded { _ in viewport.commitOffset() }
     }
 
     // MARK: - Node Drawing

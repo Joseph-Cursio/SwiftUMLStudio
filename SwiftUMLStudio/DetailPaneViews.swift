@@ -62,45 +62,62 @@ struct DiagramDetailView: View {
 
 struct DiagramPreviewView: View {
     let viewModel: DiagramViewModel
+    @State private var viewport = DiagramViewport()
 
     var body: some View {
         VStack(spacing: 0) {
             if let model = lowConfidenceModel {
                 StateMachineConfidenceBanner(model: model)
             }
-            Group {
-                if viewModel.isGenerating {
-                    ProgressView("Generating…")
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else if let script = viewModel.currentScript {
-                    if script.format == .svg, let graph = script.layoutGraph {
-                        NativeDiagramView(graph: graph)
-                    } else if script.format == .svg, let seqLayout = script.sequenceLayout {
-                        NativeSequenceDiagramView(layout: seqLayout)
-                    } else if script.format == .svg, let activityLayout = script.activityLayout {
-                        NativeActivityDiagramView(layout: activityLayout)
+            ZStack(alignment: .topTrailing) {
+                Group {
+                    if viewModel.isGenerating {
+                        ProgressView("Generating…")
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    } else if let script = viewModel.currentScript {
+                        if script.format == .svg, let graph = script.layoutGraph {
+                            NativeDiagramView(graph: graph, viewport: viewport)
+                        } else if script.format == .svg, let seqLayout = script.sequenceLayout {
+                            NativeSequenceDiagramView(layout: seqLayout, viewport: viewport)
+                        } else if script.format == .svg, let activityLayout = script.activityLayout {
+                            NativeActivityDiagramView(layout: activityLayout, viewport: viewport)
+                        } else {
+                            DiagramWebView(script: script)
+                        }
+                    } else if (viewModel.diagramMode == .sequenceDiagram
+                        || viewModel.diagramMode == .activityDiagram)
+                        && viewModel.entryPoint.isEmpty {
+                        Text("Enter an entry point (e.g. MyType.myMethod) to generate a diagram.")
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                            .padding()
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .accessibilityIdentifier("entryPointPrompt")
                     } else {
-                        DiagramWebView(script: script)
+                        Text("Select Swift source files or a folder to generate a diagram.")
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                            .padding()
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .accessibilityIdentifier("fileSelectionPrompt")
                     }
-                } else if (viewModel.diagramMode == .sequenceDiagram
-                    || viewModel.diagramMode == .activityDiagram)
-                    && viewModel.entryPoint.isEmpty {
-                    Text("Enter an entry point (e.g. MyType.myMethod) to generate a diagram.")
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
-                        .padding()
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .accessibilityIdentifier("entryPointPrompt")
-                } else {
-                    Text("Select Swift source files or a folder to generate a diagram.")
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
-                        .padding()
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .accessibilityIdentifier("fileSelectionPrompt")
+                }
+
+                if showsViewportControls {
+                    DiagramViewportControls(viewport: viewport)
                 }
             }
+            .onChange(of: viewModel.currentScript?.text) { _, _ in
+                viewport.reset()
+            }
         }
+    }
+
+    private var showsViewportControls: Bool {
+        guard let script = viewModel.currentScript, script.format == .svg else { return false }
+        return script.layoutGraph != nil
+            || script.sequenceLayout != nil
+            || script.activityLayout != nil
     }
 
     private var lowConfidenceModel: StateMachineModel? {
