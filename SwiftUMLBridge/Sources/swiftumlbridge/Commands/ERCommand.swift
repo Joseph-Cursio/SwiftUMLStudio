@@ -6,7 +6,7 @@ extension SwiftUMLBridgeCLI {
     struct ERCommand: AsyncParsableCommand {
         static let configuration = CommandConfiguration(
             commandName: "er",
-            abstract: "Generate an Entity-Relationship diagram from SwiftData @Model classes",
+            abstract: "Generate an Entity-Relationship diagram from SwiftData @Model classes or Core Data .xcdatamodeld bundles",
             helpNames: [.short, .long]
         )
 
