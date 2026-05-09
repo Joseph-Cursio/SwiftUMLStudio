@@ -121,7 +121,8 @@ struct ContentView: View {
         } content: {
             SourceEditorView(
                 content: viewModel.selectedFileContent,
-                hasSelection: viewModel.selectedFileURL != nil
+                hasSelection: viewModel.selectedFileURL != nil,
+                highlightedLine: viewModel.highlightedSourceLine
             )
             .navigationSplitViewColumnWidth(min: 300, ideal: 400)
             .navigationTitle(viewModel.selectedFileURL?.lastPathComponent ?? "Source")

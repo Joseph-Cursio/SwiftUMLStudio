@@ -106,9 +106,14 @@ struct DiagramPreviewView: View {
                 if showsViewportControls {
                     DiagramViewportControls(viewport: viewport)
                 }
+
+                if let revealable = revealableSelection {
+                    revealInSourceButton(for: revealable)
+                }
             }
             .onChange(of: viewModel.currentScript?.text) { _, _ in
                 viewport.reset()
+                viewport.selectedNodeId = nil
             }
         }
     }
@@ -118,6 +123,43 @@ struct DiagramPreviewView: View {
         return script.layoutGraph != nil
             || script.sequenceLayout != nil
             || script.activityLayout != nil
+    }
+
+    /// The currently-selected class-diagram node, paired with its source
+    /// location, when both are present. Used to decide whether to surface the
+    /// "Reveal in Source" affordance.
+    private var revealableSelection: (label: String, location: SourceLocation)? {
+        guard let id = viewport.selectedNodeId,
+              let graph = viewModel.currentScript?.layoutGraph,
+              let node = graph.nodes.first(where: { $0.id == id }),
+              let location = node.sourceLocation
+        else { return nil }
+        return (node.label, location)
+    }
+
+    @ViewBuilder
+    private func revealInSourceButton(
+        for selection: (label: String, location: SourceLocation)
+    ) -> some View {
+        Button {
+            viewModel.revealSource(at: selection.location)
+        } label: {
+            Label(
+                "Reveal \(selection.label) in Source",
+                systemImage: "arrow.up.right.square"
+            )
+            .font(.callout)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(.ultraThinMaterial, in: Capsule())
+            .overlay(Capsule().stroke(Color.secondary.opacity(0.2), lineWidth: 0.5))
+        }
+        .buttonStyle(.plain)
+        .padding(12)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+        .keyboardShortcut("j", modifiers: .command)
+        .help("Open the file containing \(selection.label) (⌘J)")
+        .accessibilityIdentifier("revealInSourceButton")
     }
 
     private var lowConfidenceModel: StateMachineModel? {

@@ -36,6 +36,10 @@ final class DiagramViewModel {
     var selectedFileURL: URL?
     var selectedFileContent: String = ""
 
+    /// 1-based line to highlight in `SourceEditorView`. Set by
+    /// `revealSource(at:)`; cleared whenever the user manually selects a file.
+    var highlightedSourceLine: Int?
+
     var history: [DiagramEntity] = []
     var selectedHistoryItem: DiagramEntity?
 
@@ -266,12 +270,23 @@ final class DiagramViewModel {
 
     func selectFile(_ url: URL?) {
         selectedFileURL = url
+        highlightedSourceLine = nil
         guard let url else {
             selectedFileContent = ""
             return
         }
         selectedFileContent = (try? String(contentsOf: url, encoding: .utf8))
             ?? "// Could not read file"
+    }
+
+    /// Open the file containing the given declaration in `SourceEditorView`
+    /// and request that its line be highlighted. Used by Phase 4's
+    /// "Reveal in Source" diagram navigation.
+    func revealSource(at location: SourceLocation) {
+        guard !location.filePath.isEmpty else { return }
+        let url = URL(fileURLWithPath: location.filePath)
+        selectFile(url)
+        highlightedSourceLine = location.line
     }
 
     func refreshEntryPoints() {
