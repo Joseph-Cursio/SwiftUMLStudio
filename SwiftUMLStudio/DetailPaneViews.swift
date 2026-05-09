@@ -76,11 +76,17 @@ struct DiagramPreviewView: View {
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                     } else if let script = viewModel.currentScript {
                         if script.format == .svg, let graph = script.layoutGraph {
-                            NativeDiagramView(graph: graph, viewport: viewport)
+                            cmdScrollHost {
+                                NativeDiagramView(graph: graph, viewport: viewport)
+                            }
                         } else if script.format == .svg, let seqLayout = script.sequenceLayout {
-                            NativeSequenceDiagramView(layout: seqLayout, viewport: viewport)
+                            cmdScrollHost {
+                                NativeSequenceDiagramView(layout: seqLayout, viewport: viewport)
+                            }
                         } else if script.format == .svg, let activityLayout = script.activityLayout {
-                            NativeActivityDiagramView(layout: activityLayout, viewport: viewport)
+                            cmdScrollHost {
+                                NativeActivityDiagramView(layout: activityLayout, viewport: viewport)
+                            }
                         } else {
                             DiagramWebView(script: script)
                         }
@@ -151,6 +157,16 @@ struct DiagramPreviewView: View {
     private var showsExportMenu: Bool {
         guard let script = viewModel.currentScript else { return false }
         return !script.text.isEmpty
+    }
+
+    /// Hosts the given native canvas in a `CommandScrollWrapper` so ⌘+scroll
+    /// drives `viewport.zoomIn` / `zoomOut` (other scroll events fall through).
+    @ViewBuilder
+    private func cmdScrollHost<V: View>(@ViewBuilder _ content: @escaping () -> V) -> some View {
+        CommandScrollWrapper(content: content) { deltaY in
+            if deltaY > 0 { viewport.zoomIn() }
+            else if deltaY < 0 { viewport.zoomOut() }
+        }
     }
 
     /// The currently-selected node (class-diagram LayoutNode or
