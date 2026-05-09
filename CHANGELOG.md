@@ -25,6 +25,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **SwiftSyntax-primary parser (M5)** — replaces SourceKitten as the primary AST source for newer functionality; SourceKitten retained for declarations
 - **Macro-aware stereotypes** — `MacroConformanceTable` maps macros (`@Observable`, `@Model`, etc.) to synthetic conformances surfaced in diagrams
 - Attribute fields exposed on `SyntaxStructure` for macro-aware diagrams
+- **Multi-module SPM cross-references (M12)** — public `SPMPackageDescription` / `SPMTargetDescription` types and an `SPMPackageReader` that runs `swift package describe --type json`; new `ClassDiagramGenerator.generateScript(forPackage:packageRoot:)` entry tags each parsed type with its owning target. PlantUML emits the module as an additional stereotype (`<<class>> <<Networking>>`). Surfaced via `swiftumlbridge classdiagram --package <Package.swift>`. Mermaid/Nomnoml emitter changes, `--package` on `deps`, and Studio integration deferred.
+- **`SequenceParticipant.sourceLocation`** — sequence-diagram participants now carry the source location of their underlying type so the Studio app can support reveal-in-source on participant clicks. `SequenceSVGRenderer.computeLayout` accepts an optional `typeLocations: [String: SourceLocation]` map that `SequenceDiagramGenerator` builds from a second pass over each file.
 
 ### Added — Diagram Interaction
 
@@ -36,6 +38,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **`SourceEditorView` rewritten** as an `NSViewRepresentable` around `NSTextView` to support line scrolling and back-fill highlighting (replaces the previous disabled `TextEditor`)
 - **Hover tooltips** on class-diagram nodes — top-leading floating panel showing the node's stereotype, label, and (when available) the source `filename:line`
 - **Diagram export menu** (top-trailing) — saves the currently-displayed diagram as PDF (vector, via SwiftUI `ImageRenderer` + `CGContext` PDF consumer), PNG (raster, 2× retina), SVG (when the script's format is already SVG), or source text (`.puml` / `.mmd` / `.nomnoml`) for WebView-rendered formats. Menu items adapt to what the active script supports.
+- **Sequence-diagram selection + click-to-source** — single-click a participant box (top or bottom mirror) selects it (accent ring), hover shows the `NodeInfoTooltip`, and "Reveal in Source" jumps to the underlying type's declaration when known. Mirrors what class diagrams gained in the earlier phases.
+- **Cmd+scroll-wheel zoom** on all three native canvases — wraps the SwiftUI canvas in an `NSHostingView` subclass that intercepts ⌘+scroll and calls `viewport.zoomIn`/`zoomOut`. Non-⌘ scroll falls through so trackpad pan still works. Cursor-centered zoom deferred.
+- **Arrow-key navigation between selected nodes** — when a class- or sequence-diagram canvas has keyboard focus, arrow keys move the selection to the spatially nearest node in that direction (via `NativeDiagramGeometry.nextNode` — picks the closest candidate strictly past the current node along the dominant axis); Esc clears selection. Sequence diagrams only honor left/right since participants share a single row. Pressing an arrow with nothing selected picks the leftmost-topmost node as the starting point.
 
 ### Changed — Theming
 
