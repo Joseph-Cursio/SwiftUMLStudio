@@ -1,4 +1,45 @@
-# macOS Studio GUI — Initial Implementation
+# macOS Studio GUI
+
+## Current State (2026-05)
+
+The original "Initial Implementation" plan below described a 4-file MVP (file picker + PlantUML WebView). That MVP shipped in 2026-02 and the Studio app has since grown well beyond it. As of 2026-05 it includes:
+
+**Modes** (`AppMode.swift`)
+- Document mode — the original single-file → single-diagram MVP flow
+- Explorer mode — file-tree-driven navigation (`ExplorerSidebar`, `ExplorerDetailView`, `ExplorerToolbar`)
+- Project mode — workspace with snapshots, dashboard, and architecture diff
+
+**Diagram rendering**
+- Native SwiftUI / Core Graphics renderers replaced the WebView for class / sequence / activity diagrams (`NativeDiagramView`, `NativeSequenceDiagramView`, `NativeActivityDiagramView`)
+- WebView retained as a fallback for Mermaid (`MermaidHTMLBuilder`) and Nomnoml (`NomnomlHTMLBuilder`)
+- Six diagram types supported: class, sequence, activity, state, ER, dependency
+
+**Persistence (SwiftData)**
+- `PersistenceController`, `DiagramEntity`, `ProjectSnapshot`, `SnapshotManager`, `HistorySidebar`, `SnapshotRowView`
+- Snapshots are diffable via `ArchitectureDiffView`
+
+**Subscription / paywall (StoreKit 2)**
+- `SubscriptionManager`, `SubscriptionProviding`, `FeatureGate`, `PaywallView`, `ReviewReminderManager`
+- Local testing config in `Configuration.storekit`
+
+**Architectural insights**
+- `ProjectAnalyzer`, `InsightEngine`, `SuggestionEngine`, `SuggestionDispatcher`
+- Surfaced in `ProjectDashboardView`
+
+**UI**
+- Multiple sidebars (`WorkspaceSidebar`, `ExplorerSidebar`, `FileBrowserSidebar`, `HistorySidebar`)
+- `DiagramInspectorStrip` + per-mode controls (`SequenceControlsView`, `ActivityControlsView`)
+- `SourceEditorView`, `MarkupView`
+
+**Concurrency migration**
+- Whole app moved to Swift 6 strict concurrency (see CHANGELOG `[Unreleased]` and commit `846adfa`)
+- `DiagramPresenting` protocol is now async; the original `SwiftUIPresenter.swift` was removed
+
+The canonical functional spec for the Studio app is now PRD section 6 (`docs/internal/SwiftUML Studio PRD.md`). The MVP plan below is preserved for historical context.
+
+---
+
+# macOS Studio GUI — Initial Implementation (Historical, 2026-02)
 
 ## Context
 
