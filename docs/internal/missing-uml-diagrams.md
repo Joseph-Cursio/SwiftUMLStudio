@@ -1,19 +1,20 @@
 # Missing UML Diagram Types — Gap Analysis
 
-**Last updated:** 2026-04-20
+**Last updated:** 2026-05-09
 **Scope:** Popular UML 2.x (and common non-UML) diagram types that are **not** currently producible by SwiftUMLStudio / SwiftUMLBridge.
 
 ## Current coverage (baseline)
 
-SwiftUMLBridge ships **five** diagram types today:
+SwiftUMLBridge ships **six** diagram types today:
 
 | Diagram | Status | Command |
 |---|---|---|
-| Class diagram | Shipped | `swiftumlbridge classdiagram` |
+| Class diagram | Shipped (multi-module SPM aware) | `swiftumlbridge classdiagram` |
 | Sequence diagram | Shipped | `swiftumlbridge sequence` |
 | Dependency graph | Shipped | `swiftumlbridge deps` |
 | Activity diagram | Shipped (concurrency-aware) | `swiftumlbridge activity` |
 | State machine diagram | Shipped | `swiftumlbridge state` |
+| Entity-Relationship diagram | Shipped (SwiftData `@Model`) | `swiftumlbridge er` |
 
 Output formats: PlantUML, Mermaid.js, Nomnoml (class only), SVG.
 
@@ -120,17 +121,17 @@ A flowchart whose nodes are mini-sequence-diagrams. Rarely drawn in practice. **
 
 ## Non-UML but widely requested
 
-### 12. Entity-Relationship (ER) diagram — **high value, recommended**
+### 12. Entity-Relationship (ER) diagram — **partially shipped**
 
-Not strictly UML, but expected in any "diagrams" tool. For Swift this maps cleanly onto:
+Not strictly UML, but expected in any "diagrams" tool. For Swift this maps cleanly onto three persistence stacks:
 
-- **Core Data** `.xcdatamodeld` models (entities, attributes, relationships, inverse relationships).
-- **SwiftData** `@Model` classes (macro-expanded properties and `@Relationship` annotations).
-- **GRDB / SQLite.swift** schemas.
+| Stack | Status |
+|---|---|
+| **SwiftData** `@Model` classes | **Shipped** (M7, 2026-04). `ERModelExtractor` walks `@Model`-annotated `ClassDeclSyntax` nodes; `@Relationship(inverse:)` resolves into typed `ERRelationship`s with cardinality. CLI: `swiftumlbridge er`. Studio: `DiagramMode.erDiagram` (Pro-gated). |
+| **Core Data** `.xcdatamodeld` bundles | Planned — see `er-diagram-expansion-plan.md` (milestones C1 + C2). |
+| **GRDB / SQLite.swift** schemas | Planned — same plan, milestones G1 + G2. |
 
-The ER/data-model story is arguably the single biggest gap for iOS/macOS developers using this tool — persistence is ubiquitous and no current command covers it.
-
-- **Implementation cost:** medium. SwiftData is straightforward via SwiftSyntax macro inspection. Core Data requires parsing `contents` XML inside `.xcdatamodeld` bundles. Mermaid has native `erDiagram` syntax; PlantUML has entity syntax.
+Reuses the existing `ERModel` / `EREntity` / `ERAttribute` / `ERRelationship` value types and the existing PlantUML / Mermaid emitters across all three stacks.
 
 ### 13. Flowchart (Mermaid `flowchart`) — **COVERED by activity diagram**
 
@@ -152,7 +153,7 @@ If the goal is to maximize "popular diagrams a Swift dev actually wants," ranked
 
 1. ~~**Activity diagram**~~ — **SHIPPED 2026-04-20** (concurrency-aware: async let, TaskGroup).
 2. ~~**State machine diagram**~~ — **SHIPPED 2026-04-20** (CLI subcommand closes the remaining gap; framework was already in place).
-3. **ER / data-model diagram** — fills the biggest structural gap (persistence) and is a clear differentiator vs. SwiftPlantUML legacy. **Next up.**
+3. ~~**ER / data-model diagram (SwiftData)**~~ — **SHIPPED 2026-04** (M7). Core Data + GRDB / SQLite.swift expansion planned in `er-diagram-expansion-plan.md`. **Next up.**
 4. **Component diagram** — natural extension of the existing `deps` command; adds interface semantics that architects expect.
 5. **C4 model views** — layered on top of (4); low incremental cost once component data exists.
 6. **Package diagram** — minor extension of `deps --modules`; low priority.
@@ -191,7 +192,7 @@ For UML specifically, PlantUML handles
 * _**COVERED**_ state diagrams, and 
 * timing diagrams 
 
-That's the core nine UML diagram types. SwiftUMLStudio now ships five of them (class, sequence, activity, state, plus the non-UML dependency graph) as first-class CLI subcommands and Studio modes.
+That's the core nine UML diagram types. SwiftUMLStudio now ships six of them (class, sequence, activity, state, ER, plus the non-UML dependency graph) as first-class CLI subcommands and Studio modes.
 
 Beyond standard UML, it also supports 
 
