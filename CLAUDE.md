@@ -67,17 +67,18 @@ The **CLI** (`swiftumlbridge`) is a thin wrapper over the framework using `Async
 ### CLI Commands
 
 ```
-swiftumlbridge classdiagram [paths...] [--format plantuml|mermaid|nomnoml] [--output browser|console|file]
+swiftumlbridge classdiagram [paths...] [--format plantuml|mermaid] [--output browser|browserImageOnly|consoleOnly] [--package <Package.swift dir>]
 swiftumlbridge sequence    --entry <Type.method> [paths...] [--depth n]
 swiftumlbridge activity    --entry <Type.method> [paths...]
-swiftumlbridge state       [paths...]
-swiftumlbridge er          [paths...]
+swiftumlbridge state       [paths...] [--list | --state HostType.EnumType]
+swiftumlbridge er          [paths...]                  # SwiftData / Core Data / GRDB / SQLite.swift
 swiftumlbridge deps        [paths...] [--modules] [--types] [--public-only] [--exclude <pattern>]
+swiftumlbridge component   --package <Package.swift dir> [--include-test-targets]
 ```
 
 ### Studio App Layout (`SwiftUMLStudio/`)
 
-- **Modes** (`AppMode.swift`): Document, Explorer, Project — each with its own sidebar/toolbar/detail views
+- **Modes** (`AppMode.swift`): `explorer`, `developer` — toggled via the toolbar's Picker. Explorer is the default for new users; Developer exposes the three-pane workspace, file browser, format picker, and per-mode controls.
 - **State**: `@Observable DiagramViewModel` (`DiagramViewModel.swift`, `DiagramViewModel+Generation.swift`)
 - **Persistence**: SwiftData via `PersistenceController`, `DiagramEntity`, `ProjectSnapshot`, `SnapshotManager`
 - **Rendering**: native `NativeDiagramView` / `NativeSequenceDiagramView` / `NativeActivityDiagramView`; WebView fallback (`DiagramWebView`, `MermaidHTMLBuilder`, `NomnomlHTMLBuilder`)

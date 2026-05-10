@@ -50,7 +50,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added — Studio App
 
-- **Three app modes** (`AppMode`): Document, Explorer, Project — with mode-switching toolbar
+- **Two app modes** (`AppMode`): `explorer` (insight-driven default) and `developer` (full-featured three-pane workspace), toggled via the toolbar Picker
 - **Project Dashboard** (`ProjectDashboardView`) with stats, insights, and one-click suggestion cards
 - **InsightEngine** — plain-language project insights derived from `ProjectAnalyzer`
 - **SuggestionEngine** + `SuggestionDispatcher` — actionable diagram suggestions with confidence scoring
