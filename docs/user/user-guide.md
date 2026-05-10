@@ -1,14 +1,16 @@
 # SwiftUMLBridge User Guide
 
-SwiftUMLBridge is a command-line tool and Swift Package that generates architectural diagrams from Swift source code. It supports **PlantUML** and **Mermaid.js** output for five diagram types:
+SwiftUMLBridge is a command-line tool and Swift Package that generates architectural diagrams from Swift source code. It supports **PlantUML** and **Mermaid** output for seven diagram types:
 
-- **Class diagrams** — structural overview of types, members, and relationships (M0–M2)
-- **Sequence diagrams** — static call-graph traces from a named entry-point method (M3)
-- **Dependency graphs** — directed graphs of type-level or module-level dependencies (M4)
+- **Class diagrams** — structural overview of types, members, and relationships
+- **Sequence diagrams** — static call-graph traces from a named entry-point method
+- **Dependency graphs** — directed graphs of type-level or module-level dependencies
 - **Activity diagrams** — control flow inside a single method (decisions, loops, async, error handling)
 - **State machine diagrams** — transitions auto-detected from an enum-typed property
+- **Entity-Relationship diagrams** — entities and relationships from SwiftData `@Model`, Core Data `.xcdatamodeld`, GRDB record types, and SQLite.swift `Table` declarations
+- **Component diagrams** — SPM targets and their `target_dependencies`, with public types listed as provided interfaces
 
-> **Prefer a GUI?** [SwiftUML Studio](studio-user-guide.md) is a macOS app that provides the same diagram generation in a visual interface with project insights, one-click suggestions, and architecture change tracking — no terminal required.
+> **Prefer a GUI?** [SwiftUML Studio](studio-user-guide.md) is a macOS app that wraps the same engine with project insights, one-click suggestions, native Canvas rendering, and architecture change tracking — no terminal required.
 
 ---
 
@@ -23,6 +25,7 @@ SwiftUMLBridge is a command-line tool and Swift Package that generates architect
    - [Choosing an Output Destination](#choosing-an-output-destination)
    - [Using an SDK Path](#using-an-sdk-path)
    - [Controlling Extension Display](#controlling-extension-display)
+   - [Module-Aware Mode (`--package`)](#module-aware-mode---package)
 5. [Generating Sequence Diagrams](#generating-sequence-diagrams)
    - [Entry Point Syntax](#entry-point-syntax)
    - [Controlling Traversal Depth](#controlling-traversal-depth)
@@ -37,17 +40,19 @@ SwiftUMLBridge is a command-line tool and Swift Package that generates architect
    - [Format and Output](#format-and-output)
 7. [Generating Activity Diagrams](#generating-activity-diagrams)
 8. [Generating State Machine Diagrams](#generating-state-machine-diagrams)
-9. [Configuration File](#configuration-file)
+9. [Generating ER Diagrams](#generating-er-diagrams)
+10. [Generating Component Diagrams](#generating-component-diagrams)
+11. [Configuration File](#configuration-file)
    - [File Discovery](#file-discovery)
    - [Overriding Defaults](#overriding-defaults)
-10. [Output Destinations](#output-destinations)
-11. [Understanding Class Diagrams](#understanding-class-diagrams)
+12. [Output Destinations](#output-destinations)
+13. [Understanding Class Diagrams](#understanding-class-diagrams)
     - [Element Types](#element-types)
     - [Relationships](#relationships)
     - [Access Level Indicators](#access-level-indicators)
     - [Format Differences](#format-differences)
-12. [Known Limitations](#known-limitations)
-13. [Getting Help](#getting-help)
+14. [Known Limitations](#known-limitations)
+15. [Getting Help](#getting-help)
 
 ---
 
@@ -55,10 +60,12 @@ SwiftUMLBridge is a command-line tool and Swift Package that generates architect
 
 | Requirement | Minimum Version |
 |---|---|
-| macOS | 13.0 (Ventura) |
-| Xcode | 15.0 |
-| Swift | 5.9 |
+| macOS | 26.0 |
+| Xcode | 16.0 |
+| Swift | 6.0 (strict concurrency / Swift 6 language mode) |
 | Swift toolchain | Current or one prior major release |
+
+The package targets `.macOS(.v26)` and compiles with `swiftLanguageMode(.v6)`. Linux support is not currently shipped; see `Package.swift` for the authoritative platform list.
 
 ---
 
@@ -127,6 +134,31 @@ swiftumlbridge deps Sources/
 swiftumlbridge deps Sources/ --modules
 ```
 
+**Activity diagram for a single method:**
+
+```bash
+swiftumlbridge activity Sources/ --entry AuthService.login
+```
+
+**State machine — list candidates, then render one:**
+
+```bash
+swiftumlbridge state Sources/ --list
+swiftumlbridge state Sources/ --state TrafficLight.Color
+```
+
+**Entity-Relationship diagram (SwiftData / Core Data / GRDB / SQLite.swift):**
+
+```bash
+swiftumlbridge er Sources/Models/ Resources/MyApp.xcdatamodeld
+```
+
+**Component diagram from a Swift Package:**
+
+```bash
+swiftumlbridge component --package /path/to/MyPackage
+```
+
 ---
 
 ## Generating Class Diagrams
@@ -179,6 +211,8 @@ The `--format` flag selects the diagram language. It overrides the `format` key 
 |---|---|---|
 | `plantuml` | PlantUML class diagram (default) | [planttext.com](https://www.planttext.com) |
 | `mermaid` | Mermaid.js class diagram | [mermaid.live](https://mermaid.live) |
+
+> The `DiagramFormat` enum also has `.nomnoml` and `.svg` cases. Those are exposed in the SwiftUML Studio app (Nomnoml renders locally inside the WebView; `.svg` produces a layout consumed by the native Canvas renderer) — the CLI itself only emits `plantuml` and `mermaid` text.
 
 ```bash
 # PlantUML (default — equivalent to --format plantuml)
@@ -244,6 +278,20 @@ swiftumlbridge classdiagram Sources/ --hide-extensions
 ```
 
 These flags override the `elements.showExtensions` setting in the configuration file.
+
+### Module-Aware Mode (`--package`)
+
+When you point `classdiagram` at a Swift Package via `--package`, the CLI runs `swift package describe --type json` to discover the package's targets and tags every parsed type with its owning module. PlantUML output renders the module as an additional stereotype on the type node (e.g. `<<class>> <<Networking>>`), making cross-target architecture visible at a glance.
+
+```bash
+# Module-aware diagram of a local SPM package
+swiftumlbridge classdiagram --package /path/to/MyPackage
+
+# Same, with explicit format
+swiftumlbridge classdiagram --package /path/to/MyPackage --format mermaid --output consoleOnly
+```
+
+`--package` overrides any positional `<paths>` arguments — the file list is derived from each target's `sources` array. Test targets are included; if you want to skip them, prefer the dedicated `component` subcommand which excludes them by default.
 
 ---
 
@@ -554,6 +602,87 @@ swiftumlbridge state Sources/ --state TrafficLight.Color --config ./configs/diag
 
 ---
 
+## Generating ER Diagrams
+
+The `er` subcommand produces an Entity-Relationship diagram from any combination of the four supported persistence stacks. Inputs may be Swift files (SwiftData `@Model`, GRDB record protocols, SQLite.swift `Table` declarations) or Core Data `.xcdatamodeld` bundles. A single run can mix all of them — the discovered entities and relationships are merged into one diagram.
+
+```
+swiftumlbridge er [<paths>...] [options]
+```
+
+### Supported Stacks
+
+| Stack | Detected from | Cardinality |
+|---|---|---|
+| **SwiftData** | `@Model` class with `@Relationship` annotations | Property type (`Author?` → optional to-one, `[Book]` → to-many) |
+| **Core Data** | `.xcdatamodeld` bundle (active version selected via `.xccurrentversion`) | `<relationship maxCount=…>` XML attribute; `parentEntity` becomes an "is a" edge |
+| **GRDB** | Type conforms to `FetchableRecord` / `PersistableRecord` (or related) | Typed associations: `belongsTo`, `hasOne`, `hasMany` |
+| **SQLite.swift** | `Table("name")` value with `Expression<T>("col")` columns | Foreign-key columns matched by name |
+
+The extractors look for mutually-exclusive signals so a single source file is never represented twice.
+
+### Examples
+
+```bash
+# Mixed SwiftData + Core Data project
+swiftumlbridge er Sources/ Resources/MyApp.xcdatamodeld
+
+# SwiftData only, Mermaid markup printed to stdout
+swiftumlbridge er Sources/Models/ --format mermaid --output consoleOnly
+
+# Core Data bundle, save the PlantUML markup
+swiftumlbridge er Resources/MyApp.xcdatamodeld --output consoleOnly > er.puml
+```
+
+If no entities are discovered across any of the inputs, the command exits with an error.
+
+### Output
+
+The Mermaid emitter produces an `erDiagram` block with crow's-foot connectors derived from the cardinality of each relationship endpoint. The PlantUML emitter produces `entity` blocks with primary-key separators and `<<UK>>` / `<<transient>>` stereotypes. See the [Reference Guide](reference.md#erscript) for sample output.
+
+---
+
+## Generating Component Diagrams
+
+The `component` subcommand produces a UML Component diagram from a Swift Package. Components are SPM targets, edges come from `target_dependencies`, and provided interfaces are the public Swift types declared inside each target.
+
+```
+swiftumlbridge component --package <path> [options]
+```
+
+### Required Option
+
+`--package <path>` is required. The CLI runs `swift package describe --type json` against the directory to enumerate targets, sources, and dependencies.
+
+### Format Output
+
+| Format | What's emitted |
+|---|---|
+| `plantuml` (default) | Standard `component` syntax with `<<library>>` / `<<executable>>` / `<<test>>` stereotypes |
+| `mermaid` | `flowchart TD` with one `subgraph` per component (Mermaid has no dedicated component-diagram dialect) |
+
+### Test Target Filtering
+
+By default, `.testTarget` targets are excluded — they rarely belong on an architecture diagram. Pass `--include-test-targets` to include them; they render with a `<<test>>` stereotype.
+
+### Examples
+
+```bash
+# Component diagram of an SPM package, opened in browser
+swiftumlbridge component --package /path/to/MyPackage
+
+# Mermaid flowchart fallback printed to stdout
+swiftumlbridge component --package /path/to/MyPackage \
+  --format mermaid --output consoleOnly
+
+# Include test targets in the diagram
+swiftumlbridge component --package /path/to/MyPackage --include-test-targets
+```
+
+If `swift package describe` fails (the package directory does not contain a valid `Package.swift`, or the toolchain is missing), the command exits with the underlying error.
+
+---
+
 ## Configuration File
 
 For repeatable, project-specific settings, place a `.swiftumlbridge.yml` file in the root of your project. The `format` key applies to `classdiagram`, `sequence`, and `deps`. All other keys are class-diagram–specific and are silently ignored by `sequence` and `deps`. For `deps`, only `format` and the `elements.havingAccessLevel` and `elements.exclude` keys have any effect; all other keys are ignored.
@@ -768,6 +897,8 @@ swiftumlbridge sequence --help
 swiftumlbridge deps --help
 swiftumlbridge activity --help
 swiftumlbridge state --help
+swiftumlbridge er --help
+swiftumlbridge component --help
 
 # Version
 swiftumlbridge --version

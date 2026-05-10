@@ -13,6 +13,8 @@ Complete reference for all CLI options, YAML configuration fields, element kinds
    - [deps](#deps)
    - [activity](#activity)
    - [state](#state)
+   - [er](#er)
+   - [component](#component)
 2. [Configuration File Schema](#configuration-file-schema)
    - [files](#files)
    - [elements](#elements)
@@ -40,6 +42,8 @@ Complete reference for all CLI options, YAML configuration fields, element kinds
     - [ClassDiagramGenerator](#classdiagramgenerator)
     - [SequenceDiagramGenerator](#sequencediagramgenerator)
     - [DependencyGraphGenerator](#dependencygraphgenerator)
+    - [ERDiagramGenerator](#erdiagramgenerator)
+    - [ComponentExtractor](#componentextractor)
     - [DiagramFormat](#diagramformat)
     - [DepsMode](#depsmode)
     - [Configuration](#configuration)
@@ -49,6 +53,8 @@ Complete reference for all CLI options, YAML configuration fields, element kinds
     - [DiagramScript](#diagramscript)
     - [SequenceScript](#sequencescript)
     - [DepsScript](#depsscript)
+    - [ERScript](#erscript)
+    - [ComponentScript](#componentscript)
     - [DiagramPresenting](#diagrampresenting)
     - [BrowserPresenter](#browserpresenter)
     - [ConsolePresenter](#consolepresenter)
@@ -58,6 +64,18 @@ Complete reference for all CLI options, YAML configuration fields, element kinds
     - [DependencyEdge](#dependencyedge)
     - [DependencyEdgeKind](#dependencyedgekind)
     - [ImportEdge](#importedge)
+    - [ERModel](#ermodel)
+    - [EREntity](#erentity)
+    - [ERAttribute](#erattribute)
+    - [ERRelationship](#errelationship)
+    - [ERCardinality](#ercardinality)
+    - [ComponentModel](#componentmodel)
+    - [Component](#component)
+    - [ComponentDependency](#componentdependency)
+    - [SPMPackageDescription](#spmpackagedescription)
+    - [SPMTargetDescription](#spmtargetdescription)
+    - [SPMPackageReader](#spmpackagereader)
+    - [TypeInfo](#typeinfo)
     - [BridgeLogger](#bridgelogger)
 13. [Version](#version)
 14. [Studio App Reference](#studio-app-reference)
@@ -65,7 +83,7 @@ Complete reference for all CLI options, YAML configuration fields, element kinds
     - [Diagram Modes](#diagram-modes)
     - [Project Analysis](#project-analysis)
     - [Subscription and Feature Gating](#subscription-and-feature-gating)
-    - [Core Data Entities](#core-data-entities)
+    - [SwiftData Entities](#swiftdata-entities)
     - [Architecture Diff](#architecture-diff)
 
 ---
@@ -85,7 +103,7 @@ swiftumlbridge [--version] [--help] <subcommand>
 
 The default subcommand is `classdiagram`. Running `swiftumlbridge` with no verb is equivalent to `swiftumlbridge classdiagram`.
 
-**Subcommands:** `classdiagram`, `sequence`, `deps`, `activity`, `state`.
+**Subcommands:** `classdiagram`, `sequence`, `deps`, `activity`, `state`, `er`, `component`.
 
 ---
 
@@ -112,6 +130,7 @@ swiftumlbridge classdiagram [<paths>...] [options]
 | `--format <format>` | `DiagramFormat?` | `plantuml` | Diagram language. One of: `plantuml`, `mermaid`. Overrides the `format` field in the config file. |
 | `--output <format>` | `ClassDiagramOutput?` | `browser` | Output destination. One of: `browser`, `browserImageOnly`, `consoleOnly`. |
 | `--sdk <path>` | `String?` | `nil` | macOS SDK path for improved type inference. Typically `$(xcrun --show-sdk-path -sdk macosx)`. |
+| `--package <path>` | `String?` | `nil` | Path to a `Package.swift` directory. Activates module-aware mode: each type is tagged with its SPM target and rendered with an additional module stereotype. Overrides positional `<paths>` arguments. |
 | `--show-extensions` | Flag | — | Show all extensions as separate nodes (overrides config file). |
 | `--merge-extensions` | Flag | — | Fold extension members into parent type nodes (overrides config file). |
 | `--hide-extensions` | Flag | — | Remove all extensions from the diagram (overrides config file). |
@@ -145,6 +164,10 @@ swiftumlbridge classdiagram Sources/ --exclude Sources/Generated/ --exclude Sour
 
 # Merge extensions for a compact overview
 swiftumlbridge classdiagram Sources/ --merge-extensions
+
+# Module-aware diagram driven by an SPM package — each type is tagged with
+# its owning target. Positional <paths> are ignored when --package is set.
+swiftumlbridge classdiagram --package /path/to/MyPackage
 ```
 
 ---
@@ -361,6 +384,103 @@ swiftumlbridge state Sources/ --state TrafficLight.Color
 # Mermaid output to stdout
 swiftumlbridge state Sources/ -s TrafficLight.Color \
   --format mermaid --output consoleOnly > state.mmd
+```
+
+---
+
+### er
+
+Generate a PlantUML or Mermaid Entity-Relationship diagram from persisted-model declarations. Sources may be Swift files (SwiftData `@Model`, GRDB record protocols, SQLite.swift `Table` declarations) and/or Core Data `.xcdatamodeld` bundles. A single run can mix all four — the extracted entities and relationships are merged into one ER model.
+
+```
+swiftumlbridge er [<paths>...] [options]
+```
+
+**Positional arguments:**
+
+| Argument | Type | Description |
+|---|---|---|
+| `<paths>...` | `[String]` | Paths to Swift files, directories, and/or `.xcdatamodeld` bundles. Defaults to the current directory (`.`). Paths with the `.xcdatamodeld` suffix are routed to the Core Data extractor; everything else is parsed as Swift. |
+
+**Options:**
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `--format <format>` | `DiagramFormat?` | `plantuml` | Diagram language. One of: `plantuml`, `mermaid`. |
+| `--output <output>` | `ClassDiagramOutput?` | `browser` | Output destination. One of: `browser`, `browserImageOnly`, `consoleOnly`. |
+| `--config <path>` | `String?` | `nil` | Path to a custom `.swiftumlbridge.yml` config file. |
+| `--help` | Flag | — | Print subcommand help and exit. |
+
+**Supported persistence stacks:**
+
+| Stack | Detection signal | Cardinality source |
+|---|---|---|
+| **SwiftData** | `@Model` class with `@Relationship` annotations | Property type (optional, array, scalar) |
+| **Core Data** | `.xcdatamodeld` bundle (`.xccurrentversion` plist selects the active version) | `<relationship maxCount=…>` XML attribute; `parentEntity` becomes an "is a" edge |
+| **GRDB** | Type conforms to `FetchableRecord` / `PersistableRecord` / similar | Typed associations: `belongsTo`, `hasOne`, `hasMany` |
+| **SQLite.swift** | `Table("name")` value with `Expression<T>("col")` columns | Foreign-key columns matched by name |
+
+If no persisted models are found across all paths, the command fails with an error.
+
+**Examples:**
+
+```bash
+# Mixed SwiftData + Core Data project, opened in browser
+swiftumlbridge er Sources/ Resources/MyApp.xcdatamodeld
+
+# SwiftData only, Mermaid markup printed to stdout
+swiftumlbridge er Sources/Models/ --format mermaid --output consoleOnly
+
+# Core Data bundle only, save the PlantUML markup
+swiftumlbridge er Resources/MyApp.xcdatamodeld --output consoleOnly > er.puml
+```
+
+---
+
+### component
+
+Generate a PlantUML (or Mermaid fallback) Component diagram from a Swift Package. Components are SPM targets, edges come from `target_dependencies`, and provided interfaces are the public Swift types declared inside each target. The Mermaid output uses `flowchart TD` with subgraphs since Mermaid has no dedicated component-diagram dialect.
+
+```
+swiftumlbridge component --package <path> [options]
+```
+
+**Required option:**
+
+| Option | Type | Description |
+|---|---|---|
+| `--package <path>` | `String` | Path to a directory containing `Package.swift`. The CLI runs `swift package describe --type json` to enumerate targets. |
+
+**Options:**
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `--format <format>` | `DiagramFormat?` | `plantuml` | Diagram language. One of: `plantuml`, `mermaid`. |
+| `--output <output>` | `ClassDiagramOutput?` | `browser` | Output destination. One of: `browser`, `browserImageOnly`, `consoleOnly`. |
+| `--include-test-targets` | Flag | `false` | Include `.testTarget` targets. By default test targets are filtered out so the diagram focuses on shipping components. |
+| `--help` | Flag | — | Print subcommand help and exit. |
+
+**Stereotypes (PlantUML):**
+
+| SPM target kind | Rendered stereotype |
+|---|---|
+| `.executable` / `.executableTarget` | `<<executable>>` |
+| `.library` / `.target` | `<<library>>` |
+| `.testTarget` | `<<test>>` (only when `--include-test-targets` is set) |
+| Other | (no stereotype) |
+
+**Examples:**
+
+```bash
+# Component diagram of the SwiftUMLBridge package itself
+swiftumlbridge component --package SwiftUMLBridge
+
+# Mermaid flowchart fallback, printed to stdout
+swiftumlbridge component --package SwiftUMLBridge \
+  --format mermaid --output consoleOnly
+
+# Include test targets in the diagram
+swiftumlbridge component --package SwiftUMLBridge --include-test-targets
 ```
 
 ---
@@ -1046,6 +1166,22 @@ func generateScript(
     with configuration: Configuration,
     sdkPath: String?
 ) -> DiagramScript
+
+// Module-aware diagram driven by a parsed SPM package. Each type is tagged
+// with its owning target and rendered with an additional module stereotype.
+func generateScript(
+    forPackage description: SPMPackageDescription,
+    packageRoot: URL,
+    with configuration: Configuration,
+    sdkPath: String?
+) -> DiagramScript
+
+// Lightweight type analysis without rendering — used by the Studio app's
+// Project Dashboard, InsightEngine, and SuggestionEngine.
+func analyzeTypes(
+    for paths: [String],
+    sdkPath: String?
+) -> [TypeInfo]
 ```
 
 **Example (CLI/async):**
@@ -1163,6 +1299,81 @@ print(script.text)
 
 ---
 
+### ERDiagramGenerator
+
+```swift
+public struct ERDiagramGenerator
+```
+
+Generates Entity-Relationship diagrams from Swift sources and/or Core Data `.xcdatamodeld` bundles. Mixed inputs are merged into a single `ERModel` so a project that combines stacks renders as one diagram.
+
+**Methods:**
+
+```swift
+public init()
+
+public func generateScript(
+    for paths: [String],
+    with configuration: Configuration = .default
+) -> ERScript
+```
+
+**Path routing:**
+
+- Paths ending in `.xcdatamodeld` are dispatched to the Core Data extractor (XML inside the bundle, with the active version chosen via `.xccurrentversion`).
+- All other paths are walked by `FileCollector` and parsed twice per file: once by `ERModelExtractor` (SwiftData `@Model`) and once by `PersistenceSchemaExtractor` (GRDB / SQLite.swift). The two extractors look for mutually-exclusive signals so a file is only ever an entity in one of them.
+
+When no entities are produced from any source, returns `ERScript.empty`.
+
+**Example:**
+
+```swift
+import SwiftUMLBridgeFramework
+
+let script = ERDiagramGenerator().generateScript(
+    for: ["Sources/Models/", "Resources/MyApp.xcdatamodeld"],
+    with: Configuration(format: .mermaid)
+)
+print(script.text)
+```
+
+---
+
+### ComponentExtractor
+
+```swift
+public enum ComponentExtractor
+```
+
+Builds a `ComponentModel` from a parsed `SPMPackageDescription`. Each non-test target becomes one `Component`; public Swift types in the target become its provided interfaces; `target_dependencies` become directed edges. Test targets are excluded by default.
+
+**Methods:**
+
+```swift
+public static func extract(
+    package description: SPMPackageDescription,
+    packageRoot: URL,
+    analyzer: ClassDiagramGenerator = ClassDiagramGenerator(),
+    includeTestTargets: Bool = false
+) -> ComponentModel
+```
+
+`analyzer` is injected so callers can substitute a stub during testing. Public-type discovery uses `ClassDiagramGenerator.analyzeTypes(for:)` over the absolute paths of each target's source files; only types with access level `public` or `open` are listed as provided interfaces.
+
+**Example:**
+
+```swift
+import SwiftUMLBridgeFramework
+
+let packageRoot = URL(fileURLWithPath: "/path/to/MyPackage")
+let description = try SPMPackageReader.describe(at: packageRoot)
+let model = ComponentExtractor.extract(package: description, packageRoot: packageRoot)
+let script = ComponentScript(model: model)
+print(script.text)
+```
+
+---
+
 ### DepsMode
 
 ```swift
@@ -1186,14 +1397,18 @@ Pass to `DependencyGraphGenerator.generateScript(for:mode:with:)` or select via 
 public enum DiagramFormat: String, Codable, Sendable, CaseIterable
 ```
 
-The diagram language for generated output. Applies to both class and sequence diagrams.
+The diagram language for generated output. Used across every diagram type.
 
 | Case | Raw value | Description |
 |---|---|---|
 | `.plantuml` | `"plantuml"` | PlantUML syntax (default) |
 | `.mermaid` | `"mermaid"` | Mermaid.js syntax |
+| `.nomnoml` | `"nomnoml"` | Nomnoml class-diagram syntax (rendered locally; primarily used by SwiftUML Studio's WebView) |
+| `.svg` | `"svg"` | Pre-laid-out SVG via the framework's native Dagre renderer (used by Studio's `Canvas` views; not emitted by the CLI as text) |
 
-Set on `Configuration.format` or via the `--format` CLI flag.
+The CLI's `--format` flag accepts `plantuml` and `mermaid`. The `.nomnoml` and `.svg` cases are exposed in the Studio app's Format picker — Nomnoml is rendered locally inside the in-app WebView, and `.svg` produces a layout graph consumed by the native Canvas renderer rather than text written to stdout.
+
+Set on `Configuration.format` programmatically, or use the `--format` CLI flag for the two text-emitting formats.
 
 ---
 
@@ -1445,6 +1660,120 @@ graph TD
 
 ---
 
+### ERScript
+
+```swift
+public struct ERScript: Sendable, DiagramOutputting
+```
+
+Holds a rendered Entity-Relationship diagram. Produced by `ERDiagramGenerator` or constructed directly from an `ERModel`.
+
+```swift
+public let text: String
+public let format: DiagramFormat
+public func encodeText() -> String
+
+public static let empty: ERScript
+
+public init(model: ERModel, configuration: Configuration)
+```
+
+**Format routing inside `ERScript`:**
+
+| `configuration.format` | What `ERScript` produces |
+|---|---|
+| `.plantuml` | PlantUML `entity` blocks with primary-key separators and `<<UK>>`/`<<transient>>` stereotypes |
+| `.mermaid` | Mermaid `erDiagram` with crow's-foot connectors derived from `ERCardinality` |
+| `.nomnoml` | Falls through to the Mermaid text (Nomnoml has no ER dialect) |
+| `.svg` | Falls through to the Mermaid text (no native ER layout) |
+
+**PlantUML output sample:**
+
+```
+@startuml
+entity "Author" {
+  * identifier : UUID
+  --
+  name : String
+}
+
+entity "Book" {
+  * identifier : UUID
+  --
+  title : String
+  author : Author
+}
+
+Author ||--o{ Book : books
+@enduml
+```
+
+**Mermaid output sample:**
+
+```
+erDiagram
+    Author ||--o{ Book : books
+    Author {
+        UUID identifier PK
+        String name
+    }
+    Book {
+        UUID identifier PK
+        String title
+        Author author
+    }
+```
+
+---
+
+### ComponentScript
+
+```swift
+public struct ComponentScript: Sendable, DiagramOutputting
+```
+
+Holds a rendered Component diagram. PlantUML is the primary output (standard `component` syntax with `<<library>>` / `<<executable>>` / `<<test>>` stereotypes); Mermaid falls back to a `flowchart TD` with subgraphs because Mermaid has no component-diagram dialect.
+
+```swift
+public let text: String
+public let format: DiagramFormat
+public func encodeText() -> String
+
+public static let empty: ComponentScript
+
+public init(model: ComponentModel, configuration: Configuration = .default)
+```
+
+**PlantUML output sample:**
+
+```
+@startuml
+component "SwiftUMLBridgeFramework" as SwiftUMLBridgeFramework <<library>> {
+  [ClassDiagramGenerator]
+  [Configuration]
+  [DependencyGraphGenerator]
+}
+component "swiftumlbridge" as swiftumlbridge <<executable>> {
+}
+swiftumlbridge ..> SwiftUMLBridgeFramework
+@enduml
+```
+
+**Mermaid output sample:**
+
+```
+flowchart TD
+    subgraph SwiftUMLBridgeFramework["SwiftUMLBridgeFramework"]
+        SwiftUMLBridgeFramework_ClassDiagramGenerator["ClassDiagramGenerator"]
+        SwiftUMLBridgeFramework_Configuration["Configuration"]
+    end
+    subgraph swiftumlbridge["swiftumlbridge"]
+    end
+    swiftumlbridge -.-> SwiftUMLBridgeFramework
+```
+
+---
+
 ### DiagramPresenting
 
 ```swift
@@ -1619,6 +1948,267 @@ public let importedModule: String  // Module name from the import statement
 
 ---
 
+### ERModel
+
+```swift
+public struct ERModel: Sendable, Hashable
+```
+
+A whole-project ER model — the IR between extractors (SwiftData, Core Data, GRDB, SQLite.swift) and the `ERScript` emitter.
+
+```swift
+public let entities: [EREntity]
+public let relationships: [ERRelationship]
+
+public init(entities: [EREntity] = [], relationships: [ERRelationship] = [])
+
+public var isEmpty: Bool   // True when no entities were discovered
+```
+
+---
+
+### EREntity
+
+```swift
+public struct EREntity: Sendable, Hashable
+```
+
+One persisted type. Has a name and an ordered list of attributes.
+
+```swift
+public let name: String
+public let attributes: [ERAttribute]
+
+public init(name: String, attributes: [ERAttribute] = [])
+```
+
+---
+
+### ERAttribute
+
+```swift
+public struct ERAttribute: Sendable, Hashable
+```
+
+A single attribute on an ER entity.
+
+```swift
+public let name: String
+public let type: String
+public let isOptional: Bool
+public let isPrimaryKey: Bool
+public let isUnique: Bool
+public let isTransient: Bool
+
+public init(
+    name: String,
+    type: String,
+    isOptional: Bool = false,
+    isPrimaryKey: Bool = false,
+    isUnique: Bool = false,
+    isTransient: Bool = false
+)
+```
+
+The `isUnique` flag surfaces in PlantUML as a `<<UK>>` stereotype (skipped when `isPrimaryKey` is also true) and in Mermaid as a `UK` suffix. `isTransient` renders as a `<<transient>>` stereotype (PlantUML) or a `"transient"` annotation (Mermaid).
+
+---
+
+### ERRelationship
+
+```swift
+public struct ERRelationship: Sendable, Hashable
+```
+
+A directed relationship between two ER entities. Both endpoints carry a cardinality so the emitter can render crow's-foot connectors without re-deriving them.
+
+```swift
+public let from: String
+public let toEntity: String
+public let fromCardinality: ERCardinality
+public let toCardinality: ERCardinality
+public let label: String
+public let inverseLabel: String?
+
+public init(
+    from: String,
+    toEntity: String,
+    fromCardinality: ERCardinality,
+    toCardinality: ERCardinality,
+    label: String,
+    inverseLabel: String? = nil
+)
+```
+
+---
+
+### ERCardinality
+
+```swift
+public enum ERCardinality: String, Sendable, Hashable
+```
+
+The cardinality of one endpoint of an `ERRelationship`.
+
+| Case | Raw value | Mermaid (left/right) | Meaning |
+|---|---|---|---|
+| `.zeroOrOne` | `"zeroOrOne"` | `\|o` / `o\|` | Optional to-one (e.g. `var author: Author?`) |
+| `.exactlyOne` | `"exactlyOne"` | `\|\|` / `\|\|` | Required to-one (e.g. `var author: Author`) |
+| `.zeroOrMany` | `"zeroOrMany"` | `}o` / `o{` | Optional to-many (e.g. `var books: [Book]`) |
+| `.oneOrMany` | `"oneOrMany"` | `}\|` / `\|{` | Required to-many (rare in SwiftData; reserved for emitters that distinguish "must have at least one") |
+
+---
+
+### ComponentModel
+
+```swift
+public struct ComponentModel: Sendable, Hashable
+```
+
+The IR for a Component diagram. One `Component` per SPM target plus the directed `target_dependencies` edges between them.
+
+```swift
+public let components: [Component]
+public let dependencies: [ComponentDependency]
+
+public init(components: [Component] = [], dependencies: [ComponentDependency] = [])
+
+public var isEmpty: Bool
+```
+
+---
+
+### Component
+
+```swift
+public struct Component: Sendable, Hashable, Identifiable
+```
+
+One SPM target rendered as a UML component box.
+
+```swift
+public let id: String                       // == name
+public let name: String
+public let kind: Kind
+public let providedInterfaces: [String]     // Public Swift type / protocol names
+
+public enum Kind: String, Sendable, Hashable {
+    case executable
+    case library
+    case test
+    case other
+}
+
+public init(name: String, kind: Kind, providedInterfaces: [String] = [])
+```
+
+`providedInterfaces` lists the public Swift types declared inside the target — what callers can reach from outside. Populated by `ComponentExtractor` via `ClassDiagramGenerator.analyzeTypes`.
+
+---
+
+### ComponentDependency
+
+```swift
+public struct ComponentDependency: Sendable, Hashable
+```
+
+A `target_dependencies` edge between two components.
+
+```swift
+public let from: String
+public let to: String
+
+public init(from: String, to: String)
+```
+
+---
+
+### SPMPackageDescription
+
+```swift
+public struct SPMPackageDescription: Sendable, Equatable
+```
+
+A parsed view of `swift package describe --type json` output. Captures the package name and the targets.
+
+```swift
+public let name: String
+public let targets: [SPMTargetDescription]
+
+public init(name: String, targets: [SPMTargetDescription])
+
+// Build a [absoluteFilePath: moduleName] map across all non-test targets.
+public func sourceFileToModuleMap(packageRoot: URL) -> [String: String]
+```
+
+---
+
+### SPMTargetDescription
+
+```swift
+public struct SPMTargetDescription: Sendable, Equatable
+```
+
+A single target inside an `SPMPackageDescription`.
+
+```swift
+public let name: String
+public let kind: Kind
+public let path: String              // Source root, relative to the package root
+public let sources: [String]         // File names relative to `path`
+public let dependencies: [String]    // target_dependencies entries
+
+public enum Kind: String, Sendable, Equatable {
+    case executable
+    case library
+    case test
+    case other
+}
+```
+
+---
+
+### SPMPackageReader
+
+```swift
+public enum SPMPackageReader
+```
+
+Reads SPM package descriptions. The `parse` step is pure (and unit-testable); `describe(at:)` shells out to `swift package describe --type json`.
+
+```swift
+public enum ReadError: Error, Equatable {
+    case swiftToolFailed(exitStatus: Int32, stderr: String)
+    case malformedJSON(String)
+}
+
+public static func parse(_ data: Data) throws -> SPMPackageDescription
+public static func describe(at packageRoot: URL) throws -> SPMPackageDescription
+```
+
+`describe(at:)` runs `/usr/bin/env swift package describe --type json` with `currentDirectoryURL` set to `packageRoot`. A non-zero exit throws `.swiftToolFailed`; malformed JSON throws `.malformedJSON`.
+
+---
+
+### TypeInfo
+
+```swift
+public struct TypeInfo: Sendable
+```
+
+Lightweight representation of a parsed Swift type. Returned by `ClassDiagramGenerator.analyzeTypes(for:sdkPath:)` and used by Studio's project analysis pipeline.
+
+```swift
+public let name: String                  // e.g. "UserViewModel"
+public let kind: String                  // "class" | "struct" | "enum" | "protocol" | "actor" | "extension" | "macro"
+public let accessLevel: String?          // "public" | "internal" | etc., or nil if unknown
+public let inheritedTypeNames: [String]  // Inherited and conformed types
+public let attributeNames: [String]      // Macro / attribute names (e.g. ["Observable", "MainActor"])
+public let memberCount: Int              // Direct properties + methods
+```
+
+---
+
 ### BridgeLogger
 
 ```swift
@@ -1675,7 +2265,7 @@ Persisted in `@AppStorage`.
 ### Diagram Modes
 
 ```swift
-enum DiagramMode: String, CaseIterable
+enum DiagramMode: String, CaseIterable, Identifiable
 ```
 
 | Case | Raw Value | Pro Required |
@@ -1683,6 +2273,9 @@ enum DiagramMode: String, CaseIterable
 | `.classDiagram` | `"Class Diagram"` | No |
 | `.sequenceDiagram` | `"Sequence Diagram"` | Yes |
 | `.dependencyGraph` | `"Dependency Graph"` | Yes |
+| `.stateMachine` | `"State Machine"` | Yes |
+| `.activityDiagram` | `"Activity Diagram"` | Yes |
+| `.erDiagram` | `"ER Diagram"` | Yes |
 
 ---
 
@@ -1759,7 +2352,7 @@ Manages StoreKit 2 transactions and entitlement state.
 #### ProFeature
 
 ```swift
-enum ProFeature
+enum ProFeature: String, CaseIterable
 ```
 
 Features gated behind a Pro subscription:
@@ -1768,46 +2361,65 @@ Features gated behind a Pro subscription:
 |---|---|
 | `.sequenceDiagrams` | Sequence diagram generation |
 | `.dependencyGraphs` | Dependency graph generation |
-| `.exportMarkup` | Copying/saving raw PlantUML or Mermaid markup |
-| `.formatSelection` | Choosing between PlantUML and Mermaid format |
+| `.stateMachines` | State machine diagram generation |
+| `.activityDiagrams` | Activity diagram generation |
+| `.erDiagrams` | Entity-Relationship diagram generation (SwiftData / Core Data / GRDB / SQLite.swift) |
+| `.exportMarkup` | Copying/saving raw PlantUML, Mermaid, or Nomnoml markup |
+| `.formatSelection` | Choosing between PlantUML, Mermaid, Nomnoml, and SVG |
 | `.unlimitedProjects` | Opening more than one project |
 | `.architectureTracking` | Saving and comparing architecture snapshots |
 
+`FeatureGate.isUnlocked(_:manager:)` is the @MainActor accessor used throughout the Studio app to decide whether to show a paywall instead of the requested feature.
+
 ---
 
-### Core Data Entities
+### SwiftData Entities
+
+Studio persistence is backed by SwiftData (`@Model` classes). The model container is created by `PersistenceController` with the schema `[DiagramEntity.self, ProjectSnapshot.self]`.
 
 #### DiagramEntity
 
+```swift
+@Model
+final class DiagramEntity
+```
+
 Stores saved diagram history.
 
-| Attribute | Type | Description |
+| Property | Type | Description |
 |---|---|---|
-| `id` | `UUID` | Unique identifier |
-| `name` | `String` | Auto-generated from selected file/folder names |
-| `mode` | `String` | `DiagramMode` raw value |
-| `format` | `String` | `DiagramFormat` raw value |
-| `entryPoint` | `String` | Entry method (sequence) or deps mode |
-| `sequenceDepth` | `Int16` | Traversal depth for sequence diagrams |
-| `paths` | `Binary` | JSON-encoded `[String]` of selected paths |
-| `scriptText` | `String` | Generated PlantUML or Mermaid markup |
-| `timestamp` | `Date` | When the diagram was saved |
+| `identifier` | `UUID` | Unique identifier |
+| `name` | `String?` | Auto-generated from selected file/folder names |
+| `mode` | `String?` | `DiagramMode` raw value |
+| `format` | `String?` | `DiagramFormat` raw value |
+| `entryPoint` | `String?` | Entry method (sequence / activity) or `DepsMode` raw value |
+| `sequenceDepth` | `Int` | Traversal depth for sequence diagrams |
+| `paths` | `Data?` | JSON-encoded `[String]` of selected paths |
+| `scriptText` | `String?` | Generated PlantUML, Mermaid, or Nomnoml markup |
+| `timestamp` | `Date?` | When the diagram was saved |
 
 #### ProjectSnapshot
 
+```swift
+@Model
+final class ProjectSnapshot
+```
+
 Stores architecture state at a point in time (Pro only).
 
-| Attribute | Type | Description |
+| Property | Type | Description |
 |---|---|---|
-| `id` | `UUID` | Unique identifier |
-| `timestamp` | `Date` | When the snapshot was taken |
-| `typeCount` | `Int32` | Total number of types |
-| `relationshipCount` | `Int32` | Total number of relationships |
-| `moduleCount` | `Int16` | Number of modules |
-| `fileCount` | `Int32` | Number of `.swift` files |
-| `typeBreakdown` | `Binary` | JSON-encoded `[String: Int]` |
-| `topConnectedTypes` | `Binary` | JSON-encoded `[[String: Int]]` |
-| `projectPaths` | `Binary` | JSON-encoded `[String]` |
+| `identifier` | `UUID` | Unique identifier |
+| `timestamp` | `Date?` | When the snapshot was taken |
+| `typeCount` | `Int` | Total number of types |
+| `relationshipCount` | `Int` | Total number of relationships |
+| `moduleCount` | `Int` | Number of modules |
+| `fileCount` | `Int` | Number of `.swift` files |
+| `typeBreakdown` | `Data?` | JSON-encoded `[String: Int]` |
+| `topConnectedTypes` | `Data?` | JSON-encoded `[[String: Int]]` |
+| `projectPaths` | `Data?` | JSON-encoded `[String]` |
+
+`ProjectSnapshot` exposes `decodedTypeBreakdown: [String: Int]` and `decodedTopConnectedTypes: [(name: String, connectionCount: Int)]` convenience accessors that handle JSON decoding from the stored `Data` fields.
 
 ---
 

@@ -18,7 +18,11 @@ You will generate diagrams from the SwiftUMLBridgeFramework source itself — a 
 
 **Part 5 (Steps 19–20):** A state machine diagram auto-detected from an enum-driven type.
 
-**Part 6 (Steps 21–25):** Using the SwiftUML Studio GUI to explore a project visually without touching the terminal.
+**Part 6 (Steps 21–22):** An Entity-Relationship diagram from a project that mixes SwiftData and Core Data.
+
+**Part 7 (Steps 23–24):** A Component diagram from a Swift Package.
+
+**Part 8 (Steps 25–29):** Using the SwiftUML Studio GUI to explore a project visually without touching the terminal.
 
 ---
 
@@ -731,15 +735,126 @@ Omit both `--list` and `--state` to make the command list candidates by default.
 
 ---
 
-## Part 6 — SwiftUML Studio (GUI)
+## Part 6 — Entity-Relationship Diagrams
+
+ER diagrams are auto-extracted from any combination of four persistence stacks: SwiftData (`@Model`), Core Data (`.xcdatamodeld`), GRDB (`FetchableRecord` / `PersistableRecord`), and SQLite.swift (`Table` + `Expression`). A single run can mix all four — the entities and relationships are merged into one diagram.
+
+### Step 21 — Generate an ER Diagram from SwiftData Models
+
+Point `er` at a directory of SwiftData `@Model` classes:
+
+```bash
+swiftumlbridge er Sources/MyApp/Models/ --output consoleOnly
+```
+
+The output is a PlantUML `@startuml` block with one `entity` per `@Model` class, plus crow's-foot connectors between entities that have a `@Relationship`-annotated property:
+
+```
+entity "Author" {
+  * identifier : UUID
+  --
+  name : String
+}
+
+entity "Book" {
+  * identifier : UUID
+  --
+  title : String
+}
+
+Author ||--o{ Book : books
+```
+
+Open the same diagram in the browser (Mermaid Live for `--format mermaid`, planttext.com for the default):
+
+```bash
+swiftumlbridge er Sources/MyApp/Models/ --format mermaid
+```
+
+### Step 22 — Add a Core Data Bundle to the Same Run
+
+If your project also has a Core Data `.xcdatamodeld` bundle, just add it to the path list. Paths ending in `.xcdatamodeld` are routed to the Core Data extractor; everything else parses as Swift:
+
+```bash
+swiftumlbridge er \
+  Sources/MyApp/Models/ \
+  Resources/MyApp.xcdatamodeld \
+  --output consoleOnly
+```
+
+The ER model is merged across the two stacks: SwiftData entities, Core Data entities, GRDB record types, and SQLite.swift tables all appear as boxes in the same diagram, with order-independent deduplication so a relationship rediscovered from a follow-up extractor doesn't render twice.
+
+For Core Data bundles, the `.xccurrentversion` plist selects the active version, and each entity's `parentEntity` becomes an explicit "is a" edge rather than being silently flattened.
+
+> **Studio integration:** Studio's **Open…** dialog accepts `.xcdatamodeld` bundles in addition to Swift sources. See Part 8 for the GUI flow.
+
+---
+
+## Part 7 — Component Diagrams
+
+Component diagrams are extracted from a Swift Package's structure. Each non-test target becomes one component; `target_dependencies` becomes the directed wiring; the public Swift types declared inside each target are listed as provided interfaces.
+
+### Step 23 — Your First Component Diagram
+
+Point `component` at the SwiftUMLBridge package itself:
+
+```bash
+swiftumlbridge component --package SwiftUMLBridge --output consoleOnly
+```
+
+The output is a PlantUML diagram with one `component` block per target — `<<library>>` for the framework, `<<executable>>` for the CLI:
+
+```
+@startuml
+component "SwiftUMLBridgeFramework" as SwiftUMLBridgeFramework <<library>> {
+  [ClassDiagramGenerator]
+  [Configuration]
+  [DependencyGraphGenerator]
+  ...
+}
+component "swiftumlbridge" as swiftumlbridge <<executable>> {
+}
+swiftumlbridge ..> SwiftUMLBridgeFramework
+@enduml
+```
+
+Open it in the browser:
+
+```bash
+swiftumlbridge component --package SwiftUMLBridge
+```
+
+### Step 24 — Mermaid Fallback and Test Targets
+
+Mermaid has no dedicated component-diagram dialect, so `--format mermaid` falls back to a `flowchart TD` with one `subgraph` per component:
+
+```bash
+swiftumlbridge component --package SwiftUMLBridge \
+  --format mermaid --output consoleOnly
+```
+
+Test targets are excluded by default. To include them — useful for documenting how the test layer wires up — pass `--include-test-targets`:
+
+```bash
+swiftumlbridge component --package SwiftUMLBridge \
+  --include-test-targets --output consoleOnly
+```
+
+Test targets render with a `<<test>>` stereotype.
+
+> **What's next:** When you point `classdiagram` at the same package via `--package`, every type in the resulting class diagram is tagged with its owning module. The two views are complementary — `component` shows targets and their dependencies; `classdiagram --package` shows the types inside, color-coded by target.
+
+---
+
+## Part 8 — SwiftUML Studio (GUI)
 
 The Studio app provides the same diagram generation capabilities as the CLI, wrapped in a macOS GUI with two modes: **Explorer** (simplified, insight-driven) and **Developer** (full-featured with markup editing).
 
-### Step 21 — Open the Studio App
+### Step 25 — Open the Studio App
 
 Build and run SwiftUML Studio from Xcode. The app opens in **Explorer Mode** by default — a simplified interface designed for understanding your codebase visually.
 
-### Step 22 — Load a Project and See the Dashboard
+### Step 26 — Load a Project and See the Dashboard
 
 1. Click **Open...** in the toolbar.
 2. Select the `SwiftUMLBridge/Sources/SwiftUMLBridgeFramework/` folder.
@@ -754,7 +869,7 @@ The **Project Dashboard** appears immediately in the detail pane, showing:
 
 No diagram has been generated yet — the dashboard is a fast analysis pass that runs before any rendering.
 
-### Step 23 — Generate a Diagram from a Suggestion
+### Step 27 — Generate a Diagram from a Suggestion
 
 In the left sidebar, find the **Suggested Diagrams** section. You should see suggestions like:
 
@@ -763,13 +878,13 @@ In the left sidebar, find the **Suggested Diagrams** section. You should see sug
 
 Click **"See how your types are connected."** The detail pane switches from the dashboard to a rendered class diagram preview — the same output you produced with the CLI in Part 1, but without typing any commands.
 
-### Step 24 — Switch to Developer Mode
+### Step 28 — Switch to Developer Mode
 
 Click the **Explorer / Developer** toggle in the toolbar and select **Developer**.
 
 The layout changes to a three-pane view:
 
-- **Workspace sidebar (left)** — three stacked regions: a **Diagrams** source list grouped into **Structural** (Class Diagram, Dependency Graph) and **Behavioral** (Sequence Diagram, Activity Diagram, State Machine), a draggable divider, and a segmented **Files / History** tab below.
+- **Workspace sidebar (left)** — three stacked regions: a **Diagrams** source list grouped into **Structural** (Class Diagram, Dependency Graph, ER Diagram) and **Behavioral** (Sequence Diagram, Activity Diagram, State Machine), a draggable divider, and a segmented **Files / History** tab below.
 - **Middle pane** — read-only source code of the currently selected file. Click a `.swift` file under the **Files** tab to load it.
 - **Right pane** — a thin **inspector strip** at the top holding the Format picker and the active mode's controls, with tabbed **Dashboard**, **Preview**, and **Markup** tabs below.
 
@@ -777,14 +892,14 @@ Switch to the **Markup** tab to see the raw PlantUML or Mermaid text — useful 
 
 In Developer Mode you have full control:
 
-- **Diagram mode** — click a row in the sidebar's Diagrams list to switch between Class Diagram, Dependency Graph, Sequence Diagram, Activity Diagram, and State Machine.
+- **Diagram mode** — click a row in the sidebar's Diagrams list to switch between Class Diagram, Dependency Graph, ER Diagram, Sequence Diagram, Activity Diagram, and State Machine.
 - **Format picker** — in the inspector strip; switch between PlantUML, Mermaid, Nomnoml, and SVG.
 - **Sequence controls** — entry-point field and depth stepper in the inspector strip (visible in Sequence Diagram mode).
 - **Activity controls** — entry-point field in the inspector strip (visible in Activity Diagram mode).
 - **Dependency controls** — Types / Modules picker in the inspector strip (visible in Dependency Graph mode).
 - **State Machine controls** — candidate picker with confidence indicators in the inspector strip (visible in State Machine mode).
 
-### Step 25 — Save to History
+### Step 29 — Save to History
 
 After generating a diagram you want to keep, click the **Save** button in the toolbar. The diagram is saved to history and appears in the sidebar. You can reload it later by clicking the history entry — in either Explorer or Developer mode.
 

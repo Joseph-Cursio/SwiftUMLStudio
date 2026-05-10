@@ -36,15 +36,23 @@ For CLI usage, see the [SwiftUMLBridge User Guide](user-guide.md).
     - [Cycle Annotation](#cycle-annotation)
 11. [Generating an Activity Diagram](#generating-an-activity-diagram)
 12. [Generating a State Machine Diagram](#generating-a-state-machine-diagram)
-13. [Reading the Results](#reading-the-results)
-14. [Copying the Diagram Markup](#copying-the-diagram-markup)
-15. [Diagram History](#diagram-history)
-16. [Pro Features](#pro-features)
+13. [Generating an ER Diagram](#generating-an-er-diagram)
+14. [Opening an SPM Package](#opening-an-spm-package)
+15. [Reading the Results](#reading-the-results)
+16. [Working With the Diagram](#working-with-the-diagram)
+    - [Zoom and Pan](#zoom-and-pan)
+    - [Selecting Nodes](#selecting-nodes)
+    - [Hover Tooltips](#hover-tooltips)
+    - [Reveal in Source](#reveal-in-source)
+    - [Exporting](#exporting)
+17. [Copying the Diagram Markup](#copying-the-diagram-markup)
+18. [Diagram History](#diagram-history)
+19. [Pro Features](#pro-features)
     - [What Pro Unlocks](#what-pro-unlocks)
     - [Paywall](#paywall)
     - [Architecture Change Tracking](#architecture-change-tracking)
     - [Review Reminders](#review-reminders)
-17. [Known Limitations](#known-limitations)
+20. [Known Limitations](#known-limitations)
 
 ---
 
@@ -237,11 +245,12 @@ In Developer Mode, you pick a diagram type by clicking a row in the **Diagrams**
 |---|---|---|---|
 | Structural | **Class Diagram** | Structural overview of types, properties, methods, and relationships | No |
 | Structural | **Dependency Graph** | Type-to-type or module-to-module dependency graph across the selected source | Yes |
+| Structural | **ER Diagram** | Entities and relationships from SwiftData `@Model`, Core Data `.xcdatamodeld`, GRDB record types, and SQLite.swift `Table` declarations | Yes |
 | Behavioral | **Sequence Diagram** | Static call-graph trace from a named entry-point method | Yes |
 | Behavioral | **Activity Diagram** | Control-flow diagram for a single method's body | Yes |
 | Behavioral | **State Machine** | State transitions derived from an enum-typed property | Yes |
 
-Switching modes clears the current diagram and resets the preview pane. The inspector strip above the detail pane updates to show that mode's controls — an entry-point field + depth stepper for Sequence Diagram, an entry-point field for Activity Diagram, a **Types / Modules** picker for Dependency Graph, and a candidate picker for State Machine.
+Switching modes clears the current diagram and resets the preview pane. The inspector strip above the detail pane updates to show that mode's controls — an entry-point field + depth stepper for Sequence Diagram, an entry-point field for Activity Diagram, a **Types / Modules** picker for Dependency Graph, a candidate picker for State Machine. Class Diagram and ER Diagram have no extra controls (the format picker is enough).
 
 In Explorer Mode, the diagram mode is determined by which suggestion you tap — you do not choose it manually.
 
@@ -251,12 +260,14 @@ In Explorer Mode, the diagram mode is determined by which suggestion you tap —
 
 In Developer Mode, the **Format** picker in the inspector strip (above the detail pane) selects the output language. The available options are **PlantUML**, **Mermaid**, **Nomnoml**, and **SVG**:
 
-| Format | Preview rendering | Markup extension |
-|---|---|---|
-| **PlantUML** | SVG fetched from planttext.com (requires internet) | `.puml` |
-| **Mermaid** | Rendered locally via Mermaid.js CDN (requires internet for CDN) | `.mmd` |
+| Format | Preview rendering | Markup extension | Notes |
+|---|---|---|---|
+| **PlantUML** | SVG fetched from planttext.com (requires internet) | `.puml` | Light-mode rendering only — planttext.com is outside our control |
+| **Mermaid** | Rendered locally via the bundled `MermaidHTMLBuilder` WebView | `.mmd` | Adapts to dark mode via `colorScheme` |
+| **Nomnoml** | Rendered locally via the bundled `NomnomlHTMLBuilder` WebView | `.nomnoml` | Class diagrams only; canvas content stays light because `nomnoml.js` uses hardcoded colors |
+| **SVG** | Native SwiftUI `Canvas` renderer using a Dagre layout produced by JavaScriptCore | n/a (rendered in-app) | The fastest, most interactive option; supports node selection, reveal-in-source, and PDF/PNG export |
 
-You can switch formats after generation — click **Generate** again to re-render in the new format.
+You can switch formats after generation — click **Generate** again to re-render in the new format. The format picker exposes all four cases, and the active script's `format` field controls which renderer is used in the preview pane.
 
 In Explorer Mode, the format is not exposed — the app defaults to PlantUML for the visual preview.
 
@@ -407,6 +418,42 @@ When you select a low-confidence candidate, a banner appears above the preview w
 
 ---
 
+## Generating an ER Diagram
+
+ER diagrams require a Pro subscription. Studio detects four persistence stacks:
+
+| Stack | Detected from |
+|---|---|
+| **SwiftData** | `@Model` class with `@Relationship` annotations |
+| **Core Data** | `.xcdatamodeld` bundle (the active version is selected via `.xccurrentversion`) |
+| **GRDB** | Type conforms to `FetchableRecord` / `PersistableRecord` (or related), with `belongsTo` / `hasOne` / `hasMany` associations |
+| **SQLite.swift** | `Table("name")` value with `Expression<T>("col")` columns |
+
+Studio's **Open…** dialog accepts `.xcdatamodeld` bundles in addition to Swift files and folders, so a project that mixes Core Data with SwiftData (or any combination of the four stacks) can produce a single merged ER diagram.
+
+1. Click **Open…** and select Swift sources, a `.xcdatamodeld` bundle, or both.
+2. In Developer Mode, click **ER Diagram** under **Structural** in the sidebar's Diagrams list. (In Explorer Mode, tap the ER suggestion if your project is detected as a persistence-heavy codebase.)
+3. Choose **PlantUML** or **Mermaid** in the inspector strip's format picker.
+4. Click **Generate**.
+
+The diagram shows one entity per `@Model` / Core Data entity / GRDB record / SQLite.swift table, with attributes inside the entity box and crow's-foot connectors between related entities.
+
+---
+
+## Opening an SPM Package
+
+Class diagrams can be driven by a Swift Package directly. Click **Open Package…** in the toolbar (⇧⌘O), pick a directory containing `Package.swift`, and Studio runs `swift package describe` off the main actor to enumerate targets.
+
+In package mode:
+
+- Class-diagram generation switches to the module-aware `ClassDiagramGenerator.generateScript(forPackage:)` entry point.
+- Each native-canvas node gets a thin colored stripe along its bottom edge with the owning module's name (the color is deterministic per module, so a target's color is stable across runs).
+- The dashboard summary remains project-wide; per-module breakdowns are not yet exposed.
+
+To switch back to a path-based selection, use **Open…** instead of **Open Package…**.
+
+---
+
 ## Reading the Results
 
 ### Class Diagram
@@ -458,6 +505,57 @@ The diagram starts at the entry method and flows through its body. Decision node
 
 Nodes are the cases of the detected enum; edges are transitions derived from `switch`-based mutations of the host type's property. The initial state (if one can be inferred) is marked. When the selected candidate is low-confidence, the preview is prefaced by a banner indicating the detection is weak.
 
+### ER Diagram
+
+Each entity appears as a box listing its attributes. Crow's-foot connectors derive from the cardinality at each endpoint (`||--o{` for one-to-many, `||--||` for one-to-one, etc.). Primary-key attributes are marked with a `PK` suffix (Mermaid) or a separator line above the rest (PlantUML). Unique attributes show `<<UK>>` or a `UK` suffix; transient attributes show `<<transient>>` or a `"transient"` annotation.
+
+Core Data parent/child relationships render as a separate "is a" edge between the child and its `parentEntity`.
+
+---
+
+## Working With the Diagram
+
+The native SVG renderer (the fastest format) supports interactive features that the WebView-based formats don't. These features apply to class diagrams and sequence diagrams; activity diagrams, state machines, and ER diagrams use the same canvas but are read-only.
+
+### Zoom and Pan
+
+A floating zoom toolbar sits in the top-trailing corner of the diagram canvas:
+
+| Action | Toolbar | Shortcut |
+|---|---|---|
+| Zoom in | `+` button | ⌘= |
+| Zoom out | `−` button | ⌘− |
+| Fit to window | Compass arrows | ⌘9 |
+| Actual size | Equal sign | ⌘0 |
+| Reset (fit + center) | Reset arrow | ⇧⌘R |
+
+The current zoom percentage is shown next to the toolbar. ⌘ + scroll-wheel also zooms — non-⌘ scroll falls through so trackpad pan still works.
+
+### Selecting Nodes
+
+Click a node on a class diagram, or a participant box on a sequence diagram, to select it. The selected node is drawn with an accent-colored ring. Click an empty area of the canvas to clear the selection.
+
+When the canvas has keyboard focus, arrow keys move the selection to the spatially nearest node in the chosen direction (sequence diagrams only honor left/right since participants share a single row). Press **Esc** to clear the selection.
+
+### Hover Tooltips
+
+A floating tooltip appears in the top-leading corner of the canvas while you hover a node. It shows the node's stereotype, label, and (when available) the source location as `filename:line`.
+
+### Reveal in Source
+
+When a selected node has a known `sourceLocation`, a **Reveal in Source** floating button appears (⌘J also triggers it). Activating it opens the source file in Developer Mode's middle pane, scrolls to the declaration line, and highlights it in yellow. Source locations come from a SwiftSyntax `SourceLocationConverter` and are populated for class / struct / enum / actor / protocol / extension declarations.
+
+### Exporting
+
+A diagram-export menu in the top-trailing corner of the canvas saves the currently displayed diagram. Menu items adapt to what the active script supports:
+
+| Format | Menu item | Notes |
+|---|---|---|
+| PDF | **Export as PDF…** | Vector via SwiftUI `ImageRenderer` + `CGContext` PDF consumer |
+| PNG | **Export as PNG…** | Raster, 2× retina |
+| SVG | **Export as SVG…** | Available when the active script's format is already `.svg` |
+| Source text | **Export markup…** | Saves `.puml` / `.mmd` / `.nomnoml` for WebView-rendered formats |
+
 ---
 
 ## Copying the Diagram Markup
@@ -501,8 +599,13 @@ SwiftUML Studio uses a freemium model. The free tier provides the full Explorer 
 | Class diagrams (view only) | Yes | Yes |
 | Sequence diagrams | — | Yes |
 | Dependency graphs | — | Yes |
-| PlantUML/Mermaid format selection | — | Yes |
+| State machine diagrams | — | Yes |
+| Activity diagrams | — | Yes |
+| Entity-Relationship diagrams (SwiftData / Core Data / GRDB / SQLite.swift) | — | Yes |
+| Format selection (PlantUML / Mermaid / Nomnoml / SVG) | — | Yes |
 | Diagram markup export (copy/save) | — | Yes |
+| Diagram export to PDF / PNG / SVG | — | Yes |
+| Opening more than one project | — | Yes |
 | Architecture change tracking (snapshots) | — | Yes |
 | Review reminders | — | Yes |
 
