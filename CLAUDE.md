@@ -43,7 +43,7 @@ swift run --package-path SwiftUMLBridge swiftumlbridge classdiagram <paths...>
 ```
 
 - **Studio target platform**: macOS 26.4+, `SDKROOT = macosx`
-- **Bridge target platform**: macOS 26+ (per `Package.swift`; tighten if Linux support is added)
+- **Bridge target platform**: macOS 15+ (per `Package.swift`). Lower than Studio because nothing in the Bridge requires macOS 26 — kept at 15 so the SwiftPM tests run on GitHub's `macos-latest` runner (still macOS 15) and on every other Sequoia host.
 - **Swift toolchain**: Swift 6.0 strict concurrency enabled across all targets
 - **Bundle ID**: `name.JosephCursio.SwiftUMLStudio`
 

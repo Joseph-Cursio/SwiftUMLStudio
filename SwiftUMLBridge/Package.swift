@@ -3,7 +3,7 @@ import PackageDescription
 
 let package = Package(
     name: "SwiftUMLBridge",
-    platforms: [.macOS(.v26)],
+    platforms: [.macOS(.v15)],
     products: [
         .library(name: "SwiftUMLBridgeFramework", targets: ["SwiftUMLBridgeFramework"]),
         .executable(name: "swiftumlbridge", targets: ["swiftumlbridge"])

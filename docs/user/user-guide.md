@@ -60,12 +60,12 @@ SwiftUMLBridge is a command-line tool and Swift Package that generates architect
 
 | Requirement | Minimum Version |
 |---|---|
-| macOS | 26.0 |
+| macOS | 15.0 (Sequoia) for the CLI / Swift Package; 26.0 for the SwiftUML Studio app |
 | Xcode | 16.0 |
 | Swift | 6.0 (strict concurrency / Swift 6 language mode) |
 | Swift toolchain | Current or one prior major release |
 
-The package targets `.macOS(.v26)` and compiles with `swiftLanguageMode(.v6)`. Linux support is not currently shipped; see `Package.swift` for the authoritative platform list.
+The package targets `.macOS(.v15)` and compiles with `swiftLanguageMode(.v6)`. The Bridge surface is Foundation + SourceKitten + swift-syntax + Yams + JavaScriptCore — none of which require macOS 26 — so the CLI runs on Sequoia hosts (and on the GitHub Actions `macos-latest` runner). The SwiftUML Studio app stays at macOS 26 because it adopts the macOS 26 `Tab` API and other newer SwiftData features. Linux support is not currently shipped; see `Package.swift` for the authoritative platform list.
 
 ---
 
