@@ -90,7 +90,7 @@ cp .build/release/swiftumlbridge /usr/local/bin/swiftumlbridge
 
 ```bash
 swiftumlbridge --version
-# 0.1.0
+# 0.3.0
 ```
 
 ---

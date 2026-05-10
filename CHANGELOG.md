@@ -6,7 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
-## [Unreleased] — preparing 1.0.0
+## [Unreleased]
+
+_Nothing yet — open a PR or file an issue if you have one in mind._
+
+---
+
+## [0.3.0] — 2026-05-09
+
+This release lands every diagram type planned for the v1.0 surface
+(seven total), the SwiftUML Studio macOS app with Explorer / Developer
+modes and a Pro tier, the SwiftSyntax-primary parser, native SVG
+rendering, and the Swift 6 strict-concurrency migration. Remaining
+v1.0 work is App Store / SPI / Homebrew distribution and a small
+backlog of explicitly-deferred Studio integrations called out below.
 
 ### Added — Diagram Types
 
