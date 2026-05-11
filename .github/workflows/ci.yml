@@ -65,8 +65,12 @@ jobs:
           swift run --package-path SwiftUMLBridge swiftumlbridge --help
 
   studio:
+    # The Studio app targets macOS 26.4+ (uses iOS-26 SwiftUI APIs), so the
+    # macos-latest runner — currently macOS 15 — can't run its tests. Pin to
+    # macos-26 explicitly. Bridge stays on macos-latest because it deliberately
+    # supports .macOS(.v15).
     name: SwiftUMLStudio (macOS app)
-    runs-on: macos-latest
+    runs-on: macos-26
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
