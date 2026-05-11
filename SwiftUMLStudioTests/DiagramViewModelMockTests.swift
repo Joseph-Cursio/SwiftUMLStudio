@@ -78,6 +78,30 @@ final class MockSequenceGenerator: SequenceDiagramGenerating, @unchecked Sendabl
     }
 }
 
+/// A mock component diagram generator that records calls and returns a canned ComponentScript.
+final class MockComponentGenerator: ComponentDiagramGenerating, @unchecked Sendable {
+    private(set) var generateCallCount = 0
+    private(set) var lastDescription: SPMPackageDescription?
+    private(set) var lastPackageRoot: URL?
+    private(set) var lastConfiguration: Configuration?
+
+    func generateScript(
+        forPackage description: SPMPackageDescription,
+        packageRoot: URL,
+        with configuration: Configuration
+    ) -> ComponentScript {
+        generateCallCount += 1
+        lastDescription = description
+        lastPackageRoot = packageRoot
+        lastConfiguration = configuration
+        let model = ComponentModel(
+            components: [Component(name: "MockTarget", kind: .library)],
+            dependencies: []
+        )
+        return ComponentScript(model: model, configuration: configuration)
+    }
+}
+
 /// A mock dependency graph generator that records calls and returns a canned DepsScript.
 final class MockDepsGenerator: DependencyGraphGenerating, @unchecked Sendable {
     private(set) var generateCallCount = 0
@@ -310,6 +334,68 @@ struct DiagramViewModelMockTests {
 
         #expect(mockSequence.findEntryPointsCallCount == 1)
         #expect(viewModel.availableEntryPoints == ["Controller.viewDidLoad", "Service.fetch"])
+    }
+
+    // MARK: - Component Diagram Generation
+
+    /// Returns a non-empty SPM description suitable for stubbing
+    /// `viewModel.packageDescription` so component generation can run without
+    /// shelling out to `swift package describe`.
+    private func stubPackageDescription() -> SPMPackageDescription {
+        SPMPackageDescription(
+            name: "Demo",
+            targets: [
+                SPMTargetDescription(
+                    name: "Demo", kind: .library,
+                    path: "Sources/Demo", sources: ["Foo.swift"], dependencies: []
+                )
+            ]
+        )
+    }
+
+    @Test("component diagram without a loaded package surfaces an error and skips the generator")
+    @MainActor
+    func componentDiagramWithoutPackageSetsErrorMessage() async throws {
+        let mockComponent = MockComponentGenerator()
+        let viewModel = DiagramViewModel(
+            persistenceController: PersistenceController(inMemory: true),
+            componentGenerator: mockComponent
+        )
+        viewModel.diagramMode = .componentDiagram
+
+        viewModel.generate()
+        try await Task.sleep(for: .milliseconds(500))
+
+        #expect(mockComponent.generateCallCount == 0)
+        #expect(viewModel.componentScript == nil)
+        #expect(viewModel.errorMessage != nil)
+        #expect(viewModel.isGenerating == false)
+    }
+
+    @Test("component diagram with a loaded package calls mock and forwards format")
+    @MainActor
+    func componentDiagramCallsMockGenerator() async throws {
+        let mockComponent = MockComponentGenerator()
+        let viewModel = DiagramViewModel(
+            persistenceController: PersistenceController(inMemory: true),
+            componentGenerator: mockComponent
+        )
+        let root = URL(fileURLWithPath: "/tmp/demo-package")
+        viewModel.packageRoot = root
+        viewModel.packageDescription = stubPackageDescription()
+        viewModel.diagramMode = .componentDiagram
+        viewModel.diagramFormat = .mermaid
+
+        viewModel.generate()
+        try await Task.sleep(for: .milliseconds(500))
+
+        #expect(mockComponent.generateCallCount == 1)
+        #expect(mockComponent.lastPackageRoot == root)
+        #expect(mockComponent.lastDescription?.name == "Demo")
+        #expect(mockComponent.lastConfiguration?.format == .mermaid)
+        #expect(viewModel.componentScript != nil)
+        #expect(viewModel.currentScript?.text == viewModel.componentScript?.text)
+        #expect(viewModel.isGenerating == false)
     }
 
     @Test("refreshEntryPoints with empty paths does not call mock")

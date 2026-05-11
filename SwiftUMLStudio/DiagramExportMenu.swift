@@ -71,6 +71,7 @@ struct DiagramExportMenu: View {
         case .stateMachine: return "state-machine"
         case .erDiagram: return "er-diagram"
         case .dependencyGraph: return "dependency-graph"
+        case .componentDiagram: return "component-diagram"
         }
     }
 

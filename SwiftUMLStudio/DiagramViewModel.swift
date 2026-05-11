@@ -12,6 +12,7 @@ final class DiagramViewModel {
     var stateScript: StateScript?
     var activityScript: ActivityScript?
     var erScript: ERScript?
+    var componentScript: ComponentScript?
 
     // For restoring from history without needing to re-parse AST
     private var restoredScript: SimpleDiagramScript?
@@ -69,6 +70,7 @@ final class DiagramViewModel {
     let stateGenerator: any StateMachineGenerating
     let activityGenerator: any ActivityDiagramGenerating
     let erGenerator: any ERDiagramGenerating
+    let componentGenerator: any ComponentDiagramGenerating
 
     init(
         persistenceController: PersistenceController = PersistenceController.shared,
@@ -77,7 +79,8 @@ final class DiagramViewModel {
         depsGenerator: any DependencyGraphGenerating = DependencyGraphGenerator(),
         stateGenerator: any StateMachineGenerating = StateMachineGenerator(),
         activityGenerator: any ActivityDiagramGenerating = ActivityDiagramGenerator(),
-        erGenerator: any ERDiagramGenerating = ERDiagramGenerator()
+        erGenerator: any ERDiagramGenerating = ERDiagramGenerator(),
+        componentGenerator: any ComponentDiagramGenerating = ComponentDiagramGenerator()
     ) {
         self.modelContext = persistenceController.container.mainContext
         self.classGenerator = classGenerator
@@ -86,6 +89,7 @@ final class DiagramViewModel {
         self.stateGenerator = stateGenerator
         self.activityGenerator = activityGenerator
         self.erGenerator = erGenerator
+        self.componentGenerator = componentGenerator
     }
 
     var currentScript: (any DiagramOutputting)? {
@@ -98,6 +102,7 @@ final class DiagramViewModel {
         case .stateMachine: return stateScript
         case .activityDiagram: return activityScript
         case .erDiagram: return erScript
+        case .componentDiagram: return componentScript
         }
     }
 
@@ -139,6 +144,8 @@ final class DiagramViewModel {
                 await self.generateActivityDiagram()
             case .erDiagram:
                 await self.generateERDiagram()
+            case .componentDiagram:
+                await self.generateComponentDiagram()
             }
 
             guard !Task.isCancelled else { return }

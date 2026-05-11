@@ -99,6 +99,14 @@ struct DiagramPreviewView: View {
                             .padding()
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                             .accessibilityIdentifier("entryPointPrompt")
+                    } else if viewModel.diagramMode == .componentDiagram
+                        && viewModel.packageDescription == nil {
+                        Text("Component diagrams require an open Swift Package. Use Open Package… (⇧⌘O) to load a Package.swift directory.")
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                            .padding()
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .accessibilityIdentifier("componentPackagePrompt")
                     } else {
                         Text("Select Swift source files or a folder to generate a diagram.")
                             .foregroundStyle(.secondary)

@@ -7,7 +7,7 @@ import Foundation
 /// boundaries genuinely come from the SPM manifest. Studio integration is
 /// deferred; the CLI's `swiftumlbridge component --package …` is the only
 /// surface for v1.
-public struct ComponentDiagramGenerator: @unchecked Sendable {
+public struct ComponentDiagramGenerator: ComponentDiagramGenerating, @unchecked Sendable {
     public init() {}
 
     public func generateScript(

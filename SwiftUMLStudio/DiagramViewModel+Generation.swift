@@ -116,6 +116,29 @@ extension DiagramViewModel {
         activityScript = result
     }
 
+    func generateComponentDiagram() async {
+        guard let description = packageDescription, let root = packageRoot else {
+            componentScript = nil
+            errorMessage = "Component diagrams require an open Swift Package. Use Open Package… to load a Package.swift directory."
+            isGenerating = false
+            return
+        }
+        componentScript = nil
+
+        let format = diagramFormat
+        let generator = componentGenerator
+        let result = await Task.detached(priority: .userInitiated) {
+            var config = Configuration.default
+            config.format = format
+            return generator.generateScript(
+                forPackage: description, packageRoot: root, with: config
+            )
+        }.value
+
+        guard !Task.isCancelled else { return }
+        componentScript = result
+    }
+
     func generateERDiagram() async {
         guard !selectedPaths.isEmpty else {
             isGenerating = false

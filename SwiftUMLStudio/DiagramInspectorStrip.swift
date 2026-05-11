@@ -42,6 +42,8 @@ struct DiagramInspectorStrip: View {
             EmptyView()
         case .erDiagram:
             EmptyView()
+        case .componentDiagram:
+            EmptyView()
         }
     }
 
