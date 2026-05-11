@@ -29,7 +29,11 @@ extension SwiftUMLBridgeCLI {
         @Option(help: "macOS SDK path for type inference resolution (e.g. `$(xcrun --show-sdk-path -sdk macosx)`)")
         var sdk: String?
 
-        @Option(help: "Path to a Package.swift directory. Activates module-aware mode: each type is tagged with its SPM target and rendered with a module stereotype. Overrides any positional `paths` arguments.")
+        @Option(help: """
+            Path to a Package.swift directory. Activates module-aware mode: \
+            each type is tagged with its SPM target and rendered with a \
+            module stereotype. Overrides any positional `paths` arguments.
+            """)
         var package: String?
 
         @Flag(help: "Decide if/how Swift extensions appear in the diagram")

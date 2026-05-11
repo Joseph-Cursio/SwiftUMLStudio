@@ -49,6 +49,7 @@ struct DiagramExportMenu: View {
         return script.layoutGraph != nil
             || script.sequenceLayout != nil
             || script.activityLayout != nil
+            || script.componentLayout != nil
     }
 
     private var hasSVGScript: Bool { script?.format == .svg }
@@ -157,6 +158,12 @@ struct DiagramExportMenu: View {
                 height: max(activity.totalHeight + 40, 200)
             )
         }
+        if let component = script.componentLayout {
+            return CGSize(
+                width: max(component.totalWidth + 40, 200),
+                height: max(component.totalHeight + 40, 200)
+            )
+        }
         return nil
     }
 
@@ -174,6 +181,8 @@ struct DiagramExportMenu: View {
             view = AnyView(NativeSequenceDiagramView(layout: sequence, viewport: identityViewport))
         } else if let activity = script.activityLayout {
             view = AnyView(NativeActivityDiagramView(layout: activity, viewport: identityViewport))
+        } else if let component = script.componentLayout {
+            view = AnyView(NativeComponentDiagramView(layout: component, viewport: identityViewport))
         } else {
             return nil
         }

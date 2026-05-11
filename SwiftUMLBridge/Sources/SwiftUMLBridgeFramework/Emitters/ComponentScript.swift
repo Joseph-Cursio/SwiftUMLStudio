@@ -1,27 +1,38 @@
 import Foundation
 
-/// A rendered Component diagram. PlantUML is the only supported output for
-/// v1; Mermaid lacks a dedicated component-diagram dialect, and the existing
-/// `flowchart` workaround would just duplicate `deps --modules`.
+/// A rendered Component diagram. Supports PlantUML, Mermaid (flowchart
+/// fallback — Mermaid lacks a dedicated component dialect), and SVG. The SVG
+/// path additionally produces a `componentLayout` for Studio's native canvas;
+/// Nomnoml falls back to PlantUML since it has no component dialect either.
 public struct ComponentScript: Sendable {
     public let text: String
     public let format: DiagramFormat
+    public let componentLayout: ComponentLayout?
 
     public static let empty = ComponentScript(text: "", format: .plantuml)
 
     public init(model: ComponentModel, configuration: Configuration = .default) {
-        self.format = configuration.format == .mermaid ? .mermaid : .plantuml
-        switch self.format {
+        switch configuration.format {
         case .mermaid:
+            self.format = .mermaid
             self.text = ComponentScript.buildMermaidText(model: model)
+            self.componentLayout = nil
+        case .svg:
+            let result = ComponentSVGRenderer.render(model)
+            self.format = .svg
+            self.text = result.svg
+            self.componentLayout = result.layout
         default:
+            self.format = .plantuml
             self.text = ComponentScript.buildPlantUMLText(model: model)
+            self.componentLayout = nil
         }
     }
 
     private init(text: String, format: DiagramFormat) {
         self.text = text
         self.format = format
+        self.componentLayout = nil
     }
 
     public func encodeText() -> String {

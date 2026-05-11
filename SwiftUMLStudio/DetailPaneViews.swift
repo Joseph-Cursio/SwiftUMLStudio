@@ -87,6 +87,10 @@ struct DiagramPreviewView: View {
                             cmdScrollHost {
                                 NativeActivityDiagramView(layout: activityLayout, viewport: viewport)
                             }
+                        } else if script.format == .svg, let componentLayout = script.componentLayout {
+                            cmdScrollHost {
+                                NativeComponentDiagramView(layout: componentLayout, viewport: viewport)
+                            }
                         } else {
                             DiagramWebView(script: script)
                         }
@@ -158,6 +162,7 @@ struct DiagramPreviewView: View {
         return script.layoutGraph != nil
             || script.sequenceLayout != nil
             || script.activityLayout != nil
+            || script.componentLayout != nil
     }
 
     /// Show the Export menu whenever a script is present — even WebView-only
