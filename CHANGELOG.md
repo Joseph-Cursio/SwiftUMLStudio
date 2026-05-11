@@ -12,6 +12,102 @@ _Nothing yet — open a PR or file an issue if you have one in mind._
 
 ---
 
+## [1.0.0] — 2026-05-11
+
+First v1 cut. Component diagrams gain full Studio parity with the
+other diagram types — including a native SwiftUI canvas, an SVG
+format option, and PDF/PNG/SVG export — and CI is finally fully
+green across both jobs.
+
+### Added — Component Diagram in Studio
+
+- **`DiagramMode.componentDiagram`** — Studio now surfaces the
+  previously CLI-only Component diagram type. New row under the
+  "Structural" section of the workspace sidebar (`shippingbox` icon),
+  paywall-gated as `ProFeature.componentDiagrams`, with a
+  guide-the-user-to-`Open Package…` empty state when no SPM
+  package is loaded (Component diagrams are inherently
+  package-scoped).
+- **`ComponentDiagramGenerating` protocol** — Bridge gains the
+  abstraction the other generators already had, so Studio can
+  mock-inject `ComponentDiagramGenerator` for tests the same way
+  it does class / sequence / deps / state / activity / ER.
+- **`ComponentLayout` + `PositionedComponent`** — new public IR for
+  laid-out component diagrams, mirroring `ActivityLayout` and
+  `SequenceLayout`. Drives the native canvas in Studio.
+- **`ComponentSVGRenderer`** — topological-level layout (consumer
+  components at the top, depended-on leaves at the bottom; cycle-safe
+  via a visiting-set guard) plus a standalone SVG document used as
+  the WebView fallback when the user picks `.svg`.
+- **`ComponentScript.componentLayout`** — populated when the script
+  is rendered in `.svg` format; nil for PlantUML / Mermaid.
+- **`DiagramOutputting.componentLayout`** — new optional protocol
+  requirement with a `nil` default so existing conformers are
+  unaffected.
+- **`NativeComponentDiagramView`** — SwiftUI `Canvas` renderer with
+  «component» header band, interface list, dotted dependency
+  arrows, pan / zoom / ⌘+scroll-wheel zoom, and PDF / PNG / SVG
+  export through the existing `DiagramExportMenu` plumbing.
+- **Native canvas branches** in `DiagramPreviewView` and
+  `DiagramExportMenu` for `componentLayout`. Viewport controls and
+  the Export menu now light up in Component mode when `.svg` is
+  picked.
+
+### Added — Tests
+
+- **11 new ComponentSVGRenderer tests** covering layout (single /
+  multi component, dependency ordering, cycle safety, label-based
+  sizing, input-order preservation), SVG output shape, and
+  script-level format dispatch including Nomnoml → PlantUML fallback.
+- **`MockComponentGenerator`** + dispatch / format-propagation
+  coverage in `DiagramViewModelMockTests`.
+
+### Changed — Test Stability
+
+- **Mock generation tests** in `DiagramViewModelMockTests` /
+  `DiagramViewModelMockStateTests` and the integration tests in
+  `ViewModelFeatureTests` switched from a fixed
+  `Task.sleep(for: .milliseconds(500))` (and a 10s wall-clock
+  polling helper) to `await viewModel.currentTask?.value`. The
+  former raced under CI load on macos-26; the deterministic task
+  wait removes the flake without inflating local test wall-time.
+- **DashboardUITests** — toolbar Save / Open buttons now carry
+  `toolbarSaveButton` / `toolbarOpenButton` /
+  `toolbarOpenPackageButton` accessibility identifiers, queried
+  with `.firstMatch` to disambiguate the duplicate element the
+  macOS 26 accessibility tree exposes on toolbar wrappers.
+
+### Fixed — CI
+
+- **Studio job now actually runs.** Pinned to the `macos-26`
+  runner — `macos-latest` is still macOS 15, which can't load
+  Studio's macOS 26.4+ test bundle. Bridge stays on
+  `macos-latest` because it explicitly targets `.v15` for SPI
+  reach.
+- **Bridge platform lowered** to `.macOS(.v15)` so the package
+  builds on the same CI runner that hosts every other Sequoia
+  machine on the team. Studio still targets 26.4+.
+- **Code signing disabled** for CI Studio builds
+  (`CODE_SIGNING_ALLOWED=NO` + `CODE_SIGNING_REQUIRED=NO` +
+  `CODE_SIGN_IDENTITY=`) — the development certificate is
+  local-only and not available to runners; the binary isn't
+  distributed from CI.
+- **Pinned to `latest-stable` Xcode** via
+  `maxim-lobanov/setup-xcode` so the Swift 6.2 toolchain the
+  Bridge package manifest requires is actually present, and
+  stopped hiding `xcodebuild` failures behind `xcbeautify`'s
+  exit status.
+- **Stale ProFeatureTests count** updated for the new
+  `componentDiagrams` Pro feature case.
+
+### Fixed — Bridge
+
+- **`ClassDiagramCommand` help-text line length** — wrapped a 211-
+  char `@Option(help:)` string to stay under the 200-char
+  hard SwiftLint cap.
+
+---
+
 ## [0.3.0] — 2026-05-09
 
 This release lands every diagram type planned for the v1.0 surface
