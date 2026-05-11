@@ -38,20 +38,13 @@ struct DiagramViewModelIntegrationTests {
         return dir
     }
 
-    /// Polls `viewModel.isGenerating` on the main actor until it becomes false or the timeout elapses.
+    /// Awaits the actual generation task rather than polling `isGenerating`
+    /// on a wall-clock timer. The poll-based variant raced under CI load —
+    /// 10s wasn't enough on macos-26 runners — and the run kept going long
+    /// after the recorded issue, masking which test actually failed.
     @MainActor
-    private func waitForGeneration(
-        _ viewModel: DiagramViewModel,
-        timeout: TimeInterval = 10.0
-    ) async throws {
-        let deadline = Date.now.addingTimeInterval(timeout)
-        while viewModel.isGenerating {
-            guard Date.now < deadline else {
-                Issue.record("Generation timed out after \(timeout) seconds")
-                return
-            }
-            try await Task.sleep(for: .milliseconds(50))
-        }
+    private func waitForGeneration(_ viewModel: DiagramViewModel) async {
+        await viewModel.currentTask?.value
     }
 
     // MARK: Class Diagram
@@ -94,7 +87,7 @@ struct DiagramViewModelIntegrationTests {
 
         viewModel.generate()
         #expect(viewModel.isGenerating == true)
-        try await waitForGeneration(viewModel)
+        await waitForGeneration(viewModel)
 
         let script = try #require(viewModel.currentScript)
         #expect(script.format == .plantuml)
@@ -126,7 +119,7 @@ struct DiagramViewModelIntegrationTests {
         viewModel.selectedPaths = [dir.path()]
 
         viewModel.generate()
-        try await waitForGeneration(viewModel)
+        await waitForGeneration(viewModel)
 
         let script = try #require(viewModel.currentScript)
         #expect(script.format == .mermaid)
@@ -156,7 +149,7 @@ struct DiagramViewModelIntegrationTests {
         viewModel.selectedPaths = [dir.path()]
 
         viewModel.generate()
-        try await waitForGeneration(viewModel)
+        await waitForGeneration(viewModel)
 
         let script = try #require(viewModel.currentScript)
         #expect(script.format == .plantuml)

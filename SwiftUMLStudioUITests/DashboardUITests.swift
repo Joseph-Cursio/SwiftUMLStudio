@@ -37,14 +37,17 @@ final class DashboardUITests: XCTestCase {
 
     @MainActor
     func testSaveButtonDisabledWithoutDiagram() throws {
-        let saveButton = app.buttons["toolbarSaveButton"]
+        // SwiftUI on macOS 26 reports the accessibilityIdentifier on both
+        // the toolbar wrapper and the inner button, so a label-based query
+        // matches multiple elements. .firstMatch picks one deterministically.
+        let saveButton = app.buttons["toolbarSaveButton"].firstMatch
         XCTAssertTrue(saveButton.waitForExistence(timeout: 3), "Save button not found")
         XCTAssertFalse(saveButton.isEnabled, "Save should be disabled when no diagram is generated")
     }
 
     @MainActor
     func testOpenButtonExists() throws {
-        let openButton = app.buttons["toolbarOpenButton"]
+        let openButton = app.buttons["toolbarOpenButton"].firstMatch
         XCTAssertTrue(openButton.waitForExistence(timeout: 3), "Open button not found")
         XCTAssertTrue(openButton.isEnabled, "Open button should be enabled")
     }
