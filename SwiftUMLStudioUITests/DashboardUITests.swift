@@ -37,14 +37,14 @@ final class DashboardUITests: XCTestCase {
 
     @MainActor
     func testSaveButtonDisabledWithoutDiagram() throws {
-        let saveButton = app.buttons["Save"]
+        let saveButton = app.buttons["toolbarSaveButton"]
         XCTAssertTrue(saveButton.waitForExistence(timeout: 3), "Save button not found")
         XCTAssertFalse(saveButton.isEnabled, "Save should be disabled when no diagram is generated")
     }
 
     @MainActor
     func testOpenButtonExists() throws {
-        let openButton = app.buttons["Open…"]
+        let openButton = app.buttons["toolbarOpenButton"]
         XCTAssertTrue(openButton.waitForExistence(timeout: 3), "Open button not found")
         XCTAssertTrue(openButton.isEnabled, "Open button should be enabled")
     }

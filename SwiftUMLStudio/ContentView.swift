@@ -140,9 +140,11 @@ struct ContentView: View {
             ToolbarItemGroup(placement: .primaryAction) {
                 Button("Open…", systemImage: "folder", action: openPanel)
                     .help("Open Swift files or directories (⌘O)")
+                    .accessibilityIdentifier("toolbarOpenButton")
                 Button("Open Package…", systemImage: "shippingbox", action: openPackagePanel)
                     .help("Open an SPM package directory (⇧⌘O)")
                     .keyboardShortcut("o", modifiers: [.command, .shift])
+                    .accessibilityIdentifier("toolbarOpenPackageButton")
 
                 Text(viewModel.pathSummary)
                     .foregroundStyle(.secondary)
@@ -165,6 +167,7 @@ struct ContentView: View {
                 .keyboardShortcut("s", modifiers: .command)
                 .help("Save to history (⌘S)")
                 .disabled(viewModel.currentScript == nil || viewModel.isGenerating)
+                .accessibilityIdentifier("toolbarSaveButton")
             }
         }
     }

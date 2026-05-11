@@ -31,7 +31,7 @@ struct DiagramViewModelMockStateTests {
         viewModel.diagramMode = .classDiagram
 
         viewModel.generate()
-        try await Task.sleep(for: .milliseconds(500))
+        await viewModel.currentTask?.value
 
         #expect(mockClass.generateCallCount == 0)
         #expect(viewModel.script == nil)
@@ -49,7 +49,7 @@ struct DiagramViewModelMockStateTests {
         viewModel.diagramMode = .dependencyGraph
 
         viewModel.generate()
-        try await Task.sleep(for: .milliseconds(500))
+        await viewModel.currentTask?.value
 
         #expect(mockDeps.generateCallCount == 0)
     }
@@ -67,7 +67,7 @@ struct DiagramViewModelMockStateTests {
         viewModel.entryPoint = ""
 
         viewModel.generate()
-        try await Task.sleep(for: .milliseconds(500))
+        await viewModel.currentTask?.value
 
         #expect(mockSequence.generateCallCount == 0)
     }
@@ -89,7 +89,7 @@ struct DiagramViewModelMockStateTests {
         viewModel.selectedPaths = ["/tmp/Second.swift"]
         viewModel.generate()
 
-        try await Task.sleep(for: .milliseconds(500))
+        await viewModel.currentTask?.value
 
         #expect(mockClass.generateCallCount == 1)
         #expect(mockClass.lastPaths == ["/tmp/Second.swift"])
@@ -112,7 +112,7 @@ struct DiagramViewModelMockStateTests {
         viewModel.selectedPaths = ["/tmp/C.swift"]
         viewModel.generate()
 
-        try await Task.sleep(for: .milliseconds(500))
+        await viewModel.currentTask?.value
 
         #expect(mockClass.generateCallCount == 1)
         #expect(mockClass.lastPaths == ["/tmp/C.swift"])
@@ -176,7 +176,7 @@ struct DiagramViewModelMockStateTests {
 
         viewModel.selectedPaths = ["/tmp/Foo.swift"]
         viewModel.generate()
-        try await Task.sleep(for: .milliseconds(500))
+        await viewModel.currentTask?.value
 
         #expect(viewModel.currentScript?.text.contains("MockClass") == true)
     }
@@ -199,7 +199,7 @@ struct DiagramViewModelMockStateTests {
         viewModel.diagramMode = .classDiagram
 
         viewModel.generate()
-        try await Task.sleep(for: .milliseconds(500))
+        await viewModel.currentTask?.value
 
         #expect(mockClass.generateCallCount == 1)
         #expect(mockSequence.generateCallCount == 0)
@@ -225,7 +225,7 @@ struct DiagramViewModelMockStateTests {
         viewModel.entryPoint = "Foo.bar"
 
         viewModel.generate()
-        try await Task.sleep(for: .milliseconds(500))
+        await viewModel.currentTask?.value
 
         #expect(mockSequence.generateCallCount == 1)
         #expect(mockClass.generateCallCount == 0)
@@ -250,7 +250,7 @@ struct DiagramViewModelMockStateTests {
         viewModel.diagramMode = .dependencyGraph
 
         viewModel.generate()
-        try await Task.sleep(for: .milliseconds(500))
+        await viewModel.currentTask?.value
 
         #expect(mockDeps.generateCallCount == 1)
         #expect(mockClass.generateCallCount == 0)
