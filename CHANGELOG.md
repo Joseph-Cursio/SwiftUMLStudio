@@ -8,7 +8,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
-_Nothing yet — open a PR or file an issue if you have one in mind._
+### Changed — Bridge
+
+- **M12 follow-up: Mermaid and Nomnoml emit the SPM module stereotype.**
+  `classdiagram --package` previously rendered the owning target name
+  only in PlantUML output (`<<class>> <<Networking>>`); Mermaid and
+  Nomnoml silently dropped the field. Both emitters now append the
+  module as an additional `<<Module>>` annotation on each class node,
+  matching PlantUML. Closes the "Mermaid/Nomnoml emitter changes"
+  deferred bullet in the 0.3.0 M12 entry. The `--package` flag on
+  `deps` and Studio integration remain deferred.
 
 ---
 
