@@ -91,6 +91,34 @@ SwiftSyntax            call edges,            Mermaid.js
                        ER models
 ```
 
+## Installation
+
+`swiftumlbridge` ships via three routes — pick whichever fits your workflow.
+
+### Homebrew (recommended for local use)
+
+```bash
+brew tap Joseph-Cursio/tap
+brew install swiftumlbridge
+```
+
+The formula builds from source on first install and tracks the latest tagged Bridge release.
+
+### GitHub Actions
+
+[`swiftumlbridge-action`](https://github.com/Joseph-Cursio/swiftumlbridge-action) wraps the CLI for CI pipelines (macOS runners only):
+
+```yaml
+- uses: Joseph-Cursio/swiftumlbridge-action@v0.1.0
+  with:
+    command: classdiagram
+    args: Sources --output consoleOnly
+```
+
+### Build from source
+
+See [Building](#building) below — the same steps used during development.
+
 ## CLI Usage
 
 ### Class diagram
