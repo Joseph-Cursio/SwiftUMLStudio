@@ -98,7 +98,7 @@ swiftumlbridge [--version] [--help] <subcommand>
 
 | Option | Description |
 |---|---|
-| `--version` | Print the tool version and exit (`0.3.0`) |
+| `--version` | Print the tool version and exit (`1.0.0`) |
 | `--help` | Print help and exit |
 
 The default subcommand is `classdiagram`. Running `swiftumlbridge` with no verb is equivalent to `swiftumlbridge classdiagram`.
@@ -2235,7 +2235,7 @@ Subsystem: `name.JosephCursio.SwiftUMLBridge`
 ```swift
 public struct Version {
     public let value: String
-    public static let current: Version   // Version(value: "0.3.0")
+    public static let current: Version   // Version(value: "1.0.0")
 }
 ```
 

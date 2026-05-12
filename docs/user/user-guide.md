@@ -71,26 +71,51 @@ The package targets `.macOS(.v15)` and compiles with `swiftLanguageMode(.v6)`. T
 
 ## Installation
 
-SwiftUMLBridge is distributed as a local Swift Package inside the SwiftUMLStudio project.
+SwiftUMLBridge ships as a CLI binary, a Homebrew formula, and a reusable GitHub Action. Pick the route that fits your workflow.
 
-**Build the CLI from source:**
+### Homebrew (recommended for local use)
 
 ```bash
-cd /path/to/SwiftUMLStudio/SwiftUMLBridge
-swift build -c release
+brew tap Joseph-Cursio/tap
+brew install swiftumlbridge
 ```
 
-The compiled binary is at `.build/release/swiftumlbridge`. Copy it to a location on your `$PATH`:
+The formula builds from source on first install and tracks the latest tagged Bridge release. Upgrade with `brew upgrade swiftumlbridge`.
+
+### Build from source
 
 ```bash
+git clone https://github.com/Joseph-Cursio/SwiftUMLStudio.git
+cd SwiftUMLStudio/SwiftUMLBridge
+swift build -c release
 cp .build/release/swiftumlbridge /usr/local/bin/swiftumlbridge
 ```
 
-**Verify the installation:**
+Best when you're hacking on the Bridge itself or running an unreleased revision.
+
+### GitHub Actions
+
+[`swiftumlbridge-action`](https://github.com/Joseph-Cursio/swiftumlbridge-action) wraps the CLI for CI pipelines. macOS runners only:
+
+```yaml
+jobs:
+  diagram:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: Joseph-Cursio/swiftumlbridge-action@v0.1.0
+        with:
+          command: classdiagram
+          args: Sources --output consoleOnly
+```
+
+See the action's README for the input reference, version pinning, and additional examples.
+
+### Verify the installation
 
 ```bash
 swiftumlbridge --version
-# 0.3.0
+# 1.0.0
 ```
 
 ---
