@@ -38,21 +38,22 @@ For CLI usage, see the [SwiftUMLBridge User Guide](user-guide.md).
 12. [Generating a State Machine Diagram](#generating-a-state-machine-diagram)
 13. [Generating an ER Diagram](#generating-an-er-diagram)
 14. [Opening an SPM Package](#opening-an-spm-package)
-15. [Reading the Results](#reading-the-results)
-16. [Working With the Diagram](#working-with-the-diagram)
+15. [Generating a Component Diagram](#generating-a-component-diagram)
+16. [Reading the Results](#reading-the-results)
+17. [Working With the Diagram](#working-with-the-diagram)
     - [Zoom and Pan](#zoom-and-pan)
     - [Selecting Nodes](#selecting-nodes)
     - [Hover Tooltips](#hover-tooltips)
     - [Reveal in Source](#reveal-in-source)
     - [Exporting](#exporting)
-17. [Copying the Diagram Markup](#copying-the-diagram-markup)
-18. [Diagram History](#diagram-history)
-19. [Pro Features](#pro-features)
+18. [Copying the Diagram Markup](#copying-the-diagram-markup)
+19. [Diagram History](#diagram-history)
+20. [Pro Features](#pro-features)
     - [What Pro Unlocks](#what-pro-unlocks)
     - [Paywall](#paywall)
     - [Architecture Change Tracking](#architecture-change-tracking)
     - [Review Reminders](#review-reminders)
-20. [Known Limitations](#known-limitations)
+21. [Known Limitations](#known-limitations)
 
 ---
 
@@ -186,7 +187,7 @@ Developer Mode exposes the full power of the diagram generator with a three-pane
 The Developer-mode sidebar has three regions, top to bottom:
 
 1. **Diagrams source list** — groups every diagram mode under two section headings:
-   - **Structural** — Class Diagram, Dependency Graph
+   - **Structural** — Class Diagram, Dependency Graph, ER Diagram, Component Diagram
    - **Behavioral** — Sequence Diagram, Activity Diagram, State Machine
    Click a row to switch the active diagram mode.
 2. **Draggable divider** — a `VSplitView` handle between the Diagrams list and the region below. Drag it to resize how much room each gets.
@@ -246,11 +247,12 @@ In Developer Mode, you pick a diagram type by clicking a row in the **Diagrams**
 | Structural | **Class Diagram** | Structural overview of types, properties, methods, and relationships | No |
 | Structural | **Dependency Graph** | Type-to-type or module-to-module dependency graph across the selected source | Yes |
 | Structural | **ER Diagram** | Entities and relationships from SwiftData `@Model`, Core Data `.xcdatamodeld`, GRDB record types, and SQLite.swift `Table` declarations | Yes |
+| Structural | **Component Diagram** | SPM targets as UML components with public types as provided interfaces and `target_dependencies` as dotted edges | Yes |
 | Behavioral | **Sequence Diagram** | Static call-graph trace from a named entry-point method | Yes |
 | Behavioral | **Activity Diagram** | Control-flow diagram for a single method's body | Yes |
 | Behavioral | **State Machine** | State transitions derived from an enum-typed property | Yes |
 
-Switching modes clears the current diagram and resets the preview pane. The inspector strip above the detail pane updates to show that mode's controls — an entry-point field + depth stepper for Sequence Diagram, an entry-point field for Activity Diagram, a **Types / Modules** picker for Dependency Graph, a candidate picker for State Machine. Class Diagram and ER Diagram have no extra controls (the format picker is enough).
+Switching modes clears the current diagram and resets the preview pane. The inspector strip above the detail pane updates to show that mode's controls — an entry-point field + depth stepper for Sequence Diagram, an entry-point field for Activity Diagram, a **Types / Modules** picker for Dependency Graph, a candidate picker for State Machine. Class Diagram and ER Diagram have no extra controls. Component Diagram has no inspector-strip controls either but requires a Swift Package loaded via **Open Package…** — see [Generating a Component Diagram](#generating-a-component-diagram).
 
 In Explorer Mode, the diagram mode is determined by which suggestion you tap — you do not choose it manually.
 
@@ -454,6 +456,29 @@ To switch back to a path-based selection, use **Open…** instead of **Open Pack
 
 ---
 
+## Generating a Component Diagram
+
+Component diagrams require a Pro subscription. They visualize a Swift Package's modular architecture — each SPM target is a component, with public types listed as provided interfaces and `target_dependencies` rendered as dotted edges.
+
+Component diagrams are inherently package-scoped, so the entry point is **Open Package…** (⇧⌘O).
+
+1. Click **Open Package…** in the toolbar and pick a directory containing `Package.swift`. See [Opening an SPM Package](#opening-an-spm-package).
+2. In Developer Mode, click **Component Diagram** under **Structural** in the sidebar's Diagrams list (`shippingbox` icon). With no package loaded, the row is still selectable but the preview pane shows a guide pointing to **Open Package…**.
+3. Choose **PlantUML**, **Mermaid**, or **SVG** in the inspector strip's format picker. Test targets are excluded by default.
+4. Click **Generate**.
+
+The diagram shows:
+
+- One **component box** per SPM target, with a `«component»` header band.
+- A list of the target's public types as provided interfaces inside each component.
+- **Dotted arrows** from a target to each of its `target_dependencies` entries.
+
+The native SVG renderer arranges components in topological levels — consumer components at the top, leaf dependencies at the bottom — and is cycle-safe. The Mermaid fallback uses a `flowchart TD` with one subgraph per component (Mermaid has no dedicated component-diagram dialect).
+
+In Explorer Mode, Component Diagram is not currently surfaced as a one-click suggestion; switch to Developer Mode to generate one.
+
+---
+
 ## Reading the Results
 
 ### Class Diagram
@@ -511,11 +536,15 @@ Each entity appears as a box listing its attributes. Crow's-foot connectors deri
 
 Core Data parent/child relationships render as a separate "is a" edge between the child and its `parentEntity`.
 
+### Component Diagram
+
+Each component appears as a box with a `«component»` header band and a list of the target's public types beneath it as provided interfaces. Dependencies between targets render as dotted arrows from the consumer to the dependency. The native SVG layout arranges components topologically — consumers at the top, leaf dependencies at the bottom — and is cycle-safe.
+
 ---
 
 ## Working With the Diagram
 
-The native SVG renderer (the fastest format) supports interactive features that the WebView-based formats don't. These features apply to class diagrams and sequence diagrams; activity diagrams, state machines, and ER diagrams use the same canvas but are read-only.
+The native SVG renderer (the fastest format) supports interactive features that the WebView-based formats don't. These features apply to class diagrams and sequence diagrams; activity, state machine, ER, and component diagrams use the same canvas but are read-only.
 
 ### Zoom and Pan
 
@@ -578,7 +607,7 @@ Every diagram you generate can be saved to history by clicking the **Save** butt
 
 Each history entry records:
 - The diagram name (auto-generated from the selected file/folder names)
-- The diagram mode (class, sequence, or dependency)
+- The diagram mode (class, sequence, dependency, activity, state machine, ER, or component)
 - The timestamp
 
 Click a history entry to reload the diagram. You can also delete history entries by swiping or using the context menu.
@@ -602,6 +631,7 @@ SwiftUML Studio uses a freemium model. The free tier provides the full Explorer 
 | State machine diagrams | — | Yes |
 | Activity diagrams | — | Yes |
 | Entity-Relationship diagrams (SwiftData / Core Data / GRDB / SQLite.swift) | — | Yes |
+| Component diagrams (SPM targets + provided interfaces) | — | Yes |
 | Format selection (PlantUML / Mermaid / Nomnoml / SVG) | — | Yes |
 | Diagram markup export (copy/save) | — | Yes |
 | Diagram export to PDF / PNG / SVG | — | Yes |
