@@ -19,10 +19,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   each inheritance / conformance edge is tagged with the owning SPM
   target, rendered as `class "Foo" as Foo <<Module>>` (parallels the
   M12 `classdiagram --package` stereotype). Test targets are excluded.
-  Studio integration remains deferred.
+
+### Added — Studio
+
+- **M12 follow-up: Dependency graph picks up SPM module info when a
+  package is loaded.** `DiagramViewModel.generateDependencyGraph()` now
+  routes through `DependencyGraphGenerator.generateScript(forPackage:…)`
+  whenever `Open Package…` has set `packageDescription` /
+  `packageRoot`, mirroring the existing class-diagram branch. The
+  result is the same `<<library>>` / `<<Module>>` stereotypes the CLI
+  emits, surfaced in Studio's three-pane workspace and Insights without
+  any UI changes. Path-based generation remains the fallback when no
+  package is loaded. Per-module dashboard and module-grouped layout
+  remain deferred.
 
 ### Changed — Bridge
 
+- **`DependencyGraphGenerating` protocol gains a `forPackage` entry**
+  with a default implementation that falls back to the path-based
+  `generateScript(for:mode:with:)` over `sourceFileToModuleMap`. Mirrors
+  the existing `ClassDiagramGenerating` shape so Studio's mock-injected
+  generators degrade gracefully.
 - **M12 follow-up: Mermaid and Nomnoml emit the SPM module stereotype.**
   `classdiagram --package` previously rendered the owning target name
   only in PlantUML output (`<<class>> <<Networking>>`); Mermaid and
@@ -33,8 +50,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   (`App["App<br/>«executable»"]`) and Nomnoml inlines the stereotype
   into edge endpoints (`[App «executable»] --> [Core «library»]`).
   Closes the "Mermaid/Nomnoml emitter changes" deferred bullet across
-  both `classdiagram` and `deps`. Studio integration for the
-  multi-module SPM mode remains deferred.
+  both `classdiagram` and `deps`. Per-module dashboard and
+  module-grouped layout in Studio remain deferred.
 
 ---
 

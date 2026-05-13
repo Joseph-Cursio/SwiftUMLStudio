@@ -109,6 +109,10 @@ final class MockDepsGenerator: DependencyGraphGenerating, @unchecked Sendable {
     private(set) var lastMode: DepsMode?
     private(set) var lastConfiguration: Configuration?
 
+    private(set) var packageCallCount = 0
+    private(set) var lastDescription: SPMPackageDescription?
+    private(set) var lastPackageRoot: URL?
+
     func generateScript(
         for paths: [String],
         mode: DepsMode,
@@ -116,6 +120,22 @@ final class MockDepsGenerator: DependencyGraphGenerating, @unchecked Sendable {
     ) -> DepsScript {
         generateCallCount += 1
         lastPaths = paths
+        lastMode = mode
+        lastConfiguration = configuration
+        let model = DependencyGraphModel(edges: [])
+        return DepsScript(model: model, configuration: configuration)
+    }
+
+    func generateScript(
+        forPackage description: SPMPackageDescription,
+        packageRoot: URL,
+        mode: DepsMode,
+        with configuration: Configuration,
+        sdkPath: String?
+    ) -> DepsScript {
+        packageCallCount += 1
+        lastDescription = description
+        lastPackageRoot = packageRoot
         lastMode = mode
         lastConfiguration = configuration
         let model = DependencyGraphModel(edges: [])
@@ -258,6 +278,62 @@ struct DiagramViewModelMockTests {
         await viewModel.currentTask?.value
 
         #expect(mockDeps.lastMode == .types)
+    }
+
+    @Test("dependency graph with a loaded package routes through the SPM-aware path")
+    @MainActor
+    func depsGraphWithLoadedPackageCallsForPackage() async throws {
+        let mockDeps = MockDepsGenerator()
+        let viewModel = DiagramViewModel(
+            persistenceController: PersistenceController(inMemory: true),
+            depsGenerator: mockDeps
+        )
+        let root = URL(fileURLWithPath: "/tmp/demo-package")
+        viewModel.packageRoot = root
+        viewModel.packageDescription = SPMPackageDescription(
+            name: "Demo",
+            targets: [
+                SPMTargetDescription(
+                    name: "Demo", kind: .library,
+                    path: "Sources/Demo", sources: ["Foo.swift"], dependencies: []
+                )
+            ]
+        )
+        viewModel.selectedPaths = ["/tmp/demo-package/Sources/Demo/Foo.swift"]
+        viewModel.diagramMode = .dependencyGraph
+        viewModel.depsMode = .modules
+        viewModel.diagramFormat = .plantuml
+
+        viewModel.generate()
+        await viewModel.currentTask?.value
+
+        #expect(mockDeps.packageCallCount == 1)
+        #expect(mockDeps.generateCallCount == 0)
+        #expect(mockDeps.lastPackageRoot == root)
+        #expect(mockDeps.lastDescription?.name == "Demo")
+        #expect(mockDeps.lastMode == .modules)
+        #expect(viewModel.depsScript != nil)
+        #expect(viewModel.isGenerating == false)
+    }
+
+    @Test("dependency graph without a loaded package still uses the path-based generator")
+    @MainActor
+    func depsGraphWithoutPackageUsesPathFlow() async throws {
+        let mockDeps = MockDepsGenerator()
+        let viewModel = DiagramViewModel(
+            persistenceController: PersistenceController(inMemory: true),
+            depsGenerator: mockDeps
+        )
+        viewModel.selectedPaths = ["/tmp/Foo.swift"]
+        viewModel.diagramMode = .dependencyGraph
+        viewModel.depsMode = .types
+
+        viewModel.generate()
+        await viewModel.currentTask?.value
+
+        #expect(mockDeps.generateCallCount == 1)
+        #expect(mockDeps.packageCallCount == 0)
+        #expect(mockDeps.lastPaths == ["/tmp/Foo.swift"])
     }
 
     // MARK: - Format Propagation

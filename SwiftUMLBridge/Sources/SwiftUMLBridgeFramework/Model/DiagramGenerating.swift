@@ -66,6 +66,31 @@ public protocol DependencyGraphGenerating: Sendable {
         mode: DepsMode,
         with configuration: Configuration
     ) -> DepsScript
+
+    /// Module-aware entry. Default implementation falls back to the path-based
+    /// `generateScript(for:mode:with:)` over all source files in the package
+    /// — concrete generators (notably `DependencyGraphGenerator`) override to
+    /// also stamp each edge with the owning SPM target.
+    func generateScript(
+        forPackage description: SPMPackageDescription,
+        packageRoot: URL,
+        mode: DepsMode,
+        with configuration: Configuration,
+        sdkPath: String?
+    ) -> DepsScript
+}
+
+public extension DependencyGraphGenerating {
+    func generateScript(
+        forPackage description: SPMPackageDescription,
+        packageRoot: URL,
+        mode: DepsMode,
+        with configuration: Configuration,
+        sdkPath: String? = nil
+    ) -> DepsScript {
+        let paths = description.sourceFileToModuleMap(packageRoot: packageRoot).keys.sorted()
+        return generateScript(for: paths, mode: mode, with: configuration)
+    }
 }
 
 // MARK: - State Machine Generator Protocol

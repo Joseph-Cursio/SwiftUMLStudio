@@ -47,11 +47,22 @@ extension DiagramViewModel {
         let paths = selectedPaths
         let format = diagramFormat
         let mode = depsMode
+        let packageDescription = self.packageDescription
+        let packageRoot = self.packageRoot
 
         let generator = depsGenerator
         let result = await Task.detached(priority: .userInitiated) {
             var config = Configuration.default
             config.format = format
+            if let packageDescription, let packageRoot {
+                return generator.generateScript(
+                    forPackage: packageDescription,
+                    packageRoot: packageRoot,
+                    mode: mode,
+                    with: config,
+                    sdkPath: nil
+                )
+            }
             return generator.generateScript(for: paths, mode: mode, with: config)
         }.value
 
