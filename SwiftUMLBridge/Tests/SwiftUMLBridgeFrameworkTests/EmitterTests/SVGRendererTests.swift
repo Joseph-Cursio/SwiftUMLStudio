@@ -257,6 +257,44 @@ struct SVGRendererTests {
         #expect(svg.contains("arrow-composition"))
     }
 
+    // MARK: - Module Clusters
+
+    @Test("renders a module cluster box with its label")
+    func renderCluster() {
+        var cluster = LayoutCluster(id: "Networking", label: "Networking")
+        cluster.posX = 200; cluster.posY = 150; cluster.width = 300; cluster.height = 220
+        var graph = LayoutGraph()
+        graph.clusters = [cluster]
+        let svg = SVGRenderer.render(graph)
+
+        #expect(svg.contains("<!-- module: Networking -->"))
+        #expect(svg.contains(">Networking</text>"))
+        // Dashed, tinted rectangle.
+        #expect(svg.contains("stroke-dasharray=\"6,3\""))
+        #expect(svg.contains("fill-opacity=\"0.10\""))
+    }
+
+    @Test("cluster color is deterministic per module name")
+    func clusterColorIsDeterministic() {
+        var cluster = LayoutCluster(id: "Core", label: "Core")
+        cluster.width = 100; cluster.height = 100
+        var graph = LayoutGraph()
+        graph.clusters = [cluster]
+
+        let first = SVGRenderer.render(graph)
+        let second = SVGRenderer.render(graph)
+        #expect(first == second)
+        #expect(first.contains("hsl("))
+    }
+
+    @Test("graph without clusters renders no module comment")
+    func noClustersNoModuleComment() {
+        var node = LayoutNode(id: "cls", label: "Solo", stereotype: "class")
+        node.posX = 100; node.posY = 60; node.width = 120; node.height = 50
+        let svg = SVGRenderer.render(LayoutGraph(nodes: [node]))
+        #expect(svg.contains("<!-- module:") == false)
+    }
+
     // MARK: - Dimensions
 
     @Test("SVG dimensions include margin")

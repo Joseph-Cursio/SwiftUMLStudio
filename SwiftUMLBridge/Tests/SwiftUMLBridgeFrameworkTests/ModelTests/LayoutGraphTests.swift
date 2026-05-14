@@ -36,6 +36,53 @@ struct LayoutGraphTests {
         #expect(graph.height == 300)
     }
 
+    @Test("clusters default to empty")
+    func defaultClusters() {
+        let graph = LayoutGraph(nodes: [LayoutNode(id: "a", label: "A")])
+        #expect(graph.clusters.isEmpty)
+    }
+
+    @Test("clusters are mutable")
+    func mutableClusters() {
+        var graph = LayoutGraph()
+        graph.clusters = [LayoutCluster(id: "Networking", label: "Networking")]
+        #expect(graph.clusters.count == 1)
+        #expect(graph.clusters[0].id == "Networking")
+    }
+
+    // MARK: - LayoutCluster
+
+    @Test("cluster initializes with id and label and zeroed geometry")
+    func clusterDefaults() {
+        let cluster = LayoutCluster(id: "Core", label: "Core")
+        #expect(cluster.id == "Core")
+        #expect(cluster.label == "Core")
+        #expect(cluster.posX == 0)
+        #expect(cluster.posY == 0)
+        #expect(cluster.width == 0)
+        #expect(cluster.height == 0)
+    }
+
+    @Test("cluster position and size are mutable")
+    func clusterMutableGeometry() {
+        var cluster = LayoutCluster(id: "UI", label: "UI")
+        cluster.posX = 250
+        cluster.posY = 120
+        cluster.width = 400
+        cluster.height = 300
+        #expect(cluster.posX == 250)
+        #expect(cluster.posY == 120)
+        #expect(cluster.width == 400)
+        #expect(cluster.height == 300)
+    }
+
+    @Test("cluster conforms to Identifiable via its module id")
+    func clusterIdentifiable() {
+        let clusterA = LayoutCluster(id: "ModuleA", label: "ModuleA")
+        let clusterB = LayoutCluster(id: "ModuleB", label: "ModuleB")
+        #expect(clusterA.id != clusterB.id)
+    }
+
     // MARK: - LayoutNode
 
     @Test("node initializes with required fields and defaults")

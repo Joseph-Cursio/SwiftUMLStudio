@@ -6,12 +6,42 @@ import Foundation
 public struct LayoutGraph: Sendable {
     public var nodes: [LayoutNode]
     public var edges: [LayoutEdge]
+
+    /// Module grouping boxes, populated by the layout engine when the graph's
+    /// nodes carry `module` values (i.e. the diagram was generated from a
+    /// parsed SPM package). Empty for diagrams generated from loose files.
+    public var clusters: [LayoutCluster] = []
+
     public var width: Double = 0
     public var height: Double = 0
 
     public init(nodes: [LayoutNode] = [], edges: [LayoutEdge] = []) {
         self.nodes = nodes
         self.edges = edges
+    }
+}
+
+// MARK: - Layout Cluster
+
+/// A module grouping box that encloses every `LayoutNode` sharing a `module`
+/// value. Position and size are set by the layout engine (a compound-graph
+/// parent node); renderers draw it as a tinted, labelled background rectangle.
+public struct LayoutCluster: Identifiable, Sendable {
+    /// The module / SPM target name — also the cluster's identity.
+    public let id: String
+    /// Display label (currently the module name).
+    public let label: String
+
+    /// Center X (set by layout engine)
+    public var posX: Double = 0
+    /// Center Y (set by layout engine)
+    public var posY: Double = 0
+    public var width: Double = 0
+    public var height: Double = 0
+
+    public init(id: String, label: String) {
+        self.id = id
+        self.label = label
     }
 }
 

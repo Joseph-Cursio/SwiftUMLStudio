@@ -75,21 +75,63 @@ public struct DagreLayoutEngine: Sendable {
 
     // MARK: - JavaScript Generation
 
+    /// Prefix applied to compound-graph parent node IDs so they can be told
+    /// apart from real nodes when the layout result is serialized back.
+    private static let clusterIdPrefix = "cluster:"
+
+    /// Groups node IDs by their owning module. Returns an empty map when no
+    /// node carries a `module` value — the common loose-files case — so the
+    /// layout falls back to a plain (non-compound) dagre graph.
+    private static func moduleGroups(in graph: LayoutGraph) -> [String: [String]] {
+        var groups: [String: [String]] = [:]
+        for node in graph.nodes {
+            guard let module = node.module else { continue }
+            groups[module, default: []].append(node.id)
+        }
+        return groups
+    }
+
     /// Builds a JS script that creates a dagre graph, runs layout, and returns JSON results.
+    /// When the graph's nodes carry `module` values, the dagre graph is built
+    /// in compound mode with one parent node per module so dagre clusters the
+    /// types and reports a bounding box for each module.
     private static func buildLayoutScript(for graph: LayoutGraph) -> String {
+        let modules = moduleGroups(in: graph)
+        let isCompound = !modules.isEmpty
         var script = """
         (function() {
             var Graph = graphre.graphlib.Graph;
             var layout = graphre.layout;
-            var graph = new Graph({ directed: true, compound: false, multigraph: false });
+            var graph = new Graph({ directed: true, compound: \(isCompound), multigraph: false });
             graph.setGraph({ rankdir: "TB", nodesep: 60, ranksep: 60, marginx: 20, marginy: 20 });
             graph.setDefaultEdgeLabel(function() { return {}; });
 
         """
         script += buildNodeStatements(for: graph)
         script += buildEdgeStatements(for: graph)
+        if isCompound {
+            script += buildClusterStatements(for: modules)
+        }
         script += layoutAndSerialize
         return script
+    }
+
+    /// Emits `setNode` for each module's parent node and `setParent` to nest
+    /// every member node beneath it. Modules are processed in sorted order so
+    /// the generated script is deterministic.
+    private static func buildClusterStatements(for modules: [String: [String]]) -> String {
+        var result = ""
+        for (module, nodeIds) in modules.sorted(by: { $0.key < $1.key }) {
+            let clusterId = clusterIdPrefix + module
+            let escapedCluster = clusterId.replacingOccurrences(of: "\"", with: "\\\"")
+            let escapedLabel = module.replacingOccurrences(of: "\"", with: "\\\"")
+            result += "    graph.setNode(\"\(escapedCluster)\", { label: \"\(escapedLabel)\" });\n"
+            for nodeId in nodeIds {
+                let escapedNode = nodeId.replacingOccurrences(of: "\"", with: "\\\"")
+                result += "    graph.setParent(\"\(escapedNode)\", \"\(escapedCluster)\");\n"
+            }
+        }
+        return result
     }
 
     private static func buildNodeStatements(for graph: LayoutGraph) -> String {
@@ -115,9 +157,17 @@ public struct DagreLayoutEngine: Sendable {
 
             layout(graph);
             var nodes = {};
+            var clusters = {};
             graph.nodes().forEach(function(v) {
                 var n = graph.node(v);
-                if (n) nodes[v] = { x: n.x, y: n.y, width: n.width, height: n.height };
+                if (!n) return;
+                var box = { x: n.x, y: n.y, width: n.width, height: n.height };
+                if (v.indexOf("cluster:") === 0) {
+                    box.label = n.label;
+                    clusters[v] = box;
+                } else {
+                    nodes[v] = box;
+                }
             });
             var edges = [];
             graph.edges().forEach(function(e) {
@@ -128,7 +178,7 @@ public struct DagreLayoutEngine: Sendable {
                 }
             });
             var graphInfo = graph.graph();
-            return JSON.stringify({ nodes: nodes, edges: edges,
+            return JSON.stringify({ nodes: nodes, edges: edges, clusters: clusters,
                 width: graphInfo.width || 800, height: graphInfo.height || 600 });
         })();
         """
@@ -159,6 +209,22 @@ public struct DagreLayoutEngine: Sendable {
                     result.nodes[idx].width = pos["width"] ?? result.nodes[idx].width
                     result.nodes[idx].height = pos["height"] ?? result.nodes[idx].height
                 }
+            }
+        }
+
+        // Parse module cluster bounding boxes (compound layout only)
+        if let clustersDict = json["clusters"] as? [String: [String: Any]] {
+            for (clusterId, box) in clustersDict.sorted(by: { $0.key < $1.key }) {
+                let module = String(clusterId.dropFirst(clusterIdPrefix.count))
+                var cluster = LayoutCluster(
+                    id: module,
+                    label: (box["label"] as? String) ?? module
+                )
+                cluster.posX = box["x"] as? Double ?? 0
+                cluster.posY = box["y"] as? Double ?? 0
+                cluster.width = box["width"] as? Double ?? 0
+                cluster.height = box["height"] as? Double ?? 0
+                result.clusters.append(cluster)
             }
         }
 

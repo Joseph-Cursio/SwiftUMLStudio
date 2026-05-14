@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 @testable import SwiftUMLBridgeFramework
 
@@ -143,6 +144,76 @@ struct DagreLayoutEngineTests {
         for edge in result.edges {
             #expect(edge.points.count >= 2)
         }
+    }
+
+    // MARK: - Module Clustering (Compound Layout)
+
+    @Test("graph without modules produces no clusters")
+    func noModulesNoClusters() {
+        let nodes = [
+            LayoutNode(id: "aaa", label: "A"),
+            LayoutNode(id: "bbb", label: "B")
+        ]
+        let result = DagreLayoutEngine.layout(LayoutGraph(nodes: nodes))
+        #expect(result.clusters.isEmpty)
+    }
+
+    @Test("nodes carrying modules produce a cluster per module")
+    func modulesProduceClusters() {
+        let nodes = [
+            LayoutNode(id: "Client", label: "Client", module: "Networking"),
+            LayoutNode(id: "Session", label: "Session", module: "Networking"),
+            LayoutNode(id: "Store", label: "Store", module: "Persistence")
+        ]
+        let result = DagreLayoutEngine.layout(LayoutGraph(nodes: nodes))
+
+        #expect(result.clusters.count == 2)
+        let ids = Set(result.clusters.map(\.id))
+        #expect(ids == ["Networking", "Persistence"])
+        // Every node is still positioned and sized.
+        #expect(result.nodes.count == 3)
+        for node in result.nodes {
+            #expect(node.width > 0)
+            #expect(node.height > 0)
+        }
+    }
+
+    @Test("cluster bounding box has positive size and encloses its nodes")
+    func clusterEnclosesNodes() {
+        let nodes = [
+            LayoutNode(id: "First", label: "First", module: "Core"),
+            LayoutNode(id: "Second", label: "Second", module: "Core")
+        ]
+        let result = DagreLayoutEngine.layout(LayoutGraph(nodes: nodes))
+
+        let cluster = try! #require(result.clusters.first { $0.id == "Core" })
+        #expect(cluster.width > 0)
+        #expect(cluster.height > 0)
+
+        let clusterRect = CGRect(
+            x: cluster.posX - cluster.width / 2, y: cluster.posY - cluster.height / 2,
+            width: cluster.width, height: cluster.height
+        )
+        for node in result.nodes {
+            let nodeRect = CGRect(
+                x: node.posX - node.width / 2, y: node.posY - node.height / 2,
+                width: node.width, height: node.height
+            )
+            #expect(clusterRect.contains(nodeRect))
+        }
+    }
+
+    @Test("module clustering preserves edge routing")
+    func clusteringPreservesEdges() {
+        let nodes = [
+            LayoutNode(id: "child", label: "Child", module: "App"),
+            LayoutNode(id: "parent", label: "Parent", module: "App")
+        ]
+        let edges = [LayoutEdge(sourceId: "child", targetId: "parent", style: .inheritance)]
+        let result = DagreLayoutEngine.layout(LayoutGraph(nodes: nodes, edges: edges))
+
+        #expect(result.edges.count == 1)
+        #expect(result.edges[0].points.count >= 2)
     }
 
     // MARK: - Node IDs with Special Characters

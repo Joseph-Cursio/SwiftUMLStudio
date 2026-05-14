@@ -42,7 +42,12 @@ public struct SVGRenderer: Sendable {
         </defs>
         """
 
-        // Render edges first (behind nodes)
+        // Render module cluster boxes first (behind everything)
+        for cluster in graph.clusters {
+            svg += renderCluster(cluster)
+        }
+
+        // Render edges (behind nodes)
         for edge in graph.edges {
             svg += renderEdge(edge)
         }
@@ -144,6 +149,39 @@ public struct SVGRenderer: Sendable {
 
         svg += "</g>\n"
         return svg
+    }
+
+    // MARK: - Cluster Rendering
+
+    /// Renders a module grouping box: a tinted, rounded rectangle with the
+    /// module name in the top-left corner. The hue is derived deterministically
+    /// from the module name so the same module keeps its color across renders
+    /// (mirrors `NativeDiagramGeometry.moduleColor(for:)` in the Studio app).
+    private static func renderCluster(_ cluster: LayoutCluster) -> String {
+        let leftX = cluster.posX - cluster.width / 2
+        let topY = cluster.posY - cluster.height / 2
+        let hue = moduleHue(for: cluster.id)
+        let color = "hsl(\(hue), 55%, 60%)"
+
+        var svg = "\n<!-- module: \(escapeXML(cluster.label)) -->\n"
+        svg += "<g>\n"
+        svg += "  <rect x=\"\(fmt(leftX))\" y=\"\(fmt(topY))\" "
+        svg += "width=\"\(fmt(cluster.width))\" height=\"\(fmt(cluster.height))\" "
+        svg += "rx=\"\(cornerRadius * 2)\" ry=\"\(cornerRadius * 2)\" "
+        svg += "fill=\"\(color)\" fill-opacity=\"0.10\" "
+        svg += "stroke=\"\(color)\" stroke-width=\"1.5\" stroke-dasharray=\"6,3\"/>\n"
+        svg += "  <text x=\"\(fmt(leftX + padding))\" y=\"\(fmt(topY + 16))\" "
+        svg += "fill=\"\(color)\" font-size=\"12\" font-weight=\"bold\">"
+        svg += "\(escapeXML(cluster.label))</text>\n"
+        svg += "</g>\n"
+        return svg
+    }
+
+    /// Deterministic hue (0–359) for a module name — sums the name's unicode
+    /// scalars mod 360, matching the Studio canvas color derivation.
+    private static func moduleHue(for module: String) -> Int {
+        let hash = module.unicodeScalars.reduce(0) { $0 &+ Int($1.value) }
+        return ((hash % 360) + 360) % 360
     }
 
     // MARK: - Edge Rendering
