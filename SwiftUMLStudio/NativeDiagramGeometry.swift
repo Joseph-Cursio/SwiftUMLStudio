@@ -57,6 +57,16 @@ nonisolated enum NativeDiagramGeometry {
         )
     }
 
+    /// Bounding rectangle of a laid-out module cluster in canvas coordinates.
+    static func clusterRect(for cluster: LayoutCluster) -> CGRect {
+        CGRect(
+            x: cluster.posX - cluster.width / 2,
+            y: cluster.posY - cluster.height / 2,
+            width: cluster.width,
+            height: cluster.height
+        )
+    }
+
     /// Returns the topmost node whose bounds contain `point`, or `nil` if none.
     /// Iterates in reverse so later-drawn nodes win when bounds overlap.
     static func hitNode(in graph: LayoutGraph, at point: CGPoint) -> LayoutNode? {

@@ -84,6 +84,20 @@ struct NativeDiagramGeometryNodeRectTests {
         let rect = NativeDiagramGeometry.headerRect(for: makeNode(height: 120))
         #expect(rect.height == NativeDiagramGeometry.headerHeight)
     }
+
+    @Test("clusterRect is centered on the cluster's posX/posY")
+    func clusterRectCentered() {
+        var cluster = LayoutCluster(id: "Core", label: "Core")
+        cluster.posX = 300
+        cluster.posY = 250
+        cluster.width = 400
+        cluster.height = 320
+        let rect = NativeDiagramGeometry.clusterRect(for: cluster)
+        #expect(rect.midX == 300)
+        #expect(rect.midY == 250)
+        #expect(rect.width == 400)
+        #expect(rect.height == 320)
+    }
 }
 
 @Suite("NativeDiagramGeometry.strokeStyle")

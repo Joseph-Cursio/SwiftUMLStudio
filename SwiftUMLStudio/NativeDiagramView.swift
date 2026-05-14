@@ -35,6 +35,9 @@ struct NativeDiagramView: View {
             let canvasHeight = max(graph.height + 40, Double(geometry.size.height))
 
             Canvas { context, _ in
+                for cluster in graph.clusters {
+                    drawCluster(cluster, in: &context)
+                }
                 for edge in graph.edges {
                     drawEdge(edge, in: &context)
                 }
@@ -121,6 +124,27 @@ struct NativeDiagramView: View {
         return .ignored
     }
 
+    // MARK: - Cluster Drawing
+
+    /// Draws a module grouping box behind the nodes it encloses: a tinted,
+    /// dashed rounded rectangle with the module name in the top-left corner.
+    /// Uses the same deterministic per-module color as the per-node stripe.
+    private func drawCluster(_ cluster: LayoutCluster, in context: inout GraphicsContext) {
+        let rect = NativeDiagramGeometry.clusterRect(for: cluster)
+        let color = NativeDiagramGeometry.moduleColor(for: cluster.id)
+        let rounded = Path(roundedRect: rect, cornerRadius: Self.cornerRadius * 2)
+
+        context.fill(rounded, with: .color(color.opacity(0.12)))
+        context.stroke(rounded, with: .color(color),
+                       style: StrokeStyle(lineWidth: 1.5, dash: [6, 3]))
+
+        let label = Text(cluster.label)
+            .font(.system(size: 12, weight: .bold))
+            .foregroundStyle(color)
+        context.draw(label, at: CGPoint(x: rect.minX + Self.padding, y: rect.minY + 10),
+                     anchor: .leading)
+    }
+
     // MARK: - Node Drawing
 
     private func drawNode(
@@ -133,7 +157,9 @@ struct NativeDiagramView: View {
 
         drawNodeBox(rect: rect, headerRect: headerRect, color: color,
                     hasCompartments: !node.compartments.isEmpty, in: &context)
-        if let module = node.module {
+        // The per-node stripe is a fallback module cue — when the layout engine
+        // produced cluster boxes, the grouping is already conveyed by those.
+        if let module = node.module, graph.clusters.isEmpty {
             drawModuleStripe(rect: rect, module: module, in: &context)
         }
         if isSelected {
