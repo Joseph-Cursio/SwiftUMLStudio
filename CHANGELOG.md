@@ -39,8 +39,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   (`library` / `executable`), and three counts: source files, types,
   and outgoing `target_dependencies`. Driven by a new
   `ProjectAnalyzer.analyze(package:packageRoot:)` overload that emits a
-  `ModuleSummary` per target. Module-grouped class-diagram layout
-  remains deferred.
+  `ModuleSummary` per target.
+- **M12 follow-up: Module-grouped class-diagram layout.** When an SPM
+  package is loaded, the native class-diagram canvas now draws each
+  module as a tinted, dashed grouping box behind the types it owns,
+  labelled with the module name in its deterministic per-module color.
+  Layout is driven by `DagreLayoutEngine` running in compound-graph
+  mode — one parent node per module — so the engine itself clusters the
+  types and reports a bounding box per module (new `LayoutCluster` on
+  `LayoutGraph`). The per-node bottom stripe is now a fallback, drawn
+  only when no cluster boxes are present. Closes the last deferred
+  M11/M12 Studio bullet.
 
 ### Changed — Bridge
 
@@ -59,8 +68,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   (`App["App<br/>«executable»"]`) and Nomnoml inlines the stereotype
   into edge endpoints (`[App «executable»] --> [Core «library»]`).
   Closes the "Mermaid/Nomnoml emitter changes" deferred bullet across
-  both `classdiagram` and `deps`. Per-module dashboard and
-  module-grouped layout in Studio remain deferred.
+  both `classdiagram` and `deps`.
+- **M12 follow-up: `DagreLayoutEngine` gains compound-graph layout.**
+  When a `LayoutGraph`'s nodes carry `module` values, the engine builds
+  the dagre graph in compound mode — one parent node per module, every
+  type re-parented beneath it — so dagre clusters the types and reports
+  a bounding box per module. Results are parsed into a new
+  `LayoutCluster` array on `LayoutGraph`; `SVGRenderer` draws each as a
+  tinted, dashed labelled box behind the nodes. Graphs without module
+  info are unaffected (plain non-compound layout, empty `clusters`).
 
 ---
 
