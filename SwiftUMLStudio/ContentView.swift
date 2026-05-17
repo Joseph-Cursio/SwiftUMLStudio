@@ -196,7 +196,12 @@ struct ContentView: View {
 
         guard panel.runModal() == .OK else { return }
         viewModel.unloadPackage()
-        viewModel.selectedPaths = panel.urls.map { $0.path() }
+        let urls = panel.urls
+        viewModel.applySelection(
+            paths: urls.map { $0.path() },
+            bookmarks: urls.map { SecurityScopedURL.makeBookmark(for: $0) },
+            urls: urls
+        )
         viewModel.generate()
     }
 

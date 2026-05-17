@@ -6,6 +6,17 @@ import SwiftUMLBridgeFramework
 @Observable @MainActor
 final class DiagramViewModel {
     var selectedPaths: [String] = []
+    /// Security-scoped bookmarks aligned with `selectedPaths`. Populated by
+    /// `applySelection(paths:bookmarks:urls:)` when the user picks files via
+    /// `NSOpenPanel`, and re-derived from persisted bookmarks when restoring
+    /// a saved diagram. Direct assignment to `selectedPaths` (tests, package
+    /// load) leaves this empty — those code paths don't depend on cross-session
+    /// access being restored.
+    var selectedPathBookmarks: [Data?] = []
+    /// URLs the view model has explicitly started security-scoped access on
+    /// (bookmark-resolved URLs from `applySelection`). Held so `deinit` can
+    /// balance the `startAccessingSecurityScopedResource()` calls.
+    private var activeSecurityScopedURLs: [URL] = []
     var script: DiagramScript?
     var sequenceScript: SequenceScript?
     var depsScript: DepsScript?
@@ -159,6 +170,23 @@ final class DiagramViewModel {
         saveSnapshot(isProUnlocked: isProUnlocked)
     }
 
+    /// Replace the current selection with a freshly granted set of paths.
+    /// Stops security-scoped access on any previously held URLs and starts
+    /// access on the new ones. `urls` is the live `URL` array — pass URLs
+    /// granted by `NSOpenPanel` (already accessible; the start call is
+    /// harmless) or URLs resolved from persisted bookmarks (start is
+    /// required for sandbox read access).
+    func applySelection(paths: [String], bookmarks: [Data?], urls: [URL]) {
+        for url in activeSecurityScopedURLs {
+            url.stopAccessingSecurityScopedResource()
+        }
+        activeSecurityScopedURLs = urls
+        for url in urls {
+            _ = url.startAccessingSecurityScopedResource()
+        }
+        selectedPaths = paths
+        selectedPathBookmarks = bookmarks
+    }
 }
 
 /// A simple implementation of DiagramOutputting for restoring history items.

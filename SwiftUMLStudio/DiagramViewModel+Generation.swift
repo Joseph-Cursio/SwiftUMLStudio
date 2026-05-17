@@ -233,6 +233,9 @@ extension DiagramViewModel {
         entity.sequenceDepth = sequenceDepth
         entity.scriptText = currentScript.text
         entity.paths = try? JSONEncoder().encode(selectedPaths)
+        entity.pathBookmarks = selectedPathBookmarks.isEmpty
+            ? nil
+            : try? JSONEncoder().encode(selectedPathBookmarks)
 
         if let firstPath = selectedPaths.first {
             let filename = URL(fileURLWithPath: firstPath).lastPathComponent

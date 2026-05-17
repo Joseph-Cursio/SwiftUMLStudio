@@ -16,10 +16,15 @@ struct ArchitectureDiff {
 @MainActor
 enum SnapshotManager {
 
-    /// Save a snapshot from the current project summary.
+    /// Save a snapshot from the current project summary. `bookmarks` should
+    /// be the parallel security-scoped bookmark data for each entry in
+    /// `paths`; pass `[]` (default) for non-bookmarked callers — the snapshot
+    /// remains usable for identity matching, only cross-session read access
+    /// won't be restorable.
     static func saveSnapshot(
         from summary: ProjectSummary,
         paths: [String],
+        bookmarks: [Data?] = [],
         modelContext: ModelContext
     ) {
         let snapshot = ProjectSnapshot(
@@ -33,7 +38,10 @@ enum SnapshotManager {
             topConnectedTypes: try? JSONEncoder().encode(
                 summary.topConnectedTypes.map { ["\($0.name)": $0.connectionCount] }
             ),
-            projectPaths: try? JSONEncoder().encode(paths)
+            projectPaths: try? JSONEncoder().encode(paths),
+            projectPathBookmarks: bookmarks.isEmpty
+                ? nil
+                : try? JSONEncoder().encode(bookmarks)
         )
         modelContext.insert(snapshot)
         try? modelContext.save()

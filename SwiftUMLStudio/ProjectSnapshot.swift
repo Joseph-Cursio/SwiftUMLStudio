@@ -12,6 +12,10 @@ final class ProjectSnapshot {
     var typeBreakdown: Data?
     var topConnectedTypes: Data?
     var projectPaths: Data?
+    /// JSON-encoded `[Data?]` of security-scoped bookmarks aligned with
+    /// `projectPaths`. Populated alongside paths when the user opens a folder
+    /// via `NSOpenPanel`; `nil` on legacy rows.
+    var projectPathBookmarks: Data?
 
     init(
         identifier: UUID = UUID(),
@@ -22,7 +26,8 @@ final class ProjectSnapshot {
         fileCount: Int = 0,
         typeBreakdown: Data? = nil,
         topConnectedTypes: Data? = nil,
-        projectPaths: Data? = nil
+        projectPaths: Data? = nil,
+        projectPathBookmarks: Data? = nil
     ) {
         self.identifier = identifier
         self.timestamp = timestamp
@@ -33,6 +38,7 @@ final class ProjectSnapshot {
         self.typeBreakdown = typeBreakdown
         self.topConnectedTypes = topConnectedTypes
         self.projectPaths = projectPaths
+        self.projectPathBookmarks = projectPathBookmarks
     }
 
     /// Decoded type breakdown dictionary.
@@ -55,5 +61,12 @@ final class ProjectSnapshot {
     var decodedProjectPaths: [String] {
         guard let data = projectPaths else { return [] }
         return (try? JSONDecoder().decode([String].self, from: data)) ?? []
+    }
+
+    /// Decoded bookmarks aligned with `decodedProjectPaths`. Each element may
+    /// be `nil` when the bookmark couldn't be created at save time.
+    var decodedProjectPathBookmarks: [Data?] {
+        guard let data = projectPathBookmarks else { return [] }
+        return (try? JSONDecoder().decode([Data?].self, from: data)) ?? []
     }
 }

@@ -152,6 +152,27 @@ struct ProjectSnapshotEntityTests {
             #expect(snapshot.decodedTypeBreakdown.isEmpty)
             #expect(snapshot.decodedTopConnectedTypes.isEmpty)
             #expect(snapshot.decodedProjectPaths.isEmpty)
+            #expect(snapshot.decodedProjectPathBookmarks.isEmpty)
+        }
+    }
+
+    @Test("ProjectSnapshot decodes path bookmarks with optional entries")
+    func decodedPathBookmarks() throws {
+        try runOnMain {
+            let controller = PersistenceController(inMemory: true)
+            let modelContext = controller.container.mainContext
+
+            let snapshot = ProjectSnapshot()
+            snapshot.identifier = UUID()
+            let bookmarks: [Data?] = [Data([0x01, 0x02]), nil, Data([0x03])]
+            snapshot.projectPathBookmarks = try JSONEncoder().encode(bookmarks)
+            modelContext.insert(snapshot)
+
+            let decoded = snapshot.decodedProjectPathBookmarks
+            #expect(decoded.count == 3)
+            #expect(decoded[0] == Data([0x01, 0x02]))
+            #expect(decoded[1] == nil)
+            #expect(decoded[2] == Data([0x03]))
         }
     }
 }
@@ -233,6 +254,53 @@ struct SnapshotManagerTests {
 
             let result = SnapshotManager.latestSnapshot(for: ["/nonexistent"], modelContext: modelContext)
             #expect(result == nil)
+        }
+    }
+
+    @Test("saveSnapshot persists path bookmarks alongside paths")
+    func saveSnapshotPersistsBookmarks() throws {
+        try runOnMain {
+            let controller = PersistenceController(inMemory: true)
+            let modelContext = controller.container.mainContext
+            let summary = makeTestSummary()
+            let bookmarks: [Data?] = [Data([0xAA, 0xBB]), nil]
+
+            SnapshotManager.saveSnapshot(
+                from: summary,
+                paths: ["/one", "/two"],
+                bookmarks: bookmarks,
+                modelContext: modelContext
+            )
+
+            let snapshot = try #require(
+                SnapshotManager.fetchSnapshots(modelContext: modelContext).first
+            )
+            #expect(snapshot.decodedProjectPaths == ["/one", "/two"])
+            let decoded = snapshot.decodedProjectPathBookmarks
+            #expect(decoded.count == 2)
+            #expect(decoded[0] == Data([0xAA, 0xBB]))
+            #expect(decoded[1] == nil)
+        }
+    }
+
+    @Test("saveSnapshot leaves bookmarks nil when no bookmarks provided")
+    func saveSnapshotNoBookmarks() throws {
+        try runOnMain {
+            let controller = PersistenceController(inMemory: true)
+            let modelContext = controller.container.mainContext
+            let summary = makeTestSummary()
+
+            SnapshotManager.saveSnapshot(
+                from: summary,
+                paths: ["/legacy"],
+                modelContext: modelContext
+            )
+
+            let snapshot = try #require(
+                SnapshotManager.fetchSnapshots(modelContext: modelContext).first
+            )
+            #expect(snapshot.projectPathBookmarks == nil)
+            #expect(snapshot.decodedProjectPathBookmarks.isEmpty)
         }
     }
 

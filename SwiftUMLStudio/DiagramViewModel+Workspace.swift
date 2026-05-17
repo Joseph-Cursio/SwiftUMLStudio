@@ -39,16 +39,50 @@ extension DiagramViewModel {
 
         sequenceDepth = entity.sequenceDepth
 
-        if let pathsData = entity.paths,
-           let paths = try? JSONDecoder().decode([String].self, from: pathsData) {
-            selectedPaths = paths
-        }
+        restoreSelection(from: entity)
 
         if let text = entity.scriptText {
             restoredScript = SimpleDiagramScript(text: text, format: diagramFormat)
         } else {
             restoredScript = nil
         }
+    }
+
+    /// Restore `selectedPaths` from a persisted entity, preferring stored
+    /// security-scoped bookmarks (which carry sandbox read access across
+    /// launches) and falling back to the raw path strings for legacy entities
+    /// saved before bookmark capture was wired up.
+    private func restoreSelection(from entity: DiagramEntity) {
+        let storedBookmarks = entity.decodedPathBookmarks
+        let storedPaths: [String]
+        if let pathsData = entity.paths,
+           let decoded = try? JSONDecoder().decode([String].self, from: pathsData) {
+            storedPaths = decoded
+        } else {
+            storedPaths = []
+        }
+
+        guard !storedBookmarks.isEmpty else {
+            applySelection(paths: storedPaths, bookmarks: [], urls: [])
+            return
+        }
+
+        var resolvedPaths: [String] = []
+        var resolvedBookmarks: [Data?] = []
+        var resolvedURLs: [URL] = []
+        for (idx, bookmark) in storedBookmarks.enumerated() {
+            let fallbackPath = idx < storedPaths.count ? storedPaths[idx] : nil
+            if let bookmark, let result = SecurityScopedURL.resolveURL(from: bookmark) {
+                resolvedURLs.append(result.url)
+                resolvedPaths.append(result.url.path())
+                // Drop stale bookmarks so the next save regenerates them.
+                resolvedBookmarks.append(result.isStale ? nil : bookmark)
+            } else if let fallbackPath {
+                resolvedPaths.append(fallbackPath)
+                resolvedBookmarks.append(nil)
+            }
+        }
+        applySelection(paths: resolvedPaths, bookmarks: resolvedBookmarks, urls: resolvedURLs)
     }
 
     func deleteHistoryItem(_ entity: DiagramEntity) {
@@ -108,7 +142,12 @@ extension DiagramViewModel {
 
     func saveSnapshot(isProUnlocked: Bool) {
         guard isProUnlocked, let summary = projectSummary else { return }
-        SnapshotManager.saveSnapshot(from: summary, paths: selectedPaths, modelContext: modelContext)
+        SnapshotManager.saveSnapshot(
+            from: summary,
+            paths: selectedPaths,
+            bookmarks: selectedPathBookmarks,
+            modelContext: modelContext
+        )
         loadSnapshots()
         updateArchitectureDiff()
         ReviewReminderManager.rescheduleIfEnabled()
