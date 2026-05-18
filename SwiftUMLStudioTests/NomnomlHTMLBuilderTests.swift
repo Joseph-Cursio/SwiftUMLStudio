@@ -78,15 +78,18 @@ struct NomnomlHTMLBuilderTests {
 
     // MARK: - Script tag sources
 
-    @Test("falls back to CDN when bundle resources not found")
-    func fallsBackToCDN() {
-        // In the test target, Bundle.main won't contain the JS resources,
-        // so the CDN fallback should be used
+    @Test("emits explicit error comments instead of any CDN reference")
+    func emitsErrorCommentsNotCDN() {
+        // Privacy invariant: the HTML must never reference a third-party CDN.
+        // In the test target Bundle.main lacks the bundled JS, so the
+        // "missing from app bundle" markers must appear instead. In
+        // production both branches resolve to the local file:// path.
         let html = NomnomlHTMLBuilder.nomnomlHTML("[<class> Foo]")
+        #expect(html.contains("cdn.jsdelivr.net") == false)
+        #expect(html.contains("https://") == false)
         let usesLocalGraphre = html.contains("file://")
-        let usesCDNGraphre = html.contains("cdn.jsdelivr.net")
-        // Either local or CDN — one must be present
-        #expect(usesLocalGraphre || usesCDNGraphre)
+        let missingMarker = html.contains("missing from app bundle")
+        #expect(usesLocalGraphre || missingMarker)
     }
 
     // MARK: - Special characters in diagram text

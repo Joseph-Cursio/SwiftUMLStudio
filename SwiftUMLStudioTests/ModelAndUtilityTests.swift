@@ -252,10 +252,18 @@ struct MermaidHTMLBuilderTests {
         #expect(html.contains("<div class=\"mermaid\">"))
     }
 
-    @Test("mermaidHTML contains mermaid CDN script tag")
-    func mermaidHTMLContainsScriptTag() {
+    @Test("mermaidHTML emits a local script tag or a missing-bundle marker (never a CDN URL)")
+    func mermaidHTMLNeverReferencesCDN() {
+        // Privacy invariant: HTML must not contain any third-party CDN URL.
+        // In the test target Bundle.main lacks mermaid.min.js, so the
+        // "missing from app bundle" marker appears; in production the local
+        // file:// script tag does.
         let html = MermaidHTMLBuilder.mermaidHTML("graph TD")
-        #expect(html.contains("mermaid.min.js"))
+        #expect(html.contains("cdn.jsdelivr.net") == false)
+        #expect(html.contains("https://") == false)
+        let usesLocalScript = html.contains("file://")
+        let missingMarker = html.contains("missing from app bundle")
+        #expect(usesLocalScript || missingMarker)
     }
 
     @Test("mermaidHTML escapes XSS injection attempt")

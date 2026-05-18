@@ -5,18 +5,22 @@ enum NomnomlHTMLBuilder {
         // Base64-encode the nomnoml source to avoid any escaping issues
         let base64 = Data(text.utf8).base64EncodedString()
 
+        // Render strictly from bundled graphre.js + nomnoml.js — no CDN
+        // fallback, so the offline / no-third-party-network guarantee holds.
+        // Resources are always present in production; the comment fallback
+        // only fires in build setups where they aren't (tests, previews).
         let graphreTag: String
         if let bundleURL = Bundle.main.url(forResource: "graphre", withExtension: "js") {
             graphreTag = "<script src=\"\(bundleURL.absoluteString)\"></script>"
         } else {
-            graphreTag = "<script src=\"https://cdn.jsdelivr.net/npm/graphre/dist/graphre.js\"></script>"
+            graphreTag = "<!-- graphre.js missing from app bundle -->"
         }
 
         let nomnomlTag: String
         if let bundleURL = Bundle.main.url(forResource: "nomnoml", withExtension: "js") {
             nomnomlTag = "<script src=\"\(bundleURL.absoluteString)\"></script>"
         } else {
-            nomnomlTag = "<script src=\"https://cdn.jsdelivr.net/npm/nomnoml/dist/nomnoml.js\"></script>"
+            nomnomlTag = "<!-- nomnoml.js missing from app bundle -->"
         }
 
         // Nomnoml's canvas drawing uses fixed light colors. We can only adapt
