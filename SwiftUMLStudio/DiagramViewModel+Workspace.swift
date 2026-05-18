@@ -63,15 +63,27 @@ extension DiagramViewModel {
         }
 
         guard !storedBookmarks.isEmpty else {
+            #if APP_STORE_BUILD
+            // Legacy entity (pre-bookmark) under sandbox: the saved raw paths
+            // carry no sandbox access right, so restoring them would silently
+            // produce empty diagrams. Drop the selection and notify.
+            applySelection(paths: [], bookmarks: [], urls: [])
+            if !storedPaths.isEmpty {
+                setRestoreWarning(droppedCount: storedPaths.count)
+            }
+            #else
             applySelection(paths: storedPaths, bookmarks: [], urls: [])
+            #endif
             return
         }
 
         var resolvedPaths: [String] = []
         var resolvedBookmarks: [Data?] = []
         var resolvedURLs: [URL] = []
+        #if APP_STORE_BUILD
+        var droppedFallbackCount = 0
+        #endif
         for (idx, bookmark) in storedBookmarks.enumerated() {
-            let fallbackPath = idx < storedPaths.count ? storedPaths[idx] : nil
             if let bookmark, let result = SecurityScopedURL.resolveURL(from: bookmark) {
                 resolvedURLs.append(result.url)
                 resolvedPaths.append(result.url.path())
@@ -83,13 +95,38 @@ extension DiagramViewModel {
                     resolvedURL: result.url,
                     isStale: result.isStale
                 ))
-            } else if let fallbackPath {
-                resolvedPaths.append(fallbackPath)
-                resolvedBookmarks.append(nil)
+                continue
             }
+            guard idx < storedPaths.count else { continue }
+            #if APP_STORE_BUILD
+            // Sandbox can't read a raw path without an accompanying bookmark —
+            // keeping the entry would silently produce empty diagrams. Drop
+            // and notify; the user can re-pick via the file picker.
+            droppedFallbackCount += 1
+            #else
+            resolvedPaths.append(storedPaths[idx])
+            resolvedBookmarks.append(nil)
+            #endif
         }
         applySelection(paths: resolvedPaths, bookmarks: resolvedBookmarks, urls: resolvedURLs)
+        #if APP_STORE_BUILD
+        if droppedFallbackCount > 0 {
+            setRestoreWarning(droppedCount: droppedFallbackCount)
+        }
+        #endif
     }
+
+    #if APP_STORE_BUILD
+    /// Surface a user-facing warning when restoring a snapshot dropped one or
+    /// more paths the sandboxed app can't read. Routed through `errorMessage`
+    /// so the eventual UI surface picks it up alongside generation errors.
+    private func setRestoreWarning(droppedCount: Int) {
+        let suffix = droppedCount == 1 ? "file" : "files"
+        errorMessage = "\(droppedCount) saved \(suffix) couldn't be restored "
+            + "(moved, deleted, or never re-granted access). Re-open via the "
+            + "file picker to include them again."
+    }
+    #endif
 
     func deleteHistoryItem(_ entity: DiagramEntity) {
         if selectedHistoryItem == entity {
