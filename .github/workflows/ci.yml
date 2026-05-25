@@ -1,10 +1,7 @@
 name: CI
 
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+  workflow_dispatch:
 
 # Cancel in-flight runs of the same workflow on the same ref so PR pushes
 # don't pile up. Pushes to main always run to completion.
