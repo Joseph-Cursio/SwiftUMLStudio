@@ -145,7 +145,7 @@ extension SyntaxStructure {
     ) -> (text: String, category: NomnomlMemberCategory)? {
         guard let kind = element.kind, let name = element.name else { return nil }
         // Escape nomnoml-reserved characters in names
-        let safeName = nomnomlEscape(name)
+        let safeName = name.nomnomlEscaped
         switch kind {
         case .functionMethodInstance:
             return ("\(prefix)\(safeName)()", .method)
@@ -153,12 +153,12 @@ extension SyntaxStructure {
             return ("\(prefix)static \(safeName)()", .method)
         case .varInstance:
             if let typename = element.typename {
-                return ("\(prefix)\(safeName): \(nomnomlEscape(typename))", .property)
+                return ("\(prefix)\(safeName): \(typename.nomnomlEscaped)", .property)
             }
             return ("\(prefix)\(safeName)", .property)
         case .varStatic:
             if let typename = element.typename {
-                return ("\(prefix)static \(safeName): \(nomnomlEscape(typename))", .property)
+                return ("\(prefix)static \(safeName): \(typename.nomnomlEscaped)", .property)
             }
             return ("\(prefix)static \(safeName)", .property)
         case .enumelement:
@@ -166,15 +166,6 @@ extension SyntaxStructure {
         default:
             return nil
         }
-    }
-
-    /// Escape characters that are reserved in nomnoml syntax
-    private func nomnomlEscape(_ text: String) -> String {
-        text
-            .replacingOccurrences(of: "[", with: "(")
-            .replacingOccurrences(of: "]", with: ")")
-            .replacingOccurrences(of: "|", with: "/")
-            .replacingOccurrences(of: ";", with: ",")
     }
 }
 

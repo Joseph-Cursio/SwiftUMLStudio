@@ -7,6 +7,24 @@ internal extension String {
 }
 
 internal extension String {
+    /// Escapes the XML special characters so the value is safe to embed in an SVG/XML text node.
+    var xmlEscaped: String {
+        replacingOccurrences(of: "&", with: "&amp;")
+            .replacingOccurrences(of: "<", with: "&lt;")
+            .replacingOccurrences(of: ">", with: "&gt;")
+            .replacingOccurrences(of: "\"", with: "&quot;")
+    }
+
+    /// Replaces characters that conflict with nomnoml node syntax (`[`, `]`, `|`, `;`).
+    var nomnomlEscaped: String {
+        replacingOccurrences(of: "[", with: "(")
+            .replacingOccurrences(of: "]", with: ")")
+            .replacingOccurrences(of: "|", with: "/")
+            .replacingOccurrences(of: ";", with: ",")
+    }
+}
+
+internal extension String {
     func removeAngleBracketsWithContent() -> String {
         replacingOccurrences(of: "\\<.*\\>", with: "", options: .regularExpression)
     }

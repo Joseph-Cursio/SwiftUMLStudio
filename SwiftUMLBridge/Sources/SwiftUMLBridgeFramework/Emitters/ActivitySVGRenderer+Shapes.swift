@@ -67,7 +67,7 @@ extension ActivitySVGRenderer {
     }
 
     static func renderCenteredText(node: PositionedActivityNode) -> String {
-        let label = escapeXML(node.label)
+        let label = node.label.xmlEscaped
         return "<text x=\"\(fmt(node.centerX))\" y=\"\(fmt(node.centerY + 4))\" " +
                "text-anchor=\"middle\" font-size=\"11\" fill=\"\(bodyTextColor)\">\(label)</text>\n"
     }
@@ -103,7 +103,7 @@ extension ActivitySVGRenderer {
             let midY = (startY + endY) / 2 - 4
             svg += "<text x=\"\(fmt(midX))\" y=\"\(fmt(midY))\" text-anchor=\"middle\" " +
                    "font-size=\"10\" fill=\"\(bodyTextColor)\" font-style=\"italic\">" +
-                   "\(escapeXML(label))</text>\n"
+                   "\(label.xmlEscaped)</text>\n"
         }
         return svg
     }
@@ -129,7 +129,7 @@ extension ActivitySVGRenderer {
         if let label, !label.isEmpty {
             svg += "<text x=\"\(fmt(detourX + 4))\" y=\"\(fmt((startY + endY) / 2))\" " +
                    "text-anchor=\"start\" font-size=\"10\" fill=\"\(bodyTextColor)\" " +
-                   "font-style=\"italic\">\(escapeXML(label))</text>\n"
+                   "font-style=\"italic\">\(label.xmlEscaped)</text>\n"
         }
         return svg
     }

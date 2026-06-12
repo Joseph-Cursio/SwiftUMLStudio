@@ -92,7 +92,7 @@ public struct SVGRenderer: Sendable {
         let stereotype = node.stereotype ?? "class"
         let fill = headerFill[stereotype] ?? headerFill["class"]!
 
-        var svg = "\n<!-- \(escapeXML(node.label)) -->\n"
+        var svg = "\n<!-- \(node.label.xmlEscaped) -->\n"
         svg += "<g>\n"
 
         // Background rect with rounded corners
@@ -120,14 +120,14 @@ public struct SVGRenderer: Sendable {
         svg += "  <text x=\"\(fmt(node.posX))\" y=\"\(fmt(stereotypeY))\" "
         svg += "text-anchor=\"middle\" fill=\"\(textColor)\" "
         svg += "font-size=\"10\" font-style=\"italic\">"
-        svg += "&#x00AB;\(escapeXML(stereotype))&#x00BB;</text>\n"
+        svg += "&#x00AB;\(stereotype.xmlEscaped)&#x00BB;</text>\n"
 
         // Name label
         let nameY = topY + 28
         svg += "  <text x=\"\(fmt(node.posX))\" y=\"\(fmt(nameY))\" "
         svg += "text-anchor=\"middle\" fill=\"\(textColor)\" "
         svg += "font-size=\"\(headerFontSize)\" font-weight=\"bold\">"
-        svg += "\(escapeXML(node.label))</text>\n"
+        svg += "\(node.label.xmlEscaped)</text>\n"
 
         // Compartments
         var currentY = topY + headerH
@@ -142,7 +142,7 @@ public struct SVGRenderer: Sendable {
                 currentY += lineHeight
                 svg += "  <text x=\"\(fmt(leftX + padding))\" y=\"\(fmt(currentY - 4))\" "
                 svg += "fill=\"\(bodyTextColor)\" font-size=\"\(fontSize)\">"
-                svg += "\(escapeXML(item))</text>\n"
+                svg += "\(item.xmlEscaped)</text>\n"
             }
             currentY += padding
         }
@@ -163,7 +163,7 @@ public struct SVGRenderer: Sendable {
         let hue = moduleHue(for: cluster.id)
         let color = "hsl(\(hue), 55%, 60%)"
 
-        var svg = "\n<!-- module: \(escapeXML(cluster.label)) -->\n"
+        var svg = "\n<!-- module: \(cluster.label.xmlEscaped) -->\n"
         svg += "<g>\n"
         svg += "  <rect x=\"\(fmt(leftX))\" y=\"\(fmt(topY))\" "
         svg += "width=\"\(fmt(cluster.width))\" height=\"\(fmt(cluster.height))\" "
@@ -172,7 +172,7 @@ public struct SVGRenderer: Sendable {
         svg += "stroke=\"\(color)\" stroke-width=\"1.5\" stroke-dasharray=\"6,3\"/>\n"
         svg += "  <text x=\"\(fmt(leftX + padding))\" y=\"\(fmt(topY + 16))\" "
         svg += "fill=\"\(color)\" font-size=\"12\" font-weight=\"bold\">"
-        svg += "\(escapeXML(cluster.label))</text>\n"
+        svg += "\(cluster.label.xmlEscaped)</text>\n"
         svg += "</g>\n"
         return svg
     }
@@ -230,20 +230,13 @@ public struct SVGRenderer: Sendable {
             let mid = edge.points[edge.points.count / 2]
             svg += "<text x=\"\(fmt(mid.posX + 4))\" y=\"\(fmt(mid.posY - 4))\" "
             svg += "fill=\"\(bodyTextColor)\" font-size=\"10\">"
-            svg += "\(escapeXML(label))</text>\n"
+            svg += "\(label.xmlEscaped)</text>\n"
         }
 
         return svg
     }
 
     // MARK: - Helpers
-
-    private static func escapeXML(_ text: String) -> String {
-        text.replacingOccurrences(of: "&", with: "&amp;")
-            .replacingOccurrences(of: "<", with: "&lt;")
-            .replacingOccurrences(of: ">", with: "&gt;")
-            .replacingOccurrences(of: "\"", with: "&quot;")
-    }
 
     private static func fmt(_ value: Double) -> String {
         String(format: "%.1f", value)

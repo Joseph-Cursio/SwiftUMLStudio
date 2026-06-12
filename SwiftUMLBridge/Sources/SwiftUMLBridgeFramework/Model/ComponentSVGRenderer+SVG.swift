@@ -147,7 +147,7 @@ extension ComponentSVGRenderer {
         if let fontStyle = style.fontStyle { element += " font-style=\"\(fontStyle)\"" }
         if let fontWeight = style.fontWeight { element += " font-weight=\"\(fontWeight)\"" }
         element += " fill=\"\(style.fill)\" text-anchor=\"\(style.anchor)\">"
-        element += escape(text)
+        element += text.xmlEscaped
         element += "</text>"
         return element
     }
@@ -178,11 +178,4 @@ extension ComponentSVGRenderer {
         String(format: "%.1f", value)
     }
 
-    static func escape(_ text: String) -> String {
-        text
-            .replacingOccurrences(of: "&", with: "&amp;")
-            .replacingOccurrences(of: "<", with: "&lt;")
-            .replacingOccurrences(of: ">", with: "&gt;")
-            .replacingOccurrences(of: "\"", with: "&quot;")
-    }
 }

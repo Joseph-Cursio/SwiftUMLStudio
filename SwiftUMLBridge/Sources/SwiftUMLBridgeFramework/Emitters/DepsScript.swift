@@ -231,7 +231,7 @@ private extension DepsScript {
             lines.append("// Cyclic nodes: \(sorted.joined(separator: ", "))")
             // nomnoml supports custom styles for highlighting
             for node in sorted {
-                let safeName = nomnomlEscape(node)
+                let safeName = node.nomnomlEscaped
                 lines.append("#.warning: fill=#ffcccc stroke=#cc0000")
                 lines.append("[<warning> \(safeName)]")
             }
@@ -244,18 +244,10 @@ private extension DepsScript {
     /// `«stereotype»` suffix. Guillemets render as a stereotype in
     /// Nomnoml output and avoid clashing with `[]` / `|` label syntax.
     static func nomnomlLabel(_ name: String, stereotype: String?) -> String {
-        let escaped = nomnomlEscape(name)
+        let escaped = name.nomnomlEscaped
         if let stereotype, !stereotype.isEmpty {
             return "\(escaped) «\(stereotype)»"
         }
         return escaped
-    }
-
-    static func nomnomlEscape(_ name: String) -> String {
-        name
-            .replacingOccurrences(of: "[", with: "(")
-            .replacingOccurrences(of: "]", with: ")")
-            .replacingOccurrences(of: "|", with: "/")
-            .replacingOccurrences(of: ";", with: ",")
     }
 }

@@ -143,7 +143,7 @@ public struct SequenceSVGRenderer: Sendable {
         // Title
         svg += "<text x=\"\(Int(layout.totalWidth / 2))\" y=\"14\" text-anchor=\"middle\" "
         svg += "font-size=\"14\" font-weight=\"bold\" fill=\"\(bodyTextColor)\">"
-        svg += "\(escapeXML(layout.title))</text>\n"
+        svg += "\(layout.title.xmlEscaped)</text>\n"
 
         // Participant boxes (top) and lifelines
         for participant in layout.participants {
@@ -189,7 +189,7 @@ public struct SequenceSVGRenderer: Sendable {
 
         svg += "<text x=\"\(fmt(centerX))\" y=\"\(fmt(topY + participantHeight / 2 + 5))\" "
         svg += "text-anchor=\"middle\" fill=\"\(textColor)\" font-size=\"12\" font-weight=\"bold\">"
-        svg += "\(escapeXML(name))</text>\n"
+        svg += "\(name.xmlEscaped)</text>\n"
 
         return svg
     }
@@ -218,7 +218,7 @@ public struct SequenceSVGRenderer: Sendable {
 
             svg += "<text x=\"\(fmt(fromX + loopWidth + 4))\" y=\"\(fmt(posY + 12))\" "
             svg += "fill=\"\(bodyTextColor)\" font-size=\"11\">"
-            svg += "\(escapeXML(label))</text>\n"
+            svg += "\(label.xmlEscaped)</text>\n"
         } else {
             svg += "<line x1=\"\(fmt(fromX))\" y1=\"\(fmt(posY))\" "
             svg += "x2=\"\(fmt(toX))\" y2=\"\(fmt(posY))\" "
@@ -228,7 +228,7 @@ public struct SequenceSVGRenderer: Sendable {
             let labelX = (fromX + toX) / 2
             svg += "<text x=\"\(fmt(labelX))\" y=\"\(fmt(posY - 6))\" "
             svg += "text-anchor=\"middle\" fill=\"\(bodyTextColor)\" font-size=\"11\">"
-            svg += "\(escapeXML(label))</text>\n"
+            svg += "\(label.xmlEscaped)</text>\n"
         }
 
         return svg
@@ -245,19 +245,12 @@ public struct SequenceSVGRenderer: Sendable {
 
         svg += "<text x=\"\(fmt(centerX))\" y=\"\(fmt(posY + 4))\" "
         svg += "text-anchor=\"middle\" fill=\"\(bodyTextColor)\" font-size=\"10\" font-style=\"italic\">"
-        svg += "\(escapeXML(text))</text>\n"
+        svg += "\(text.xmlEscaped)</text>\n"
 
         return svg
     }
 
     // MARK: - Helpers
-
-    private static func escapeXML(_ text: String) -> String {
-        text.replacingOccurrences(of: "&", with: "&amp;")
-            .replacingOccurrences(of: "<", with: "&lt;")
-            .replacingOccurrences(of: ">", with: "&gt;")
-            .replacingOccurrences(of: "\"", with: "&quot;")
-    }
 
     private static func fmt(_ value: Double) -> String {
         String(format: "%.1f", value)

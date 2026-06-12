@@ -95,7 +95,7 @@ public struct ActivitySVGRenderer: Sendable {
         if !layout.title.isEmpty {
             svg += "<text x=\"\(Int(layout.totalWidth / 2))\" y=\"18\" text-anchor=\"middle\" "
             svg += "font-size=\"14\" font-weight=\"bold\" fill=\"\(bodyTextColor)\">"
-            svg += "\(escapeXML(layout.title))</text>\n"
+            svg += "\(layout.title.xmlEscaped)</text>\n"
         }
 
         for edge in layout.edges {
@@ -181,13 +181,6 @@ public struct ActivitySVGRenderer: Sendable {
     }
 
     // MARK: - Helpers
-
-    static func escapeXML(_ text: String) -> String {
-        text.replacingOccurrences(of: "&", with: "&amp;")
-            .replacingOccurrences(of: "<", with: "&lt;")
-            .replacingOccurrences(of: ">", with: "&gt;")
-            .replacingOccurrences(of: "\"", with: "&quot;")
-    }
 
     static func fmt(_ value: Double) -> String {
         String(format: "%.1f", value)
