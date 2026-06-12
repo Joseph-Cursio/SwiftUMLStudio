@@ -20,20 +20,12 @@ struct ExplorerDetailView: View {
                 )
             }
         }
-        .sheet(isPresented: $showPaywall) {
-            PaywallView(subscriptionManager: subscriptionManager)
-        }
+        .paywallSheet(isPresented: $showPaywall, subscriptionManager: subscriptionManager)
     }
 
     private func handleSuggestion(_ suggestion: DiagramSuggestion) {
-        if suggestion.requiresPro {
-            let feature = SuggestionDispatcher.featureRequired(for: suggestion.action)
-            guard FeatureGate.isUnlocked(feature, manager: subscriptionManager) else {
-                showPaywall = true
-                return
-            }
+        if SuggestionHandler.handle(suggestion, viewModel: viewModel, subscriptionManager: subscriptionManager) {
+            showPaywall = true
         }
-        SuggestionDispatcher.apply(suggestion, to: viewModel)
-        viewModel.generate()
     }
 }

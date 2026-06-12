@@ -70,36 +70,16 @@ struct ExplorerSidebar: View {
             }
 
             Section("History") {
-                if viewModel.history.isEmpty {
-                    ContentUnavailableView("No history yet", systemImage: "clock")
-                } else {
-                    ForEach(viewModel.history) { item in
-                        HistoryItemRow(item: item)
-                            .tag(item)
-                            .contextMenu {
-                                Button("Delete", role: .destructive) {
-                                    viewModel.deleteHistoryItem(item)
-                                }
-                            }
-                    }
-                }
+                HistoryListContent(viewModel: viewModel)
             }
         }
         .navigationTitle("SwiftUML Explorer")
-        .sheet(isPresented: $showPaywall) {
-            PaywallView(subscriptionManager: subscriptionManager)
-        }
+        .paywallSheet(isPresented: $showPaywall, subscriptionManager: subscriptionManager)
     }
 
     private func handleSuggestion(_ suggestion: DiagramSuggestion) {
-        if suggestion.requiresPro {
-            let feature = SuggestionDispatcher.featureRequired(for: suggestion.action)
-            guard FeatureGate.isUnlocked(feature, manager: subscriptionManager) else {
-                showPaywall = true
-                return
-            }
+        if SuggestionHandler.handle(suggestion, viewModel: viewModel, subscriptionManager: subscriptionManager) {
+            showPaywall = true
         }
-        SuggestionDispatcher.apply(suggestion, to: viewModel)
-        viewModel.generate()
     }
 }
