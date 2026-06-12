@@ -166,20 +166,9 @@ struct ContentView: View {
                     .accessibilityIdentifier("toolbarOpenPackageButton")
                 #endif
 
-                Text(viewModel.pathSummary)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-                    .frame(maxWidth: 300, alignment: .leading)
+                PathSummaryLabel(pathSummary: viewModel.pathSummary)
 
-                Picker("App Mode", selection: $appMode) {
-                    ForEach(AppMode.allCases, id: \.self) { mode in
-                        Text(mode.rawValue).tag(mode)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .frame(width: 200)
-                .accessibilityIdentifier("appModePicker")
+                AppModePicker(appMode: $appMode)
 
                 Button("Save", systemImage: "square.and.arrow.down") {
                     viewModel.save(isProUnlocked: subscriptionManager.isProUnlocked)
