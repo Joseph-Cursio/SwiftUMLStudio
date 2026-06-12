@@ -165,77 +165,49 @@ final class SyntaxStructureBuilder: SyntaxVisitor {
 
     // MARK: - Type declarations
 
-    override func visit(_ node: ClassDeclSyntax) -> SyntaxVisitorContinueKind {
-        let genericParams = extractGenericParams(from: node.genericParameterClause?.parameters ?? [])
+    /// Shared handling for the named, member-bearing type declarations
+    /// (class / struct / enum / actor / protocol): build the `SyntaxStructure`,
+    /// stamp its source location, and push it onto the type stack.
+    private func handleTypeDeclaration(
+        _ node: some NamedDeclSyntax & DeclGroupSyntax,
+        kind: ElementKind,
+        genericParameterClause: GenericParameterClauseSyntax?
+    ) -> SyntaxVisitorContinueKind {
+        let genericParams = extractGenericParams(from: genericParameterClause?.parameters ?? [])
         let structure = SyntaxStructure(
             accessibility: extractAccessibility(from: node.modifiers),
             attributes: extractAttributes(from: node.attributes),
             inheritedTypes: extractInheritedTypes(from: node.inheritanceClause),
-            kind: .class,
+            kind: kind,
             name: node.name.text
         )
         stampLocation(on: structure, at: node.name.positionAfterSkippingLeadingTrivia)
         pushType(structure, genericParams: genericParams)
         return .visitChildren
+    }
+
+    override func visit(_ node: ClassDeclSyntax) -> SyntaxVisitorContinueKind {
+        handleTypeDeclaration(node, kind: .class, genericParameterClause: node.genericParameterClause)
     }
     override func visitPost(_ node: ClassDeclSyntax) { _ = node; popType() }
 
     override func visit(_ node: StructDeclSyntax) -> SyntaxVisitorContinueKind {
-        let genericParams = extractGenericParams(from: node.genericParameterClause?.parameters ?? [])
-        let structure = SyntaxStructure(
-            accessibility: extractAccessibility(from: node.modifiers),
-            attributes: extractAttributes(from: node.attributes),
-            inheritedTypes: extractInheritedTypes(from: node.inheritanceClause),
-            kind: .struct,
-            name: node.name.text
-        )
-        stampLocation(on: structure, at: node.name.positionAfterSkippingLeadingTrivia)
-        pushType(structure, genericParams: genericParams)
-        return .visitChildren
+        handleTypeDeclaration(node, kind: .struct, genericParameterClause: node.genericParameterClause)
     }
     override func visitPost(_ node: StructDeclSyntax) { _ = node; popType() }
 
     override func visit(_ node: EnumDeclSyntax) -> SyntaxVisitorContinueKind {
-        let genericParams = extractGenericParams(from: node.genericParameterClause?.parameters ?? [])
-        let structure = SyntaxStructure(
-            accessibility: extractAccessibility(from: node.modifiers),
-            attributes: extractAttributes(from: node.attributes),
-            inheritedTypes: extractInheritedTypes(from: node.inheritanceClause),
-            kind: .enum,
-            name: node.name.text
-        )
-        stampLocation(on: structure, at: node.name.positionAfterSkippingLeadingTrivia)
-        pushType(structure, genericParams: genericParams)
-        return .visitChildren
+        handleTypeDeclaration(node, kind: .enum, genericParameterClause: node.genericParameterClause)
     }
     override func visitPost(_ node: EnumDeclSyntax) { _ = node; popType() }
 
     override func visit(_ node: ActorDeclSyntax) -> SyntaxVisitorContinueKind {
-        let genericParams = extractGenericParams(from: node.genericParameterClause?.parameters ?? [])
-        let structure = SyntaxStructure(
-            accessibility: extractAccessibility(from: node.modifiers),
-            attributes: extractAttributes(from: node.attributes),
-            inheritedTypes: extractInheritedTypes(from: node.inheritanceClause),
-            kind: .actor,
-            name: node.name.text
-        )
-        stampLocation(on: structure, at: node.name.positionAfterSkippingLeadingTrivia)
-        pushType(structure, genericParams: genericParams)
-        return .visitChildren
+        handleTypeDeclaration(node, kind: .actor, genericParameterClause: node.genericParameterClause)
     }
     override func visitPost(_ node: ActorDeclSyntax) { _ = node; popType() }
 
     override func visit(_ node: ProtocolDeclSyntax) -> SyntaxVisitorContinueKind {
-        let structure = SyntaxStructure(
-            accessibility: extractAccessibility(from: node.modifiers),
-            attributes: extractAttributes(from: node.attributes),
-            inheritedTypes: extractInheritedTypes(from: node.inheritanceClause),
-            kind: .protocol,
-            name: node.name.text
-        )
-        stampLocation(on: structure, at: node.name.positionAfterSkippingLeadingTrivia)
-        pushType(structure)
-        return .visitChildren
+        handleTypeDeclaration(node, kind: .protocol, genericParameterClause: nil)
     }
     override func visitPost(_ node: ProtocolDeclSyntax) { _ = node; popType() }
 
