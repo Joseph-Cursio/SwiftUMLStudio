@@ -5,6 +5,27 @@ import SwiftSyntax
 /// return/throw, and do/catch.
 extension ActivityGraphBuilder {
 
+    // MARK: - Branch wiring
+
+    /// Wire a freshly-walked branch `result` into the graph: connect `decisionId`
+    /// to the block's entry under `label` (or straight to `mergeId` when the block
+    /// is empty), then route every block exit to `mergeId`.
+    private mutating func wireBranch(
+        _ result: WalkResult,
+        from decisionId: Int,
+        to mergeId: Int,
+        label: String
+    ) {
+        if let entry = result.entry {
+            addEdge(from: decisionId, to: entry, label: label)
+        } else {
+            addEdge(from: decisionId, to: mergeId, label: label)
+        }
+        for exit in result.exits {
+            addEdge(from: exit, to: mergeId)
+        }
+    }
+
     // MARK: - If / guard
 
     mutating func walkIfExpr(_ node: IfExprSyntax) -> WalkResult {
@@ -12,15 +33,7 @@ extension ActivityGraphBuilder {
         let decisionId = makeNode(kind: .decision, label: label)
         let mergeId = makeNode(kind: .merge, label: "")
 
-        let thenResult = walkBlock(node.body.statements)
-        if let entry = thenResult.entry {
-            addEdge(from: decisionId, to: entry, label: "true")
-        } else {
-            addEdge(from: decisionId, to: mergeId, label: "true")
-        }
-        for exit in thenResult.exits {
-            addEdge(from: exit, to: mergeId)
-        }
+        wireBranch(walkBlock(node.body.statements), from: decisionId, to: mergeId, label: "true")
 
         if let elseBody = node.elseBody {
             wireElseBody(elseBody, decisionId: decisionId, mergeId: mergeId)
@@ -38,25 +51,9 @@ extension ActivityGraphBuilder {
     ) {
         switch elseBody {
         case .ifExpr(let elseIf):
-            let nested = walkIfExpr(elseIf)
-            if let entry = nested.entry {
-                addEdge(from: decisionId, to: entry, label: "false")
-            } else {
-                addEdge(from: decisionId, to: mergeId, label: "false")
-            }
-            for exit in nested.exits {
-                addEdge(from: exit, to: mergeId)
-            }
+            wireBranch(walkIfExpr(elseIf), from: decisionId, to: mergeId, label: "false")
         case .codeBlock(let elseBlock):
-            let elseResult = walkBlock(elseBlock.statements)
-            if let entry = elseResult.entry {
-                addEdge(from: decisionId, to: entry, label: "false")
-            } else {
-                addEdge(from: decisionId, to: mergeId, label: "false")
-            }
-            for exit in elseResult.exits {
-                addEdge(from: exit, to: mergeId)
-            }
+            wireBranch(walkBlock(elseBlock.statements), from: decisionId, to: mergeId, label: "false")
         }
     }
 
@@ -64,15 +61,7 @@ extension ActivityGraphBuilder {
         let label = Self.conditionLabel(node.conditions)
         let decisionId = makeNode(kind: .decision, label: label)
 
-        let elseResult = walkBlock(node.body.statements)
-        if let entry = elseResult.entry {
-            addEdge(from: decisionId, to: entry, label: "false")
-        } else {
-            addEdge(from: decisionId, to: endNodeId, label: "false")
-        }
-        for exit in elseResult.exits {
-            addEdge(from: exit, to: endNodeId)
-        }
+        wireBranch(walkBlock(node.body.statements), from: decisionId, to: endNodeId, label: "false")
 
         return WalkResult(entry: decisionId, exits: [decisionId])
     }
@@ -87,15 +76,7 @@ extension ActivityGraphBuilder {
         for caseElement in node.cases {
             guard let switchCase = caseElement.as(SwitchCaseSyntax.self) else { continue }
             let branchLabel = Self.caseLabelText(switchCase.label)
-            let result = walkBlock(switchCase.statements)
-            if let entry = result.entry {
-                addEdge(from: decisionId, to: entry, label: branchLabel)
-            } else {
-                addEdge(from: decisionId, to: mergeId, label: branchLabel)
-            }
-            for exit in result.exits {
-                addEdge(from: exit, to: mergeId)
-            }
+            wireBranch(walkBlock(switchCase.statements), from: decisionId, to: mergeId, label: branchLabel)
         }
 
         return WalkResult(entry: decisionId, exits: [mergeId])
@@ -180,15 +161,7 @@ extension ActivityGraphBuilder {
         let decisionId = makeNode(kind: .decision, label: "try")
         let mergeId = makeNode(kind: .merge, label: "")
 
-        let bodyResult = walkBlock(node.body.statements)
-        if let entry = bodyResult.entry {
-            addEdge(from: decisionId, to: entry, label: "success")
-        } else {
-            addEdge(from: decisionId, to: mergeId, label: "success")
-        }
-        for exit in bodyResult.exits {
-            addEdge(from: exit, to: mergeId)
-        }
+        wireBranch(walkBlock(node.body.statements), from: decisionId, to: mergeId, label: "success")
 
         for catchClause in node.catchClauses {
             wireCatchClause(catchClause, decisionId: decisionId, mergeId: mergeId)
@@ -207,14 +180,6 @@ extension ActivityGraphBuilder {
         let branchLabel = catchItemText.isEmpty
             ? "catch"
             : "catch \(Self.compactText(catchItemText))"
-        let result = walkBlock(catchClause.body.statements)
-        if let entry = result.entry {
-            addEdge(from: decisionId, to: entry, label: branchLabel)
-        } else {
-            addEdge(from: decisionId, to: mergeId, label: branchLabel)
-        }
-        for exit in result.exits {
-            addEdge(from: exit, to: mergeId)
-        }
+        wireBranch(walkBlock(catchClause.body.statements), from: decisionId, to: mergeId, label: branchLabel)
     }
 }

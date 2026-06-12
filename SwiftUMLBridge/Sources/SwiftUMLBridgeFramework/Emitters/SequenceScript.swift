@@ -58,6 +58,22 @@ public struct SequenceScript: Sendable {
     }
 }
 
+// MARK: - Shared
+
+private extension SequenceScript {
+    /// Participants in order of first appearance, starting with the entry type.
+    /// Unresolved edges and edges with no callee type are ignored.
+    static func orderedParticipants(entryType: String, traversedEdges: [CallEdge]) -> [String] {
+        var participants: [String] = [entryType]
+        for edge in traversedEdges {
+            if !edge.isUnresolved, let calleeType = edge.calleeType, !participants.contains(calleeType) {
+                participants.append(calleeType)
+            }
+        }
+        return participants
+    }
+}
+
 // MARK: - PlantUML
 
 private extension SequenceScript {
@@ -71,15 +87,7 @@ private extension SequenceScript {
             "title \(entryType).\(entryMethod)"
         ]
 
-        // Collect participants in order of first appearance
-        var participants: [String] = [entryType]
-        for edge in traversedEdges {
-            if !edge.isUnresolved, let calleeType = edge.calleeType,
-               !participants.contains(calleeType) {
-                participants.append(calleeType)
-            }
-        }
-        for participant in participants {
+        for participant in orderedParticipants(entryType: entryType, traversedEdges: traversedEdges) {
             lines.append("participant \(participant)")
         }
 
@@ -113,15 +121,7 @@ private extension SequenceScript {
             "%% title: \(entryType).\(entryMethod)"
         ]
 
-        // Collect participants in order of first appearance
-        var participants: [String] = [entryType]
-        for edge in traversedEdges {
-            if !edge.isUnresolved, let calleeType = edge.calleeType,
-               !participants.contains(calleeType) {
-                participants.append(calleeType)
-            }
-        }
-        for participant in participants {
+        for participant in orderedParticipants(entryType: entryType, traversedEdges: traversedEdges) {
             lines.append("participant \(participant)")
         }
 

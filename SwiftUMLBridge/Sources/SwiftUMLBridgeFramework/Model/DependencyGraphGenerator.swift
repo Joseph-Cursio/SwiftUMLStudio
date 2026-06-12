@@ -103,32 +103,11 @@ public struct DependencyGraphGenerator: DependencyGraphGenerating, @unchecked Se
                   let items = structure.substructure else { continue }
 
             for item in items {
-                guard !shouldSkip(element: item, configuration: configuration),
-                      let name = item.name,
-                      let inheritedTypes = item.inheritedTypes,
-                      !inheritedTypes.isEmpty else { continue }
-
-                // Classes use `.inherits` for their first parent (likely a superclass);
-                // structs, enums, actors, and protocols always use `.conforms`.
-                let edgeKind: DependencyEdgeKind = (item.kind == .class) ? .inherits : .conforms
-
-                for parent in inheritedTypes {
-                    // Split compound conformance types ("A & B") into individual edges
-                    let parentNames: [String]
-                    if let parentName = parent.name, parentName.contains("&") {
-                        parentNames = parentName
-                            .components(separatedBy: "&")
-                            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-                            .filter { !$0.isEmpty }
-                    } else if let parentName = parent.name {
-                        parentNames = [parentName]
-                    } else {
-                        continue
-                    }
-
-                    for parentName in parentNames {
+                guard let basis = typeEdgeBasis(for: item, configuration: configuration) else { continue }
+                for parent in basis.inheritedTypes {
+                    for parentName in parentNames(from: parent) {
                         guard !shouldExclude(name: parentName, configuration: configuration) else { continue }
-                        edges.append(DependencyEdge(from: name, to: parentName, kind: edgeKind))
+                        edges.append(DependencyEdge(from: basis.name, to: parentName, kind: basis.edgeKind))
                     }
                 }
             }
@@ -213,20 +192,14 @@ public struct DependencyGraphGenerator: DependencyGraphGenerating, @unchecked Se
 
         var edges: [DependencyEdge] = []
         for (item, module) in parsedItems {
-            guard !shouldSkip(element: item, configuration: configuration),
-                  let name = item.name,
-                  let inheritedTypes = item.inheritedTypes,
-                  !inheritedTypes.isEmpty else { continue }
-
-            let edgeKind: DependencyEdgeKind = (item.kind == .class) ? .inherits : .conforms
-
-            for parent in inheritedTypes {
+            guard let basis = typeEdgeBasis(for: item, configuration: configuration) else { continue }
+            for parent in basis.inheritedTypes {
                 for parentName in parentNames(from: parent) {
                     guard !shouldExclude(name: parentName, configuration: configuration) else { continue }
                     edges.append(DependencyEdge(
-                        from: name,
+                        from: basis.name,
                         to: parentName,
-                        kind: edgeKind,
+                        kind: basis.edgeKind,
                         fromModule: module,
                         toModule: typeOwners[parentName]
                     ))
@@ -235,6 +208,22 @@ public struct DependencyGraphGenerator: DependencyGraphGenerating, @unchecked Se
         }
 
         return edges
+    }
+
+    /// Common per-item gate for type-edge extraction: apply the skip filter, then
+    /// return the element name, its non-empty inherited types, and the edge kind.
+    /// Classes inherit from their first parent; structs, enums, actors, and
+    /// protocols always conform. Returns `nil` when the item yields no edges.
+    private func typeEdgeBasis(
+        for item: SyntaxStructure,
+        configuration: Configuration
+    ) -> (name: String, inheritedTypes: [SyntaxStructure], edgeKind: DependencyEdgeKind)? {
+        guard !shouldSkip(element: item, configuration: configuration),
+              let name = item.name,
+              let inheritedTypes = item.inheritedTypes,
+              !inheritedTypes.isEmpty else { return nil }
+        let edgeKind: DependencyEdgeKind = (item.kind == .class) ? .inherits : .conforms
+        return (name, inheritedTypes, edgeKind)
     }
 
     /// Splits an inherited-type entry into individual parent names, expanding

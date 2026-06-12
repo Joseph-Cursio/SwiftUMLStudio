@@ -49,10 +49,17 @@ public struct StateScript: Sendable {
 
 private extension StateScript {
     static func buildPlantUMLText(model: StateMachineModel) -> String {
-        var lines: [String] = [
-            "@startuml",
-            "title \(model.hostType).\(model.enumType)"
-        ]
+        var lines = ["@startuml", "title \(model.hostType).\(model.enumType)"]
+        lines += transitionLines(model: model)
+        lines.append("@enduml")
+        return lines.joined(separator: "\n")
+    }
+
+    /// The shared body of a state diagram — the initial pseudo-state edge, every
+    /// transition, and the final-state edges. PlantUML and Mermaid wrap this in
+    /// their own header/footer; the body lines are identical.
+    static func transitionLines(model: StateMachineModel) -> [String] {
+        var lines: [String] = []
 
         let hasWildcardSource = model.transitions.contains { $0.from == "*" }
         if !hasWildcardSource, let initial = model.states.first(where: { $0.isInitial }) {
@@ -69,8 +76,7 @@ private extension StateScript {
             lines.append("\(state.name) --> [*]")
         }
 
-        lines.append("@enduml")
-        return lines.joined(separator: "\n")
+        return lines
     }
 
     /// Normalize the wildcard source token `*` to PlantUML / Mermaid's initial
@@ -95,26 +101,8 @@ private extension StateScript {
 
 private extension StateScript {
     static func buildMermaidText(model: StateMachineModel) -> String {
-        var lines: [String] = [
-            "stateDiagram-v2",
-            "%% title: \(model.hostType).\(model.enumType)"
-        ]
-
-        let hasWildcardSource = model.transitions.contains { $0.from == "*" }
-        if !hasWildcardSource, let initial = model.states.first(where: { $0.isInitial }) {
-            lines.append("[*] --> \(initial.name)")
-        }
-
-        for transition in model.transitions {
-            let from = renderStateToken(transition.from)
-            let toState = renderStateToken(transition.toState)
-            lines.append("\(from) --> \(toState)\(transitionLabel(transition))")
-        }
-
-        for state in model.states where state.isFinal {
-            lines.append("\(state.name) --> [*]")
-        }
-
+        var lines = ["stateDiagram-v2", "%% title: \(model.hostType).\(model.enumType)"]
+        lines += transitionLines(model: model)
         return lines.joined(separator: "\n")
     }
 }
