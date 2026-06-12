@@ -3,15 +3,9 @@ import Foundation
 extension SyntaxStructure {
     /// Textual representation of this element in nomnoml syntax
     func nomnoml(context: DiagramContext) -> String? {
-        guard let kind else { return nil }
-        guard skip(element: self, basedOn: context.configuration) == false else { return nil }
-
-        let generics: String? = context.configuration.elements.showGenerics ? genericsStatement() : nil
-        guard let textualRepresentation = nomnomlText(for: kind, generics: generics, context: context) else {
-            return nil
+        renderDiagramText(context: context) { kind, generics, context in
+            nomnomlText(for: kind, generics: generics, context: context)
         }
-        addLinking(context: context)
-        return textualRepresentation
     }
 
     private func nomnomlText(
@@ -95,29 +89,7 @@ extension SyntaxStructure {
         element: SyntaxStructure,
         context: DiagramContext
     ) -> (text: String, category: NomnomlMemberCategory)? {
-        guard
-            element.kind == ElementKind.functionMethodInstance ||
-            element.kind == ElementKind.functionMethodStatic ||
-            element.kind == ElementKind.varInstance ||
-            element.kind == ElementKind.varStatic ||
-            element.kind == ElementKind.enumcase else { return nil }
-
-        let actualElement: SyntaxStructure
-        if element.kind == ElementKind.enumcase {
-            guard let first = element.substructure?.first else { return nil }
-            actualElement = first
-        } else {
-            actualElement = element
-        }
-
-        if kind != .extension {
-            let generateMembersWithAccessLevel: [ElementAccessibility] = context.configuration.elements
-                .showMembersWithAccessLevel.compactMap { ElementAccessibility(orig: $0) }
-            let effectiveAccessibility = actualElement.accessibility ?? ElementAccessibility.internal
-            if generateMembersWithAccessLevel.contains(effectiveAccessibility) == false {
-                return nil
-            }
-        }
+        guard let actualElement = renderableMember(from: element, context: context) else { return nil }
 
         var prefix = ""
         if context.configuration.elements.showMemberAccessLevelAttribute {
