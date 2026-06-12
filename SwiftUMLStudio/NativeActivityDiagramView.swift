@@ -27,30 +27,19 @@ struct NativeActivityDiagramView: View {
     private static let mergeFill = SwiftUI.Color(nsColor: .textBackgroundColor)
 
     var body: some View {
-        GeometryReader { geometry in
-            let canvasWidth = max(layout.totalWidth + 40, Double(geometry.size.width))
-            let canvasHeight = max(layout.totalHeight + 40, Double(geometry.size.height))
-
-            Canvas { context, _ in
-                DiagramDrawing.drawTitle(
-                    layout.title, centerX: layout.totalWidth / 2,
-                    color: Self.bodyTextColor, in: &context
-                )
-                drawEdges(in: &context)
-                drawNodes(in: &context)
-            }
-            .frame(width: canvasWidth, height: canvasHeight)
-            .canvasPanZoom(viewport: viewport)
-            .onTapGesture(count: 2) { viewport.reset() }
-            .diagramCanvasChrome(
-                viewport: viewport,
-                contentSize: CGSize(width: layout.totalWidth, height: layout.totalHeight),
-                visibleSize: geometry.size,
-                label: "Activity diagram canvas",
-                identifier: "nativeActivityCanvas"
+        DiagramCanvasContainer(
+            viewport: viewport,
+            contentSize: CGSize(width: layout.totalWidth, height: layout.totalHeight),
+            accessibilityLabel: "Activity diagram canvas",
+            accessibilityIdentifier: "nativeActivityCanvas"
+        ) { context in
+            DiagramDrawing.drawTitle(
+                layout.title, centerX: layout.totalWidth / 2,
+                color: Self.bodyTextColor, in: &context
             )
+            drawEdges(in: &context)
+            drawNodes(in: &context)
         }
-        .background(Color(nsColor: .textBackgroundColor))
     }
 
     // MARK: - Drawing

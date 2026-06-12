@@ -29,26 +29,16 @@ struct NativeComponentDiagramView: View {
     private static let cornerRadius: Double = 4
 
     var body: some View {
-        GeometryReader { geometry in
-            let canvasWidth = max(layout.totalWidth, Double(geometry.size.width))
-            let canvasHeight = max(layout.totalHeight, Double(geometry.size.height))
-
-            Canvas { context, _ in
-                drawEdges(in: &context)
-                drawComponents(in: &context)
-            }
-            .frame(width: canvasWidth, height: canvasHeight)
-            .canvasPanZoom(viewport: viewport)
-            .onTapGesture(count: 2) { viewport.reset() }
-            .diagramCanvasChrome(
-                viewport: viewport,
-                contentSize: CGSize(width: layout.totalWidth, height: layout.totalHeight),
-                visibleSize: geometry.size,
-                label: "Component diagram canvas",
-                identifier: "nativeComponentCanvas"
-            )
+        DiagramCanvasContainer(
+            viewport: viewport,
+            contentSize: CGSize(width: layout.totalWidth, height: layout.totalHeight),
+            margin: 0,
+            accessibilityLabel: "Component diagram canvas",
+            accessibilityIdentifier: "nativeComponentCanvas"
+        ) { context in
+            drawEdges(in: &context)
+            drawComponents(in: &context)
         }
-        .background(Color(nsColor: .textBackgroundColor))
     }
 
     // MARK: - Drawing
