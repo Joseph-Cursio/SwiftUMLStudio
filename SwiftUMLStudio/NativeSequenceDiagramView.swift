@@ -31,7 +31,10 @@ struct NativeSequenceDiagramView: View {
             let canvasHeight = max(layout.totalHeight + 40, Double(geometry.size.height))
 
             Canvas { context, _ in
-                drawTitle(in: &context)
+                DiagramDrawing.drawTitle(
+                    layout.title, centerX: layout.totalWidth / 2, y: 14,
+                    color: Self.bodyTextColor, in: &context
+                )
                 drawLifelines(in: &context)
                 drawParticipantBoxes(top: true, in: &context)
                 drawMessages(in: &context)
@@ -96,13 +99,6 @@ struct NativeSequenceDiagramView: View {
     }
 
     // MARK: - Drawing
-
-    private func drawTitle(in context: inout GraphicsContext) {
-        let titleText = Text(layout.title)
-            .font(.system(size: 14, weight: .bold))
-            .foregroundStyle(Self.bodyTextColor)
-        context.draw(titleText, at: CGPoint(x: layout.totalWidth / 2, y: 14), anchor: .center)
-    }
 
     private func drawLifelines(in context: inout GraphicsContext) {
         for participant in layout.participants {

@@ -27,6 +27,21 @@ extension PositionedComponent: CenterPositioned {}
 
 /// Shared Canvas drawing primitives for the native diagram renderers.
 enum DiagramDrawing {
+    /// Draw a centered, bold diagram title at `centerX`. No-op for an empty title.
+    static func drawTitle(
+        _ title: String,
+        centerX: Double,
+        y: Double = 18,
+        color: SwiftUI.Color,
+        in context: inout GraphicsContext
+    ) {
+        guard !title.isEmpty else { return }
+        let text = Text(title)
+            .font(.system(size: 14, weight: .bold))
+            .foregroundStyle(color)
+        context.draw(text, at: CGPoint(x: centerX, y: y), anchor: .center)
+    }
+
     /// Fill a triangular arrowhead at `tip`, pointing along `direction`.
     static func fillArrowhead(
         at tip: CGPoint,

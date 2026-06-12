@@ -32,7 +32,10 @@ struct NativeActivityDiagramView: View {
             let canvasHeight = max(layout.totalHeight + 40, Double(geometry.size.height))
 
             Canvas { context, _ in
-                drawTitle(in: &context)
+                DiagramDrawing.drawTitle(
+                    layout.title, centerX: layout.totalWidth / 2,
+                    color: Self.bodyTextColor, in: &context
+                )
                 drawEdges(in: &context)
                 drawNodes(in: &context)
             }
@@ -51,14 +54,6 @@ struct NativeActivityDiagramView: View {
     }
 
     // MARK: - Drawing
-
-    private func drawTitle(in context: inout GraphicsContext) {
-        guard !layout.title.isEmpty else { return }
-        let titleText = Text(layout.title)
-            .font(.system(size: 14, weight: .bold))
-            .foregroundStyle(Self.bodyTextColor)
-        context.draw(titleText, at: CGPoint(x: layout.totalWidth / 2, y: 18), anchor: .center)
-    }
 
     private func drawNodes(in context: inout GraphicsContext) {
         for node in layout.nodes {
