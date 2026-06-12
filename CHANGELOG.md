@@ -77,6 +77,56 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   `LayoutCluster` array on `LayoutGraph`; `SVGRenderer` draws each as a
   tinted, dashed labelled box behind the nodes. Graphs without module
   info are unaffected (plain non-compound layout, empty `clusters`).
+- **Internal: duplication cleanup across the package (no behavior
+  change; all 870 package tests still pass).** Consolidated repeated
+  logic surfaced by `pmd cpd` — the package dropped from 30 copy-paste
+  blocks to 4 (the remainder deliberate: base64 bit-twiddling,
+  structurally-distinct loop skeletons):
+  - XML and nomnoml escaping unified into `String.xmlEscaped` /
+    `.nomnomlEscaped`, replacing copies in `SVGRenderer`,
+    `SequenceSVGRenderer`, `ActivitySVGRenderer`,
+    `ComponentSVGRenderer`, `SyntaxStructure+Nomnoml`, and `DepsScript`.
+  - The CLI subcommands share a `CommonDiagramOptions` `@OptionGroup`
+    (the `--format` / `--output` / `--config` triplet plus config
+    resolution) and an `Optional<ClassDiagramOutput>.present(_:)`
+    presenter selector, replacing the per-command `switch output` blocks.
+    Entry-point parsing moves to `String.parsedEntryPoint()`.
+  - New `TypeStackVisitor` base class hosts the
+    class/struct/enum/actor/protocol/extension push-pop walk shared by
+    `CallGraphExtractor` and `StateMachineExtractor`;
+    `SyntaxStructureBuilder` collapses its five generic-bearing
+    type-declaration visitors into one `handleTypeDeclaration` helper.
+  - The three class-diagram emitters share `renderDiagramText` (the
+    skip / generics / linking flow) and `renderableMember` (the member
+    filter) via a new `SyntaxStructure+EmitterShared`.
+  - Smaller shared helpers: `String.globPatternToRegex()`,
+    `SyntaxStructure.isExcluded(byPatterns:)`,
+    `CallGraphExtractor.entryPoints(for:)`, plus within-file dedup in
+    `StateScript`, `SequenceScript`, `ActivityGraphBuilder+ControlFlow`
+    (`wireBranch`), and `DependencyGraphGenerator` (`typeEdgeBasis`).
+
+### Changed — Studio
+
+- **Internal: native-canvas and view duplication cleanup (no behavior
+  change; Studio's 439 unit and 20 UI tests still pass).** Reduced the
+  app from 19 copy-paste blocks to 3 (the remainder the class/sequence
+  interactive scaffold, whose modifier order matters for hit-testing):
+  - The four native `Canvas` renderers share `canvasPanZoom` and
+    `diagramCanvasChrome` view modifiers; the two non-interactive ones
+    (activity, component) share a full `DiagramCanvasContainer` body.
+    Arrowhead and center→bounds math move to
+    `DiagramDrawing.fillArrowhead` and a `CenterPositioned.boundingRect`,
+    and the title to `DiagramDrawing.drawTitle`.
+  - UI components extracted: `EntryPointPicker` (activity / sequence
+    control bars), `AppModePicker` + `PathSummaryLabel` (developer and
+    Explorer toolbars), `HistoryListContent` (history list shared by
+    `HistorySidebar` and the Explorer sidebar), and `SuggestionHandler`
+    + a `.paywallSheet` modifier for the pro-gated suggestion dispatch
+    shared by `ExplorerDetailView`, `ExplorerSidebar`, and
+    `DiagramDetailView`. Accessibility identifiers are preserved, so the
+    UI-test selectors are unchanged.
+  - `DiagramViewModel` gains a `resolveEntryPoint()` helper shared by the
+    activity and sequence generators.
 
 ---
 
