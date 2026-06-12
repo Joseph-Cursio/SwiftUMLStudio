@@ -95,18 +95,24 @@ extension DiagramViewModel {
         stateScript = result
     }
 
-    func generateActivityDiagram() async {
+    /// Resolve `entryPoint` into a `Type.method` pair. On missing paths/entry or
+    /// a malformed value, clears `isGenerating` and returns nil so the caller can
+    /// abort the generation.
+    private func resolveEntryPoint() -> (entryType: String, entryMethod: String)? {
         guard !selectedPaths.isEmpty, !entryPoint.isEmpty else {
             isGenerating = false
-            return
+            return nil
         }
         let parts = entryPoint.split(separator: ".").map(String.init)
         guard parts.count == 2 else {
             isGenerating = false
-            return
+            return nil
         }
-        let entryType = parts[0]
-        let entryMethod = parts[1]
+        return (parts[0], parts[1])
+    }
+
+    func generateActivityDiagram() async {
+        guard let (entryType, entryMethod) = resolveEntryPoint() else { return }
 
         activityScript = nil
 
@@ -179,17 +185,7 @@ extension DiagramViewModel {
     }
 
     func generateSequenceDiagram() async {
-        guard !selectedPaths.isEmpty, !entryPoint.isEmpty else {
-            isGenerating = false
-            return
-        }
-        let parts = entryPoint.split(separator: ".").map(String.init)
-        guard parts.count == 2 else {
-            isGenerating = false
-            return
-        }
-        let entryType = parts[0]
-        let entryMethod = parts[1]
+        guard let (entryType, entryMethod) = resolveEntryPoint() else { return }
 
         sequenceScript = nil
 
