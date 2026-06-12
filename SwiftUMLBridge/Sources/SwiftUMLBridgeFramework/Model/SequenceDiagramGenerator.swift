@@ -9,17 +9,7 @@ public struct SequenceDiagramGenerator: SequenceDiagramGenerating, @unchecked Se
     /// - Parameter paths: Paths to Swift source files or directories.
     /// - Returns: A sorted list of "Type.method" strings found in the sources.
     public func findEntryPoints(for paths: [String]) -> [String] {
-        let files = FileCollector().getFiles(for: paths)
-        var allMethods = Set<String>()
-
-        for file in files {
-            if let source = try? String(contentsOf: file, encoding: .utf8) {
-                let result = CallGraphExtractor.extract(from: source)
-                allMethods.formUnion(result.methods)
-            }
-        }
-
-        return allMethods.sorted()
+        CallGraphExtractor.entryPoints(for: paths)
     }
 
     /// Generate a `SequenceScript` from Swift files at the given paths.

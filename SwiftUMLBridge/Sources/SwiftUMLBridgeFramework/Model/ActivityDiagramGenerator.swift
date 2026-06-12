@@ -6,14 +6,7 @@ public struct ActivityDiagramGenerator: ActivityDiagramGenerating, @unchecked Se
 
     /// Find all potential entry points (`Type.method`) in the given source files.
     public func findEntryPoints(for paths: [String]) -> [String] {
-        let files = FileCollector().getFiles(for: paths)
-        var allMethods = Set<String>()
-        for file in files {
-            if let source = try? String(contentsOf: file, encoding: .utf8) {
-                allMethods.formUnion(CallGraphExtractor.extract(from: source).methods)
-            }
-        }
-        return allMethods.sorted()
+        CallGraphExtractor.entryPoints(for: paths)
     }
 
     /// Generate an `ActivityScript` from Swift files at the given paths.

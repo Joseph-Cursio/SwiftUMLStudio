@@ -43,13 +43,19 @@ internal extension String {
 }
 
 internal extension String {
-    func isMatching(searchPattern: String) -> Bool {
-        let pattern = "^\(searchPattern)$"
+    /// Translate this glob pattern into an anchored regular-expression string
+    /// (`^…$`): escape regex metacharacters, then expand `?`, `**/`, `**`, and `*`.
+    func globPatternToRegex() -> String {
+        "^\(self)$"
             .replacingOccurrences(of: "[.+(){\\\\|]", with: "\\\\$0", options: .regularExpression)
             .replacingOccurrences(of: "?", with: "[^/]")
             .replacingOccurrences(of: "**/", with: "(.+/)?")
             .replacingOccurrences(of: "**", with: ".+")
             .replacingOccurrences(of: "*", with: "([^/]+)?")
+    }
+
+    func isMatching(searchPattern: String) -> Bool {
+        let pattern = searchPattern.globPatternToRegex()
         guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else { return true }
         return regex.firstMatch(in: self, options: [], range: NSRange(location: 0, length: utf16.count)) != nil
     }

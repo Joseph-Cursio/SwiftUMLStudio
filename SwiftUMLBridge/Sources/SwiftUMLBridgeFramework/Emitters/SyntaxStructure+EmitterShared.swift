@@ -52,4 +52,10 @@ extension SyntaxStructure {
         }
         return actualElement
     }
+
+    /// Whether this element's name matches any of the given exclude glob patterns.
+    func isExcluded(byPatterns patterns: [String]?) -> Bool {
+        guard let elementName = name, let patterns else { return false }
+        return patterns.contains { elementName.isMatching(searchPattern: $0) }
+    }
 }

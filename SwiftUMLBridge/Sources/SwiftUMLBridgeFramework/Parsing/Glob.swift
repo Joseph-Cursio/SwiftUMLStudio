@@ -87,12 +87,7 @@ internal func expandGlobs(_ paths: String, in directory: String) -> [Glob] {
         if FileManager.default.fileExists(atPath: path) {
             return .path(path)
         }
-        var regex = "^\(path)$"
-            .replacingOccurrences(of: "[.+(){\\\\|]", with: "\\\\$0", options: .regularExpression)
-            .replacingOccurrences(of: "?", with: "[^/]")
-            .replacingOccurrences(of: "**/", with: "(.+/)?")
-            .replacingOccurrences(of: "**", with: ".+")
-            .replacingOccurrences(of: "*", with: "([^/]+)?")
+        var regex = path.globPatternToRegex()
         for (token, replacement) in tokens {
             regex = regex.replacingOccurrences(of: token, with: replacement)
         }

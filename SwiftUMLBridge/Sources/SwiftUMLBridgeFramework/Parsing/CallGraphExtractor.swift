@@ -118,4 +118,16 @@ final class CallGraphExtractor: TypeStackVisitor {
         extractor.walk(sourceFile)
         return ExtractionResult(edges: extractor.edges, methods: Array(extractor.methods).sorted())
     }
+
+    /// Collect every `Type.method` entry point defined across the given source paths.
+    static func entryPoints(for paths: [String]) -> [String] {
+        let files = FileCollector().getFiles(for: paths)
+        var allMethods = Set<String>()
+        for file in files {
+            if let source = try? String(contentsOf: file, encoding: .utf8) {
+                allMethods.formUnion(extract(from: source).methods)
+            }
+        }
+        return allMethods.sorted()
+    }
 }

@@ -195,9 +195,7 @@ extension SyntaxStructure {
     }
 
     func skip(element: SyntaxStructure, basedOn excludeElements: [String]?) -> Bool {
-        guard let elementName = element.name else { return false }
-        guard let excludedElements = excludeElements else { return false }
-        return !excludedElements.filter { elementName.isMatching(searchPattern: $0) }.isEmpty
+        element.isExcluded(byPatterns: excludeElements)
     }
 
     func genericsStatement() -> String? {
