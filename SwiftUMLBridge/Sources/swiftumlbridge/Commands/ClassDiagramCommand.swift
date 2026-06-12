@@ -70,7 +70,7 @@ extension SwiftUMLBridgeCLI {
             BridgeLogger.shared.info("SDK: \(sdk ?? "no SDK path provided")")
 
             let generator = ClassDiagramGenerator()
-            let presenter = makePresenter()
+            let presenter = output.presenter
 
             if let packagePath = package {
                 let packageRoot = URL(fileURLWithPath: packagePath)
@@ -94,14 +94,6 @@ extension SwiftUMLBridgeCLI {
                 for: files.map(\.path), with: bridgeConfig,
                 presentedBy: presenter, sdkPath: sdk
             )
-        }
-
-        private func makePresenter() -> any DiagramPresenting {
-            switch output {
-            case .browserImageOnly: return BrowserPresenter(format: .png)
-            case .consoleOnly:      return ConsolePresenter()
-            default:                return BrowserPresenter(format: .default)
-            }
         }
     }
 }

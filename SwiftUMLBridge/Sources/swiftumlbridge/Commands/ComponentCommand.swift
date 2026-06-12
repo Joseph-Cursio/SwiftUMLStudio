@@ -49,14 +49,7 @@ extension SwiftUMLBridgeCLI {
             }
             let script = ComponentScript(model: model, configuration: configuration)
 
-            switch output {
-            case .browserImageOnly:
-                await BrowserPresenter(format: .png).present(script: script)
-            case .consoleOnly:
-                await ConsolePresenter().present(script: script)
-            default:
-                await BrowserPresenter(format: .default).present(script: script)
-            }
+            await output.present(script)
         }
     }
 }

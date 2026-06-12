@@ -25,24 +25,10 @@ extension SwiftUMLBridgeCLI {
         )
         var list: Bool = false
 
-        @Option(help: "Diagram format. Options: plantuml, mermaid")
-        var format: DiagramFormat?
-
-        @Option(help: ArgumentHelp(
-            "Output format. Options: \(ClassDiagramOutput.allCases.map(\.rawValue).joined(separator: ", "))",
-            valueName: "output"
-        ))
-        var output: ClassDiagramOutput?
-
-        @Option(help: "Path to custom configuration file")
-        var config: String?
+        @OptionGroup var common: CommonDiagramOptions
 
         mutating func run() async throws {
-            var bridgeConfig = ConfigurationProvider().getConfiguration(for: self.config)
-
-            if let format {
-                bridgeConfig.format = format
-            }
+            let bridgeConfig = common.resolvedConfiguration()
 
             let sourcePaths = paths.isEmpty ? ["."] : paths
             let generator = StateMachineGenerator()
@@ -64,14 +50,7 @@ extension SwiftUMLBridgeCLI {
                 throw CLIError.stateCandidateNotFound(identifier: identifier)
             }
 
-            switch output {
-            case .browserImageOnly:
-                await BrowserPresenter(format: .png).present(script: script)
-            case .consoleOnly:
-                await ConsolePresenter().present(script: script)
-            default:
-                await BrowserPresenter(format: .default).present(script: script)
-            }
+            await common.output.present(script)
         }
 
         private func printCandidates(_ candidates: [StateMachineModel]) {

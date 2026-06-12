@@ -25,18 +25,6 @@ extension SwiftUMLBridgeCLI {
         @Option(help: "Exclude types or modules matching these patterns")
         var exclude: [String] = []
 
-        @Option(help: "Diagram format. Options: plantuml, mermaid")
-        var format: DiagramFormat?
-
-        @Option(help: ArgumentHelp(
-            "Output format. Options: \(ClassDiagramOutput.allCases.map(\.rawValue).joined(separator: ", "))",
-            valueName: "output"
-        ))
-        var output: ClassDiagramOutput?
-
-        @Option(help: "Path to custom configuration file")
-        var config: String?
-
         @Option(help: """
             Path to a Package.swift directory. Activates module-aware mode: \
             in --modules each SPM target_dependencies pair becomes an edge \
@@ -46,12 +34,10 @@ extension SwiftUMLBridgeCLI {
             """)
         var package: String?
 
-        mutating func run() async throws {
-            var bridgeConfig = ConfigurationProvider().getConfiguration(for: self.config)
+        @OptionGroup var common: CommonDiagramOptions
 
-            if let format {
-                bridgeConfig.format = format
-            }
+        mutating func run() async throws {
+            var bridgeConfig = common.resolvedConfiguration()
 
             if publicOnly {
                 bridgeConfig.elements = ElementOptions(
@@ -94,14 +80,7 @@ extension SwiftUMLBridgeCLI {
                 )
             }
 
-            switch output {
-            case .browserImageOnly:
-                await BrowserPresenter(format: .png).present(script: script)
-            case .consoleOnly:
-                await ConsolePresenter().present(script: script)
-            default:
-                await BrowserPresenter(format: .default).present(script: script)
-            }
+            await common.output.present(script)
         }
     }
 }

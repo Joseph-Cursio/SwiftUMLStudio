@@ -16,24 +16,10 @@ extension SwiftUMLBridgeCLI {
         @Option(help: "Entry point as Type.method (e.g. MyClass.myMethod)")
         var entry: String
 
-        @Option(help: "Diagram format. Options: plantuml, mermaid")
-        var format: DiagramFormat?
-
-        @Option(help: ArgumentHelp(
-            "Output format. Options: \(ClassDiagramOutput.allCases.map(\.rawValue).joined(separator: ", "))",
-            valueName: "output"
-        ))
-        var output: ClassDiagramOutput?
-
-        @Option(help: "Path to custom configuration file")
-        var config: String?
+        @OptionGroup var common: CommonDiagramOptions
 
         mutating func run() async throws {
-            var bridgeConfig = ConfigurationProvider().getConfiguration(for: self.config)
-
-            if let format {
-                bridgeConfig.format = format
-            }
+            let bridgeConfig = common.resolvedConfiguration()
 
             let parts = entry.split(separator: ".").map(String.init)
             guard parts.count == 2 else { throw CLIError.invalidEntry }
@@ -48,14 +34,7 @@ extension SwiftUMLBridgeCLI {
                 with: bridgeConfig
             )
 
-            switch output {
-            case .browserImageOnly:
-                await BrowserPresenter(format: .png).present(script: script)
-            case .consoleOnly:
-                await ConsolePresenter().present(script: script)
-            default:
-                await BrowserPresenter(format: .default).present(script: script)
-            }
+            await common.output.present(script)
         }
     }
 }
