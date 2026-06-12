@@ -38,38 +38,17 @@ struct NativeComponentDiagramView: View {
                 drawComponents(in: &context)
             }
             .frame(width: canvasWidth, height: canvasHeight)
-            .scaleEffect(viewport.scale)
-            .offset(viewport.offset)
-            .gesture(magnificationGesture)
-            .gesture(dragGesture)
+            .canvasPanZoom(viewport: viewport)
             .onTapGesture(count: 2) { viewport.reset() }
-            .accessibilityAddTraits(.isButton)
-            .accessibilityLabel("Component diagram canvas")
-            .accessibilityHint("Double-tap to reset zoom and position")
-            .accessibilityIdentifier("nativeComponentCanvas")
-            .onAppear {
-                viewport.contentSize = CGSize(width: layout.totalWidth, height: layout.totalHeight)
-                viewport.visibleSize = geometry.size
-            }
-            .onChange(of: geometry.size) { _, newSize in
-                viewport.visibleSize = newSize
-            }
+            .diagramCanvasChrome(
+                viewport: viewport,
+                contentSize: CGSize(width: layout.totalWidth, height: layout.totalHeight),
+                visibleSize: geometry.size,
+                label: "Component diagram canvas",
+                identifier: "nativeComponentCanvas"
+            )
         }
         .background(Color(nsColor: .textBackgroundColor))
-    }
-
-    // MARK: - Gestures
-
-    private var magnificationGesture: some Gesture {
-        MagnifyGesture()
-            .onChanged { value in viewport.updateScale(magnification: value.magnification) }
-            .onEnded { _ in viewport.commitScale() }
-    }
-
-    private var dragGesture: some Gesture {
-        DragGesture()
-            .onChanged { value in viewport.updateOffset(translation: value.translation) }
-            .onEnded { _ in viewport.commitOffset() }
     }
 
     // MARK: - Drawing

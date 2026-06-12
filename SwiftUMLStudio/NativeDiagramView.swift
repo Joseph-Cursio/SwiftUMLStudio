@@ -49,10 +49,7 @@ struct NativeDiagramView: View {
             }
             .frame(width: canvasWidth, height: canvasHeight)
             .coordinateSpace(name: Self.canvasCoordinateSpace)
-            .scaleEffect(viewport.scale)
-            .offset(viewport.offset)
-            .gesture(magnificationGesture)
-            .gesture(dragGesture)
+            .canvasPanZoom(viewport: viewport)
             .gesture(tapToSelectGesture)
             .onTapGesture(count: 2) { viewport.reset() }
             .onContinuousHover(coordinateSpace: .named(Self.canvasCoordinateSpace)) { phase in
@@ -74,34 +71,18 @@ struct NativeDiagramView: View {
                 viewport.selectedNodeId = nil
                 return .handled
             }
-            .accessibilityAddTraits(.isButton)
-            .accessibilityLabel("Class diagram canvas")
-            .accessibilityHint("Double-tap to reset zoom and position")
-            .accessibilityIdentifier("nativeDiagramCanvas")
-            .onAppear {
-                viewport.contentSize = CGSize(width: graph.width, height: graph.height)
-                viewport.visibleSize = geometry.size
-            }
-            .onChange(of: geometry.size) { _, newSize in
-                viewport.visibleSize = newSize
-            }
+            .diagramCanvasChrome(
+                viewport: viewport,
+                contentSize: CGSize(width: graph.width, height: graph.height),
+                visibleSize: geometry.size,
+                label: "Class diagram canvas",
+                identifier: "nativeDiagramCanvas"
+            )
         }
         .background(Color(nsColor: .textBackgroundColor))
     }
 
     // MARK: - Gestures
-
-    private var magnificationGesture: some Gesture {
-        MagnifyGesture()
-            .onChanged { value in viewport.updateScale(magnification: value.magnification) }
-            .onEnded { _ in viewport.commitScale() }
-    }
-
-    private var dragGesture: some Gesture {
-        DragGesture()
-            .onChanged { value in viewport.updateOffset(translation: value.translation) }
-            .onEnded { _ in viewport.commitOffset() }
-    }
 
     private var tapToSelectGesture: some Gesture {
         SpatialTapGesture(coordinateSpace: .named(Self.canvasCoordinateSpace))
