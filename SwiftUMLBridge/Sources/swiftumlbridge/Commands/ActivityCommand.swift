@@ -21,10 +21,7 @@ extension SwiftUMLBridgeCLI {
         mutating func run() async throws {
             let bridgeConfig = common.resolvedConfiguration()
 
-            let parts = entry.split(separator: ".").map(String.init)
-            guard parts.count == 2 else { throw CLIError.invalidEntry }
-            let entryType = parts[0]
-            let entryMethod = parts[1]
+            let (entryType, entryMethod) = try entry.parsedEntryPoint()
 
             let sourcePaths = paths.isEmpty ? ["."] : paths
             let script = ActivityDiagramGenerator().generateScript(
