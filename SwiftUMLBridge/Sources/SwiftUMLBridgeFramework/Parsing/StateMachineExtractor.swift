@@ -35,7 +35,7 @@ private struct StateMachineObservedTransition {
     let switchSubjectMatches: Bool
 }
 
-final class StateMachineExtractor: SyntaxVisitor {
+final class StateMachineExtractor: TypeStackVisitor {
 
     fileprivate typealias PropertyInfo = StateMachinePropertyInfo
     fileprivate typealias SwitchFrame = StateMachineSwitchFrame
@@ -55,36 +55,10 @@ final class StateMachineExtractor: SyntaxVisitor {
 
     // MARK: - Walk state
 
-    private var typeStack: [String] = []
     private var funcStack: [String] = []
     private var switchStack: [SwitchFrame] = []
 
-    // MARK: - Type declarations
-
-    override func visit(_ node: ClassDeclSyntax) -> SyntaxVisitorContinueKind {
-        typeStack.append(node.name.text)
-        return .visitChildren
-    }
-    override func visitPost(_ node: ClassDeclSyntax) { typeStack.removeLast() }
-
-    override func visit(_ node: StructDeclSyntax) -> SyntaxVisitorContinueKind {
-        typeStack.append(node.name.text)
-        return .visitChildren
-    }
-    override func visitPost(_ node: StructDeclSyntax) { typeStack.removeLast() }
-
-    override func visit(_ node: ActorDeclSyntax) -> SyntaxVisitorContinueKind {
-        typeStack.append(node.name.text)
-        return .visitChildren
-    }
-    override func visitPost(_ node: ActorDeclSyntax) { typeStack.removeLast() }
-
-    override func visit(_ node: ExtensionDeclSyntax) -> SyntaxVisitorContinueKind {
-        let typeName = node.extendedType.description.trimmingCharacters(in: .whitespacesAndNewlines)
-        typeStack.append(typeName)
-        return .visitChildren
-    }
-    override func visitPost(_ node: ExtensionDeclSyntax) { typeStack.removeLast() }
+    // MARK: - Enum declarations (collect simple enums, then maintain the type stack)
 
     override func visit(_ node: EnumDeclSyntax) -> SyntaxVisitorContinueKind {
         let enumName = node.name.text
@@ -107,10 +81,8 @@ final class StateMachineExtractor: SyntaxVisitor {
             simpleEnums[enumName] = caseNames
         }
 
-        typeStack.append(enumName)
-        return .visitChildren
+        return super.visit(node)
     }
-    override func visitPost(_ node: EnumDeclSyntax) { typeStack.removeLast() }
 
     // MARK: - Property declarations
 

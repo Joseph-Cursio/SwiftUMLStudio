@@ -12,50 +12,10 @@ import SwiftSyntax
 /// Unresolved:
 /// - `variable.method()` (lowercase receiver) → `isUnresolved = true`, `calleeType = nil`
 /// - Closures or complex expressions → `isUnresolved = true`
-final class CallGraphExtractor: SyntaxVisitor {
+final class CallGraphExtractor: TypeStackVisitor {
     private var edges: [CallEdge] = []
     private var methods: Set<String> = []
-    private var typeStack: [String] = []
     private var methodStack: [String] = []
-
-    // MARK: - Type declarations (push/pop typeStack)
-
-    override func visit(_ node: ClassDeclSyntax) -> SyntaxVisitorContinueKind {
-        typeStack.append(node.name.text)
-        return .visitChildren
-    }
-    override func visitPost(_ node: ClassDeclSyntax) { typeStack.removeLast() }
-
-    override func visit(_ node: StructDeclSyntax) -> SyntaxVisitorContinueKind {
-        typeStack.append(node.name.text)
-        return .visitChildren
-    }
-    override func visitPost(_ node: StructDeclSyntax) { typeStack.removeLast() }
-
-    override func visit(_ node: EnumDeclSyntax) -> SyntaxVisitorContinueKind {
-        typeStack.append(node.name.text)
-        return .visitChildren
-    }
-    override func visitPost(_ node: EnumDeclSyntax) { typeStack.removeLast() }
-
-    override func visit(_ node: ActorDeclSyntax) -> SyntaxVisitorContinueKind {
-        typeStack.append(node.name.text)
-        return .visitChildren
-    }
-    override func visitPost(_ node: ActorDeclSyntax) { typeStack.removeLast() }
-
-    override func visit(_ node: ProtocolDeclSyntax) -> SyntaxVisitorContinueKind {
-        typeStack.append(node.name.text)
-        return .visitChildren
-    }
-    override func visitPost(_ node: ProtocolDeclSyntax) { typeStack.removeLast() }
-
-    override func visit(_ node: ExtensionDeclSyntax) -> SyntaxVisitorContinueKind {
-        let typeName = node.extendedType.description.trimmingCharacters(in: .whitespacesAndNewlines)
-        typeStack.append(typeName)
-        return .visitChildren
-    }
-    override func visitPost(_ node: ExtensionDeclSyntax) { typeStack.removeLast() }
 
     // MARK: - Function declarations (push/pop methodStack)
 
