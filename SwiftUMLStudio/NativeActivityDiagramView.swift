@@ -101,10 +101,7 @@ struct NativeActivityDiagramView: View {
     private func drawRoundedRect(
         node: PositionedActivityNode, fill: SwiftUI.Color, in context: inout GraphicsContext
     ) {
-        let rect = CGRect(
-            x: node.centerX - node.width / 2, y: node.centerY - node.height / 2,
-            width: node.width, height: node.height
-        )
+        let rect = node.boundingRect
         context.fill(Path(roundedRect: rect, cornerRadius: 8), with: .color(fill))
         context.stroke(Path(roundedRect: rect, cornerRadius: 8), with: .color(Self.strokeColor), lineWidth: 1.5)
     }
@@ -125,10 +122,7 @@ struct NativeActivityDiagramView: View {
     private func drawBar(
         node: PositionedActivityNode, fill: SwiftUI.Color, in context: inout GraphicsContext
     ) {
-        let rect = CGRect(
-            x: node.centerX - node.width / 2, y: node.centerY - node.height / 2,
-            width: node.width, height: node.height
-        )
+        let rect = node.boundingRect
         context.fill(Path(rect), with: .color(fill))
         context.stroke(Path(rect), with: .color(Self.strokeColor), lineWidth: 1)
     }
@@ -170,8 +164,12 @@ struct NativeActivityDiagramView: View {
         path.addLine(to: endPoint)
         context.stroke(path, with: .color(Self.strokeColor), lineWidth: 1.2)
 
-        drawArrowHead(at: endPoint, direction: CGPoint(x: endPoint.x - startPoint.x,
-                                                       y: endPoint.y - startPoint.y), in: &context)
+        DiagramDrawing.fillArrowhead(
+            at: endPoint,
+            direction: CGPoint(x: endPoint.x - startPoint.x, y: endPoint.y - startPoint.y),
+            color: Self.strokeColor,
+            in: &context
+        )
 
         if let label, !label.isEmpty {
             let labelPoint = CGPoint(
@@ -205,7 +203,9 @@ struct NativeActivityDiagramView: View {
             style: StrokeStyle(lineWidth: 1.2, dash: [4, 3])
         )
 
-        drawArrowHead(at: endPoint, direction: CGPoint(x: -1, y: 0), in: &context)
+        DiagramDrawing.fillArrowhead(
+            at: endPoint, direction: CGPoint(x: -1, y: 0), color: Self.strokeColor, in: &context
+        )
 
         if let label, !label.isEmpty {
             let labelPoint = CGPoint(x: detourX + 6, y: (startPoint.y + endPoint.y) / 2)
@@ -216,23 +216,4 @@ struct NativeActivityDiagramView: View {
         }
     }
 
-    private func drawArrowHead(
-        at point: CGPoint, direction: CGPoint, in context: inout GraphicsContext
-    ) {
-        let length = max(hypot(direction.x, direction.y), 0.001)
-        let unitX = direction.x / length
-        let unitY = direction.y / length
-        let size: CGFloat = 8
-        let baseX = point.x - unitX * size
-        let baseY = point.y - unitY * size
-        let perpX = -unitY
-        let perpY = unitX
-
-        var path = Path()
-        path.move(to: point)
-        path.addLine(to: CGPoint(x: baseX + perpX * size / 2, y: baseY + perpY * size / 2))
-        path.addLine(to: CGPoint(x: baseX - perpX * size / 2, y: baseY - perpY * size / 2))
-        path.closeSubpath()
-        context.fill(path, with: .color(Self.strokeColor))
-    }
 }

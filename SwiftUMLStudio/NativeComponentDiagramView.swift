@@ -60,10 +60,10 @@ struct NativeComponentDiagramView: View {
     }
 
     private func drawBox(component: PositionedComponent, in context: inout GraphicsContext) {
-        let originX = component.centerX - component.width / 2
-        let originY = component.centerY - component.height / 2
-        let boxRect = CGRect(x: originX, y: originY, width: component.width, height: component.height)
-        let headerRect = CGRect(x: originX, y: originY, width: component.width, height: Self.headerHeight)
+        let boxRect = component.boundingRect
+        let headerRect = CGRect(
+            x: boxRect.minX, y: boxRect.minY, width: boxRect.width, height: Self.headerHeight
+        )
 
         let boxPath = Path(roundedRect: boxRect, cornerRadius: Self.cornerRadius)
         context.fill(boxPath, with: .color(Self.boxFill))
@@ -78,7 +78,7 @@ struct NativeComponentDiagramView: View {
             .foregroundStyle(Self.stereotypeColor)
         context.draw(
             stereotypeText,
-            at: CGPoint(x: component.centerX, y: originY + 11),
+            at: CGPoint(x: component.centerX, y: boxRect.minY + 11),
             anchor: .center
         )
 
@@ -87,18 +87,18 @@ struct NativeComponentDiagramView: View {
             .foregroundStyle(Self.titleColor)
         context.draw(
             titleText,
-            at: CGPoint(x: component.centerX, y: originY + 23),
+            at: CGPoint(x: component.centerX, y: boxRect.minY + 23),
             anchor: .center
         )
 
-        var interfaceY = originY + Self.headerHeight + Self.boxPadding
+        var interfaceY = boxRect.minY + Self.headerHeight + Self.boxPadding
         for interfaceName in component.providedInterfaces {
             let text = Text(interfaceName)
                 .font(.system(size: 11))
                 .foregroundStyle(Self.interfaceColor)
             context.draw(
                 text,
-                at: CGPoint(x: originX + Self.boxPadding, y: interfaceY + 7),
+                at: CGPoint(x: boxRect.minX + Self.boxPadding, y: interfaceY + 7),
                 anchor: .leading
             )
             interfaceY += Self.interfaceLineHeight
@@ -121,28 +121,13 @@ struct NativeComponentDiagramView: View {
                 with: .color(Self.strokeColor),
                 style: StrokeStyle(lineWidth: 1.2, dash: [5, 4])
             )
-            drawArrowHead(at: end, from: start, in: &context)
+            DiagramDrawing.fillArrowhead(
+                at: end,
+                direction: CGPoint(x: end.x - start.x, y: end.y - start.y),
+                color: Self.strokeColor,
+                in: &context
+            )
         }
-    }
-
-    private func drawArrowHead(at point: CGPoint, from origin: CGPoint, in context: inout GraphicsContext) {
-        let deltaX = point.x - origin.x
-        let deltaY = point.y - origin.y
-        let length = max(hypot(deltaX, deltaY), 0.001)
-        let unitX = deltaX / length
-        let unitY = deltaY / length
-        let arrowLength: CGFloat = 8
-        let baseX = point.x - unitX * arrowLength
-        let baseY = point.y - unitY * arrowLength
-        let perpX = -unitY
-        let perpY = unitX
-
-        var path = Path()
-        path.move(to: point)
-        path.addLine(to: CGPoint(x: baseX + perpX * arrowLength / 2, y: baseY + perpY * arrowLength / 2))
-        path.addLine(to: CGPoint(x: baseX - perpX * arrowLength / 2, y: baseY - perpY * arrowLength / 2))
-        path.closeSubpath()
-        context.fill(path, with: .color(Self.strokeColor))
     }
 
     /// Project to whichever rectangle border of `source` lies nearest the
