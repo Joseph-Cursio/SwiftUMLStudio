@@ -77,6 +77,65 @@ struct SPMPackageReaderParseTests {
         let pkg = try SPMPackageReader.parse(weird)
         #expect(pkg.targets.first?.kind == .other)
     }
+
+    @Test("valid JSON object without 'name' throws malformedJSON")
+    func missingNameThrows() {
+        let noName = Data(#"{ "targets": [] }"#.utf8)
+        #expect(throws: SPMPackageReader.ReadError.self) {
+            try SPMPackageReader.parse(noName)
+        }
+    }
+
+    @Test("missing 'targets' key yields a package with zero targets")
+    func missingTargetsKeyYieldsEmpty() throws {
+        let noTargets = Data(#"{ "name": "Solo" }"#.utf8)
+        let pkg = try SPMPackageReader.parse(noTargets)
+        #expect(pkg.name == "Solo")
+        #expect(pkg.targets.isEmpty)
+    }
+
+    @Test("targets missing 'name' or 'path' are dropped")
+    func dropsIncompleteTargets() throws {
+        let json = Data(#"""
+        { "name": "P", "targets": [
+          { "type": "library", "path": "Sources/NoName", "sources": [], "target_dependencies": [] },
+          { "name": "NoPath", "type": "library", "sources": [], "target_dependencies": [] },
+          { "name": "Good", "type": "library", "path": "Sources/Good",
+            "sources": ["A.swift"], "target_dependencies": [] }
+        ]}
+        """#.utf8)
+        let pkg = try SPMPackageReader.parse(json)
+        #expect(pkg.targets.map(\.name) == ["Good"])
+    }
+
+    @Test("targets without 'sources' or 'target_dependencies' default to empty arrays")
+    func defaultsEmptyArrays() throws {
+        let json = Data(#"""
+        { "name": "P", "targets": [
+          { "name": "Bare", "type": "library", "path": "Sources/Bare" }
+        ]}
+        """#.utf8)
+        let pkg = try SPMPackageReader.parse(json)
+        let bare = try #require(pkg.targets.first)
+        #expect(bare.sources.isEmpty)
+        #expect(bare.dependencies.isEmpty)
+    }
+}
+
+@Suite("SPMPackageReader.describe")
+struct SPMPackageReaderDescribeTests {
+
+    @Test("describe(at:) on a directory without a manifest throws swiftToolFailed")
+    func describeFailsWithoutManifest() throws {
+        let tempRoot = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("not-a-package-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: tempRoot, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: tempRoot) }
+
+        #expect(throws: SPMPackageReader.ReadError.self) {
+            _ = try SPMPackageReader.describe(at: tempRoot)
+        }
+    }
 }
 
 @Suite("SPMPackageDescription.sourceFileToModuleMap")

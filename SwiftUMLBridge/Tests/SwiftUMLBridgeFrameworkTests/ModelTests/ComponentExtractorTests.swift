@@ -107,6 +107,56 @@ struct ComponentExtractorTests {
         #expect(networking.kind == .library)
         #expect(appTests.kind == .test)
     }
+
+    @Test("non-library/executable/test kind maps to Component.Kind.other")
+    func otherKindMapping() throws {
+        let package = SPMPackageDescription(
+            name: "Demo",
+            targets: [
+                SPMTargetDescription(
+                    name: "Plug", kind: .other, path: "Plugins/Plug",
+                    sources: [], dependencies: []
+                )
+            ]
+        )
+        let model = ComponentExtractor.extract(package: package, packageRoot: dummyRoot)
+        let plug = try #require(model.components.first { $0.name == "Plug" })
+        #expect(plug.kind == .other)
+    }
+
+    @Test("provided interfaces list only public and open types, sorted")
+    func providedInterfacesFilterAccessLevel() throws {
+        let tempRoot = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("comp-test-\(UUID().uuidString)", isDirectory: true)
+        let sourceDir = tempRoot.appendingPathComponent("Sources/Core", isDirectory: true)
+        try FileManager.default.createDirectory(at: sourceDir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: tempRoot) }
+
+        try """
+        public struct Zebra {}
+        public class Apple {}
+        open class Bandana {}
+        struct HiddenInternal {}
+        private class HiddenPrivate {}
+        """.write(
+            to: sourceDir.appendingPathComponent("Core.swift"),
+            atomically: true, encoding: .utf8
+        )
+
+        let package = SPMPackageDescription(
+            name: "Demo",
+            targets: [
+                SPMTargetDescription(
+                    name: "Core", kind: .library, path: "Sources/Core",
+                    sources: ["Core.swift"], dependencies: []
+                )
+            ]
+        )
+        let model = ComponentExtractor.extract(package: package, packageRoot: tempRoot)
+        let core = try #require(model.components.first { $0.name == "Core" })
+        // Only public/open types surface, alphabetically; internal and private are excluded.
+        #expect(core.providedInterfaces == ["Apple", "Bandana", "Zebra"])
+    }
 }
 
 @Suite("ComponentScript PlantUML emission")
