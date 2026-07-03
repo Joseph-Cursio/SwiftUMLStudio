@@ -32,7 +32,7 @@ struct NativeSequenceDiagramView: View {
 
             Canvas { context, _ in
                 DiagramDrawing.drawTitle(
-                    layout.title, centerX: layout.totalWidth / 2, y: 14,
+                    layout.title, centerX: layout.totalWidth / 2, topY: 14,
                     color: Self.bodyTextColor, in: &context
                 )
                 drawLifelines(in: &context)

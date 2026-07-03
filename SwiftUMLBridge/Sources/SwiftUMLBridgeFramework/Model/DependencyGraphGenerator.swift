@@ -217,13 +217,22 @@ public struct DependencyGraphGenerator: DependencyGraphGenerating, @unchecked Se
     private func typeEdgeBasis(
         for item: SyntaxStructure,
         configuration: Configuration
-    ) -> (name: String, inheritedTypes: [SyntaxStructure], edgeKind: DependencyEdgeKind)? {
+    ) -> TypeEdgeBasis? {
         guard !shouldSkip(element: item, configuration: configuration),
               let name = item.name,
               let inheritedTypes = item.inheritedTypes,
               !inheritedTypes.isEmpty else { return nil }
         let edgeKind: DependencyEdgeKind = (item.kind == .class) ? .inherits : .conforms
-        return (name, inheritedTypes, edgeKind)
+        return TypeEdgeBasis(name: name, inheritedTypes: inheritedTypes, edgeKind: edgeKind)
+    }
+
+    /// The inputs a single declaration contributes to type-edge extraction:
+    /// its name, its non-empty inherited types, and whether those are
+    /// inheritance or conformance edges.
+    private struct TypeEdgeBasis {
+        let name: String
+        let inheritedTypes: [SyntaxStructure]
+        let edgeKind: DependencyEdgeKind
     }
 
     /// Splits an inherited-type entry into individual parent names, expanding

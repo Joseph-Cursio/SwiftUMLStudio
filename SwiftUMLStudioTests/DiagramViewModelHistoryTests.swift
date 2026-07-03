@@ -298,8 +298,12 @@ struct DiagramViewModelHistoryTests {
             #expect(viewModel.selectedHistoryItem === entity2)
         }
     }
+}
 
-    // MARK: - Bookmark restoration
+// MARK: - Bookmark restoration
+
+@Suite("DiagramViewModel History — Bookmark Restoration")
+struct DiagramViewModelBookmarkRestorationTests {
 
     @Test("loadDiagram restores paths from security-scoped bookmarks when present")
     func loadDiagramResolvesBookmarks() throws {

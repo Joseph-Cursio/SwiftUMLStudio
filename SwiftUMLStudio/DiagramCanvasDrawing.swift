@@ -31,7 +31,7 @@ enum DiagramDrawing {
     static func drawTitle(
         _ title: String,
         centerX: Double,
-        y: Double = 18,
+        topY: Double = 18,
         color: SwiftUI.Color,
         in context: inout GraphicsContext
     ) {
@@ -39,7 +39,7 @@ enum DiagramDrawing {
         let text = Text(title)
             .font(.system(size: 14, weight: .bold))
             .foregroundStyle(color)
-        context.draw(text, at: CGPoint(x: centerX, y: y), anchor: .center)
+        context.draw(text, at: CGPoint(x: centerX, y: topY), anchor: .center)
     }
 
     /// Fill a triangular arrowhead at `tip`, pointing along `direction`.

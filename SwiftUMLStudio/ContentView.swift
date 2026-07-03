@@ -112,7 +112,6 @@ struct ContentView: View {
         ))
     }
 
-
     // MARK: - Explorer Layout
 
     private var explorerLayout: some View {
