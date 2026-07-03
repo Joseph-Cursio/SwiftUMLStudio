@@ -12,8 +12,11 @@ public struct RelationshipOptions: Codable, Sendable {
         self.dependency = dependency
     }
 
+    /// The subclass-to-superclass inheritance edge, or `nil` to omit it.
     public var inheritance: Relationship? = Relationship(label: "inherits")
+    /// The type-to-protocol conformance ("realize") edge, or `nil` to omit it.
     public var realize: Relationship? = Relationship(label: "conforms to")
+    /// The extension-to-base-type dependency edge, or `nil` to omit it.
     public var dependency: Relationship? = Relationship(label: "ext")
 }
 
@@ -25,7 +28,10 @@ public struct Relationship: Codable, Sendable {
         self.exclude = exclude
     }
 
+    /// The text drawn on the edge, or `nil` for an unlabelled edge.
     public var label: String?
+    /// The line and arrowhead style for the edge, or `nil` for the format default.
     public var style: RelationshipStyle?
+    /// Name patterns whose edges of this kind are suppressed.
     public var exclude: [String]?
 }

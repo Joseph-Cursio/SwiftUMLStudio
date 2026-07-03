@@ -35,7 +35,9 @@ public struct Stereotypes: Codable, Sendable {
 
 /// Spotted character with background color and optional name for a stereotype
 public struct Stereotype: Codable, Sendable {
+    /// The stereotype label shown after the spot (e.g. `struct`), or `nil` for spot-only.
     public var name: String?
+    /// The single spotted character and its background color.
     public var spot: Spot
 
     var plantuml: String {
@@ -67,7 +69,9 @@ public struct Stereotype: Codable, Sendable {
 
 /// Spotted character with background color
 public struct Spot: Codable, Sendable {
+    /// The single character drawn inside the stereotype spot (e.g. `C` for class).
     public var character: Character
+    /// The spot's background color.
     public var color: Color
 }
 

@@ -10,6 +10,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added — Bridge
 
+- **M15: DocC documentation catalog for `SwiftUMLBridgeFramework`.** A
+  `SwiftUMLBridgeFramework.docc` catalog gives the framework a curated
+  landing page (Overview plus topic groups for the seven generators,
+  configuration, emitted scripts, per-diagram model layers, layout, and
+  rendering) and a `Generating Diagrams` getting-started article. Hosted
+  by Swift Package Index via the existing `.spi.yml`
+  `documentation_targets`. Also fills in doc comments on previously
+  thin public model types (`Configuration`, `ElementOptions`,
+  `RelationshipOptions`, `Stereotype` / `Spot`, `SequenceLayout` and its
+  participant / message structs).
+
 - **M12 follow-up: `deps --package <Package.swift>`.** Module-aware
   dependency graphs for SPM packages. In `--modules` mode each edge
   comes from a target's `target_dependencies` (authoritative — no

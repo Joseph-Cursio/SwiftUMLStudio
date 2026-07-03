@@ -70,15 +70,24 @@ public struct Configuration: Codable, Sendable {
         }
     }
 
+    /// A configuration using the defaults for every option.
     public static let `default` = Configuration()
 
+    /// Which source files are included in generation (globs and excludes).
     public var files = FileOptions()
+    /// Which declarations and members are drawn, filtered by access level and more.
     public var elements = ElementOptions()
+    /// PlantUML `hide`/`show` directives emitted verbatim (e.g. `hide empty members`).
     public private(set) var hideShowCommands: [String]? = ["hide empty members"]
+    /// PlantUML `skinparam` directives emitted verbatim (e.g. `skinparam shadowing false`).
     public private(set) var skinparamCommands: [String]? = ["skinparam shadowing false"]
+    /// A remote `!include` URL prepended to PlantUML output, for shared styling.
     public private(set) var includeRemoteURL: String?
+    /// The PlantUML theme applied to the diagram, when set.
     public private(set) var theme: Theme?
+    /// Which relationship edges (inheritance, conformance, dependency) are drawn and how they are labelled.
     public var relationships = RelationshipOptions()
+    /// The per-kind stereotype spots (class, struct, enum, …) applied to type boxes.
     public private(set) var stereotypes = Stereotypes(
         classStereotype: Stereotype.class,
         structStereotype: Stereotype.struct,
@@ -86,7 +95,9 @@ public struct Configuration: Codable, Sendable {
         enumStereotype: Stereotype.enum,
         protocolStereotype: Stereotype.protocol
     )
+    /// Optional title, header, footer, and caption text for the page.
     public var texts: PageTexts?
+    /// The emitted diagram syntax: PlantUML, Mermaid, or Nomnoml.
     public var format: DiagramFormat = .plantuml
 
     internal var shallExtensionsBeMerged: Bool {

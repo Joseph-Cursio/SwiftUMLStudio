@@ -2,13 +2,21 @@ import Foundation
 
 /// Options which and how elements shall be considered for class diagram generation
 public struct ElementOptions: Codable, Sendable {
+    /// Only types declared at one of these access levels are drawn.
     public private(set) var havingAccessLevel: [AccessLevel] = [.open, .public, .package, .internal, .private]
+    /// Only members declared at one of these access levels are listed inside a type box.
     public private(set) var showMembersWithAccessLevel: [AccessLevel] = [.open, .public, .package, .internal, .private]
+    /// Whether nested types are drawn as their own boxes.
     public private(set) var showNestedTypes: Bool = true
+    /// Whether generic parameter clauses are shown in type and member signatures.
     public private(set) var showGenerics: Bool = true
+    /// How extensions are visualized: as separate boxes, merged into the base type, or hidden.
     public var showExtensions: ExtensionVisualization?
+    /// The glyph prefixed to members that were merged in from an extension (PlantUML OpenIconic markup).
     public private(set) var mergedExtensionMemberIndicator: String? = "<&bolt>"
+    /// Whether each member is annotated with its access-level symbol (`+`, `-`, `#`, …).
     public private(set) var showMemberAccessLevelAttribute: Bool = true
+    /// Name patterns to exclude from the diagram entirely.
     public private(set) var exclude: [String]?
 
     public init(from decoder: Decoder) throws {
