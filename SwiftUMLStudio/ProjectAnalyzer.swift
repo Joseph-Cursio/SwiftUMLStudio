@@ -2,19 +2,19 @@ import Foundation
 import SwiftUMLBridgeFramework
 
 struct ProjectSummary: Sendable {
-    let totalFiles: Int
-    let totalTypes: Int
-    let typeBreakdown: [String: Int]
-    let totalRelationships: Int
-    let moduleImports: [String]
-    let topConnectedTypes: [(name: String, connectionCount: Int)]
-    let cycleWarnings: [String]
-    let entryPoints: [String]
-    let stateMachines: [StateMachineModel]
+    var totalFiles: Int
+    var totalTypes: Int
+    var typeBreakdown: [String: Int]
+    var totalRelationships: Int
+    var moduleImports: [String]
+    var topConnectedTypes: [(name: String, connectionCount: Int)]
+    var cycleWarnings: [String]
+    var entryPoints: [String]
+    var stateMachines: [StateMachineModel]
     /// Per-SPM-target summary, populated only by the `analyze(package:)`
     /// overload. Empty when the user opened a loose folder rather than a
     /// Swift package.
-    let moduleBreakdown: [ModuleSummary]
+    var moduleBreakdown: [ModuleSummary]
 
     nonisolated init(
         totalFiles: Int,
@@ -130,18 +130,14 @@ nonisolated enum ProjectAnalyzer {
             }
             .sorted { $0.name < $1.name }
 
-        return ProjectSummary(
-            totalFiles: aggregate.totalFiles,
-            totalTypes: aggregate.totalTypes,
-            typeBreakdown: aggregate.typeBreakdown,
-            totalRelationships: aggregate.totalRelationships,
-            moduleImports: aggregate.moduleImports,
-            topConnectedTypes: aggregate.topConnectedTypes,
-            cycleWarnings: aggregate.cycleWarnings,
-            entryPoints: aggregate.entryPoints,
-            stateMachines: aggregate.stateMachines,
-            moduleBreakdown: breakdown
-        )
+        // Mutate a copy; never rebuild field-by-field. This return only adds `moduleBreakdown`
+        // to the aggregate — but listing the other nine by hand meant a tenth field added to
+        // `ProjectSummary` would be silently dropped here, taking its default instead of failing
+        // to compile (`moduleBreakdown` already has a `= []` default, so the initialiser will not
+        // complain about a missing argument).
+        var summary = aggregate
+        summary.moduleBreakdown = breakdown
+        return summary
     }
 
     // MARK: - Private
