@@ -23,12 +23,8 @@ public struct Component: Sendable, Hashable, Identifiable {
     public let kind: Kind
     public let providedInterfaces: [String]
 
-    public enum Kind: String, Sendable, Hashable {
-        case executable
-        case library
-        case test
-        case other
-    }
+    /// The kind of this component. One shared `ComponentKind`, also used by the SPM parser.
+    public typealias Kind = ComponentKind
 
     public init(name: String, kind: Kind, providedInterfaces: [String] = []) {
         self.id = name

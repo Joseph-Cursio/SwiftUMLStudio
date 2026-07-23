@@ -37,7 +37,7 @@ public enum ComponentExtractor {
                     .sorted()
             components.append(Component(
                 name: target.name,
-                kind: kind(for: target.kind),
+                kind: target.kind,
                 providedInterfaces: publicTypes
             ))
         }
@@ -50,14 +50,5 @@ public enum ComponentExtractor {
         }
 
         return ComponentModel(components: components, dependencies: dependencies)
-    }
-
-    private static func kind(for spm: SPMTargetDescription.Kind) -> Component.Kind {
-        switch spm {
-        case .executable: return .executable
-        case .library:    return .library
-        case .test:       return .test
-        case .other:      return .other
-        }
     }
 }

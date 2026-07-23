@@ -37,12 +37,8 @@ public struct SPMTargetDescription: Sendable, Equatable {
     public let sources: [String]
     public let dependencies: [String]
 
-    public enum Kind: String, Sendable, Equatable {
-        case executable
-        case library
-        case test
-        case other
-    }
+    /// The target's kind. One shared `ComponentKind`, also used by the UML `Component` model.
+    public typealias Kind = ComponentKind
 
     public init(
         name: String, kind: Kind, path: String,
