@@ -96,6 +96,8 @@ public struct DiagramScript: @unchecked Sendable {
 
     private func buildNomnomlText(configuration: Configuration, definitions: String) -> String {
         var result = "#direction: down"
+        // Output-building — nomnoml directive lines appended into a diagram script, not a registry.
+        // swiftprojectlint:disable:next parallel-list-drift
         result.appendAsNewLine("#fontSize: 12")
         result.appendAsNewLine("#spacing: 60")
         result.appendAsNewLine("#padding: 10")

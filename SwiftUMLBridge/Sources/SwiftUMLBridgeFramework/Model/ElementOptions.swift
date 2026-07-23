@@ -2,10 +2,18 @@ import Foundation
 
 /// Options which and how elements shall be considered for class diagram generation
 public struct ElementOptions: Codable, Sendable {
+    /// The access levels drawn by default — every level except `fileprivate`, which is
+    /// intentionally hidden. Single source for the property and initializer defaults below, which
+    /// were four identical `[.open, .public, .package, .internal, .private]` literals.
+    ///
+    /// Parallel List Drift pairs this against the full `AccessLevel` enum (it is missing
+    /// `fileprivate`); that omission is by design, so the finding is suppressed.
+    // swiftprojectlint:disable:next parallel-list-drift
+    public static let defaultAccessLevels: [AccessLevel] = [.open, .public, .package, .internal, .private]
     /// Only types declared at one of these access levels are drawn.
-    public private(set) var havingAccessLevel: [AccessLevel] = [.open, .public, .package, .internal, .private]
+    public private(set) var havingAccessLevel: [AccessLevel] = ElementOptions.defaultAccessLevels
     /// Only members declared at one of these access levels are listed inside a type box.
-    public private(set) var showMembersWithAccessLevel: [AccessLevel] = [.open, .public, .package, .internal, .private]
+    public private(set) var showMembersWithAccessLevel: [AccessLevel] = ElementOptions.defaultAccessLevels
     /// Whether nested types are drawn as their own boxes.
     public private(set) var showNestedTypes: Bool = true
     /// Whether generic parameter clauses are shown in type and member signatures.
@@ -56,8 +64,8 @@ public struct ElementOptions: Codable, Sendable {
     }
 
     public init(
-        havingAccessLevel: [AccessLevel] = [.open, .public, .package, .internal, .private],
-        showMembersWithAccessLevel: [AccessLevel] = [.open, .public, .package, .internal, .private],
+        havingAccessLevel: [AccessLevel] = ElementOptions.defaultAccessLevels,
+        showMembersWithAccessLevel: [AccessLevel] = ElementOptions.defaultAccessLevels,
         showNestedTypes: Bool = true,
         showGenerics: Bool = true,
         showExtensions: ExtensionVisualization? = nil,

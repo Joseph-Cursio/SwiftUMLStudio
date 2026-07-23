@@ -104,6 +104,9 @@ extension UnknownCaseRepresentable {
     }
 }
 
+// Parallel List Drift pairs this with the app's `AccessLevel` enum, but this maps SourceKit's
+// own accessibility keys (raw values `source.lang.swift.accessibility.*`) — a distinct layer.
+// swiftprojectlint:disable:next parallel-list-drift
 internal enum ElementAccessibility: String, RawRepresentable, Comparable {
     internal static func < (lhs: ElementAccessibility, rhs: ElementAccessibility) -> Bool {
         lhs.value < rhs.value

@@ -196,6 +196,9 @@ private extension DepsScript {
 
 private extension DepsScript {
     static func buildNomnomlText(model: DependencyGraphModel, cycleNodes: Set<String>) -> String {
+        // Output-building — these are nomnoml directive lines joined into a diagram script, not a
+        // registry; Parallel List Drift pairs them with another emitter's line run. Not drift.
+        // swiftprojectlint:disable:next parallel-list-drift
         var lines: [String] = [
             "#direction: down",
             "#fontSize: 12",
