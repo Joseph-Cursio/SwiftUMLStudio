@@ -1,0 +1,13 @@
+# SwiftProjectLint configuration for SwiftUMLStudio.
+
+# The tool's own source lives in the nested SwiftUMLBridge package, so analyze nested packages.
+include_nested_packages: true
+
+# Sample and fixture code is not the tool's own source and should not be linted:
+#   - docs/samples/ : illustrative Swift in the documentation.
+#   - TestFixtures/ : sample projects the tool parses as test *input*.
+# Independently-authored examples (e.g. two traffic-light state machines that both model
+# green/red/yellow) are not real duplication.
+excluded_paths:
+  - "docs/samples/"
+  - "TestFixtures/"
