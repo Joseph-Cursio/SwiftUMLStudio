@@ -16,9 +16,8 @@ struct LayoutGraphBuilder {
         var edges: [LayoutEdge] = []
         var nameToId: [String: String] = [:]
 
-        let processableKinds: [ElementKind] = [.class, .struct, .extension, .enum, .protocol, .actor, .macro]
         for item in adjustedItems {
-            guard let kind = item.kind, processableKinds.contains(kind) else { continue }
+            guard let kind = item.kind, ElementKind.processable.contains(kind) else { continue }
             guard let itemName = item.fullName ?? item.name else { continue }
 
             let nodeId = uniqueId(for: itemName, existing: &nameToId)

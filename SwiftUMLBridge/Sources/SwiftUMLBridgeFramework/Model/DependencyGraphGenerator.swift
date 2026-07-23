@@ -250,8 +250,7 @@ public struct DependencyGraphGenerator: DependencyGraphGenerating, @unchecked Se
 
     private func shouldSkip(element: SyntaxStructure, configuration: Configuration) -> Bool {
         guard let kind = element.kind else { return true }
-        let processableKinds: [ElementKind] = [.class, .struct, .extension, .enum, .protocol, .actor]
-        guard processableKinds.contains(kind) else { return true }
+        guard ElementKind.processable.contains(kind) else { return true }
 
         // Access-level filtering (--public-only maps to configuration.elements.havingAccessLevel)
         if kind != .extension {

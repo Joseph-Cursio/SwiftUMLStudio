@@ -134,9 +134,8 @@ public struct DiagramScript: @unchecked Sendable {
     }
 
     func processStructureItem(item: SyntaxStructure, index _: Int) -> String? {
-        let processableKinds: [ElementKind] = [.class, .struct, .extension, .enum, .protocol, .actor, .macro]
         guard let elementKind = item.kind else { return nil }
-        guard processableKinds.contains(elementKind) else { return nil }
+        guard ElementKind.processable.contains(elementKind) else { return nil }
         switch format {
         case .plantuml:
             return item.plantuml(context: context) ?? nil
