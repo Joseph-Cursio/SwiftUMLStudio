@@ -22,7 +22,8 @@ private func makeSummary(
     topConnectedTypes: [(name: String, connectionCount: Int)] = [],
     cycleWarnings: [String] = [],
     entryPoints: [String] = [],
-    stateMachines: [StateMachineModel] = []
+    stateMachines: [StateMachineModel] = [],
+    moduleBreakdown: [ModuleSummary] = []
 ) -> ProjectSummary {
     ProjectSummary(
         totalFiles: totalFiles,
@@ -33,7 +34,15 @@ private func makeSummary(
         topConnectedTypes: topConnectedTypes,
         cycleWarnings: cycleWarnings,
         entryPoints: entryPoints,
-        stateMachines: stateMachines
+        stateMachines: stateMachines,
+        moduleBreakdown: moduleBreakdown
+    )
+}
+
+private func makeModule(_ name: String, kind: SPMTargetDescription.Kind = .library) -> ModuleSummary {
+    ModuleSummary(
+        name: name, kind: kind,
+        fileCount: 4, typeCount: 6, outgoingTargetDependencies: 1
     )
 }
 
@@ -143,6 +152,109 @@ struct SuggestionEngineTests {
             let summary = makeSummary(totalFiles: 0, totalTypes: 0, typeBreakdown: [:], totalRelationships: 0)
             let suggestions = SuggestionEngine.generate(from: summary, isProUnlocked: true)
             #expect(suggestions.isEmpty)
+        }
+    }
+
+    // MARK: - ER
+
+    @Test(
+        "suggests an ER diagram for each supported persistence stack",
+        arguments: ["SwiftData", "CoreData", "GRDB", "SQLite"]
+    )
+    func erSuggestionPerStack(framework: String) {
+        runOnMain {
+            let summary = makeSummary(moduleImports: [framework])
+            let suggestions = SuggestionEngine.generate(from: summary, isProUnlocked: true)
+            let entry = suggestions.first { $0.title.contains("data is stored") }
+
+            #expect(entry != nil, "expected an ER suggestion for \(framework)")
+            #expect(entry?.requiresPro == true)
+            #expect(
+                entry?.description.contains(framework) == true,
+                "the card should name the stack it detected"
+            )
+        }
+    }
+
+    /// Without a persistence import an ER diagram would render nothing, so
+    /// offering the card would send the user to an empty canvas.
+    @Test("no ER suggestion when the project imports no persistence stack")
+    func noERSuggestionWithoutPersistence() {
+        runOnMain {
+            let summary = makeSummary(moduleImports: ["Foundation", "Combine", "SwiftUI"])
+            let suggestions = SuggestionEngine.generate(from: summary, isProUnlocked: true)
+
+            #expect(suggestions.contains { $0.title.contains("data is stored") } == false)
+        }
+    }
+
+    @Test("only one ER suggestion when a project mixes two stacks")
+    func singleERSuggestionForMixedStacks() {
+        runOnMain {
+            let summary = makeSummary(moduleImports: ["SwiftData", "GRDB"])
+            let suggestions = SuggestionEngine.generate(from: summary, isProUnlocked: true)
+
+            #expect(suggestions.filter { $0.title.contains("data is stored") }.count == 1)
+        }
+    }
+
+    // MARK: - Component
+
+    @Test("suggests a component diagram when a multi-target package is loaded")
+    func componentSuggestion() {
+        runOnMain {
+            let summary = makeSummary(
+                moduleBreakdown: [makeModule("App", kind: .executable), makeModule("Core")]
+            )
+            let suggestions = SuggestionEngine.generate(from: summary, isProUnlocked: true)
+            let entry = suggestions.first { $0.title.contains("package fits together") }
+
+            #expect(entry != nil)
+            #expect(entry?.requiresPro == true)
+            #expect(entry?.description.contains("2 build targets") == true)
+        }
+    }
+
+    /// `moduleBreakdown` is empty for a loose folder, and a one-target package
+    /// draws a single box with no edges — neither is worth a card.
+    @Test(
+        "no component suggestion for a loose folder or a single-target package",
+        arguments: [0, 1]
+    )
+    func noComponentSuggestionBelowTwoTargets(targetCount: Int) {
+        runOnMain {
+            let modules = (0..<targetCount).map { makeModule("Target\($0)") }
+            let summary = makeSummary(moduleBreakdown: modules)
+            let suggestions = SuggestionEngine.generate(from: summary, isProUnlocked: true)
+
+            #expect(suggestions.contains { $0.title.contains("package fits together") } == false)
+        }
+    }
+
+    /// Explorer navigation is entirely suggestion-driven, so a diagram type with
+    /// no card is unreachable in that mode.
+    ///
+    /// Five of the seven modes are covered here. `.stateMachine` is covered by
+    /// `stateMachineSuggestionIsPro` above. `.activityDiagram` has no
+    /// `SuggestionAction` case at all and so remains unreachable in Explorer —
+    /// a known gap, deliberately not closed in this change.
+    @Test("class, sequence, deps, ER and component are all reachable from suggestions")
+    func coveredModesAreReachable() {
+        runOnMain {
+            let summary = makeSummary(
+                totalRelationships: 4,
+                moduleImports: ["SwiftData", "Alamofire"],
+                entryPoints: ["Foo.bar"],
+                stateMachines: [],
+                moduleBreakdown: [makeModule("App", kind: .executable), makeModule("Core")]
+            )
+            let actions = SuggestionEngine.generate(from: summary, isProUnlocked: true).map(\.action)
+
+            #expect(actions.contains { if case .classDiagram = $0 { true } else { false } })
+            #expect(actions.contains { if case .sequenceDiagram = $0 { true } else { false } })
+            #expect(actions.contains { if case .dependencyGraph = $0 { true } else { false } })
+            #expect(actions.contains { if case .erDiagram = $0 { true } else { false } })
+            #expect(actions.contains { if case .componentDiagram = $0 { true } else { false } })
         }
     }
 
