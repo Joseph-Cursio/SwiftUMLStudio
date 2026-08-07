@@ -22,10 +22,12 @@ struct NativeComponentDiagramView: View {
 
     /// Geometry constants. Must stay in sync with `ComponentSVGRenderer`'s
     /// header/box padding so the rendered native canvas matches the layout's
-    /// reported sizes.
-    private static let headerHeight: Double = 30
-    private static let boxPadding: Double = 10
-    private static let interfaceLineHeight: Double = 16
+    /// reported sizes. Internal rather than private so
+    /// `NativeComponentDiagramViewTests` can pin that parity — the body itself
+    /// cannot be inspected on macOS 27 (see the note in that test file).
+    static let headerHeight: Double = 30
+    static let boxPadding: Double = 10
+    static let interfaceLineHeight: Double = 16
     private static let cornerRadius: Double = 4
 
     var body: some View {
@@ -63,7 +65,7 @@ struct NativeComponentDiagramView: View {
         context.fill(headerPath, with: .color(Self.headerFill))
         context.stroke(headerPath, with: .color(Self.strokeColor), lineWidth: 1.2)
 
-        let stereotypeText = Text("«\(stereotypeLabel(for: component.kind))»")
+        let stereotypeText = Text("«\(Self.stereotypeLabel(for: component.kind))»")
             .font(.system(size: 10).italic())
             .foregroundStyle(Self.stereotypeColor)
         context.draw(
@@ -101,8 +103,8 @@ struct NativeComponentDiagramView: View {
                 let source = layout.component(named: dependency.from),
                 let target = layout.component(named: dependency.to)
             else { continue }
-            let start = edgePoint(from: source, towards: target)
-            let end = edgePoint(from: target, towards: source)
+            let start = Self.edgePoint(from: source, towards: target)
+            let end = Self.edgePoint(from: target, towards: source)
             var path = Path()
             path.move(to: start)
             path.addLine(to: end)
@@ -122,7 +124,10 @@ struct NativeComponentDiagramView: View {
 
     /// Project to whichever rectangle border of `source` lies nearest the
     /// line towards `target`. Mirrors `ComponentSVGRenderer.edgePoint`.
-    private func edgePoint(
+    ///
+    /// Static and internal because it depends on nothing but its arguments, so
+    /// it stays unit-testable without inspecting the view body.
+    static func edgePoint(
         from source: PositionedComponent,
         towards target: PositionedComponent
     ) -> CGPoint {
@@ -142,7 +147,9 @@ struct NativeComponentDiagramView: View {
         )
     }
 
-    private func stereotypeLabel(for kind: Component.Kind) -> String {
+    /// Mirrors `ComponentSVGRenderer.stereotypeLabel` so the native canvas and
+    /// the SVG fallback label a component identically.
+    static func stereotypeLabel(for kind: Component.Kind) -> String {
         switch kind {
         case .executable: return "executable"
         case .library:    return "library"
