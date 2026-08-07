@@ -6,22 +6,28 @@ nonisolated struct PaywallFeature: Identifiable, Hashable {
     let title: String
     let description: String
 
+    /// Titles are deliberately plain-language rather than UML terms. The paywall
+    /// is the one Explorer-mode surface that names Pro features, and Explorer's
+    /// whole premise is that a non-developer never has to know what a "sequence
+    /// diagram" is — the rest of that mode describes what you'll see rather than
+    /// naming the artefact (see `SuggestionEngine`). Developer mode still uses
+    /// the precise terms via `DiagramMode.rawValue`.
     static let all: [PaywallFeature] = [
         PaywallFeature(
-            title: "Sequence Diagrams",
-            description: "Trace execution flows through your code"
+            title: "Execution Flows",
+            description: "Trace how your code runs, step by step"
         ),
         PaywallFeature(
-            title: "Dependency Graphs",
+            title: "Dependency Maps",
             description: "See how your modules depend on each other"
         ),
         PaywallFeature(
-            title: "PlantUML & Mermaid Export",
-            description: "Copy or save diagram markup"
+            title: "Share Your Diagrams",
+            description: "Copy or save your diagrams to use elsewhere"
         ),
         PaywallFeature(
-            title: "Format Selection",
-            description: "Switch between PlantUML and Mermaid"
+            title: "Choose How Diagrams Look",
+            description: "Pick the diagram style that suits you"
         ),
         PaywallFeature(
             title: "Unlimited Projects",
