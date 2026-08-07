@@ -52,14 +52,17 @@ struct DiagramViewModelFeatureTests {
             let persistence = PersistenceController(inMemory: true)
             let modelContext = persistence.container.mainContext
             let viewModel = DiagramViewModel(persistenceController: persistence)
-            viewModel.selectedPaths = ["/a/First.swift", "/b/Second.swift"]
-            viewModel.diagramMode = .classDiagram
-            viewModel.diagramFormat = .plantuml
 
+            // `loadDiagram` restores selection/mode from the entity, so it has to
+            // run before the state under test is applied — otherwise it overwrites it.
             let entity = DiagramEntity()
             entity.scriptText = "@startuml\n@enduml"
             modelContext.insert(entity)
             viewModel.loadDiagram(entity)
+
+            viewModel.selectedPaths = ["/a/First.swift", "/b/Second.swift"]
+            viewModel.diagramMode = .classDiagram
+            viewModel.diagramFormat = .plantuml
 
             viewModel.save()
             viewModel.loadHistory()
@@ -97,16 +100,19 @@ struct DiagramViewModelFeatureTests {
             let persistence = PersistenceController(inMemory: true)
             let modelContext = persistence.container.mainContext
             let viewModel = DiagramViewModel(persistenceController: persistence)
-            viewModel.selectedPaths = ["/tmp/Foo.swift"]
-            viewModel.diagramMode = .sequenceDiagram
-            viewModel.entryPoint = "Foo.bar"
-            viewModel.diagramFormat = .plantuml
 
+            // `loadDiagram` resets `entryPoint` from the entity, so it has to run
+            // before the entry point under test is applied.
             let entity = DiagramEntity()
             entity.mode = DiagramMode.sequenceDiagram.rawValue
             entity.scriptText = "sequenceDiagram\nFoo->>Bar: bar()"
             modelContext.insert(entity)
             viewModel.loadDiagram(entity)
+
+            viewModel.selectedPaths = ["/tmp/Foo.swift"]
+            viewModel.diagramMode = .sequenceDiagram
+            viewModel.entryPoint = "Foo.bar"
+            viewModel.diagramFormat = .plantuml
 
             viewModel.save()
             viewModel.loadHistory()

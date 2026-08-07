@@ -159,14 +159,16 @@ struct DiagramViewModelHistoryIntegrationTests {
             let persistence = PersistenceController(inMemory: true)
             let viewModel = DiagramViewModel(persistenceController: persistence)
 
-            viewModel.selectedPaths = ["/Users/joe/Projects/MyApp/Sources/Main.swift"]
-            viewModel.diagramMode = .classDiagram
-
-            // Create a fake script so we have something to save
+            // Create a fake script so we have something to save. `loadDiagram`
+            // restores selection/mode from the entity, so it has to run before the
+            // state under test is applied — otherwise it overwrites it.
             let entity = DiagramEntity()
             entity.scriptText = "@startuml\n@enduml"
             persistence.container.mainContext.insert(entity)
             viewModel.loadDiagram(entity)
+
+            viewModel.selectedPaths = ["/Users/joe/Projects/MyApp/Sources/Main.swift"]
+            viewModel.diagramMode = .classDiagram
 
             viewModel.save()
             viewModel.loadHistory()
