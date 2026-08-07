@@ -17,6 +17,7 @@ enum SuggestionDispatcher {
         case .sequenceDiagram: return .sequenceDiagrams
         case .dependencyGraph: return .dependencyGraphs
         case .stateMachine: return .stateMachines
+        case .activityDiagram: return .activityDiagrams
         case .erDiagram: return .erDiagrams
         case .componentDiagram: return .componentDiagrams
         case .classDiagram: return .sequenceDiagrams
@@ -40,6 +41,9 @@ enum SuggestionDispatcher {
             viewModel.diagramMode = .stateMachine
             viewModel.refreshStateMachines()
             viewModel.stateIdentifier = identifier
+        case .activityDiagram(let entryPoint):
+            viewModel.diagramMode = .activityDiagram
+            viewModel.entryPoint = entryPoint
         case .erDiagram:
             viewModel.diagramMode = .erDiagram
         case .componentDiagram:

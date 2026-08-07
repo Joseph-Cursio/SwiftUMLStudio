@@ -57,6 +57,13 @@ struct SuggestionDispatcherFeatureMappingTests {
     func componentMapping() {
         #expect(SuggestionDispatcher.featureRequired(for: .componentDiagram) == .componentDiagrams)
     }
+
+    /// Activity shares its entry point with sequence but not its gate.
+    @Test("activity action maps to .activityDiagrams, not .sequenceDiagrams")
+    func activityMapping() {
+        let feature = SuggestionDispatcher.featureRequired(for: .activityDiagram(entryPoint: "F.m"))
+        #expect(feature == .activityDiagrams)
+    }
 }
 
 // MARK: - Apply mutates the view model correctly
@@ -124,6 +131,19 @@ struct SuggestionDispatcherApplyTests {
             let viewModel = DiagramViewModel(persistenceController: .init(inMemory: true))
             SuggestionDispatcher.apply(makeSuggestion(.erDiagram), to: viewModel)
             #expect(viewModel.diagramMode == .erDiagram)
+        }
+    }
+
+    @Test("activity diagram selects activity mode and carries the entry point")
+    func applyActivityDiagram() {
+        runOnMain {
+            let viewModel = DiagramViewModel(persistenceController: .init(inMemory: true))
+            SuggestionDispatcher.apply(
+                makeSuggestion(.activityDiagram(entryPoint: "Loader.load")),
+                to: viewModel
+            )
+            #expect(viewModel.diagramMode == .activityDiagram)
+            #expect(viewModel.entryPoint == "Loader.load")
         }
     }
 

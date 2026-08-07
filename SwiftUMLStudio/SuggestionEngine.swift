@@ -17,6 +17,7 @@ enum SuggestionAction: Sendable {
     case sequenceDiagram(entryPoint: String)
     case dependencyGraph(mode: DepsMode)
     case stateMachine(identifier: String)
+    case activityDiagram(entryPoint: String)
     case erDiagram
     case componentDiagram
 }
@@ -28,6 +29,7 @@ nonisolated enum SuggestionEngine {
             suggestions.append(classSuggestion)
         }
         suggestions.append(contentsOf: sequenceSuggestions(from: summary))
+        suggestions.append(contentsOf: activitySuggestions(from: summary))
         suggestions.append(contentsOf: dependencySuggestions(from: summary))
         suggestions.append(contentsOf: stateMachineSuggestions(from: summary))
         if let erSuggestion = erDiagramSuggestion(from: summary) {
@@ -57,6 +59,27 @@ nonisolated enum SuggestionEngine {
                 title: "Trace \(entryPoint)",
                 description: "See the execution flow when this method runs.",
                 action: .sequenceDiagram(entryPoint: entryPoint),
+                requiresPro: true
+            )
+        }
+    }
+
+    /// Activity and sequence diagrams answer different questions about the same
+    /// method: sequence shows which *types* it calls, activity shows the
+    /// branching and looping *inside* it. Both are driven by `entryPoints`, so
+    /// offering three of each would double the card count on the same handful of
+    /// methods.
+    ///
+    /// Only the top entry point gets an activity card. That demonstrates the
+    /// distinction without crowding out the class, deps, ER and component cards
+    /// — the dashboard grid renders every suggestion with no cap of its own.
+    private static func activitySuggestions(from summary: ProjectSummary) -> [DiagramSuggestion] {
+        summary.entryPoints.prefix(1).map { entryPoint in
+            DiagramSuggestion(
+                icon: "flowchart",
+                title: "Step through \(entryPoint)",
+                description: "The branches, loops and error paths inside this method.",
+                action: .activityDiagram(entryPoint: entryPoint),
                 requiresPro: true
             )
         }
