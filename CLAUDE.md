@@ -101,7 +101,7 @@ swiftumlbridge component   --package <Package.swift dir> [--include-test-targets
 
 - **Unit tests** use the **Swift Testing** framework (`import Testing`, `@Test`, `#expect`, `#require`). Do not use XCTest for new unit tests.
 - **UI tests** use XCTest (`SwiftUMLStudioUITests`).
-- The Bridge package has its own test target (`SwiftUMLBridgeFrameworkTests`) — runs via `swift test --package-path SwiftUMLBridge`.
+- The Bridge package has two test targets — `SwiftUMLBridgeFrameworkTests` (the framework) and `SwiftUMLBridgeCLITests` (the `swiftumlbridge` executable's argument surface). Both run via `swift test --package-path SwiftUMLBridge`.
 - Coverage targets: ≥ 80% for the Bridge package, ≥ 70% for the Studio app (including UI tests). Bridge currently sits ~89%.
 
 ## Conventions
