@@ -231,21 +231,79 @@ struct SuggestionEngineTests {
         }
     }
 
+    // MARK: - Activity
+
+    @Test("suggests an activity diagram for the top entry point")
+    func activitySuggestion() {
+        runOnMain {
+            let summary = makeSummary(entryPoints: ["Foo.bar"])
+            let suggestions = SuggestionEngine.generate(from: summary, isProUnlocked: true)
+            let entry = suggestions.first { $0.title.contains("Step through") }
+
+            #expect(entry != nil)
+            #expect(entry?.requiresPro == true)
+            #expect(entry?.title.contains("Foo.bar") == true)
+        }
+    }
+
+    /// Sequence offers three cards; activity offers one. Both are driven by the
+    /// same `entryPoints`, so matching sequence's count would double the card
+    /// load on the same handful of methods.
+    @Test("activity offers one card even when many entry points exist")
+    func activityIsCappedAtOne() {
+        runOnMain {
+            let summary = makeSummary(entryPoints: ["A.one", "B.two", "C.three", "D.four"])
+            let suggestions = SuggestionEngine.generate(from: summary, isProUnlocked: true)
+
+            #expect(suggestions.filter { $0.title.contains("Step through") }.count == 1)
+            #expect(suggestions.filter { $0.title.contains("Trace") }.count == 3)
+        }
+    }
+
+    /// The two cards must not read as duplicates: sequence answers "which types
+    /// does this call", activity answers "what happens inside it".
+    @Test("the activity and sequence cards for one method are distinguishable")
+    func activityAndSequenceReadDifferently() {
+        runOnMain {
+            let summary = makeSummary(entryPoints: ["Foo.bar"])
+            let suggestions = SuggestionEngine.generate(from: summary, isProUnlocked: true)
+            let activity = suggestions.first { $0.title.contains("Step through") }
+            let sequence = suggestions.first { $0.title.contains("Trace") }
+
+            #expect(activity?.title != sequence?.title)
+            #expect(activity?.description != sequence?.description)
+            #expect(activity?.icon != sequence?.icon)
+        }
+    }
+
+    @Test("no activity suggestion without entry points")
+    func noActivitySuggestionWithoutEntryPoints() {
+        runOnMain {
+            let summary = makeSummary(entryPoints: [])
+            let suggestions = SuggestionEngine.generate(from: summary, isProUnlocked: true)
+
+            #expect(suggestions.contains { $0.title.contains("Step through") } == false)
+        }
+    }
+
+    // MARK: - Reachability
+
     /// Explorer navigation is entirely suggestion-driven, so a diagram type with
-    /// no card is unreachable in that mode.
-    ///
-    /// Five of the seven modes are covered here. `.stateMachine` is covered by
-    /// `stateMachineSuggestionIsPro` above. `.activityDiagram` has no
-    /// `SuggestionAction` case at all and so remains unreachable in Explorer —
-    /// a known gap, deliberately not closed in this change.
-    @Test("class, sequence, deps, ER and component are all reachable from suggestions")
-    func coveredModesAreReachable() {
+    /// no card is unreachable in that mode. All seven modes are now covered.
+    @Test("every diagram mode is reachable from some suggestion")
+    func everyModeIsReachable() {
         runOnMain {
             let summary = makeSummary(
                 totalRelationships: 4,
                 moduleImports: ["SwiftData", "Alamofire"],
                 entryPoints: ["Foo.bar"],
-                stateMachines: [],
+                stateMachines: [
+                    StateMachineModel(
+                        hostType: "Light", enumType: "Phase",
+                        states: [], transitions: [],
+                        confidence: .high, notes: []
+                    )
+                ],
                 moduleBreakdown: [makeModule("App", kind: .executable), makeModule("Core")]
             )
             let actions = SuggestionEngine.generate(from: summary, isProUnlocked: true).map(\.action)
@@ -253,6 +311,8 @@ struct SuggestionEngineTests {
             #expect(actions.contains { if case .classDiagram = $0 { true } else { false } })
             #expect(actions.contains { if case .sequenceDiagram = $0 { true } else { false } })
             #expect(actions.contains { if case .dependencyGraph = $0 { true } else { false } })
+            #expect(actions.contains { if case .stateMachine = $0 { true } else { false } })
+            #expect(actions.contains { if case .activityDiagram = $0 { true } else { false } })
             #expect(actions.contains { if case .erDiagram = $0 { true } else { false } })
             #expect(actions.contains { if case .componentDiagram = $0 { true } else { false } })
         }
