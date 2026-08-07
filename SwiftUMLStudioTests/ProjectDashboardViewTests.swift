@@ -204,6 +204,10 @@ struct ProjectDashboardViewTests {
             onSuggestionTap: { _ in }
         )
         // Empty state is rendered; populated-state scroll view is not.
+        // NOTE: on macOS 27 beta this assertion holds vacuously — ViewInspector
+        // 0.10.3 throws on every accessibility-identifier lookup there, so it
+        // cannot distinguish "not rendered" from "cannot be read". The stat-card
+        // assertion below is the one carrying real signal until upstream is fixed.
         #expect(throws: InspectionError.self) {
             try view.inspect().find(viewWithAccessibilityIdentifier: "dashboardContent")
         }
@@ -211,7 +215,12 @@ struct ProjectDashboardViewTests {
         #expect(try view.inspect().findAll(StatCardView.self).isEmpty)
     }
 
-    @Test("populated summary shows dashboard content")
+    // ViewInspector 0.10.3 cannot read accessibility modifiers on macOS 27 beta
+    // (build 26A5388g) — see the fuller diagnosis in DiagramPreviewViewTests.swift.
+    // The "dashboardContent" identifier is correct and present in
+    // ProjectDashboardView; only test-time introspection is broken.
+    @Test("populated summary shows dashboard content",
+          .disabled("ViewInspector 0.10.3 cannot read accessibility modifiers on macOS 27"))
     func populatedShowsContent() throws {
         let view = ProjectDashboardView(
             summary: makeSummary(), insights: [], suggestions: [],
