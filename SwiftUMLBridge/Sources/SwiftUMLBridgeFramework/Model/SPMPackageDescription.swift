@@ -67,6 +67,8 @@ public enum SPMPackageReader {
     public enum ReadError: Error, Equatable {
         case swiftToolFailed(exitStatus: Int32, stderr: String)
         case malformedJSON(String)
+        /// `swift package describe` outlived `describeTimeout` and was killed.
+        case timedOut(seconds: TimeInterval)
     }
 
     /// Parse JSON output produced by `swift package describe --type json`.
@@ -99,12 +101,43 @@ public enum SPMPackageReader {
         )
     }
 
+    /// How long `swift package describe` may run before it is killed and
+    /// `ReadError.timedOut` is thrown.
+    ///
+    /// Deliberately generous. Describing a package resolves its dependencies,
+    /// which on a machine that has never seen them means cloning from the
+    /// network — minutes, legitimately. The limit exists to convert a *hang*
+    /// into an actionable error, not to bound normal work, so it is set far
+    /// above any plausible honest run.
+    public static let describeTimeout: TimeInterval = 300
+
     /// Run `swift package describe --type json` against the package at
     /// `packageRoot` (the directory containing `Package.swift`).
+    ///
+    /// - Throws: `ReadError.timedOut` if the tool outlives `describeTimeout`,
+    ///   `ReadError.swiftToolFailed` on a non-zero exit, `ReadError.malformedJSON`
+    ///   if the output cannot be parsed.
     public static func describe(at packageRoot: URL) throws -> SPMPackageDescription {
+        // A private scratch directory, not the package's own `.build`.
+        //
+        // SwiftPM locks its scratch directory for the duration of a command. If
+        // that directory is already locked — most obviously when describing the
+        // very package a build or test run is using — the child blocks on the
+        // lock and waits forever, so the CLI hangs with no output. Pointing it
+        // at a directory nobody else holds removes the contention rather than
+        // trying to detect it. Dependency *resolution* still reads the shared
+        // package cache, so this costs no re-cloning.
+        let scratch = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("swiftumlbridge-spm-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: scratch) }
+
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
-        process.arguments = ["swift", "package", "describe", "--type", "json"]
+        process.arguments = [
+            "swift", "package",
+            "--scratch-path", scratch.path,
+            "describe", "--type", "json"
+        ]
         process.currentDirectoryURL = packageRoot
 
         let stdoutPipe = Pipe()
@@ -113,6 +146,20 @@ public enum SPMPackageReader {
         process.standardError = stderrPipe
 
         try process.run()
+
+        // Watchdog. The scratch path above removes the known deadlock, but a
+        // subprocess can still stall for reasons outside this code — a wedged
+        // toolchain, an unreachable dependency host, a lock we did not
+        // anticipate. Killing it closes the pipes, which unblocks the drains
+        // below and lets the timeout surface as an error the caller can report.
+        let timedOut = UncheckedBox<Bool>(false)
+        let watchdog = DispatchWorkItem {
+            timedOut.value = true
+            process.terminate()
+        }
+        DispatchQueue.global(qos: .utility)
+            .asyncAfter(deadline: .now() + describeTimeout, execute: watchdog)
+        defer { watchdog.cancel() }
 
         // Drain both pipes *before* waiting on the process, and drain them
         // concurrently.
@@ -133,6 +180,9 @@ public enum SPMPackageReader {
         group.wait()
         process.waitUntilExit()
 
+        if timedOut.value {
+            throw ReadError.timedOut(seconds: describeTimeout)
+        }
         if process.terminationStatus != 0 {
             throw ReadError.swiftToolFailed(
                 exitStatus: process.terminationStatus,

@@ -15,12 +15,19 @@ import Testing
 /// minutes on a package whose describe output is ~120KB, where the fixed
 /// version returns in about a second.
 ///
-/// The time limits below are a hint, not a guarantee. `.timeLimit` cancels the
-/// *task*, and cancellation is cooperative — it cannot interrupt a thread
-/// already blocked inside `readDataToEndOfFile()` or `waitUntilExit()`. Measured
-/// rather than assumed: under the pre-fix code the two-minute limit did not
-/// fire and the run had to be killed. So a regression here still stalls the
-/// suite; the limits only help for the failure modes that do yield.
+/// The time limits below only bite because `describe(at:)` runs a watchdog.
+/// `.timeLimit` cancels the *task*, and cancellation is cooperative — it cannot
+/// interrupt a thread already blocked in `readDataToEndOfFile()`. Both halves
+/// were measured:
+///
+/// - With no watchdog (the original pipe bug), the two-minute limit never fired
+///   and the run had to be killed by hand.
+/// - With the watchdog but no `--scratch-path`, the lock test reported the
+///   limit and ended after ~320s — the watchdog killed the subprocess, closing
+///   the pipes, which let the blocked thread unwind so the limit could surface.
+///
+/// So the limits are a backstop on top of the watchdog, not a substitute for
+/// it. A regression that removes the watchdog goes back to hanging outright.
 @Suite("SPMPackageDescription.describe subprocess")
 struct SPMPackageDescribeProcessTests {
 
@@ -84,6 +91,36 @@ struct SPMPackageDescribeProcessTests {
 
         #expect(description.name == "Wide")
         #expect(description.targets.first?.sources.count == 3)
+    }
+
+    /// The lock-contention regression, and the reason `describe(at:)` passes
+    /// `--scratch-path`.
+    ///
+    /// SwiftPM locks its scratch directory for the length of a command. This
+    /// test describes the very package the suite is running from, so the
+    /// package's own `.build` is locked by the `swift test` that invoked us.
+    /// Without a private scratch path the child waits on that lock forever and
+    /// the CLI hangs with no output — the failure that first showed up as the
+    /// component integration tests never finishing.
+    ///
+    /// If this test ever hangs rather than fails, `--scratch-path` has been
+    /// dropped from the argument list.
+    @Test("describing the package under test does not block on its build lock",
+          .timeLimit(.minutes(2)))
+    func describesPackageWhoseBuildDirectoryIsLocked() throws {
+        let packageRoot = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()  // ModelTests
+            .deletingLastPathComponent()  // SwiftUMLBridgeFrameworkTests
+            .deletingLastPathComponent()  // Tests
+            .deletingLastPathComponent()  // SwiftUMLBridge — the package root
+
+        let description = try SPMPackageReader.describe(at: packageRoot)
+
+        #expect(description.name == "SwiftUMLBridge")
+        #expect(
+            description.targets.contains { $0.name == "SwiftUMLBridgeFramework" },
+            "expected the framework target in the description"
+        )
     }
 
     /// The failure path also reads a pipe. A directory with no manifest makes
