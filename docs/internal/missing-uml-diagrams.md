@@ -34,7 +34,7 @@ Shows high-level software components, their interfaces (provided/required), and 
 - **Edges:** `target_dependencies` from `Package.swift` become directed `..>` arrows. Edges into hidden targets (e.g. test → app when tests are excluded) are pruned automatically.
 - **Emitters:** PlantUML emits the standard `component "Name" as Alias <<library>> { [Iface] }` syntax with dashed dependency arrows. Mermaid lacks a dedicated component dialect, so it falls back to a `flowchart TD` with `subgraph` clusters.
 - **Differs from current `deps`:** `deps --modules` draws a dependency arrow graph; the component diagram adds the per-target list of public types and the SPM-derived target/library/executable stereotypes.
-- **Studio integration:** deferred to a follow-up.
+- **Studio integration:** shipped 2026-05-11 (deferred at first, landed two days after the CLI). `DiagramMode.componentDiagram` sits under "Structural" in the workspace sidebar, paywall-gated as `ProFeature.componentDiagrams`, with an `Open Package…` empty state because component diagrams are inherently package-scoped. `NativeComponentDiagramView` renders on a SwiftUI `Canvas` from the new `ComponentLayout` IR, with pan / zoom and PDF / PNG / SVG export via `DiagramExportMenu`.
 
 ### 2. Package diagram — **medium value**
 
