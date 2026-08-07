@@ -39,6 +39,15 @@ let package = Package(
             dependencies: ["SwiftUMLBridgeFramework"],
             resources: [.copy("TestData")],
             swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+        // The CLI is the artifact Homebrew builds and users actually run, but it
+        // sat outside every coverage measurement because nothing linked it. Its
+        // argument surface — flag precedence, entry-point validation, output
+        // routing — is testable without generating a single diagram.
+        .testTarget(
+            name: "SwiftUMLBridgeCLITests",
+            dependencies: ["swiftumlbridge"],
+            swiftSettings: [.swiftLanguageMode(.v6)]
         )
     ]
 )
