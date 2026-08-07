@@ -1,5 +1,14 @@
 import Foundation
 
+/// A mutable cell handed between two threads whose accesses are ordered by an
+/// external barrier — here, the `DispatchGroup` in `describe(at:)`, which
+/// guarantees the background write happens-before the foreground read. The
+/// compiler cannot see that ordering, hence `@unchecked`.
+private final class UncheckedBox<Value>: @unchecked Sendable {
+    var value: Value
+    init(_ value: Value) { self.value = value }
+}
+
 /// A parsed view of `swift package describe --type json` output. Captures just
 /// what diagram generation needs: each target's name, type, source-root path,
 /// and the source files within.
@@ -104,14 +113,30 @@ public enum SPMPackageReader {
         process.standardError = stderrPipe
 
         try process.run()
+
+        // Drain both pipes *before* waiting on the process, and drain them
+        // concurrently.
+        //
+        // Waiting first deadlocks as soon as the child outgrows the ~64KB pipe
+        // buffer: it blocks writing into a full pipe that nobody is reading,
+        // while the parent blocks waiting for a child that cannot proceed.
+        // Draining them one after the other has the same failure on the second
+        // pipe — filling *either* stream is enough to stall the child, so a
+        // package that writes a lot of warnings to stderr would hang while the
+        // parent sat reading stdout.
+        let stderrData = UncheckedBox<Data>(Data())
+        let group = DispatchGroup()
+        DispatchQueue.global(qos: .userInitiated).async(group: group) {
+            stderrData.value = stderrPipe.fileHandleForReading.readDataToEndOfFile()
+        }
+        let stdout = stdoutPipe.fileHandleForReading.readDataToEndOfFile()
+        group.wait()
         process.waitUntilExit()
 
-        let stdout = stdoutPipe.fileHandleForReading.readDataToEndOfFile()
         if process.terminationStatus != 0 {
-            let stderr = stderrPipe.fileHandleForReading.readDataToEndOfFile()
             throw ReadError.swiftToolFailed(
                 exitStatus: process.terminationStatus,
-                stderr: String(data: stderr, encoding: .utf8) ?? ""
+                stderr: String(data: stderrData.value, encoding: .utf8) ?? ""
             )
         }
         return try parse(stdout)
