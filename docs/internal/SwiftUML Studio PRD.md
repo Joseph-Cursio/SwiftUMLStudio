@@ -195,20 +195,33 @@ Dependency graph generation reuses the existing SwiftUMLBridge architecture:
 
 - **Parsing Layer** extracts type references, imports, and call sites.
 - **Model Layer** stores dependency edges as a graph structure.
-- **Emitter Layer** outputs the graph in Mermaid.js, PlantUML, or DOT formats.
+- **Emitter Layer** outputs the graph as PlantUML, Mermaid.js, Nomnoml, or
+  native SVG. DOT is not implemented — see M16 in §9.2.
 
 This ensures minimal duplication and consistent behavior across diagram types.
 
 ### 5.8 Output Formats
 
-| Format | Class | Sequence | Activity | State | ER | Deps |
-|---|---|---|---|---|---|---|
-| PlantUML | Yes | Yes | Yes | Yes | Yes | Yes |
-| Mermaid.js | Yes | Yes | — | — | Yes | Yes |
-| Nomnoml | Yes | — | — | — | — | — |
-| Native SVG (Studio) | Yes | Yes | Yes | — | — | Yes |
-| GraphViz / DOT | — | — | — | — | — | Planned (v1.1+) |
-| Structurizr DSL | Partial (v2) | — | — | — | — | — |
+| Format | Class | Sequence | Activity | State | ER | Deps | Component |
+|---|---|---|---|---|---|---|---|
+| PlantUML | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
+| Mermaid.js | Yes | Yes | Yes | Yes | Yes | Yes | Yes¹ |
+| Nomnoml | Yes | → Mermaid | → Mermaid | → Mermaid | → Mermaid | Yes | → PlantUML |
+| Native SVG (Studio) | Yes | Yes | Yes | → Mermaid | → Mermaid | Yes | Yes |
+| GraphViz / DOT | — | — | — | — | — | Planned (v1.1+) | — |
+| Structurizr DSL | Partial (v2) | — | — | — | — | — | — |
+
+**Yes** — native emitter. **→ X** — the requested format has no dialect for that
+diagram type, so the emitter falls back to X and reports X as the format.
+**—** — not supported.
+
+¹ Mermaid has no component dialect; `ComponentScript` emits a `flowchart TD`
+with `subgraph` clusters and reports `.mermaid`.
+
+Two of the fallbacks are the honest gaps rather than language limitations: State
+and ER have no native SVG layout engine, so `.svg` piggybacks the Mermaid
+pipeline and `DiagramWebView` renders it through `MermaidHTMLBuilder`. Closing
+those means writing two layout engines, not two emitters.
 
 PNG / SVG rendering of PlantUML scripts is delegated to downstream tools; the Studio app's native renderers cover the most-used types in-app.
 
