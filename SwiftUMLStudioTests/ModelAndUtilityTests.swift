@@ -24,10 +24,20 @@ private func runOnMain(_ block: @MainActor () -> Void) {
 @Suite("DiagramMode")
 struct DiagramModeTests {
 
-    @Test("has exactly six cases")
-    func allCasesCount() {
+    /// Asserted as an exact list rather than a bare count so that adding a case
+    /// fails with a message naming the newcomer, instead of an opaque `7 == 6`.
+    @Test("allCases is exactly the known modes, in declaration order")
+    func allCasesIsExactList() {
         runOnMain {
-            #expect(DiagramMode.allCases.count == 6)
+            #expect(DiagramMode.allCases == [
+                .classDiagram,
+                .sequenceDiagram,
+                .dependencyGraph,
+                .stateMachine,
+                .activityDiagram,
+                .erDiagram,
+                .componentDiagram
+            ])
         }
     }
 
@@ -61,6 +71,11 @@ struct DiagramModeTests {
         #expect(DiagramMode.erDiagram.rawValue == "ER Diagram")
     }
 
+    @Test("componentDiagram raw value is 'Component Diagram'")
+    func componentDiagramRawValue() {
+        #expect(DiagramMode.componentDiagram.rawValue == "Component Diagram")
+    }
+
     @Test("id equals rawValue for all cases")
     func idEqualsRawValue() {
         runOnMain {
@@ -79,6 +94,7 @@ struct DiagramModeTests {
         #expect(cases.contains(.stateMachine))
         #expect(cases.contains(.activityDiagram))
         #expect(cases.contains(.erDiagram))
+        #expect(cases.contains(.componentDiagram))
     }
 
     @Test("can be initialized from raw value")
@@ -89,6 +105,7 @@ struct DiagramModeTests {
         #expect(DiagramMode(rawValue: "State Machine") == .stateMachine)
         #expect(DiagramMode(rawValue: "Activity Diagram") == .activityDiagram)
         #expect(DiagramMode(rawValue: "ER Diagram") == .erDiagram)
+        #expect(DiagramMode(rawValue: "Component Diagram") == .componentDiagram)
         #expect(DiagramMode(rawValue: "nonexistent") == nil)
     }
 }
