@@ -48,9 +48,24 @@ struct PaywallFeatureTests {
     @Test("titles cover the expected Pro areas")
     func coversProAreas() {
         let titles = Set(PaywallFeature.all.map(\.title))
-        #expect(titles.contains("Sequence Diagrams"))
-        #expect(titles.contains("Dependency Graphs"))
-        #expect(titles.contains("PlantUML & Mermaid Export"))
+        #expect(titles.contains("Execution Flows"))
+        #expect(titles.contains("Dependency Maps"))
+        #expect(titles.contains("Share Your Diagrams"))
+    }
+
+    /// The paywall is the one Explorer-mode surface that names Pro features, so
+    /// it must not leak UML or markup jargon at a non-developer (plan §3.4).
+    @Test("no title leaks developer jargon at Explorer users")
+    func titlesAvoidJargon() {
+        let jargon = ["UML", "PlantUML", "Mermaid", "Sequence Diagram", "Dependency Graph"]
+        for feature in PaywallFeature.all {
+            for term in jargon {
+                #expect(
+                    feature.title.localizedCaseInsensitiveContains(term) == false,
+                    "paywall title \"\(feature.title)\" leaks the developer term \"\(term)\""
+                )
+            }
+        }
     }
 
     @Test("each feature identifier is unique")

@@ -8,7 +8,7 @@
 |---|---|---|
 | 1. StoreKit + Feature Gating | **Shipped** | `SubscriptionManager` (StoreKit 2), `FeatureGate`, `PaywallView`, `Configuration.storekit` all in place |
 | 2. Project Dashboard + Insights | **Shipped** | `ProjectAnalyzer`, `ProjectSummary`, `InsightEngine`, `SuggestionEngine`, `SuggestionDispatcher`, `ProjectDashboardView` all in place |
-| 3. Explorer Mode UI | **Shipped (mostly)** | `AppMode`, `ExplorerToolbar`, `ExplorerSidebar`, `ExplorerDetailView` are live. **Open gap: §3.4 plain-language labels ("Type Map" / "Execution Flow" / etc.) were never applied — `DiagramMode` cases still use developer terms.** |
+| 3. Explorer Mode UI | **Shipped** | `AppMode`, `ExplorerToolbar`, `ExplorerSidebar`, `ExplorerDetailView` are live. §3.4 closed 2026-08-07: Explorer never names a `DiagramMode`, so suggestion-driven navigation meets the plain-language goal without a translation layer. The one jargon leak, `PaywallView`, is fixed. |
 | 4. Architecture Change Tracking (Pro) | **Shipped** | `ProjectSnapshot`, `SnapshotManager`, `ArchitectureDiffView`, `ReviewReminderManager` |
 | 5. App Store Prep | **Pending** | No App Store submission yet — bundled into v1.0 release prep tasks |
 | 6. Distribution | **Pending** | Homebrew formula still in v1.0 prep; landing page / marketing not started |
@@ -145,11 +145,26 @@ Replace the current developer toolbar with simplified controls:
 - **Center pane:** Interactive diagram (same WebView, but no markup tab)
 - **Right sidebar (optional):** Selected type details — "This class has 3 properties and 5 methods, inherits from BaseController"
 
-### 3.4 Plain-Language Labels — **NOT YET BUILT**
+### 3.4 Plain-Language Labels — **MET BY OTHER MEANS (2026-08-07)**
 
-**Status (2026-05-09):** This subsection is still future work. `DiagramMode` cases use developer terms ("Class Diagram", "Sequence Diagram", etc.) regardless of `AppMode`, and there is no Explorer-aware label-translation layer. To finish §3.4, add an `explorerLabel: String` property to `DiagramMode` and have the Explorer-mode toolbar / sidebar read that property; the developer mode keeps `rawValue` as today.
+**Do not implement the `explorerLabel` property this section used to prescribe — it would be dead code.** The earlier note said to add `explorerLabel: String` to `DiagramMode` and have the Explorer toolbar / sidebar read it. That has no consumer: Explorer mode never displays a `DiagramMode` name anywhere. `ExplorerSidebar` and `ExplorerToolbar` contain no `DiagramMode` reference at all, `ExplorerDetailView` shows only `DiagramPreviewView` or `ProjectDashboardView`, and the sole render site — `WorkspaceSidebar.row(for:)` — is reached from `developerLayout` only.
 
-All UI text changes based on mode:
+The goal behind the section is already met, by a better route than renaming. Per §3.2 the mode picker is hidden in Explorer and navigation is driven by suggestion clicks, and `SuggestionEngine` titles are already plain language describing *what you will see* rather than naming the artefact:
+
+| Suggestion title | Underlying mode |
+|---|---|
+| "See how your types are connected" | `.classDiagram` |
+| "Trace `Type.method`" | `.sequenceDiagram` |
+| "See which types depend on each other" | `.dependencyGraph` (types) |
+| "See module dependencies" | `.dependencyGraph` (modules) |
+
+That is strictly better than a "Type Map" / "Execution Flow" picker: the user never meets the artefact name at all, so there is nothing to translate.
+
+**What actually remained, and was fixed 2026-08-07:** `PaywallView` — the one Explorer surface that names Pro features — hardcoded "Sequence Diagrams", "Dependency Graphs", "PlantUML & Mermaid Export" and "Format Selection". Those are now "Execution Flows", "Dependency Maps", "Share Your Diagrams" and "Choose How Diagrams Look", honouring this section's rule that PlantUML / Mermaid are never surfaced to an Explorer user. A regression test (`PaywallFeatureTests.titlesAvoidJargon`) fails if a jargon term reappears in a paywall title.
+
+`DiagramMode.rawValue` is deliberately unchanged. It is both the Developer-mode label and the persisted `DiagramEntity.mode` key, so renaming it would require a snapshot migration for no user-visible gain.
+
+The original translation table is preserved below as design context. Only the last row (PlantUML / Mermaid never shown) turned out to describe live behaviour; the diagram-name rows were superseded by suggestion-driven navigation.
 
 | Developer Term | Explorer Term |
 |---|---|
@@ -242,7 +257,7 @@ All UI text changes based on mode:
 |---|---|---|---|
 | Phase 1 | StoreKit + feature gating | **Shipped** | Landed before v1.0 release prep, not after |
 | Phase 2 | Project dashboard + insights | **Shipped** | |
-| Phase 3 | Explorer Mode UI | **Shipped (mostly)** | §3.4 plain-language labels still TODO |
+| Phase 3 | Explorer Mode UI | **Shipped** | §3.4 closed 2026-08-07 — met by suggestion-driven navigation, not a label layer |
 | Phase 4 | Architecture change tracking | **Shipped** | SwiftData-backed (plan said Core Data) |
 | Phase 5 | App Store prep | Pending | Bundled into v1.0 release prep |
 | Phase 6 | Distribution | Pending | Homebrew formula still in v1.0 prep |
