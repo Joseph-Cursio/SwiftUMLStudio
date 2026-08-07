@@ -15,11 +15,18 @@ This repository contains two related products:
 |---|---|---|---|---|
 | Class | ✓ | ✓ | ✓ | ✓ |
 | Sequence | ✓ | ✓ | — | ✓ |
-| Activity | ✓ | — | — | ✓ |
-| State machine | ✓ | ✓ | — | ✓ |
+| Activity | ✓ | ✓ | — | ✓ |
+| State machine | ✓ | ✓ | — | — |
 | Entity-Relationship (SwiftData / Core Data / GRDB / SQLite.swift) | ✓ | ✓ | — | — |
-| Component (SPM targets + provided interfaces) | ✓ | ✓ | — | — |
+| Component (SPM targets + provided interfaces) | ✓ | ✓* | — | ✓ |
 | Dependency graph (modules + types) | ✓ | ✓ | — | ✓ |
+
+A dash means the format has no dialect for that diagram type, so the emitter
+falls back — to Mermaid in every case except Component/Nomnoml, which falls back
+to PlantUML — and reports the format it actually produced.
+
+\* Mermaid has no component dialect; Component diagrams emit a `flowchart TD`
+with `subgraph` clusters.
 
 ### Bridge highlights
 
@@ -36,7 +43,7 @@ This repository contains two related products:
 ### Studio highlights
 
 - **Two app modes**: Explorer (insight-driven default — dashboard, suggestions, snapshots) and Developer (full three-pane workspace with file browser, format picker, and per-mode controls)
-- **Native rendering** for class / sequence / activity / dependency diagrams via SwiftUI Canvas, with WebView fallback for Mermaid and Nomnoml
+- **Native rendering** for class / sequence / activity / component / dependency diagrams via SwiftUI Canvas, with WebView fallback for Mermaid and Nomnoml (state machine and ER render through the Mermaid pipeline — no native layout engine yet)
 - **Project Dashboard** with insights and one-click suggestion cards (`InsightEngine`, `SuggestionEngine`)
 - **Architecture Change Tracking** — diff snapshots over time (Pro)
 - **History sidebar** with diagram restoration
