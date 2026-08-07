@@ -203,14 +203,15 @@ struct ProjectDashboardViewTests {
             architectureDiff: nil, isProUnlocked: false,
             onSuggestionTap: { _ in }
         )
-        // Empty state is rendered; populated-state scroll view is not.
-        // NOTE: on macOS 27 beta this assertion holds vacuously — ViewInspector
-        // 0.10.3 throws on every accessibility-identifier lookup there, so it
-        // cannot distinguish "not rendered" from "cannot be read". The stat-card
-        // assertion below is the one carrying real signal until upstream is fixed.
-        #expect(throws: InspectionError.self) {
-            try view.inspect().find(viewWithAccessibilityIdentifier: "dashboardContent")
-        }
+        // Keyed on view type, not on an accessibility identifier. An
+        // identifier-based negative assertion passes vacuously while
+        // ViewInspector 0.10.3 cannot read accessibility modifiers on macOS 27
+        // beta (see DiagramPreviewViewTests.swift): every lookup throws, so it
+        // cannot distinguish "not rendered" from "cannot be read". The two
+        // branches differ structurally — populated is a ScrollView, empty is a
+        // ContentUnavailableView — which stays readable on every OS.
+        #expect(try view.inspect().findAll(ViewType.ScrollView.self).isEmpty)
+        _ = try view.inspect().find(ViewType.ContentUnavailableView.self)
         // Five stat cards only render in populated state.
         #expect(try view.inspect().findAll(StatCardView.self).isEmpty)
     }
