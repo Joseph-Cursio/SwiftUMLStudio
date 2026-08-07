@@ -53,13 +53,7 @@ struct NativeDiagramView: View {
             .gesture(tapToSelectGesture)
             .onTapGesture(count: 2) { viewport.reset() }
             .onContinuousHover(coordinateSpace: .named(Self.canvasCoordinateSpace)) { phase in
-                switch phase {
-                case .active(let location):
-                    viewport.hoveredNodeId =
-                        NativeDiagramGeometry.hitNode(in: graph, at: location)?.id
-                case .ended:
-                    viewport.hoveredNodeId = nil
-                }
+                updateHover(phase)
             }
             .focusable()
             .focusEffectDisabled()
@@ -67,10 +61,7 @@ struct NativeDiagramView: View {
             .onKeyPress(.downArrow) { handleArrow(.down) }
             .onKeyPress(.leftArrow) { handleArrow(.left) }
             .onKeyPress(.rightArrow) { handleArrow(.right) }
-            .onKeyPress(.escape) {
-                viewport.selectedNodeId = nil
-                return .handled
-            }
+            .onKeyPress(.escape) { clearSelection() }
             .diagramCanvasChrome(
                 viewport: viewport,
                 contentSize: CGSize(width: graph.width, height: graph.height),
@@ -87,12 +78,35 @@ struct NativeDiagramView: View {
     private var tapToSelectGesture: some Gesture {
         SpatialTapGesture(coordinateSpace: .named(Self.canvasCoordinateSpace))
             .onEnded { value in
-                viewport.selectedNodeId =
-                    NativeDiagramGeometry.hitNode(in: graph, at: value.location)?.id
+                selectNode(at: value.location)
             }
     }
 
-    private func handleArrow(_ direction: NativeDiagramGeometry.NavigationDirection) -> KeyPress.Result {
+    /// Selects whichever node sits under `location`, or clears the selection
+    /// when the tap lands on empty canvas.
+    func selectNode(at location: CGPoint) {
+        viewport.selectedNodeId = NativeDiagramGeometry.hitNode(in: graph, at: location)?.id
+    }
+
+    func updateHover(_ phase: HoverPhase) {
+        switch phase {
+        case .active(let location):
+            viewport.hoveredNodeId = NativeDiagramGeometry.hitNode(in: graph, at: location)?.id
+        case .ended:
+            viewport.hoveredNodeId = nil
+        }
+    }
+
+    func clearSelection() -> KeyPress.Result {
+        viewport.selectedNodeId = nil
+        return .handled
+    }
+
+    /// Internal rather than private so the selection logic is unit-testable:
+    /// `ImageRenderer` drives the drawing code but never fires key presses, and
+    /// ViewInspector cannot reach this view at all (GeometryReader trap — see
+    /// NativeDiagramViewTests.swift).
+    func handleArrow(_ direction: NativeDiagramGeometry.NavigationDirection) -> KeyPress.Result {
         if let currentId = viewport.selectedNodeId,
            let next = NativeDiagramGeometry.nextNode(in: graph, from: currentId, direction: direction) {
             viewport.selectedNodeId = next.id
