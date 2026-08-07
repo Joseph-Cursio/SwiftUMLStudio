@@ -43,6 +43,20 @@ struct SuggestionDispatcherFeatureMappingTests {
         let feature = SuggestionDispatcher.featureRequired(for: .classDiagram)
         #expect(feature == .sequenceDiagrams)
     }
+
+    /// These two must map to their own gates, not to a fallback — ContentView
+    /// gates the modes themselves on `.erDiagrams` / `.componentDiagrams`, so a
+    /// mismatch would let a suggestion through the paywall only for the mode to
+    /// refuse to render.
+    @Test("ER action maps to .erDiagrams")
+    func erMapping() {
+        #expect(SuggestionDispatcher.featureRequired(for: .erDiagram) == .erDiagrams)
+    }
+
+    @Test("component action maps to .componentDiagrams")
+    func componentMapping() {
+        #expect(SuggestionDispatcher.featureRequired(for: .componentDiagram) == .componentDiagrams)
+    }
 }
 
 // MARK: - Apply mutates the view model correctly
@@ -101,6 +115,24 @@ struct SuggestionDispatcherApplyTests {
             )
             #expect(viewModel.diagramMode == .stateMachine)
             #expect(viewModel.stateIdentifier == "TrafficLight.Light")
+        }
+    }
+
+    @Test("ER diagram selects ER mode")
+    func applyERDiagram() {
+        runOnMain {
+            let viewModel = DiagramViewModel(persistenceController: .init(inMemory: true))
+            SuggestionDispatcher.apply(makeSuggestion(.erDiagram), to: viewModel)
+            #expect(viewModel.diagramMode == .erDiagram)
+        }
+    }
+
+    @Test("component diagram selects component mode")
+    func applyComponentDiagram() {
+        runOnMain {
+            let viewModel = DiagramViewModel(persistenceController: .init(inMemory: true))
+            SuggestionDispatcher.apply(makeSuggestion(.componentDiagram), to: viewModel)
+            #expect(viewModel.diagramMode == .componentDiagram)
         }
     }
 }

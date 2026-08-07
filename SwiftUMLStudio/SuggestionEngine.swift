@@ -17,6 +17,8 @@ enum SuggestionAction: Sendable {
     case sequenceDiagram(entryPoint: String)
     case dependencyGraph(mode: DepsMode)
     case stateMachine(identifier: String)
+    case erDiagram
+    case componentDiagram
 }
 
 nonisolated enum SuggestionEngine {
@@ -28,6 +30,12 @@ nonisolated enum SuggestionEngine {
         suggestions.append(contentsOf: sequenceSuggestions(from: summary))
         suggestions.append(contentsOf: dependencySuggestions(from: summary))
         suggestions.append(contentsOf: stateMachineSuggestions(from: summary))
+        if let erSuggestion = erDiagramSuggestion(from: summary) {
+            suggestions.append(erSuggestion)
+        }
+        if let componentSuggestion = componentDiagramSuggestion(from: summary) {
+            suggestions.append(componentSuggestion)
+        }
         return suggestions
     }
 
@@ -90,6 +98,44 @@ nonisolated enum SuggestionEngine {
                     requiresPro: true
                 )
             }
+    }
+
+    /// Persistence frameworks whose presence means an ER diagram will render
+    /// something. Matches the four stacks `ERDiagramGenerator` understands.
+    ///
+    /// Detected from `moduleImports` rather than by running the ER extractor:
+    /// the import list is already computed by the analyzer, so this costs
+    /// nothing, whereas an extra extraction pass would parse every file again
+    /// just to decide whether to offer a card. The trade is that a project
+    /// vendoring one of these stacks without importing it by name goes
+    /// undetected — rare in practice, and the mode is still reachable from the
+    /// Developer-mode sidebar.
+    private static let persistenceModules = ["SwiftData", "CoreData", "GRDB", "SQLite"]
+
+    private static func erDiagramSuggestion(from summary: ProjectSummary) -> DiagramSuggestion? {
+        let detected = summary.moduleImports.filter { persistenceModules.contains($0) }
+        guard let framework = detected.first else { return nil }
+        return DiagramSuggestion(
+            icon: "tablecells",
+            title: "See how your data is stored",
+            description: "This project uses \(framework) — view your models and how they relate.",
+            action: .erDiagram,
+            requiresPro: true
+        )
+    }
+
+    private static func componentDiagramSuggestion(from summary: ProjectSummary) -> DiagramSuggestion? {
+        // Component diagrams are package-scoped: `moduleBreakdown` is populated
+        // only by `analyze(package:)`, so a non-empty breakdown is exactly the
+        // condition under which this mode has anything to draw.
+        guard summary.moduleBreakdown.count >= 2 else { return nil }
+        return DiagramSuggestion(
+            icon: "shippingbox",
+            title: "See how your package fits together",
+            description: "\(summary.moduleBreakdown.count) build targets and what each one offers.",
+            action: .componentDiagram,
+            requiresPro: true
+        )
     }
 
     private static func stateMachineDescription(for model: StateMachineModel) -> String {
