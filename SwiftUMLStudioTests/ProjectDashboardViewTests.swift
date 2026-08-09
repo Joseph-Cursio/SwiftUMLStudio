@@ -216,12 +216,7 @@ struct ProjectDashboardViewTests {
         #expect(try view.inspect().findAll(StatCardView.self).isEmpty)
     }
 
-    // ViewInspector 0.10.3 cannot read accessibility modifiers on macOS 27 beta
-    // (build 26A5388g) — see the fuller diagnosis in DiagramPreviewViewTests.swift.
-    // The "dashboardContent" identifier is correct and present in
-    // ProjectDashboardView; only test-time introspection is broken.
-    @Test("populated summary shows dashboard content",
-          .disabled("ViewInspector 0.10.3 cannot read accessibility modifiers on macOS 27"))
+    @Test("populated summary shows dashboard content")
     func populatedShowsContent() throws {
         let view = ProjectDashboardView(
             summary: makeSummary(), insights: [], suggestions: [],
