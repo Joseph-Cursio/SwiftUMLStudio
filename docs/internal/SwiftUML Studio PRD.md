@@ -196,7 +196,7 @@ Dependency graph generation reuses the existing SwiftUMLBridge architecture:
 - **Parsing Layer** extracts type references, imports, and call sites.
 - **Model Layer** stores dependency edges as a graph structure.
 - **Emitter Layer** outputs the graph as PlantUML, Mermaid.js, Nomnoml, or
-  native SVG. DOT is not implemented — see M16 in §9.2.
+  native SVG. DOT is not implemented — see M16 in §9.3.
 
 This ensures minimal duplication and consistent behavior across diagram types.
 
@@ -250,8 +250,8 @@ Common flags:
 ### 5.10 CI / Automation Mode
 
 - `--ci` flag suppresses browser launch, writes output to file, and exits non-zero on parse errors
-- Publish GitHub Action (`swiftumlbridge-action`) — **planned**, not yet shipped
-- Document Fastlane + Xcode Cloud integration
+- GitHub Action (`swiftumlbridge-action`) — **shipped** `v0.1.0`, 2026-05-12, in its own repo: [Joseph-Cursio/swiftumlbridge-action](https://github.com/Joseph-Cursio/swiftumlbridge-action). macOS runners only.
+- Fastlane + Xcode Cloud integration — **shipped**, see [User Guide → Installation](../user/user-guide.md#xcode-cloud). Both invoke the CLI directly (Xcode Cloud via a `ci_post_clone.sh` custom build script, Fastlane via `sh` in a lane); neither has a plugin or marketplace equivalent.
 
 ---
 
@@ -358,7 +358,7 @@ The CLI is a thin wrapper over the framework. SwiftUMLStudio embeds the same fra
 
 ## 9. Milestones & Scope
 
-### 9.1 Shipped (as of 2026-05)
+### 9.1 Shipped (as of 2026-08)
 
 | Milestone | Scope | Shipped |
 |---|---|---|
@@ -373,18 +373,31 @@ The CLI is a thin wrapper over the framework. SwiftUMLStudio embeds the same fra
 | M8 — Studio workspace | Project mode, snapshots, dashboard, architecture diff, insights | 2026-04 |
 | M9 — Subscription tier | StoreKit integration, paywall, feature gating | 2026-04 |
 | M10 — Swift 6 strict concurrency | Full `Sendable` migration, async `DiagramPresenting` protocol | 2026-04 |
+| M11 — CI / GitHub Action | `swiftumlbridge-action` `v0.1.0` in its own repo; Xcode Cloud + Fastlane integration documented | 2026-05 / 2026-08 |
+| M12 — Multi-module SPM | Cross-module type resolution; module namespace labels; `--package` on `classdiagram` / `deps` / `component`; module-grouped canvas layout | 2026-06 |
+| M15 — Documentation push | Tutorials, 7 sample projects, troubleshooting guide, DocC catalog | 2026-07 |
 
-### 9.2 Roadmap (planned)
+Everything after v1.0.0 (2026-05-11) sits in `CHANGELOG.md`'s `[Unreleased]`
+and is not yet in a tagged release. See §9.2.
+
+### 9.2 Partially shipped
+
+| Milestone | Done | Outstanding |
+|---|---|---|
+| M13 — Bridge v1.0 release | `v1.0.0` tag + GitHub release (2026-05-12), `.spi.yml` SPI listing, migration guide (`docs/user/migration-from-SwiftPlantUML.md`), Homebrew formula drafted | Formula is a draft — no `homebrew-tap` repo published yet (see `homebrew/README.md`); no announcement |
+| M14 — Studio v1.0 (App Store) | Sandboxing audit complete (2026-05): `AppStoreRelease` config + `APP_STORE_BUILD` flag, App Sandbox entitlements, security-scoped bookmarks, PlantUML third-party-upload consent gate, CDN fallbacks removed | App Store submission; the App Store Connect privacy nutrition label and a hosted privacy policy (the *user-facing* disclosure is now written — see [Studio User Guide](../user/studio-user-guide.md#plantuml-sends-your-diagram-source-to-a-third-party)); marketing site |
+
+### 9.3 Roadmap (planned)
 
 | Milestone | Scope | Target |
 |---|---|---|
-| M11 — CI / GitHub Action | Publish `swiftumlbridge-action`; document Xcode Cloud | TBD |
-| M12 — Multi-module SPM | Cross-module type resolution; module namespace labels | TBD |
-| M13 — Bridge v1.0 release | Homebrew formula, SPI listing, announcement, migration guide | TBD |
-| M14 — Studio v1.0 (App Store) | App Store submission, sandboxing audit, marketing site | TBD |
-| M15 — Documentation push | Tutorials, sample projects, troubleshooting guide | TBD |
 | M16 — DOT / GraphViz output | Optional emitter for large-scale dependency graphs | v1.1+ |
 | M17 — Macro expansion handling | Better fidelity for macro-generated types | v1.1+ |
+
+> **Note**: this repo's *own* CI (`.github/workflows/ci.yml`) is intentionally
+> dormant — `workflow_dispatch` only, and disabled on GitHub, to avoid the macOS
+> runner's 10x billing (commit `5257203`). That is unrelated to M11, which
+> tracked the action published for *consumers* and is complete.
 
 ---
 

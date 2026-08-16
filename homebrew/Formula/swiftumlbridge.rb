@@ -6,10 +6,11 @@ class Swiftumlbridge < Formula
   license "MIT"
   head "https://github.com/Joseph-Cursio/SwiftUMLStudio.git", branch: "main"
 
-  # Bridge's Package.swift declares swift-tools-version: 6.2 (ships with
-  # Xcode 26+). The toolchain shipped with Xcode 15 / Swift 5.x will not
-  # parse the manifest, so we gate explicitly.
-  depends_on xcode: ["16.0", :build]
+  # Bridge's Package.swift declares swift-tools-version: 6.2, which first
+  # ships with Xcode 26. Anything older — including Xcode 16's Swift 6.0 /
+  # 6.1 — refuses to parse the manifest, so we gate explicitly rather than
+  # let the build fail partway through with a manifest error.
+  depends_on xcode: ["26.0", :build]
   depends_on :macos
   depends_on macos: :sequoia
 

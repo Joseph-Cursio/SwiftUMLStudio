@@ -9,7 +9,7 @@ This repository contains two related products built around the same diagram-gene
 - **SwiftUMLBridge** — a Swift-native CLI (`swiftumlbridge`) and Swift Package that generates architectural diagrams from Swift source. A modern, Swift 6 evolution of SwiftPlantUML with support for actors, async/await, macros, and multi-format output.
 - **SwiftUMLStudio** — a macOS SwiftUI application that embeds SwiftUMLBridge and provides an interactive workspace with persistent snapshots, native-canvas rendering, architectural insights, and a paid (StoreKit) tier.
 
-**Status (2026-05)**: post-M10 (Swift 6 strict concurrency). M0–M10 shipped. Currently preparing the Bridge v1.0 release (CHANGELOG sync, .spi.yml, Homebrew formula, migration guide). See `docs/internal/SwiftUML Studio PRD.md` for the canonical spec — sections 5 (Bridge) and 6 (Studio) — and `CHANGELOG.md` for shipped scope.
+**Status (2026-08)**: Bridge v1.0.0 shipped 2026-05-11 (tag + GitHub release). M0–M12 and M15 are complete. M13 and M14 are partially done — the sandboxing audit landed but the Homebrew tap is unpublished and the App Store submission is outstanding. See PRD §9.2 for the exact split. Everything since v1.0.0 sits in `CHANGELOG.md`'s `[Unreleased]`, so **a v1.1.0 cut is the next release step** — `homebrew/README.md` documents the procedure. Not started: M16 (DOT/GraphViz emitter), M17 (macro expansion fidelity). See `docs/internal/SwiftUML Studio PRD.md` for the canonical spec — sections 5 (Bridge) and 6 (Studio) — and `CHANGELOG.md` for shipped scope.
 
 ## Build & Test Commands
 
@@ -31,6 +31,14 @@ xcodebuild test -scheme SwiftUMLStudio -destination 'platform=macOS,arch=arm64' 
   -only-testing:SwiftUMLStudioUITests/SwiftUMLStudioUITests/<TestName>
 ```
 
+Without a "Mac Development" signing certificate for the project's team, every
+`xcodebuild test` above fails at the signing step before running a single test.
+Append the same flags CI uses to work around it:
+
+```bash
+CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
+```
+
 ### SwiftUMLBridge package (CLI + framework)
 
 ```bash
@@ -46,6 +54,8 @@ swift run --package-path SwiftUMLBridge swiftumlbridge classdiagram <paths...>
 - **Bridge target platform**: macOS 15+ (per `Package.swift`). Lower than Studio because nothing in the Bridge requires macOS 26 — kept at 15 so the SwiftPM tests run on GitHub's `macos-latest` runner (still macOS 15) and on every other Sequoia host.
 - **Swift toolchain**: Swift 6.0 strict concurrency enabled across all targets
 - **Bundle ID**: `name.JosephCursio.SwiftUMLStudio`
+- **Build configs**: `Debug` / `Release` (direct distribution, unsandboxed) plus `AppStoreRelease`, which defines `APP_STORE_BUILD` and enables App Sandbox. The flag gates every subprocess/`dlopen` path — SourceKit typename supplementation and `Open Package…` are both disabled under it (see M14 in `CHANGELOG.md`).
+- **CI is deliberately dormant.** `.github/workflows/ci.yml` triggers on `workflow_dispatch` only, and the workflow itself is disabled on GitHub, to avoid the macOS runner's 10x billing (commit `5257203`). Do not add `push` / `pull_request` triggers without asking — run the suites locally instead.
 
 ## Architecture
 
@@ -72,7 +82,7 @@ swiftumlbridge sequence    --entry <Type.method> [paths...] [--depth n]
 swiftumlbridge activity    --entry <Type.method> [paths...]
 swiftumlbridge state       [paths...] [--list | --state HostType.EnumType]
 swiftumlbridge er          [paths...]                  # SwiftData / Core Data / GRDB / SQLite.swift
-swiftumlbridge deps        [paths...] [--modules] [--types] [--public-only] [--exclude <pattern>]
+swiftumlbridge deps        [paths...] [--modules] [--types] [--public-only] [--exclude <pattern>] [--package <Package.swift dir>]
 swiftumlbridge component   --package <Package.swift dir> [--include-test-targets]
 ```
 

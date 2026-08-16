@@ -1,6 +1,6 @@
 # SwiftUML Studio — User Guide
 
-SwiftUML Studio is a macOS GUI for [SwiftUMLBridge](../SwiftUMLBridge/), the Swift-native diagram generator. It lets you point at Swift source files or folders, explore your codebase visually, generate diagrams, and track how your architecture evolves over time — all without touching the terminal.
+SwiftUML Studio is a macOS GUI for [SwiftUMLBridge](../../SwiftUMLBridge/), the Swift-native diagram generator. It lets you point at Swift source files or folders, explore your codebase visually, generate diagrams, and track how your architecture evolves over time — all without touching the terminal.
 
 For CLI usage, see the [SwiftUMLBridge User Guide](user-guide.md).
 
@@ -9,6 +9,7 @@ For CLI usage, see the [SwiftUMLBridge User Guide](user-guide.md).
 ## Table of Contents
 
 1. [Requirements](#requirements)
+   - [App Store and Direct Download Builds](#app-store-and-direct-download-builds)
 2. [App Modes](#app-modes)
 3. [Explorer Mode](#explorer-mode)
    - [Explorer Window Layout](#explorer-window-layout)
@@ -26,6 +27,7 @@ For CLI usage, see the [SwiftUMLBridge User Guide](user-guide.md).
 5. [Opening Swift Source Files](#opening-swift-source-files)
 6. [Choosing a Diagram Mode](#choosing-a-diagram-mode)
 7. [Choosing a Diagram Format](#choosing-a-diagram-format)
+   - [PlantUML Sends Your Diagram Source to a Third Party](#plantuml-sends-your-diagram-source-to-a-third-party)
 8. [Generating a Class Diagram](#generating-a-class-diagram)
 9. [Generating a Sequence Diagram](#generating-a-sequence-diagram)
    - [Entry Point Syntax](#entry-point-syntax)
@@ -62,7 +64,39 @@ For CLI usage, see the [SwiftUMLBridge User Guide](user-guide.md).
 | Requirement | Minimum |
 |---|---|
 | macOS | 26.4 |
-| Xcode (to build the app) | 16.0 |
+| Xcode (to build the app) | 26.0 |
+
+Xcode 26 is the floor because the embedded SwiftUMLBridge package declares
+`swift-tools-version: 6.2`, which first ships with that release. Older
+toolchains — including Xcode 16's Swift 6.0 / 6.1 — refuse to parse the manifest.
+
+---
+
+## App Store and Direct Download Builds
+
+SwiftUML Studio ships in two forms, and a few behaviors differ between them.
+The **direct download** build runs unsandboxed. The **App Store** build runs
+under the macOS App Sandbox, which forbids the subprocess and dynamic-loading
+calls some features rely on.
+
+| Behavior | Direct download | App Store |
+|---|---|---|
+| Default diagram format | PlantUML | **Mermaid** — so no diagram leaves your machine unless you opt in |
+| **Open Package…** (SPM package loading) | Available | **Unavailable** — it shells out to `swift package describe`, which the sandbox forbids |
+| Component diagrams, per-module dashboard, module-grouped layout | Available | Unavailable, since all three require a loaded package |
+| Inferred property/return types | Resolved via SourceKit | **Declared types only** — see below |
+| PlantUML rendering | Available | Available, after a one-time consent prompt |
+
+**On inferred types.** The App Store build cannot load SourceKit from the system
+toolchain, so it parses with SwiftSyntax alone. Every diagram type is still
+produced in full; what you lose is type *inference*. A property written
+`let items = [Item]()` shows its declared form rather than being resolved to
+`[Item]`, and members whose types are only inferable from context may show
+without a type annotation. Anything with an explicit type annotation is
+unaffected.
+
+If you need package-scoped diagrams or full type resolution, use the direct
+download build or the [`swiftumlbridge` CLI](user-guide.md).
 
 ---
 
@@ -265,14 +299,33 @@ In Developer Mode, the **Format** picker in the inspector strip (above the detai
 
 | Format | Preview rendering | Markup extension | Notes |
 |---|---|---|---|
-| **PlantUML** | SVG fetched from planttext.com (requires internet) | `.puml` | Light-mode rendering only — planttext.com is outside our control |
+| **PlantUML** | SVG fetched from planttext.com (requires internet) | `.puml` | Light-mode rendering only — planttext.com is outside our control. Uploads your diagram source to a third party; asks for consent once. See [below](#plantuml-sends-your-diagram-source-to-a-third-party) |
 | **Mermaid** | Rendered locally via the bundled `MermaidHTMLBuilder` WebView | `.mmd` | Adapts to dark mode via `colorScheme` |
 | **Nomnoml** | Rendered locally via the bundled `NomnomlHTMLBuilder` WebView | `.nomnoml` | Class diagrams only; canvas content stays light because `nomnoml.js` uses hardcoded colors |
 | **SVG** | Native SwiftUI `Canvas` renderer using a Dagre layout produced by JavaScriptCore | n/a (rendered in-app) | The fastest, most interactive option; supports node selection, reveal-in-source, and PDF/PNG export |
 
 You can switch formats after generation — click **Generate** again to re-render in the new format. The format picker exposes all four cases, and the active script's `format` field controls which renderer is used in the preview pane.
 
-In Explorer Mode, the format is not exposed — the app defaults to PlantUML for the visual preview.
+In Explorer Mode, the format is not exposed — the app uses the build's default for the visual preview (PlantUML in the direct download build, Mermaid in the App Store build).
+
+### PlantUML Sends Your Diagram Source to a Third Party
+
+This is the one format that leaves your machine, so it is worth stating plainly.
+PlantUML has no local renderer in Studio: previewing a PlantUML diagram encodes
+the generated markup and requests an SVG from **planttext.com**, a third-party
+service not operated by us. That markup describes your code's structure — type
+names, member names and signatures, and the relationships between them. It does
+not include function bodies or literal values.
+
+Because of this, the picker labels the option **"PlantUML (planttext.com)"**,
+and the first time you select it Studio raises a consent alert describing the
+upload. **Continue** grants it and remembers the choice; **Cancel** reverts to
+the previous format. Subsequent selections don't re-prompt.
+
+Mermaid, Nomnoml, and SVG all render locally from bundled resources and make no
+network requests at all — no CDN fallback, no telemetry. If your source is
+confidential, use one of those three, and note that the **Markup** tab always
+gives you the raw PlantUML text to paste into a renderer you control.
 
 ---
 
@@ -455,6 +508,13 @@ In package mode:
 - **Modules dashboard section.** The Explorer-mode dashboard gains a **Modules** section listing one card per non-test SPM target — see [Project Dashboard](#project-dashboard).
 
 To switch back to a path-based selection, use **Open…** instead of **Open Package…**.
+
+> **Not available in the App Store build.** `swift package describe` is a
+> subprocess, which the App Sandbox forbids, so the **Open Package…** toolbar
+> button is hidden there and everything on this page — module grouping, the
+> Modules dashboard section, and Component diagrams — is unreachable. Use the
+> direct download build or the CLI's `--package` flag instead. See
+> [App Store and Direct Download Builds](#app-store-and-direct-download-builds).
 
 ---
 
@@ -673,7 +733,9 @@ Toggle this in the Snapshots section of the Explorer sidebar.
 
 ## Known Limitations
 
-**Internet connection required for PlantUML rendering.** PlantUML diagrams are rendered server-side by planttext.com and require an active internet connection. Mermaid diagrams are rendered locally using a bundled copy of Mermaid.js and work fully offline. The raw markup (in Developer Mode's Markup tab) is always available offline regardless of format.
+**Internet connection required for PlantUML rendering.** PlantUML diagrams are rendered server-side by planttext.com and require an active internet connection — and send your diagram source there, which is why the first selection asks for consent (see [above](#plantuml-sends-your-diagram-source-to-a-third-party)). Mermaid and Nomnoml render locally from bundled copies of their JavaScript and work fully offline, with no CDN fallback. The raw markup (in Developer Mode's Markup tab) is always available offline regardless of format.
+
+**The App Store build cannot load Swift Packages or resolve inferred types.** Both need calls the App Sandbox forbids. See [App Store and Direct Download Builds](#app-store-and-direct-download-builds) for the full comparison.
 
 **Actors appear as classes.** SourceKit 6.3 on macOS 26 reports `actor` declarations with kind `source.lang.swift.decl.class`. Actor types are included in class diagrams but show the `<<class>>` stereotype.
 
