@@ -1,9 +1,9 @@
 import Foundation
 
-/// Access Level for Swift variables and methods
 // Parallel List Drift pairs this with `ElementAccessibility` (SourceKit-raw-valued visibility)
 // and the `defaultAccessLevels` subset; both are distinct/intentional, not one drifted list.
 // swiftprojectlint:disable:next parallel-list-drift
+/// Access Level for Swift variables and methods
 public enum AccessLevel: String, Codable, Sendable {
     case open
     case `public`
