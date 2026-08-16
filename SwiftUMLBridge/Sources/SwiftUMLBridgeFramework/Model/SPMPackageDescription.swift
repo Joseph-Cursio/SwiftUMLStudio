@@ -1,13 +1,5 @@
 import Foundation
-
-/// A mutable cell handed between two threads whose accesses are ordered by an
-/// external barrier — here, the `DispatchGroup` in `describe(at:)`, which
-/// guarantees the background write happens-before the foreground read. The
-/// compiler cannot see that ordering, hence `@unchecked`.
-private final class UncheckedBox<Value>: @unchecked Sendable {
-    var value: Value
-    init(_ value: Value) { self.value = value }
-}
+import Synchronization
 
 /// A parsed view of `swift package describe --type json` output. Captures just
 /// what diagram generation needs: each target's name, type, source-root path,
@@ -152,9 +144,15 @@ public enum SPMPackageReader {
         // toolchain, an unreachable dependency host, a lock we did not
         // anticipate. Killing it closes the pipes, which unblocks the drains
         // below and lets the timeout surface as an error the caller can report.
-        let timedOut = UncheckedBox<Bool>(false)
+        //
+        // `timedOut` is a Mutex, not an externally-ordered box: nothing orders
+        // this one. The watchdog fires on a global queue at an arbitrary
+        // moment, and `watchdog.cancel()` in the `defer` runs *after* the read
+        // and cannot stop a block that is already executing — so the write
+        // genuinely races the read.
+        let timedOut = Mutex<Bool>(false)
         let watchdog = DispatchWorkItem {
-            timedOut.value = true
+            timedOut.withLock { $0 = true }
             process.terminate()
         }
         DispatchQueue.global(qos: .utility)
@@ -171,22 +169,26 @@ public enum SPMPackageReader {
         // pipe — filling *either* stream is enough to stall the child, so a
         // package that writes a lot of warnings to stderr would hang while the
         // parent sat reading stdout.
-        let stderrData = UncheckedBox<Data>(Data())
+        // The DispatchGroup already orders this write before the read after
+        // `group.wait()`. The Mutex costs one uncontended lock and lets the
+        // compiler verify what was previously an `@unchecked` promise.
+        let stderrData = Mutex<Data>(Data())
         let group = DispatchGroup()
         DispatchQueue.global(qos: .userInitiated).async(group: group) {
-            stderrData.value = stderrPipe.fileHandleForReading.readDataToEndOfFile()
+            let data = stderrPipe.fileHandleForReading.readDataToEndOfFile()
+            stderrData.withLock { $0 = data }
         }
         let stdout = stdoutPipe.fileHandleForReading.readDataToEndOfFile()
         group.wait()
         process.waitUntilExit()
 
-        if timedOut.value {
+        if timedOut.withLock({ $0 }) {
             throw ReadError.timedOut(seconds: describeTimeout)
         }
         if process.terminationStatus != 0 {
             throw ReadError.swiftToolFailed(
                 exitStatus: process.terminationStatus,
-                stderr: String(data: stderrData.value, encoding: .utf8) ?? ""
+                stderr: String(data: stderrData.withLock({ $0 }), encoding: .utf8) ?? ""
             )
         }
         return try parse(stdout)

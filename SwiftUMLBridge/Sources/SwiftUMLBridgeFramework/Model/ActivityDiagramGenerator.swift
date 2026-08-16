@@ -1,7 +1,7 @@
 import Foundation
 
 /// Generates activity (control-flow) diagram scripts for a chosen entry function.
-public struct ActivityDiagramGenerator: ActivityDiagramGenerating, @unchecked Sendable {
+public struct ActivityDiagramGenerator: ActivityDiagramGenerating, Sendable {
     public init() {}
 
     /// Find all potential entry points (`Type.method`) in the given source files.

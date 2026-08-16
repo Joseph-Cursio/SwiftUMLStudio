@@ -1,7 +1,7 @@
 import Foundation
 
 /// UML Class Diagram powered by PlantUML
-public struct ClassDiagramGenerator: ClassDiagramGenerating, @unchecked Sendable {
+public struct ClassDiagramGenerator: ClassDiagramGenerating, Sendable {
     private let fileCollector = FileCollector()
 
     public init() {}

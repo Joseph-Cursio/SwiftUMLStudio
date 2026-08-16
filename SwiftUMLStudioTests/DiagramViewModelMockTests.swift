@@ -5,6 +5,13 @@
 //  Unit tests for DiagramViewModel using mock diagram generators
 //  to verify generation dispatch, argument forwarding, and format propagation.
 //
+//  The mocks below are `@unchecked Sendable` on purpose. Each is a spy holding
+//  mutable call-recording state, and the protocols they satisfy require
+//  Sendable. The recording is driven from @MainActor tests, so the mutation is
+//  actor-confined in practice — synchronising it would add a lock to every
+//  assertion for no behaviour the tests can observe. Unlike the production
+//  types, these never cross an isolation boundary.
+//
 
 import Foundation
 import SwiftData

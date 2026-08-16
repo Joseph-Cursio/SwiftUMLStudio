@@ -1,6 +1,14 @@
 import Foundation
 
 /// Swift type representing a diagram script (PlantUML or Mermaid)
+///
+/// - Concurrency safety: `@unchecked` is load-bearing here, unlike on the
+///   generators. The `context` property is a `DiagramContext`, a mutable
+///   *class* whose storage includes a dictionary keyed by `SyntaxStructure`.
+///   The value is built to completion on one thread and then only read, which
+///   is the same contract `SyntaxStructure` documents. Dropping `@unchecked`
+///   requires making `DiagramContext` a value type or actor-isolating it —
+///   a refactor, not an annotation change.
 public struct DiagramScript: @unchecked Sendable {
     /// Textual representation of the script
     public private(set) var text: String = ""

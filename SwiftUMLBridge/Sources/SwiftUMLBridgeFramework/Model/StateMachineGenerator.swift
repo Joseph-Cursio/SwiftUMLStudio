@@ -1,7 +1,7 @@
 import Foundation
 
 /// Generates state machine diagram scripts from Swift source files.
-public struct StateMachineGenerator: StateMachineGenerating, @unchecked Sendable {
+public struct StateMachineGenerator: StateMachineGenerating, Sendable {
     public init() {}
 
     /// Find all candidate state machines across the given source files.

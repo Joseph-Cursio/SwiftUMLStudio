@@ -7,7 +7,7 @@ import Foundation
 /// other paths fall through the SwiftData `@Model` path. Both contribute to
 /// the same merged `ERModel` so a project that mixes the two stacks renders
 /// a single diagram. GRDB schemas are deferred to a follow-up commit.
-public struct ERDiagramGenerator: ERDiagramGenerating, @unchecked Sendable {
+public struct ERDiagramGenerator: ERDiagramGenerating, Sendable {
     public init() {}
 
     public func generateScript(
