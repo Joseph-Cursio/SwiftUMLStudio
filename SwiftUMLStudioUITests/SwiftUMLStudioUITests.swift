@@ -30,16 +30,16 @@ final class SwiftUMLStudioUITests: XCTestCase {
     func testSequenceDiagramModeShowsEntryPointControls() throws {
         // Switch to Sequence Diagram mode (mode picker is a sidebar Outline on macOS)
         let modePicker = app.outlines["modePicker"]
-        XCTAssertTrue(modePicker.waitForExistence(timeout: 3), "Mode picker not found")
+        XCTAssertTrue(modePicker.waitForExistence(timeout: UITestTimeout.element), "Mode picker not found")
         modePicker.staticTexts["Sequence Diagram"].click()
 
         // Entry-point text field must appear in the inspector strip
         let entryField = app.textFields["entryPointField"]
-        XCTAssertTrue(entryField.waitForExistence(timeout: 2), "Entry point text field not found")
+        XCTAssertTrue(entryField.waitForExistence(timeout: UITestTimeout.element), "Entry point text field not found")
 
         // Right pane must show the entry-point prompt (entryPoint is empty at launch)
         XCTAssertTrue(
-            app.staticTexts["entryPointPrompt"].waitForExistence(timeout: 2),
+            app.staticTexts["entryPointPrompt"].waitForExistence(timeout: UITestTimeout.element),
             "Entry point prompt not shown in right pane"
         )
     }
@@ -51,13 +51,13 @@ final class SwiftUMLStudioUITests: XCTestCase {
         app.outlines["modePicker"].staticTexts["Sequence Diagram"].click()
 
         let entryField = app.textFields["entryPointField"]
-        XCTAssertTrue(entryField.waitForExistence(timeout: 3), "Entry point text field not found")
+        XCTAssertTrue(entryField.waitForExistence(timeout: UITestTimeout.element), "Entry point text field not found")
         entryField.click()
         entryField.typeText("MyClass.myMethod")
 
         // Once entry point is non-empty the right pane switches to the file-selection prompt
         XCTAssertTrue(
-            app.staticTexts["fileSelectionPrompt"].waitForExistence(timeout: 2),
+            app.staticTexts["fileSelectionPrompt"].waitForExistence(timeout: UITestTimeout.element),
             "File selection prompt not shown after entry point typed"
         )
     }
@@ -68,12 +68,12 @@ final class SwiftUMLStudioUITests: XCTestCase {
     func testDependencyGraphModeShowsDepsModeControls() throws {
         // Switch to Dependency Graph mode
         let modePicker = app.outlines["modePicker"]
-        XCTAssertTrue(modePicker.waitForExistence(timeout: 3), "Mode picker not found")
+        XCTAssertTrue(modePicker.waitForExistence(timeout: UITestTimeout.element), "Mode picker not found")
         modePicker.staticTexts["Dependency Graph"].click()
 
         // Deps Mode picker must appear (segmented RadioGroup)
         XCTAssertTrue(
-            app.radioGroups["depsModeControl"].waitForExistence(timeout: 2),
+            app.radioGroups["depsModeControl"].waitForExistence(timeout: UITestTimeout.element),
             "Deps mode control not found"
         )
     }
@@ -83,7 +83,7 @@ final class SwiftUMLStudioUITests: XCTestCase {
     @MainActor
     func testModeControlsAreExclusiveToTheirMode() throws {
         let modePicker = app.outlines["modePicker"]
-        XCTAssertTrue(modePicker.waitForExistence(timeout: 3))
+        XCTAssertTrue(modePicker.waitForExistence(timeout: UITestTimeout.element))
 
         // Sequence diagram controls should not be visible in Class Diagram mode (default)
         XCTAssertFalse(
@@ -97,7 +97,7 @@ final class SwiftUMLStudioUITests: XCTestCase {
 
         // Switch to Sequence Diagram — entry point controls appear, deps controls absent
         modePicker.staticTexts["Sequence Diagram"].click()
-        XCTAssertTrue(app.textFields["entryPointField"].waitForExistence(timeout: 2))
+        XCTAssertTrue(app.textFields["entryPointField"].waitForExistence(timeout: UITestTimeout.element))
         XCTAssertFalse(app.radioGroups["depsModeControl"].exists)
 
         // Switch to Dependency Graph — entry point controls gone, deps controls appear
@@ -106,18 +106,21 @@ final class SwiftUMLStudioUITests: XCTestCase {
             app.textFields["entryPointField"].exists,
             "Entry point field should not exist in Dependency Graph mode"
         )
-        XCTAssertTrue(app.radioGroups["depsModeControl"].waitForExistence(timeout: 2))
+        XCTAssertTrue(app.radioGroups["depsModeControl"].waitForExistence(timeout: UITestTimeout.element))
     }
 
     @MainActor
     func testEntryPointMenuAppearsInSequenceMode() throws {
         let modePicker = app.outlines["modePicker"]
-        XCTAssertTrue(modePicker.waitForExistence(timeout: 3), "Mode picker not found")
+        XCTAssertTrue(modePicker.waitForExistence(timeout: UITestTimeout.element), "Mode picker not found")
         modePicker.staticTexts["Sequence Diagram"].click()
 
         // Verify the entry point menu chevron is present
         let menu = app.menuButtons["entryPointMenu"]
-        XCTAssertTrue(menu.waitForExistence(timeout: 2), "Entry point menu not found in Sequence Diagram mode")
+        XCTAssertTrue(
+            menu.waitForExistence(timeout: UITestTimeout.element),
+            "Entry point menu not found in Sequence Diagram mode"
+        )
     }
 
     @MainActor

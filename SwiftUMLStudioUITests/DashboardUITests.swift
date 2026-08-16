@@ -20,7 +20,7 @@ final class DashboardUITests: XCTestCase {
     @MainActor
     func testFileBrowserSectionExists() throws {
         XCTAssertTrue(
-            app.radioButtons["Files"].waitForExistence(timeout: 3),
+            app.radioButtons["Files"].waitForExistence(timeout: UITestTimeout.element),
             "Files tab should exist in sidebar"
         )
     }
@@ -28,7 +28,7 @@ final class DashboardUITests: XCTestCase {
     @MainActor
     func testHistorySectionExists() throws {
         XCTAssertTrue(
-            app.radioButtons["History"].waitForExistence(timeout: 3),
+            app.radioButtons["History"].waitForExistence(timeout: UITestTimeout.element),
             "History tab should exist in sidebar"
         )
     }
@@ -41,36 +41,45 @@ final class DashboardUITests: XCTestCase {
         // the toolbar wrapper and the inner button, so a label-based query
         // matches multiple elements. .firstMatch picks one deterministically.
         let saveButton = app.buttons["toolbarSaveButton"].firstMatch
-        XCTAssertTrue(saveButton.waitForExistence(timeout: 3), "Save button not found")
+        XCTAssertTrue(saveButton.waitForExistence(timeout: UITestTimeout.element), "Save button not found")
         XCTAssertFalse(saveButton.isEnabled, "Save should be disabled when no diagram is generated")
     }
 
     @MainActor
     func testOpenButtonExists() throws {
         let openButton = app.buttons["toolbarOpenButton"].firstMatch
-        XCTAssertTrue(openButton.waitForExistence(timeout: 3), "Open button not found")
+        XCTAssertTrue(openButton.waitForExistence(timeout: UITestTimeout.element), "Open button not found")
         XCTAssertTrue(openButton.isEnabled, "Open button should be enabled")
     }
 
     @MainActor
     func testFormatPickerDefaultsToPlantUML() throws {
-        let formatPicker = app.radioGroups["Format"]
-        guard formatPicker.waitForExistence(timeout: 3) else { return }
+        // A PopUpButton identified as `formatPicker` — not a RadioGroup labelled
+        // "Format", which matched nothing and let the old `guard … else { return }`
+        // pass this test without asserting.
+        let formatPicker = app.popUpButtons["formatPicker"]
         XCTAssertTrue(
-            formatPicker.radioButtons["PlantUML"].isSelected,
-            "PlantUML should be selected by default"
+            formatPicker.waitForExistence(timeout: UITestTimeout.element),
+            "Format picker should exist in Developer mode"
+        )
+        // Prefix, not equality: M14 relabelled the option "PlantUML (planttext.com)"
+        // to disclose the third-party upload at the point of choice.
+        let selected = formatPicker.value as? String ?? ""
+        XCTAssertTrue(
+            selected.hasPrefix("PlantUML"),
+            "PlantUML should be selected by default, got '\(selected)'"
         )
     }
 
     @MainActor
     func testDepthStepperAppearsInSequenceMode() throws {
         let modePicker = app.outlines["modePicker"]
-        XCTAssertTrue(modePicker.waitForExistence(timeout: 3))
+        XCTAssertTrue(modePicker.waitForExistence(timeout: UITestTimeout.element))
         modePicker.staticTexts["Sequence Diagram"].click()
 
         let stepper = app.steppers["depthStepper"]
         XCTAssertTrue(
-            stepper.waitForExistence(timeout: 2),
+            stepper.waitForExistence(timeout: UITestTimeout.element),
             "Depth stepper should appear in Sequence Diagram mode"
         )
     }
@@ -78,7 +87,7 @@ final class DashboardUITests: XCTestCase {
     @MainActor
     func testNoSourceSelectedLabelOnLaunch() throws {
         XCTAssertTrue(
-            app.staticTexts["No source selected"].waitForExistence(timeout: 3),
+            app.staticTexts["No source selected"].waitForExistence(timeout: UITestTimeout.element),
             "Path summary should show 'No source selected' on launch"
         )
     }
@@ -86,7 +95,7 @@ final class DashboardUITests: XCTestCase {
     @MainActor
     func testModePickerExists() throws {
         let modePicker = app.outlines["modePicker"]
-        XCTAssertTrue(modePicker.waitForExistence(timeout: 3), "Mode picker should exist")
+        XCTAssertTrue(modePicker.waitForExistence(timeout: UITestTimeout.element), "Mode picker should exist")
         XCTAssertTrue(
             modePicker.outlineRows.count >= 3,
             "Mode picker should have at least 3 options"

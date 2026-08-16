@@ -30,3 +30,7 @@ Pods/
 *.ipa
 *.dSYM.zip
 *.dSYM
+
+# Code-coverage artifacts dropped by instrumented test runs
+*.profraw
+*.profdata

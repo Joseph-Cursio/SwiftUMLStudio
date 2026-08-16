@@ -40,17 +40,23 @@ final class NativeCanvasCoverageUITests: XCTestCase {
     /// native `Canvas`-based renderer instead of the web view.
     private func switchFormatToSVG() {
         let formatPicker = app.popUpButtons["formatPicker"]
-        XCTAssertTrue(formatPicker.waitForExistence(timeout: 3), "Format picker not found in toolbar")
+        XCTAssertTrue(
+            formatPicker.waitForExistence(timeout: UITestTimeout.element),
+            "Format picker not found in toolbar"
+        )
         formatPicker.click()
         let svgOption = app.menuItems["SVG"]
-        XCTAssertTrue(svgOption.waitForExistence(timeout: 2), "SVG menu item not found")
+        XCTAssertTrue(svgOption.waitForExistence(timeout: UITestTimeout.element), "SVG menu item not found")
         svgOption.click()
     }
 
     /// Type an entry point into the given accessibility-identified text field.
     private func typeEntryPoint(_ entryPoint: String, intoField identifier: String) {
         let field = app.textFields[identifier]
-        XCTAssertTrue(field.waitForExistence(timeout: 3), "Entry point field \(identifier) not found")
+        XCTAssertTrue(
+            field.waitForExistence(timeout: UITestTimeout.element),
+            "Entry point field \(identifier) not found"
+        )
         field.click()
         field.typeText(entryPoint)
     }
@@ -68,7 +74,7 @@ final class NativeCanvasCoverageUITests: XCTestCase {
         let canvas = app.descendants(matching: .any)
             .matching(identifier: "nativeDiagramCanvas").firstMatch
         XCTAssertTrue(
-            canvas.waitForExistence(timeout: 15),
+            canvas.waitForExistence(timeout: UITestTimeout.element),
             "Class diagram native canvas should render when format is SVG"
         )
     }
@@ -82,7 +88,7 @@ final class NativeCanvasCoverageUITests: XCTestCase {
         sleep(2)
 
         let modePicker = app.outlines["modePicker"]
-        XCTAssertTrue(modePicker.waitForExistence(timeout: 3))
+        XCTAssertTrue(modePicker.waitForExistence(timeout: UITestTimeout.element))
         modePicker.staticTexts["Sequence Diagram"].click()
 
         typeEntryPoint("AuthService.login", intoField: "entryPointField")
@@ -91,7 +97,7 @@ final class NativeCanvasCoverageUITests: XCTestCase {
         let canvas = app.descendants(matching: .any)
             .matching(identifier: "nativeSequenceCanvas").firstMatch
         XCTAssertTrue(
-            canvas.waitForExistence(timeout: 15),
+            canvas.waitForExistence(timeout: UITestTimeout.element),
             "Sequence diagram native canvas should render when format is SVG"
         )
     }
@@ -105,7 +111,7 @@ final class NativeCanvasCoverageUITests: XCTestCase {
         sleep(2)
 
         let modePicker = app.outlines["modePicker"]
-        XCTAssertTrue(modePicker.waitForExistence(timeout: 3))
+        XCTAssertTrue(modePicker.waitForExistence(timeout: UITestTimeout.element))
         modePicker.staticTexts["Activity Diagram"].click()
 
         typeEntryPoint("AuthService.login", intoField: "activityEntryPointField")
@@ -114,7 +120,7 @@ final class NativeCanvasCoverageUITests: XCTestCase {
         let canvas = app.descendants(matching: .any)
             .matching(identifier: "nativeActivityCanvas").firstMatch
         XCTAssertTrue(
-            canvas.waitForExistence(timeout: 15),
+            canvas.waitForExistence(timeout: UITestTimeout.element),
             "Activity diagram native canvas should render when format is SVG"
         )
     }

@@ -19,15 +19,15 @@ final class AppFlowTests: XCTestCase {
 
         // Mode picker
         let modePicker = app.outlines["modePicker"]
-        XCTAssertTrue(modePicker.waitForExistence(timeout: 3))
+        XCTAssertTrue(modePicker.waitForExistence(timeout: UITestTimeout.element))
 
         // Switch to Sequence — entry-point field should appear
         modePicker.staticTexts["Sequence Diagram"].click()
-        XCTAssertTrue(app.textFields["entryPointField"].waitForExistence(timeout: 2))
+        XCTAssertTrue(app.textFields["entryPointField"].waitForExistence(timeout: UITestTimeout.element))
 
         // Switch to Dependency — deps-mode control should appear
         modePicker.staticTexts["Dependency Graph"].click()
-        XCTAssertTrue(app.radioGroups["depsModeControl"].waitForExistence(timeout: 2))
+        XCTAssertTrue(app.radioGroups["depsModeControl"].waitForExistence(timeout: UITestTimeout.element))
     }
 
     @MainActor
@@ -37,7 +37,7 @@ final class AppFlowTests: XCTestCase {
         app.launch()
 
         let historyTab = app.radioButtons["History"]
-        XCTAssertTrue(historyTab.waitForExistence(timeout: 3))
+        XCTAssertTrue(historyTab.waitForExistence(timeout: UITestTimeout.element))
         historyTab.click()
 
         // If there are history items, verify interaction
