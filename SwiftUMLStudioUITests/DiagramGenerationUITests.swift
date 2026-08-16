@@ -46,12 +46,12 @@ final class DiagramGenerationUITests: XCTestCase {
     func testFixturePopulatesFileBrowser() throws {
         // Wait for the Files tab to exist (sidebar segmented control)
         let filesTab = app.radioButtons["Files"]
-        XCTAssertTrue(filesTab.waitForExistence(timeout: 3))
+        XCTAssertTrue(filesTab.waitForExistence(timeout: UITestTimeout.element))
 
         // Should see directory names from the fixture
         let modelsFolder = app.staticTexts["Models"]
         XCTAssertTrue(
-            modelsFolder.waitForExistence(timeout: 5),
+            modelsFolder.waitForExistence(timeout: UITestTimeout.element),
             "File browser should show Models directory from fixture"
         )
     }
@@ -62,7 +62,7 @@ final class DiagramGenerationUITests: XCTestCase {
     func testClassDiagramGeneratesPreview() throws {
         // Switch to Preview tab
         let detailTabs = app.groups["detailTabs"]
-        if detailTabs.waitForExistence(timeout: 3) {
+        if detailTabs.waitForExistence(timeout: UITestTimeout.element) {
             let previewTab = detailTabs.buttons["Preview"]
             if previewTab.exists { previewTab.click() }
         }
@@ -70,7 +70,7 @@ final class DiagramGenerationUITests: XCTestCase {
         // The web view should appear after generation completes
         let webView = app.webViews.firstMatch
         XCTAssertTrue(
-            webView.waitForExistence(timeout: 15),
+            webView.waitForExistence(timeout: UITestTimeout.element),
             "Diagram preview web view should appear after class diagram generation"
         )
     }
@@ -79,13 +79,13 @@ final class DiagramGenerationUITests: XCTestCase {
     func testMarkupTabShowsContent() throws {
         // Wait for diagram to generate
         let webView = app.webViews.firstMatch
-        _ = webView.waitForExistence(timeout: 10)
+        _ = webView.waitForExistence(timeout: UITestTimeout.element)
 
         // Find and click the Markup tab
         let detailTabs = app.groups["detailTabs"]
-        if detailTabs.waitForExistence(timeout: 3) {
+        if detailTabs.waitForExistence(timeout: UITestTimeout.element) {
             let markupTab = detailTabs.buttons["Markup"]
-            if markupTab.waitForExistence(timeout: 3) {
+            if markupTab.waitForExistence(timeout: UITestTimeout.element) {
                 markupTab.click()
             }
         }
@@ -93,7 +93,7 @@ final class DiagramGenerationUITests: XCTestCase {
         // The text view should contain diagram markup
         let textView = app.textViews.firstMatch
         XCTAssertTrue(
-            textView.waitForExistence(timeout: 5),
+            textView.waitForExistence(timeout: UITestTimeout.element),
             "Markup tab should show a text view with diagram markup"
         )
     }
@@ -104,20 +104,20 @@ final class DiagramGenerationUITests: XCTestCase {
     func testSwitchToNomnomlGeneratesPreview() throws {
         // Wait for initial generation to complete
         let webView = app.webViews.firstMatch
-        _ = webView.waitForExistence(timeout: 10)
+        _ = webView.waitForExistence(timeout: UITestTimeout.element)
 
         // Find the format picker (menu style)
         let formatPicker = app.popUpButtons["Format"]
-        guard formatPicker.waitForExistence(timeout: 3) else { return }
+        guard formatPicker.waitForExistence(timeout: UITestTimeout.element) else { return }
         formatPicker.click()
 
         let nomnomlOption = app.menuItems["Nomnoml"]
-        guard nomnomlOption.waitForExistence(timeout: 2) else { return }
+        guard nomnomlOption.waitForExistence(timeout: UITestTimeout.element) else { return }
         nomnomlOption.click()
 
         // Wait for regeneration — web view should still exist
         XCTAssertTrue(
-            webView.waitForExistence(timeout: 15),
+            webView.waitForExistence(timeout: UITestTimeout.element),
             "Diagram preview should render after switching to Nomnoml format"
         )
     }
