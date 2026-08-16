@@ -217,6 +217,6 @@ struct DependencyGraphPackageParityTests {
 
         // Source type has a module stereotype; parent (system `Error`) does not.
         #expect(script.text.contains("class \"MyError\" as MyError <<Core>>"))
-        #expect(!script.text.contains("class \"Error\" as Error <<"))
+        #expect(script.text.contains("class \"Error\" as Error <<") == false)
     }
 }

@@ -131,7 +131,7 @@ struct ComponentSVGRendererSVGTests {
         let svg = ComponentSVGRenderer.render(model).svg
         #expect(svg.contains("A&lt;B&gt;C"))
         #expect(svg.contains("Foo&amp;Bar"))
-        #expect(!svg.contains("A<B>C"))
+        #expect(svg.contains("A<B>C") == false)
     }
 }
 

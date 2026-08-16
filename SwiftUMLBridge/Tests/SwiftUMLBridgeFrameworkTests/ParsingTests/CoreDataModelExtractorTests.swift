@@ -123,7 +123,7 @@ struct ERDiagramGeneratorCoreDataDispatchTests {
     func dispatchToCoreData() throws {
         let path = bundlePath("Bookstore.xcdatamodeld")
         let script = ERDiagramGenerator().generateScript(for: [path], with: .default)
-        #expect(!script.text.isEmpty)
+        #expect(script.text.isEmpty == false)
         #expect(script.text.contains("Author"))
         #expect(script.text.contains("Book"))
     }
