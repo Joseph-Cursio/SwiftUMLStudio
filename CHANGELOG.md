@@ -10,6 +10,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added — Bridge
 
+- **`SwiftUMLBridgeCLITests` — a test target for the `swiftumlbridge`
+  executable.** The CLI previously had no tests and no target, so it sat
+  outside every coverage measurement: the Bridge's reported 94.8% was the
+  framework alone, and counting the executable the package was nearer 88%.
+  The CLI is what the Homebrew formula builds and what users actually run,
+  and its argument surface — flag precedence, `--entry` validation, output
+  routing — was entirely unverified. Now covered in two layers: parse-only
+  tests over the argument surface (including that a three-part
+  `MyModule.Loader.load` and a dangling-dot `.load` are both *refused*
+  rather than guessed at), then end-to-end `run()` calls per subcommand
+  over the fixtures, taking the CLI target from 23.8% to 86.1%. Every case
+  passes `--output consoleOnly`, since the default presenter opens a
+  browser window. A `LinkageSmokeTests` fails first and unambiguously if
+  testing an `@main` executable target from SwiftPM ever regresses into a
+  link error.
+
 - **M15: DocC documentation catalog for `SwiftUMLBridgeFramework`.** A
   `SwiftUMLBridgeFramework.docc` catalog gives the framework a curated
   landing page (Overview plus topic groups for the seven generators,
@@ -33,6 +49,59 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added — Studio
 
+- **M14: App Store distribution build (`AppStoreRelease` + App Sandbox).**
+  A third build configuration alongside Debug/Release, defining an
+  `APP_STORE_BUILD` compilation condition, so the sandboxed App Store
+  build and the unsandboxed direct-distribution build ship from one
+  codebase. Under the flag:
+  - Every subprocess / `dlopen` path is gated off. A new
+    `BridgeConfiguration.skipSourceKitTypenameSupplement` (a *runtime*
+    toggle, since the SwiftPM package can't see the host project's
+    compilation conditions) short-circuits `buildTypenameMap`, avoiding
+    a `dlopen` of `sourcekitdInProc` from the system toolchain —
+    SwiftSyntax-only parsing still produces every diagram, only
+    inferred-type resolution is lost. `Open Package…` and
+    `loadPackage` are likewise disabled rather than shelling out to
+    `swift package describe`.
+  - Entitlements: `app-sandbox`, `files.user-selected.read-write`
+    (NSSavePanel exports write via `data.write(to:)`, which the
+    read-only grant would silently fail), and `network.client` for the
+    PlantUML WebView fallback. Mermaid/Nomnoml ship their JS bundled and
+    need no network.
+  - **Security-scoped bookmarks** on `DiagramEntity` and
+    `ProjectSnapshot` (additive — SwiftData lightweight migration, no
+    schema bump). Raw path strings carry no read access under sandbox,
+    so restoring a saved diagram in a later launch previously left the
+    view model with unreadable paths and silently produced empty
+    diagrams. New `SecurityScopedURL` helpers make, resolve, and
+    regenerate-when-stale the bookmarks; unresolvable entries are
+    dropped under sandbox with a user-visible notice instead of falling
+    back to an unreadable path.
+- **Studio surfaces `errorMessage` / `packageLoadError` / `restoreNotice`
+  as alerts.** All three view-model fields were set but never displayed,
+  so a failed generation, an unopenable Swift Package, and a sandbox
+  restore that dropped files each produced no feedback at all.
+  `restoreNotice` is a dedicated field rather than a reuse of
+  `errorMessage`, because `onChange(of: selectedPaths)` fires a
+  `generate()` after restore and `generate()` clears `errorMessage` at
+  the start of every run — the warning was being wiped before it could
+  display.
+- **Explorer mode suggests all seven diagram types.** Explorer navigation
+  is entirely suggestion-driven (the mode picker is hidden by design), so
+  a diagram type with no card is unreachable there. `SuggestionEngine`
+  covered only class, sequence, deps, and state machines, leaving ER,
+  Component, and Activity invisible to the mode most users start in. ER
+  is gated on the project importing SwiftData / Core Data / GRDB /
+  SQLite, detected from the already-computed `moduleImports` rather than
+  by running the ER extractor. Component is gated on `moduleBreakdown`
+  holding two or more targets — exactly the condition under which the
+  diagram is more than a single box. Activity offers one card for the top
+  entry point rather than matching sequence's `prefix(3)`, which would
+  put six cards on the same handful of methods and crowd out the rest of
+  the grid; its copy is deliberately distinct from sequence's ("Step
+  through Foo.bar" / the branches and loops inside a method, versus
+  "Trace Foo.bar" / which types it calls), pinned by test so the two
+  don't drift into reading as duplicates.
 - **M12 follow-up: Dependency graph picks up SPM module info when a
   package is loaded.** `DiagramViewModel.generateDependencyGraph()` now
   routes through `DependencyGraphGenerator.generateScript(forPackage:…)`
@@ -118,6 +187,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed — Studio
 
+- **M14: PlantUML rendering now requires one-time consent, and is no
+  longer the sandbox default.** PlantUML previews render via
+  `planttext.com` — a third-party HTTPS upload of the user's diagram
+  source — which was previously undisclosed: the picker listed "PlantUML"
+  alongside the local formats and the first preview silently pushed
+  source off-device. Three changes: the App Store build defaults to
+  Mermaid so a new user makes no network request without opting in
+  (direct builds keep PlantUML as the default for backward
+  compatibility); the first selection of `.plantuml` raises a consent
+  alert disclosing the upload, with Continue persisting the grant and
+  Cancel reverting the format; and the picker now reads
+  "PlantUML (planttext.com)" so the network use is visible at the point
+  of choice. Required for App Store Review privacy disclosure — the
+  nutrition label and privacy policy remain outstanding.
+- **M14: Mermaid / Nomnoml HTML builders no longer carry a CDN
+  fallback.** `mermaid.min.js`, `graphre.js`, and `nomnoml.js` are always
+  bundled into the `.app`, so the `cdn.jsdelivr.net` fallback never fired
+  in production — but its presence meant a grep over the binary still
+  showed third-party HTTPS references, and the "Mermaid and Nomnoml
+  render locally" privacy claim had a silent escape hatch. Each fallback
+  is replaced with an inline HTML comment marker, visible in DevTools if
+  a build is ever misconfigured but incapable of producing a request.
+  Tests now assert the invariant directly: no `https://` reference may
+  appear in the emitted HTML regardless of bundle state.
 - **Internal: native-canvas and view duplication cleanup (no behavior
   change; Studio's 439 unit and 20 UI tests still pass).** Reduced the
   app from 19 copy-paste blocks to 3 (the remainder the class/sequence
@@ -138,6 +231,58 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
     UI-test selectors are unchanged.
   - `DiagramViewModel` gains a `resolveEntryPoint()` helper shared by the
     activity and sequence generators.
+
+### Fixed — Bridge
+
+- **`component --package` no longer hangs on SwiftPM's build lock.**
+  SwiftPM locks its scratch directory for the length of a command, and
+  `SPMPackageReader.describe(at:)` ran `swift package describe` against
+  the package's own `.build`. Describing a package that another SwiftPM
+  process was already using — most obviously the one you are building or
+  testing from — blocked on that lock forever, with no output and no
+  error. The command now runs with `--scratch-path` pointing at a private
+  temporary directory, so there is no shared lock to queue behind;
+  dependency resolution still reads the shared package cache, so this
+  costs no re-cloning (0.32s either way). Chosen over detecting the
+  condition, since a pre-flight lock check would race and sniffing
+  SwiftPM's "waiting for lock" message would break on any rewording. A
+  300s watchdog now also kills the subprocess and throws
+  `ReadError.timedOut`, bounding the deadlocks not yet found — set far
+  above any honest run, because a first-time resolve over a slow network
+  is legitimately slow.
+- **`SPMPackageReader.describe(at:)` no longer deadlocks on large
+  `swift package describe` output.** It called `waitUntilExit()` before
+  draining the child's pipes. Once output outgrows the pipe buffer
+  (~64KB on Darwin) the child blocks writing into a full pipe nobody is
+  reading while the parent blocks waiting for a child that cannot
+  proceed — the CLI hangs with no output and no error. SwiftUMLBridge's
+  own describe output is 11.9KB so it never tripped, but a package with a
+  few thousand sources does. Both pipes are now drained *concurrently*
+  before the wait: sequential draining would fix only the first stream,
+  since filling either pipe stalls the child. Regression test generates a
+  2,000-source package (~120KB of output) — it hung for over ten minutes
+  before the fix and returns in about a second after it.
+
+### Fixed — Studio (test infrastructure)
+
+- **ViewInspector quarantine lifted.** Six tests were disabled because
+  ViewInspector 0.10.3 could not read accessibility modifiers on
+  macOS 27 — the OS replaced `AccessibilityProperties`' named members
+  with a generic storage array. The same upstream PR
+  (nalexn/ViewInspector#421, merged 2026-08-09) also fixes a more
+  dangerous break: `GeometryProxy` has no public initializer, so
+  ViewInspector fabricated one by `unsafeBitCast`-ing a fixed-size zeroed
+  struct handling only 48 and 52 bytes; macOS 27 reports 76, and the
+  unguarded fallback *trapped* rather than failed, killing the test
+  process and reporting unrelated suites as failed.
+  `NativeSequenceDiagramView`, `DiagramCanvasContainer`, and
+  `NativeDiagramView` all render a `GeometryReader`, so any traversal was
+  one scheduling change from crashlooping the target. Pinned to the exact
+  upstream revision rather than the branch, since there is still no
+  `0.10.4` tag — swap for a version requirement once it lands. The old
+  compatibility test asserting `MemoryLayout<GeometryProxy>.size` was 48
+  or 52 is replaced by two behavioural preflights, the size-agnostic fix
+  having made the assertion both obsolete and wrong.
 
 ---
 
