@@ -13,7 +13,7 @@ struct SecurityScopedURLTests {
         defer { try? FileManager.default.removeItem(at: directory) }
 
         let bookmark = try #require(SecurityScopedURL.makeBookmark(for: directory))
-        #expect(!bookmark.isEmpty)
+        #expect(bookmark.isEmpty == false)
 
         let resolved = try #require(SecurityScopedURL.resolveURL(from: bookmark))
         // Compare standardized URLs: macOS resolves `/var` to its canonical
@@ -64,7 +64,7 @@ struct SecurityScopedURLTests {
         // `original` — regen typically produces a different blob — but it must
         // not be empty (which would imply makeBookmark failed and we silently
         // accepted a useless value).
-        #expect(!regenerated.isEmpty)
+        #expect(regenerated.isEmpty == false)
         let resolved = try #require(SecurityScopedURL.resolveURL(from: regenerated))
         #expect(resolved.url.standardizedFileURL == directory.standardizedFileURL)
     }

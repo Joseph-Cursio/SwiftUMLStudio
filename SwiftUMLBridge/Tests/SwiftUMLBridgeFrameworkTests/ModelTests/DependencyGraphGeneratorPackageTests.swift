@@ -77,7 +77,7 @@ struct DependencyGraphGeneratorPackageTests {
             mode: .modules
         )
 
-        #expect(!script.text.contains("AppTests"))
+        #expect(script.text.contains("AppTests") == false)
         #expect(script.text.contains("App --> Core : imports"))
     }
 
@@ -95,7 +95,7 @@ struct DependencyGraphGeneratorPackageTests {
 
         #expect(script.text.contains("App --> ArgumentParser : imports"))
         // External target is not a declared component; only App is.
-        #expect(!script.text.contains("component \"ArgumentParser\""))
+        #expect(script.text.contains("component \"ArgumentParser\"") == false)
     }
 
     // MARK: - Types mode
