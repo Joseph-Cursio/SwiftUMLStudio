@@ -8,6 +8,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+---
+
+## [1.1.0] — 2026-08-16
+
+The first release since v1.0.0 (2026-05-11), covering three months of work
+that had accumulated unreleased.
+
+Two themes dominate. **M14** makes Studio distributable through the App
+Store: a sandboxed `AppStoreRelease` configuration, security-scoped
+bookmarks so saved diagrams survive a relaunch, and a consent gate on the
+one feature that sends anything off-device. **M12** finishes multi-module
+SPM support, so `--package` now works across `classdiagram`, `deps` and
+`component`, and Studio draws module grouping boxes to match.
+
+Alongside those: the CLI gained its first test target, Explorer mode
+reached all seven diagram types, two hangs in `component --package` were
+fixed, and the framework is now free of `nonisolated(unsafe)`.
+
 ### Added — Bridge
 
 - **`SwiftUMLBridgeCLITests` — a test target for the `swiftumlbridge`
@@ -264,7 +282,43 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   hardcoded `1.0.0` version strings across the user docs are now marked
   as examples so they don't go stale at the next release.
 
+### Changed — Concurrency
+
+- **Every `nonisolated(unsafe)` is gone.** Two sites, both replaced with a
+  `Mutex` from `Synchronization` (available at the package's macOS 15
+  floor):
+  - `BridgeConfiguration.skipSourceKitTypenameSupplement` was one write
+    at host start-up racing an unknown number of concurrent reads from
+    whichever task was parsing. It held only by the convention that the
+    write lands first, which nothing enforced. Setting it is now
+    memory-safe at any point, though it remains a start-up decision by
+    intent — flipping it mid-generation leaves some files parsed with the
+    typename supplement and some without.
+  - `SubscriptionManager.transactionListener` needed the opt-out because
+    its two accesses straddle the type's isolation: `init` writes on the
+    main actor, `nonisolated deinit` reads to cancel. Keeping the deinit
+    nonisolated preserves immediate deallocation instead of hopping to
+    the actor, so the property carries its own synchronisation.
+
+- **`@unchecked Sendable` audited: 8 of 14 removed.** Six generators
+  (Activity, Component, DependencyGraph, ER, Sequence, StateMachine) have
+  no stored properties, so the attribute suppressed a check with nothing
+  to check; they now declare plain `Sendable`. `ClassDiagramGenerator`
+  joined them once `FileCollector`, also stateless, declared the
+  conformance it always satisfied. The six that remain are load-bearing
+  and now carry the reason in a comment: `DiagramScript` holds a mutable
+  `DiagramContext` class, `SyntaxStructure` already documented itself,
+  and four test spies never cross an isolation boundary.
+
 ### Fixed — Bridge
+
+- **A data race in `SPMPackageReader.describe(at:)`'s timeout flag.** The
+  private `UncheckedBox` it used documented a `DispatchGroup` as ordering
+  its accesses. That holds for the stderr drain and not for `timedOut`:
+  the watchdog is an `asyncAfter` work item outside the group, firing at
+  an arbitrary moment, and `watchdog.cancel()` in the `defer` runs after
+  the read and cannot stop a block already executing. Both call sites are
+  now a `Mutex` and the box is gone.
 
 - **`component --package` no longer hangs on SwiftPM's build lock.**
   SwiftPM locks its scratch directory for the length of a command, and
