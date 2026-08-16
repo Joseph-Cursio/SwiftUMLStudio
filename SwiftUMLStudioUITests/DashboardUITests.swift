@@ -54,11 +54,20 @@ final class DashboardUITests: XCTestCase {
 
     @MainActor
     func testFormatPickerDefaultsToPlantUML() throws {
-        let formatPicker = app.radioGroups["Format"]
-        guard formatPicker.waitForExistence(timeout: UITestTimeout.element) else { return }
+        // A PopUpButton identified as `formatPicker` — not a RadioGroup labelled
+        // "Format", which matched nothing and let the old `guard … else { return }`
+        // pass this test without asserting.
+        let formatPicker = app.popUpButtons["formatPicker"]
         XCTAssertTrue(
-            formatPicker.radioButtons["PlantUML"].isSelected,
-            "PlantUML should be selected by default"
+            formatPicker.waitForExistence(timeout: UITestTimeout.element),
+            "Format picker should exist in Developer mode"
+        )
+        // Prefix, not equality: M14 relabelled the option "PlantUML (planttext.com)"
+        // to disclose the third-party upload at the point of choice.
+        let selected = formatPicker.value as? String ?? ""
+        XCTAssertTrue(
+            selected.hasPrefix("PlantUML"),
+            "PlantUML should be selected by default, got '\(selected)'"
         )
     }
 

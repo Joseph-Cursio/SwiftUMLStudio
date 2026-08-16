@@ -61,11 +61,12 @@ final class DiagramGenerationUITests: XCTestCase {
     @MainActor
     func testClassDiagramGeneratesPreview() throws {
         // Switch to Preview tab
-        let detailTabs = app.groups["detailTabs"]
-        if detailTabs.waitForExistence(timeout: UITestTimeout.element) {
-            let previewTab = detailTabs.buttons["Preview"]
-            if previewTab.exists { previewTab.click() }
-        }
+        let detailTabs = app.tabGroups["detailTabs"]
+        XCTAssertTrue(
+            detailTabs.waitForExistence(timeout: UITestTimeout.element),
+            "Detail tabs should exist in Developer mode"
+        )
+        detailTabs.tabs["Preview"].click()
 
         // The web view should appear after generation completes
         let webView = app.webViews.firstMatch
@@ -82,13 +83,17 @@ final class DiagramGenerationUITests: XCTestCase {
         _ = webView.waitForExistence(timeout: UITestTimeout.element)
 
         // Find and click the Markup tab
-        let detailTabs = app.groups["detailTabs"]
-        if detailTabs.waitForExistence(timeout: UITestTimeout.element) {
-            let markupTab = detailTabs.buttons["Markup"]
-            if markupTab.waitForExistence(timeout: UITestTimeout.element) {
-                markupTab.click()
-            }
-        }
+        let detailTabs = app.tabGroups["detailTabs"]
+        XCTAssertTrue(
+            detailTabs.waitForExistence(timeout: UITestTimeout.element),
+            "Detail tabs should exist in Developer mode"
+        )
+        let markupTab = detailTabs.tabs["Markup"]
+        XCTAssertTrue(
+            markupTab.waitForExistence(timeout: UITestTimeout.element),
+            "Markup tab should exist"
+        )
+        markupTab.click()
 
         // The text view should contain diagram markup
         let textView = app.textViews.firstMatch
@@ -107,12 +112,18 @@ final class DiagramGenerationUITests: XCTestCase {
         _ = webView.waitForExistence(timeout: UITestTimeout.element)
 
         // Find the format picker (menu style)
-        let formatPicker = app.popUpButtons["Format"]
-        guard formatPicker.waitForExistence(timeout: UITestTimeout.element) else { return }
+        let formatPicker = app.popUpButtons["formatPicker"]
+        XCTAssertTrue(
+            formatPicker.waitForExistence(timeout: UITestTimeout.element),
+            "Format picker should exist in Developer mode"
+        )
         formatPicker.click()
 
         let nomnomlOption = app.menuItems["Nomnoml"]
-        guard nomnomlOption.waitForExistence(timeout: UITestTimeout.element) else { return }
+        XCTAssertTrue(
+            nomnomlOption.waitForExistence(timeout: UITestTimeout.element),
+            "Nomnoml should be offered in the format menu"
+        )
         nomnomlOption.click()
 
         // Wait for regeneration — web view should still exist
