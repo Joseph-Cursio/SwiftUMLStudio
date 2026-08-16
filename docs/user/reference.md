@@ -15,17 +15,10 @@ Complete reference for all CLI options, YAML configuration fields, element kinds
    - [state](#state)
    - [er](#er)
    - [component](#component)
-2. [Configuration File Schema](#configuration-file-schema)
-   - [files](#files)
-   - [elements](#elements)
-   - [hideShowCommands](#hideshowcommands)
-   - [skinparamCommands](#skinparamcommands)
-   - [includeRemoteURL](#includeremoteurl)
-   - [theme](#theme)
-   - [relationships](#relationships)
-   - [stereotypes](#stereotypes)
-   - [texts](#texts)
-   - [format](#format)
+2. [Configuration File Schema](#configuration-file-schema) — one annotated
+   example covering `files`, `elements`, `hideShowCommands`,
+   `skinparamCommands`, `includeRemoteURL`, `theme`, `relationships`,
+   `stereotypes`, `texts`, and `format`
 3. [Diagram Formats](#diagram-formats)
    - [Class Diagrams](#class-diagrams)
    - [Sequence Diagrams](#sequence-diagrams)
@@ -98,7 +91,7 @@ swiftumlbridge [--version] [--help] <subcommand>
 
 | Option | Description |
 |---|---|
-| `--version` | Print the tool version and exit (`1.0.0`) |
+| `--version` | Print the tool version and exit (e.g. `1.0.0`) — the value of `Version.current` |
 | `--help` | Print help and exit |
 
 The default subcommand is `classdiagram`. Running `swiftumlbridge` with no verb is equivalent to `swiftumlbridge classdiagram`.
@@ -2243,7 +2236,7 @@ Subsystem: `name.JosephCursio.SwiftUMLBridge`
 ```swift
 public struct Version {
     public let value: String
-    public static let current: Version   // Version(value: "1.0.0")
+    public static let current: Version   // e.g. Version(value: "1.0.0")
 }
 ```
 

@@ -128,7 +128,7 @@ If you embed the framework programmatically (rather than shelling out to the CLI
 + ClassDiagramGenerator().generateScript(for: paths, with: .default, sdkPath: nil)
 ```
 
-The Swift API itself is now Sendable-clean and prefers async/await for IO-bound surfaces (presenters, package describe). See [user-guide.md § Programmatic Use](user-guide.md#programmatic-use) for the current shape.
+The Swift API itself is now Sendable-clean and prefers async/await for IO-bound surfaces (presenters, package describe). See [reference.md § Framework API](reference.md#framework-api) for the current shape.
 
 ---
 

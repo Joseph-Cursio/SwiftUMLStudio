@@ -104,6 +104,28 @@ The CLI shells out to `swift package describe --type json`. The directory you pa
 - Contain a top-level `Package.swift`.
 - Build successfully in isolation — try `swift build --package-path <dir>` first to surface the real error.
 
+### `component --package` hangs with no output and no error
+
+Fixed in the release after 1.0.0. On 1.0.0 and earlier there are two distinct hangs, both of which look identical from the outside — the command sits there indefinitely and never prints anything.
+
+**Waiting on SwiftPM's build lock.** SwiftPM locks its scratch directory for the length of a command, and the CLI used to run `swift package describe` against the target package's own `.build`. Pointing it at a package another SwiftPM process is already using — most commonly *the package you are currently building or testing from* — meant queueing behind that lock forever.
+
+- **On a current version**: nothing to do. The CLI now runs with `--scratch-path` set to a private temporary directory, so there is no shared lock to contend for. Dependency resolution still reads the shared package cache, so this costs no re-cloning.
+- **On 1.0.0**: stop the other `swift build` / `swift test` first, or copy the package elsewhere and point `--package` at the copy.
+
+**Filling the output pipe.** The CLI waited for the subprocess to exit before reading its output. Once `swift package describe` writes more than the pipe buffer holds (~64KB on macOS), the child blocks writing into a pipe nobody is draining while the parent blocks waiting for a child that cannot proceed. This scales with source-file count — a package with a few thousand sources triggers it; most packages never produce enough output to notice.
+
+- **On a current version**: fixed — both pipes are drained concurrently before the wait.
+- **On 1.0.0**: there is no workaround short of upgrading.
+
+### `component --package` exits with "timed out"
+
+A watchdog kills `swift package describe` after 300 seconds and throws `ReadError.timedOut`, so an unrecoverable hang surfaces as an error rather than a stall. The limit is set far above any honest run, so hitting it means something is genuinely stuck rather than slow. Check, in order:
+
+- Another SwiftPM process holding a lock on the package (see above) — on a current version this should no longer be possible, so it suggests a different lock.
+- A first-time dependency resolve cloning over a slow or unreachable network. Run `swift package resolve --package-path <dir>` once by hand to warm the cache, then retry.
+- A wedged toolchain — `swift package describe --type json --package-path <dir>` run directly will hang the same way if so.
+
 ### `er` exits with "no entities discovered"
 
 The ER extractor recognizes four stacks (see [User Guide → Generating ER Diagrams](user-guide.md#generating-er-diagrams)). If you run `swiftumlbridge er Sources/` and get an empty result, none of the inputs matched a signal:
@@ -205,12 +227,28 @@ Yams is strict about top-level structure. Keys you set must match the schema in 
 
 Component diagrams require a Swift Package context. Use **File → Open Package…** to point Studio at a `Package.swift` directory; the Component row activates once a package is loaded.
 
+If you are running the **App Store build**, the row cannot be activated at all — see the next entry.
+
+### The "Open Package…" button is missing (App Store build)
+
+Loading a Swift Package shells out to `swift package describe`, and the App Sandbox forbids subprocesses, so the App Store build hides the button rather than offering an action that would always fail. Everything downstream of a loaded package is unavailable there too: Component diagrams, the Modules dashboard section, and module-grouped class-diagram layout.
+
+Use the direct download build, or generate package-scoped diagrams with the CLI's `--package` flag. See [Studio User Guide → App Store and Direct Download Builds](studio-user-guide.md#app-store-and-direct-download-builds).
+
+### Types show without annotations, or as written rather than resolved (App Store build)
+
+The App Store build cannot load SourceKit from the system toolchain — another sandbox restriction — so it parses with SwiftSyntax alone. Every diagram still generates in full; what is lost is type *inference*. `let items = [Item]()` shows its declared form rather than resolving to `[Item]`, and members whose types are only inferable from context may appear without an annotation. Explicit type annotations are unaffected, so annotating the declaration is the in-app fix. For full resolution, use the direct download build or the CLI.
+
+### Studio asks for permission before rendering PlantUML
+
+Expected on first use. PlantUML has no local renderer: previewing one uploads the generated markup to planttext.com, a third-party service. Studio discloses this once and remembers your answer — **Continue** grants it, **Cancel** reverts to the previous format. Mermaid, Nomnoml, and SVG render locally and never prompt. See [Studio User Guide → PlantUML Sends Your Diagram Source to a Third Party](studio-user-guide.md#plantuml-sends-your-diagram-source-to-a-third-party).
+
 ### Diagram preview is blank but the source pane shows markup
 
 The preview pipeline differs by format:
 
-- **PlantUML, Nomnoml** — rendered via WebView. Check the in-app log; a missing `nomnoml.js` or `plantuml-encoder.js` indicates a WebKit asset failure (rare).
-- **Mermaid** — rendered via WebView with `mermaid.js` loaded from CDN. Blocked network access produces a blank preview.
+- **PlantUML** — rendered by planttext.com via WebView. This is the only format that needs the network: with no connection, or before you grant the upload consent, the preview stays blank while the Markup tab still shows the source.
+- **Mermaid, Nomnoml** — rendered via WebView from JavaScript bundled into the app. These work offline; there is no CDN fallback, so a blank preview here means a WebKit asset failure (rare) rather than a network problem. Check the in-app log for a missing `mermaid.min.js`, `nomnoml.js`, or `graphre.js`.
 - **Native SVG / Canvas** (class / sequence / activity / dependency / state / component) — rendered locally. A blank preview here means the layout pass found no nodes, which usually indicates an upstream extraction failure rather than a render bug.
 
 ### "Restore Purchases" doesn't reactivate my Pro subscription

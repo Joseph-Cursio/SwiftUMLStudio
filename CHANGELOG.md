@@ -232,6 +232,38 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   - `DiagramViewModel` gains a `resolveEntryPoint()` helper shared by the
     activity and sequence generators.
 
+### Documentation
+
+- **M14 behavior is documented for users.** The sandboxed App Store build's
+  differences had shipped with no user-facing documentation at all. The
+  Studio User Guide gains an **App Store and Direct Download Builds**
+  comparison (default format, `Open Package…` availability, the
+  package-dependent features that fall away with it, and the loss of type
+  *inference* — not of any diagram type — when SourceKit can't be loaded),
+  and Troubleshooting gains matching entries for each symptom.
+- **The planttext.com upload is disclosed in prose, not just in the
+  consent alert.** A new section states plainly that previewing PlantUML
+  sends generated markup — type names, member signatures, relationships,
+  but not function bodies or literals — to a third party, that the other
+  three formats render locally with no network access of any kind, and
+  that the Markup tab is the escape hatch for confidential source.
+  Written for the App Store privacy nutrition label, which remains
+  outstanding.
+- **M11: Xcode Cloud and Fastlane integration guides.** Neither has a
+  plugin or marketplace equivalent, so both invoke the CLI directly —
+  Xcode Cloud through a `ci_scripts/ci_post_clone.sh` custom build script,
+  Fastlane through `sh` in a lane (with a `git diff --exit-code` drift
+  check). Both call out `--output consoleOnly` as mandatory on headless
+  machines, since the default presenter opens a browser. Closes the last
+  open M11 item.
+- **Corrected stale statements.** Troubleshooting claimed Mermaid loads
+  `mermaid.js` from a CDN and that blocked network access yields a blank
+  preview — the CDN fallback was removed and the JS is bundled, so the
+  opposite is now true. The Studio guide's Xcode floor was 16.0; the
+  embedded package's `swift-tools-version: 6.2` makes it 26.0. Four
+  hardcoded `1.0.0` version strings across the user docs are now marked
+  as examples so they don't go stale at the next release.
+
 ### Fixed — Bridge
 
 - **`component --package` no longer hangs on SwiftPM's build lock.**

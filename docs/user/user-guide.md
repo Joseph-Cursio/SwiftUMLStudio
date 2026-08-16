@@ -18,6 +18,9 @@ SwiftUMLBridge is a command-line tool and Swift Package that generates architect
 
 1. [Requirements](#requirements)
 2. [Installation](#installation)
+   - [GitHub Actions](#github-actions)
+   - [Xcode Cloud](#xcode-cloud)
+   - [Fastlane](#fastlane)
 3. [Quick Start](#quick-start)
 4. [Generating Class Diagrams](#generating-class-diagrams)
    - [Specifying Input Paths](#specifying-input-paths)
@@ -112,11 +115,76 @@ jobs:
 
 See the action's README for the input reference, version pinning, and additional examples.
 
+### Xcode Cloud
+
+Xcode Cloud has no marketplace-action equivalent, so the CLI is invoked from a
+[custom build script](https://developer.apple.com/documentation/xcode/writing-custom-build-scripts).
+Add an executable `ci_scripts/ci_post_clone.sh` at your repository root — Xcode
+Cloud runs it after checkout, before the build:
+
+```bash
+#!/bin/sh
+set -e
+
+# Xcode Cloud images have no Homebrew, so build the CLI from source.
+git clone --depth 1 --branch v1.0.0 \
+  https://github.com/Joseph-Cursio/SwiftUMLStudio.git "$CI_DERIVED_DATA_PATH/swiftumlbridge-src"
+swift build -c release \
+  --package-path "$CI_DERIVED_DATA_PATH/swiftumlbridge-src/SwiftUMLBridge" \
+  --product swiftumlbridge
+
+BRIDGE="$CI_DERIVED_DATA_PATH/swiftumlbridge-src/SwiftUMLBridge/.build/release/swiftumlbridge"
+
+# Emit diagrams next to the build artifacts so they're downloadable from the
+# build summary. CI_PRIMARY_REPOSITORY_PATH is your checkout.
+mkdir -p "$CI_DERIVED_DATA_PATH/diagrams"
+"$BRIDGE" classdiagram "$CI_PRIMARY_REPOSITORY_PATH/Sources" \
+  --format mermaid --output consoleOnly \
+  > "$CI_DERIVED_DATA_PATH/diagrams/classes.mmd"
+```
+
+Three things worth knowing:
+
+- **Always pass `--output consoleOnly`.** The default presenter opens a browser
+  window, which on a headless CI machine either hangs or silently does nothing.
+  This applies to every CI system, not just Xcode Cloud.
+- **Pin the version.** `--branch v1.0.0` above; tracking `main` means your build
+  output can change without you changing anything.
+- **The source-build step is slow the first time** (five to ten minutes to
+  compile swift-syntax). Xcode Cloud caches derived data between builds of the
+  same workflow, so subsequent runs reuse it.
+
+Note that Xcode Cloud's macOS image ships a specific Xcode version — check that
+it is 26.0 or newer, since the package manifest declares
+`swift-tools-version: 6.2` and older toolchains cannot parse it.
+
+### Fastlane
+
+There is no plugin; call the CLI from a lane with `sh`. A lane that regenerates
+diagrams and fails the build when the architecture changed:
+
+```ruby
+desc "Regenerate architecture diagrams and fail if they drifted"
+lane :diagrams do
+  sh("swiftumlbridge classdiagram ../Sources --format mermaid --output consoleOnly > ../docs/architecture.mmd")
+  sh("swiftumlbridge deps ../Sources --modules --format mermaid --output consoleOnly > ../docs/modules.mmd")
+
+  # git diff --exit-code returns 1 when the committed diagrams are stale.
+  sh("git diff --exit-code ../docs/*.mmd") do |status|
+    UI.user_error!("Diagrams are out of date — run `fastlane diagrams` and commit the result.") unless status.success?
+  end
+end
+```
+
+`sh` runs relative to the `fastlane/` directory, which is why the paths above
+are prefixed with `../`. As with Xcode Cloud, `--output consoleOnly` is required
+so the lane doesn't try to open a browser.
+
 ### Verify the installation
 
 ```bash
 swiftumlbridge --version
-# 1.0.0
+# 1.0.0   (whatever version you installed)
 ```
 
 ---
