@@ -1,7 +1,7 @@
 import Foundation
 
 /// Collect file paths based on a set of constraints
-public struct FileCollector {
+public struct FileCollector: Sendable {
     /// default initializer
     public init() {}
 

@@ -1,7 +1,7 @@
 import Foundation
 
 /// Generates sequence diagram scripts from Swift source files.
-public struct SequenceDiagramGenerator: SequenceDiagramGenerating, @unchecked Sendable {
+public struct SequenceDiagramGenerator: SequenceDiagramGenerating, Sendable {
     public init() {}
 
     /// Find all potential entry points (Type.method) in the given source files.
