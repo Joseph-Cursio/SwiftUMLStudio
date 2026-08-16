@@ -8,6 +8,50 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed — Studio (test infrastructure)
+
+- **The UI test suite runs again — all 30 tests, which had been failing.**
+  The symptom pointed away from the cause: the app launched, took the
+  menu bar, and exposed no window, so every "assert exists" failed while
+  the one "assert absent" and both launch tests passed. That reads like a
+  permissions problem, and it was not one. The accessibility hierarchy was
+  fully populated — 210 menu items, no window — and the app process has
+  neither `XCTestConfigurationFilePath` nor `XCTest` loaded, so the app's
+  own test gates were not firing either.
+
+  Sampling the process mid-test found the main thread busy rather than
+  blocked, 348 of 742 samples deep in `showInitialWindows()` →
+  `makeMainWindow` → `updateToolbarBridge` → `ToolbarBridge.makeStorage` →
+  `ViewGraph.updateOutputs`. The window was still being built when the 2-
+  and 3-second waits expired. `xcodebuild test` runs the app under
+  code-coverage instrumentation — `LLVM_PROFILE_FILE` and the `PERFC_*`
+  variables appear only in that launch — and the instrumented first render
+  is far slower; the same tests pass with `-enableCodeCoverage NO`.
+  Coverage is wanted (the Studio target has a ≥ 70% bar that counts UI
+  tests), so the 48 waits move to a shared `UITestTimeout.element` of 30s
+  with the diagnosis recorded beside the constant. The old values were
+  marginal regardless: uninstrumented, the slowest came in at 3.4s against
+  a 3s limit.
+
+- **Five UI tests that passed without asserting anything now assert.**
+  Raising the timeouts turned the suite green but left those five
+  spending a full 30s in a wait that never resolved, then passing via an
+  `||` fallback, a `guard … else { return }`, or an `if` that skipped the
+  work. Each query was stale: `detailTabs` is a `TabGroup` rather than a
+  `Group` and its children are `Tab` rather than `Button`; the format
+  picker is a `PopUpButton` identified `formatPicker`, not a `RadioGroup`
+  labelled "Format"; and the Explorer mode option is a `RadioButton` in
+  the `appModePicker` group, not a `StaticText`. Two assertions changed
+  with them — the default-format check matches on prefix because M14
+  relabelled the option `PlantUML (planttext.com)`, and the mode check
+  reads `AXValue` because SwiftUI does not set `AXSelected` on radio
+  buttons. Soft skips are now hard assertions. Runtime fell from 320s to
+  182s, and no test sits near the timeout, which is the evidence that
+  every wait resolves.
+
+- `*.profraw` / `*.profdata` are gitignored — an instrumented test run
+  drops one in the repository root.
+
 ---
 
 ## [1.1.0] — 2026-08-16
