@@ -1,6 +1,7 @@
 import Foundation
 import Observation
 import StoreKit
+import Synchronization
 
 @Observable @MainActor
 final class SubscriptionManager {
@@ -8,19 +9,29 @@ final class SubscriptionManager {
     private(set) var products: [Product] = []
     var purchaseError: String?
 
-    private nonisolated(unsafe) var transactionListener: Task<Void, Never>?
+    /// The `Transaction.updates` listener, cancelled on deallocation.
+    ///
+    /// Held in a `Mutex` rather than a `nonisolated(unsafe) var` because the
+    /// two accesses sit on opposite sides of this type's isolation: `init`
+    /// writes it on the main actor, and `nonisolated deinit` reads it to
+    /// cancel. Keeping `deinit` nonisolated means deallocation stays immediate
+    /// instead of hopping to the main actor, so the property it touches has to
+    /// carry its own synchronisation.
+    @ObservationIgnored
+    private let transactionListener = Mutex<Task<Void, Never>?>(nil)
 
     nonisolated static let proMonthlyID = "pro_monthly"
     nonisolated static let proAnnualID = "pro_annual"
     private nonisolated static let productIDs: Set<String> = [proMonthlyID, proAnnualID]
 
     init() {
-        transactionListener = listenForTransactions()
+        let listener = listenForTransactions()
+        transactionListener.withLock { $0 = listener }
         Task { await bootstrap() }
     }
 
     nonisolated deinit {
-        transactionListener?.cancel()
+        transactionListener.withLock { $0?.cancel() }
     }
 
     // MARK: - Public
