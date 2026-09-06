@@ -11,6 +11,14 @@ struct ContentView: View {
     @State private var plantUMLConsentRequest: (previous: DiagramFormat, requested: DiagramFormat)?
     @AppStorage("appMode") private var appMode: AppMode = .explorer
 
+    /// Rebuilds everything derived from the file selection.
+    private func handleSelectedPathsChange() {
+        viewModel.rebuildFileTree()
+        viewModel.generate()
+        viewModel.analyzeProject(isProUnlocked: subscriptionManager.isProUnlocked)
+        refreshModeDerivedData()
+    }
+
     /// Enforces the paywall for the newly selected diagram mode, then regenerates.
     ///
     /// This was six near-identical `if` blocks inline in `onChange` — one per paid mode, each
@@ -29,12 +37,30 @@ struct ContentView: View {
         }
 
         viewModel.generate()
-        if (viewModel.diagramMode == .sequenceDiagram
-            || viewModel.diagramMode == .activityDiagram)
-            && !viewModel.selectedPaths.isEmpty {
+        refreshModeDerivedData()
+    }
+
+    /// Refreshes whatever the current mode derives from the selection.
+    ///
+    /// This decision existed twice — here and in the `selectedPaths` observer — and the two copies
+    /// disagreed. This one guarded each call with `!selectedPaths.isEmpty`; the other did not.
+    ///
+    /// That guard reads like an optimisation and is not one. `refreshEntryPoints()` and
+    /// `refreshStateMachines()` both open with `guard !selectedPaths.isEmpty else { … = []; return }`
+    /// — emptying the list is *what they do* when there is no selection. Skipping the call
+    /// therefore skipped the clearing, so switching to Sequence Diagram with nothing selected left
+    /// the entry-point picker showing candidates from files that were no longer selected, while
+    /// clearing the selection emptied it correctly.
+    ///
+    /// One copy, no caller-side guard: both paths now clear.
+    private func refreshModeDerivedData() {
+        switch viewModel.diagramMode {
+        case .sequenceDiagram, .activityDiagram:
             viewModel.refreshEntryPoints()
-        } else if viewModel.diagramMode == .stateMachine && !viewModel.selectedPaths.isEmpty {
+        case .stateMachine:
             viewModel.refreshStateMachines()
+        default:
+            break
         }
     }
 
@@ -55,17 +81,7 @@ struct ContentView: View {
             viewModel.loadSnapshots()
             loadTestFixtureIfNeeded()
         }
-        .onChange(of: viewModel.selectedPaths) {
-            viewModel.rebuildFileTree()
-            viewModel.generate()
-            viewModel.analyzeProject(isProUnlocked: subscriptionManager.isProUnlocked)
-            if viewModel.diagramMode == .sequenceDiagram
-                || viewModel.diagramMode == .activityDiagram {
-                viewModel.refreshEntryPoints()
-            } else if viewModel.diagramMode == .stateMachine {
-                viewModel.refreshStateMachines()
-            }
-        }
+        .onChange(of: viewModel.selectedPaths) { handleSelectedPathsChange() }
         .onChange(of: viewModel.selectedFileURL) {
             viewModel.selectFile(viewModel.selectedFileURL)
         }
