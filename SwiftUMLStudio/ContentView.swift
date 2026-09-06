@@ -11,6 +11,33 @@ struct ContentView: View {
     @State private var plantUMLConsentRequest: (previous: DiagramFormat, requested: DiagramFormat)?
     @AppStorage("appMode") private var appMode: AppMode = .explorer
 
+    /// Enforces the paywall for the newly selected diagram mode, then regenerates.
+    ///
+    /// This was six near-identical `if` blocks inline in `onChange` — one per paid mode, each
+    /// repeating the same fallback to `.classDiagram` and the same `showPaywall = true`. Nothing
+    /// could reach it: paywall enforcement is business logic that lived only inside a closure a
+    /// test cannot call.
+    ///
+    /// The mode-to-entitlement pairing moved to ``DiagramMode/requiredFeature``, where it is total
+    /// by construction and checkable on its own. What is left here is the effect.
+    private func handleDiagramModeChange() {
+        if let required = viewModel.diagramMode.requiredFeature,
+           !FeatureGate.isUnlocked(required, manager: subscriptionManager) {
+            viewModel.diagramMode = .classDiagram
+            showPaywall = true
+            return
+        }
+
+        viewModel.generate()
+        if (viewModel.diagramMode == .sequenceDiagram
+            || viewModel.diagramMode == .activityDiagram)
+            && !viewModel.selectedPaths.isEmpty {
+            viewModel.refreshEntryPoints()
+        } else if viewModel.diagramMode == .stateMachine && !viewModel.selectedPaths.isEmpty {
+            viewModel.refreshStateMachines()
+        }
+    }
+
     var body: some View {
         Group {
             switch appMode {
@@ -42,52 +69,7 @@ struct ContentView: View {
         .onChange(of: viewModel.selectedFileURL) {
             viewModel.selectFile(viewModel.selectedFileURL)
         }
-        .onChange(of: viewModel.diagramMode) {
-            if viewModel.diagramMode == .sequenceDiagram
-                && !FeatureGate.isUnlocked(.sequenceDiagrams, manager: subscriptionManager) {
-                viewModel.diagramMode = .classDiagram
-                showPaywall = true
-                return
-            }
-            if viewModel.diagramMode == .dependencyGraph
-                && !FeatureGate.isUnlocked(.dependencyGraphs, manager: subscriptionManager) {
-                viewModel.diagramMode = .classDiagram
-                showPaywall = true
-                return
-            }
-            if viewModel.diagramMode == .stateMachine
-                && !FeatureGate.isUnlocked(.stateMachines, manager: subscriptionManager) {
-                viewModel.diagramMode = .classDiagram
-                showPaywall = true
-                return
-            }
-            if viewModel.diagramMode == .activityDiagram
-                && !FeatureGate.isUnlocked(.activityDiagrams, manager: subscriptionManager) {
-                viewModel.diagramMode = .classDiagram
-                showPaywall = true
-                return
-            }
-            if viewModel.diagramMode == .erDiagram
-                && !FeatureGate.isUnlocked(.erDiagrams, manager: subscriptionManager) {
-                viewModel.diagramMode = .classDiagram
-                showPaywall = true
-                return
-            }
-            if viewModel.diagramMode == .componentDiagram
-                && !FeatureGate.isUnlocked(.componentDiagrams, manager: subscriptionManager) {
-                viewModel.diagramMode = .classDiagram
-                showPaywall = true
-                return
-            }
-            viewModel.generate()
-            if (viewModel.diagramMode == .sequenceDiagram
-                || viewModel.diagramMode == .activityDiagram)
-                && !viewModel.selectedPaths.isEmpty {
-                viewModel.refreshEntryPoints()
-            } else if viewModel.diagramMode == .stateMachine && !viewModel.selectedPaths.isEmpty {
-                viewModel.refreshStateMachines()
-            }
-        }
+        .onChange(of: viewModel.diagramMode) { handleDiagramModeChange() }
         .onChange(of: viewModel.diagramFormat) { oldValue, newValue in
             // PlantUML rendering goes through planttext.com (third-party HTTPS
             // upload of the diagram source). Gate the first selection behind
