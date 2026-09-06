@@ -11,6 +11,59 @@ struct ContentView: View {
     @State private var plantUMLConsentRequest: (previous: DiagramFormat, requested: DiagramFormat)?
     @AppStorage("appMode") private var appMode: AppMode = .explorer
 
+    /// Rebuilds everything derived from the file selection.
+    private func handleSelectedPathsChange() {
+        viewModel.rebuildFileTree()
+        viewModel.generate()
+        viewModel.analyzeProject(isProUnlocked: subscriptionManager.isProUnlocked)
+        refreshModeDerivedData()
+    }
+
+    /// Enforces the paywall for the newly selected diagram mode, then regenerates.
+    ///
+    /// This was six near-identical `if` blocks inline in `onChange` — one per paid mode, each
+    /// repeating the same fallback to `.classDiagram` and the same `showPaywall = true`. Nothing
+    /// could reach it: paywall enforcement is business logic that lived only inside a closure a
+    /// test cannot call.
+    ///
+    /// The mode-to-entitlement pairing moved to ``DiagramMode/requiredFeature``, where it is total
+    /// by construction and checkable on its own. What is left here is the effect.
+    private func handleDiagramModeChange() {
+        if let required = viewModel.diagramMode.requiredFeature,
+           !FeatureGate.isUnlocked(required, manager: subscriptionManager) {
+            viewModel.diagramMode = .classDiagram
+            showPaywall = true
+            return
+        }
+
+        viewModel.generate()
+        refreshModeDerivedData()
+    }
+
+    /// Refreshes whatever the current mode derives from the selection.
+    ///
+    /// This decision existed twice — here and in the `selectedPaths` observer — and the two copies
+    /// disagreed. This one guarded each call with `!selectedPaths.isEmpty`; the other did not.
+    ///
+    /// That guard reads like an optimisation and is not one. `refreshEntryPoints()` and
+    /// `refreshStateMachines()` both open with `guard !selectedPaths.isEmpty else { … = []; return }`
+    /// — emptying the list is *what they do* when there is no selection. Skipping the call
+    /// therefore skipped the clearing, so switching to Sequence Diagram with nothing selected left
+    /// the entry-point picker showing candidates from files that were no longer selected, while
+    /// clearing the selection emptied it correctly.
+    ///
+    /// One copy, no caller-side guard: both paths now clear.
+    private func refreshModeDerivedData() {
+        switch viewModel.diagramMode {
+        case .sequenceDiagram, .activityDiagram:
+            viewModel.refreshEntryPoints()
+        case .stateMachine:
+            viewModel.refreshStateMachines()
+        default:
+            break
+        }
+    }
+
     var body: some View {
         Group {
             switch appMode {
@@ -28,66 +81,11 @@ struct ContentView: View {
             viewModel.loadSnapshots()
             loadTestFixtureIfNeeded()
         }
-        .onChange(of: viewModel.selectedPaths) {
-            viewModel.rebuildFileTree()
-            viewModel.generate()
-            viewModel.analyzeProject(isProUnlocked: subscriptionManager.isProUnlocked)
-            if viewModel.diagramMode == .sequenceDiagram
-                || viewModel.diagramMode == .activityDiagram {
-                viewModel.refreshEntryPoints()
-            } else if viewModel.diagramMode == .stateMachine {
-                viewModel.refreshStateMachines()
-            }
-        }
+        .onChange(of: viewModel.selectedPaths) { handleSelectedPathsChange() }
         .onChange(of: viewModel.selectedFileURL) {
             viewModel.selectFile(viewModel.selectedFileURL)
         }
-        .onChange(of: viewModel.diagramMode) {
-            if viewModel.diagramMode == .sequenceDiagram
-                && !FeatureGate.isUnlocked(.sequenceDiagrams, manager: subscriptionManager) {
-                viewModel.diagramMode = .classDiagram
-                showPaywall = true
-                return
-            }
-            if viewModel.diagramMode == .dependencyGraph
-                && !FeatureGate.isUnlocked(.dependencyGraphs, manager: subscriptionManager) {
-                viewModel.diagramMode = .classDiagram
-                showPaywall = true
-                return
-            }
-            if viewModel.diagramMode == .stateMachine
-                && !FeatureGate.isUnlocked(.stateMachines, manager: subscriptionManager) {
-                viewModel.diagramMode = .classDiagram
-                showPaywall = true
-                return
-            }
-            if viewModel.diagramMode == .activityDiagram
-                && !FeatureGate.isUnlocked(.activityDiagrams, manager: subscriptionManager) {
-                viewModel.diagramMode = .classDiagram
-                showPaywall = true
-                return
-            }
-            if viewModel.diagramMode == .erDiagram
-                && !FeatureGate.isUnlocked(.erDiagrams, manager: subscriptionManager) {
-                viewModel.diagramMode = .classDiagram
-                showPaywall = true
-                return
-            }
-            if viewModel.diagramMode == .componentDiagram
-                && !FeatureGate.isUnlocked(.componentDiagrams, manager: subscriptionManager) {
-                viewModel.diagramMode = .classDiagram
-                showPaywall = true
-                return
-            }
-            viewModel.generate()
-            if (viewModel.diagramMode == .sequenceDiagram
-                || viewModel.diagramMode == .activityDiagram)
-                && !viewModel.selectedPaths.isEmpty {
-                viewModel.refreshEntryPoints()
-            } else if viewModel.diagramMode == .stateMachine && !viewModel.selectedPaths.isEmpty {
-                viewModel.refreshStateMachines()
-            }
-        }
+        .onChange(of: viewModel.diagramMode) { handleDiagramModeChange() }
         .onChange(of: viewModel.diagramFormat) { oldValue, newValue in
             // PlantUML rendering goes through planttext.com (third-party HTTPS
             // upload of the diagram source). Gate the first selection behind
