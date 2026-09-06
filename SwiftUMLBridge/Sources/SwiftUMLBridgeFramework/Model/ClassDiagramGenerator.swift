@@ -13,7 +13,7 @@ public struct ClassDiagramGenerator: ClassDiagramGenerating, Sendable {
         presentedBy presenter: DiagramPresenting = BrowserPresenter(),
         sdkPath: String? = nil
     ) async {
-        let startDate = Date()
+        let startDate = ContinuousClock.now
         let files = fileCollector.getFiles(for: paths)
         let script = generateScript(for: files, with: configuration, sdkPath: sdkPath)
         logProcessingDuration(started: startDate)
@@ -26,7 +26,7 @@ public struct ClassDiagramGenerator: ClassDiagramGenerating, Sendable {
         with configuration: Configuration = .default,
         presentedBy presenter: DiagramPresenting = BrowserPresenter()
     ) async {
-        let startDate = Date()
+        let startDate = ContinuousClock.now
         let script = generateScript(for: content, with: configuration)
         logProcessingDuration(started: startDate)
         await presenter.present(script: script)
@@ -101,8 +101,13 @@ public struct ClassDiagramGenerator: ClassDiagramGenerating, Sendable {
         return allItems.compactMap { TypeInfo(from: $0) }
     }
 
-    func logProcessingDuration(started processingStartDate: Date) {
-        let elapsed = Date().timeIntervalSince(processingStartDate)
+    /// Logs how long generation took.
+    ///
+    /// Measured on `ContinuousClock`, which cannot step. The wall clock can — an NTP correction or
+    /// a sleep/wake mid-run — and an elapsed time computed from two `Date` reads then reports a
+    /// number that never happened, including a negative one.
+    func logProcessingDuration(started processingStart: ContinuousClock.Instant) {
+        let elapsed = (ContinuousClock.now - processingStart).seconds
         BridgeLogger.shared.info("Class diagram generated in \(elapsed) seconds and will be presented now")
     }
 }

@@ -95,9 +95,11 @@ struct ClassDiagramGeneratorTests {
 
     // MARK: - logProcessingDuration
 
+    /// Still a smoke test — the function logs and returns nothing, so there is no value to assert.
+    /// The arithmetic it used to carry inline is now `Duration.seconds`, which has its own tests.
     @Test("logProcessingDuration does not crash")
     func logProcessingDurationNoCrash() {
-        let start = Date().addingTimeInterval(-1.0)
+        let start = ContinuousClock.now.advanced(by: .seconds(-1))
         generator.logProcessingDuration(started: start)
         #expect(Bool(true))
     }
