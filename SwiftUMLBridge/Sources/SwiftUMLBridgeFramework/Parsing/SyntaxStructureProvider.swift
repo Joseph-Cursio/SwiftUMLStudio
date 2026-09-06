@@ -14,13 +14,13 @@ internal extension SyntaxStructure {
         sdkPath: String? = nil,
         module: String? = nil
     ) -> SyntaxStructure? {
-        let methodStart = Date()
+        let methodStart = ContinuousClock.now
         guard let source = try? String(contentsOf: fileOnDisk, encoding: .utf8) else {
             BridgeLogger.shared.error("not able to read contents of file \(fileOnDisk)")
             return nil
         }
         let structure = build(from: source, sdkPath: sdkPath, fileURL: fileOnDisk, module: module)
-        let elapsed = Date().timeIntervalSince(methodStart)
+        let elapsed = (ContinuousClock.now - methodStart).seconds
         let sdkLabel = (sdkPath != nil && !sdkPath!.isEmpty) ? "parsing with SDK" : ""
         BridgeLogger.shared.debug("read \(fileOnDisk) \(sdkLabel) in \(elapsed)")
         return structure

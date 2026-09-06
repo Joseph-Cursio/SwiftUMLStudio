@@ -26,7 +26,7 @@ public struct DiagramScript: @unchecked Sendable {
         format = configuration.format
         context = DiagramContext(configuration: configuration)
 
-        let methodStart = Date()
+        let methodStart = ContinuousClock.now
         let definitions = buildDefinitions(from: items)
 
         switch format {
@@ -40,7 +40,8 @@ public struct DiagramScript: @unchecked Sendable {
             text = buildSVGText(items: items, configuration: configuration)
         }
 
-        BridgeLogger.shared.debug("DiagramScript created in \(Date().timeIntervalSince(methodStart)) seconds")
+        let elapsed = (ContinuousClock.now - methodStart).seconds
+        BridgeLogger.shared.debug("DiagramScript created in \(elapsed) seconds")
     }
 
     private func buildDefinitions(from items: [SyntaxStructure]) -> String {
