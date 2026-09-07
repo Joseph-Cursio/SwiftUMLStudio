@@ -47,6 +47,12 @@ internal extension SyntaxStructure {
         let sourceFile = Parser.parse(source: source)
         let filePath = fileURL?.path ?? ""
         let converter = SourceLocationConverter(fileName: filePath, tree: sourceFile)
+        // A `SyntaxVisitor`, and SwiftSyntax's contract makes it single-use: construct, walk,
+        // read the result, discard. A fresh one is needed per parse, so there is no instance to
+        // inject and nothing a caller could hold. The six sibling walkers in this codebase that
+        // are declared `private` are exempt for exactly this reason; this one lives in its own
+        // file, one directory over from its only caller, so the access level cannot say it.
+        // swiftprojectlint:disable:next direct-instantiation
         let builder = SyntaxStructureBuilder(
             viewMode: .sourceAccurate,
             typenameMap: typenameMap,
