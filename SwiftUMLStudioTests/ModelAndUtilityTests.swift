@@ -9,36 +9,24 @@ import Foundation
 import Testing
 @testable import SwiftUMLStudio
 
-// MARK: - GCD dispatch helpers
-
-private func runOnMain(_ block: @MainActor () -> Void) {
-    if Thread.isMainThread {
-        MainActor.assumeIsolated(block)
-    } else {
-        DispatchQueue.main.sync { MainActor.assumeIsolated(block) }
-    }
-}
-
 // MARK: - DiagramMode Tests
 
-@Suite("DiagramMode")
+@Suite("DiagramMode") @MainActor
 struct DiagramModeTests {
 
     /// Asserted as an exact list rather than a bare count so that adding a case
     /// fails with a message naming the newcomer, instead of an opaque `7 == 6`.
     @Test("allCases is exactly the known modes, in declaration order")
     func allCasesIsExactList() {
-        runOnMain {
-            #expect(DiagramMode.allCases == [
-                .classDiagram,
-                .sequenceDiagram,
-                .dependencyGraph,
-                .stateMachine,
-                .activityDiagram,
-                .erDiagram,
-                .componentDiagram
-            ])
-        }
+        #expect(DiagramMode.allCases == [
+            .classDiagram,
+            .sequenceDiagram,
+            .dependencyGraph,
+            .stateMachine,
+            .activityDiagram,
+            .erDiagram,
+            .componentDiagram
+        ])
     }
 
     @Test("classDiagram raw value is 'Class Diagram'")
@@ -78,10 +66,8 @@ struct DiagramModeTests {
 
     @Test("id equals rawValue for all cases")
     func idEqualsRawValue() {
-        runOnMain {
-            for mode in DiagramMode.allCases {
-                #expect(mode.id == mode.rawValue)
-            }
+        for mode in DiagramMode.allCases {
+            #expect(mode.id == mode.rawValue)
         }
     }
 
@@ -112,7 +98,7 @@ struct DiagramModeTests {
 
 // MARK: - FileNode Tests
 
-@Suite("FileNode")
+@Suite("FileNode") @MainActor
 struct FileNodeTests {
 
     private func makeTempDir() throws -> URL {
@@ -124,18 +110,14 @@ struct FileNodeTests {
 
     @Test("buildTree returns empty for empty paths")
     func buildTreeEmpty() {
-        runOnMain {
-            let tree = FileNode.buildTree(from: [])
-            #expect(tree.isEmpty)
-        }
+        let tree = FileNode.buildTree(from: [])
+        #expect(tree.isEmpty)
     }
 
     @Test("buildTree returns empty for nonexistent paths")
     func buildTreeNonexistent() {
-        runOnMain {
-            let tree = FileNode.buildTree(from: ["/nonexistent/path/file.swift"])
-            #expect(tree.isEmpty)
-        }
+        let tree = FileNode.buildTree(from: ["/nonexistent/path/file.swift"])
+        #expect(tree.isEmpty)
     }
 
     @Test("buildTree returns single file")
@@ -145,13 +127,11 @@ struct FileNodeTests {
         let file = dir.appending(path: "Hello.swift")
         try "struct Hello {}".write(to: file, atomically: true, encoding: .utf8)
 
-        runOnMain {
-            let tree = FileNode.buildTree(from: [file.path()])
-            #expect(tree.count == 1)
-            #expect(tree[0].name == "Hello.swift")
-            #expect(tree[0].isDirectory == false)
-            #expect(tree[0].children == nil)
-        }
+        let tree = FileNode.buildTree(from: [file.path()])
+        #expect(tree.count == 1)
+        #expect(tree[0].name == "Hello.swift")
+        #expect(tree[0].isDirectory == false)
+        #expect(tree[0].children == nil)
     }
 
     @Test("buildTree filters out non-swift files in directories")
@@ -162,12 +142,10 @@ struct FileNodeTests {
         try "not swift".write(to: dir.appending(path: "readme.md"), atomically: true, encoding: .utf8)
         try "{}".write(to: dir.appending(path: "config.json"), atomically: true, encoding: .utf8)
 
-        runOnMain {
-            let tree = FileNode.buildTree(from: [dir.path()])
-            let allURLs = FileNode.allLeafURLs(from: tree)
-            #expect(allURLs.count == 1)
-            #expect(allURLs[0].lastPathComponent == "A.swift")
-        }
+        let tree = FileNode.buildTree(from: [dir.path()])
+        let allURLs = FileNode.allLeafURLs(from: tree)
+        #expect(allURLs.count == 1)
+        #expect(allURLs[0].lastPathComponent == "A.swift")
     }
 
     @Test("buildTree creates directory nodes for nested structures")
@@ -179,14 +157,12 @@ struct FileNodeTests {
         try "struct A {}".write(to: dir.appending(path: "App.swift"), atomically: true, encoding: .utf8)
         try "struct B {}".write(to: subdir.appending(path: "Model.swift"), atomically: true, encoding: .utf8)
 
-        runOnMain {
-            let tree = FileNode.buildTree(from: [dir.path()])
-            #expect(tree.count == 2) // Models/ directory + App.swift
-            let dirNode = tree.first { $0.isDirectory }
-            #expect(dirNode?.name == "Models")
-            #expect(dirNode?.children?.count == 1)
-            #expect(dirNode?.children?[0].name == "Model.swift")
-        }
+        let tree = FileNode.buildTree(from: [dir.path()])
+        #expect(tree.count == 2) // Models/ directory + App.swift
+        let dirNode = tree.first { $0.isDirectory }
+        #expect(dirNode?.name == "Models")
+        #expect(dirNode?.children?.count == 1)
+        #expect(dirNode?.children?[0].name == "Model.swift")
     }
 
     @Test("allLeafURLs collects all file URLs from nested tree")
@@ -198,17 +174,15 @@ struct FileNodeTests {
         try "struct A {}".write(to: dir.appending(path: "A.swift"), atomically: true, encoding: .utf8)
         try "struct B {}".write(to: subdir.appending(path: "B.swift"), atomically: true, encoding: .utf8)
 
-        runOnMain {
-            let tree = FileNode.buildTree(from: [dir.path()])
-            let urls = FileNode.allLeafURLs(from: tree)
-            #expect(urls.count == 2)
-        }
+        let tree = FileNode.buildTree(from: [dir.path()])
+        let urls = FileNode.allLeafURLs(from: tree)
+        #expect(urls.count == 2)
     }
 }
 
 // MARK: - MermaidHTMLBuilder Tests
 
-@Suite("MermaidHTMLBuilder")
+@Suite("MermaidHTMLBuilder") @MainActor
 struct MermaidHTMLBuilderTests {
 
     // MARK: htmlEscape

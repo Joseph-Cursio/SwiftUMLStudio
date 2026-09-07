@@ -11,19 +11,9 @@ import Testing
 import SwiftUMLBridgeFramework
 @testable import SwiftUMLStudio
 
-// MARK: - GCD dispatch helpers
-
-private func runOnMain(_ block: @MainActor () -> Void) {
-    if Thread.isMainThread {
-        MainActor.assumeIsolated(block)
-    } else {
-        DispatchQueue.main.sync { MainActor.assumeIsolated(block) }
-    }
-}
-
 // MARK: - DiagramViewModel Integration Tests
 
-@Suite("DiagramViewModel Integration")
+@Suite("DiagramViewModel Integration") @MainActor
 struct DiagramViewModelIntegrationTests {
 
     // MARK: Helpers
@@ -160,7 +150,7 @@ struct DiagramViewModelIntegrationTests {
 
 // MARK: - DiagramViewModel FileBrowser Tests
 
-@Suite("DiagramViewModel FileBrowser")
+@Suite("DiagramViewModel FileBrowser") @MainActor
 struct DiagramViewModelFileBrowserTests {
 
     @Test("rebuildFileTree populates fileTree from selectedPaths")
@@ -171,12 +161,10 @@ struct DiagramViewModelFileBrowserTests {
         defer { try? FileManager.default.removeItem(at: dir) }
         try "struct Foo {}".write(to: dir.appending(path: "Foo.swift"), atomically: true, encoding: .utf8)
 
-        runOnMain {
-            let viewModel = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
-            viewModel.selectedPaths = [dir.path()]
-            viewModel.rebuildFileTree()
-            #expect(viewModel.fileTree.isEmpty == false)
-        }
+        let viewModel = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
+        viewModel.selectedPaths = [dir.path()]
+        viewModel.rebuildFileTree()
+        #expect(viewModel.fileTree.isEmpty == false)
     }
 
     @Test("rebuildFileTree auto-selects first file")
@@ -187,13 +175,11 @@ struct DiagramViewModelFileBrowserTests {
         defer { try? FileManager.default.removeItem(at: dir) }
         try "struct A {}".write(to: dir.appending(path: "A.swift"), atomically: true, encoding: .utf8)
 
-        runOnMain {
-            let viewModel = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
-            viewModel.selectedPaths = [dir.path()]
-            viewModel.rebuildFileTree()
-            #expect(viewModel.selectedFileURL != nil)
-            #expect(viewModel.selectedFileContent.isEmpty == false)
-        }
+        let viewModel = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
+        viewModel.selectedPaths = [dir.path()]
+        viewModel.rebuildFileTree()
+        #expect(viewModel.selectedFileURL != nil)
+        #expect(viewModel.selectedFileContent.isEmpty == false)
     }
 
     @Test("selectFile loads content")
@@ -205,23 +191,19 @@ struct DiagramViewModelFileBrowserTests {
         let file = dir.appending(path: "Test.swift")
         try "struct Test {}".write(to: file, atomically: true, encoding: .utf8)
 
-        runOnMain {
-            let viewModel = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
-            viewModel.selectFile(file)
-            #expect(viewModel.selectedFileContent == "struct Test {}")
-            #expect(viewModel.selectedFileURL == file)
-        }
+        let viewModel = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
+        viewModel.selectFile(file)
+        #expect(viewModel.selectedFileContent == "struct Test {}")
+        #expect(viewModel.selectedFileURL == file)
     }
 
     @Test("selectFile with nil clears content")
     func selectFileNilClears() {
-        runOnMain {
-            let viewModel = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
-            viewModel.selectedFileContent = "old content"
-            viewModel.selectFile(nil)
-            #expect(viewModel.selectedFileContent.isEmpty)
-            #expect(viewModel.selectedFileURL == nil)
-        }
+        let viewModel = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
+        viewModel.selectedFileContent = "old content"
+        viewModel.selectFile(nil)
+        #expect(viewModel.selectedFileContent.isEmpty)
+        #expect(viewModel.selectedFileURL == nil)
     }
 
     @Test("rebuildFileTree clears selection when file no longer in paths")
@@ -233,17 +215,15 @@ struct DiagramViewModelFileBrowserTests {
         let file = dir.appending(path: "Gone.swift")
         try "struct Gone {}".write(to: file, atomically: true, encoding: .utf8)
 
-        runOnMain {
-            let viewModel = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
-            viewModel.selectedPaths = [dir.path()]
-            viewModel.rebuildFileTree()
-            #expect(viewModel.selectedFileURL != nil)
+        let viewModel = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
+        viewModel.selectedPaths = [dir.path()]
+        viewModel.rebuildFileTree()
+        #expect(viewModel.selectedFileURL != nil)
 
-            // Remove the file and rebuild with empty paths
-            viewModel.selectedPaths = []
-            viewModel.rebuildFileTree()
-            #expect(viewModel.selectedFileURL == nil)
-            #expect(viewModel.selectedFileContent.isEmpty)
-        }
+        // Remove the file and rebuild with empty paths
+        viewModel.selectedPaths = []
+        viewModel.rebuildFileTree()
+        #expect(viewModel.selectedFileURL == nil)
+        #expect(viewModel.selectedFileContent.isEmpty)
     }
 }

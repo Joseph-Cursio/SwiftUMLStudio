@@ -2,18 +2,9 @@ import Foundation
 import Testing
 @testable import SwiftUMLStudio
 
-// MARK: - GCD dispatch helpers
-
-private func runOnMain(_ block: @MainActor () -> Void) {
-    if Thread.isMainThread {
-        MainActor.assumeIsolated(block)
-    } else {
-        DispatchQueue.main.sync { MainActor.assumeIsolated(block) }
-    }
-}
-
 // MARK: - ProFeature Tests
 
+@MainActor
 struct ProFeatureTests {
 
     @Test("has ten cases")
@@ -39,15 +30,14 @@ struct ProFeatureTests {
 
 // MARK: - FeatureGate Tests
 
+@MainActor
 struct FeatureGateTests {
 
     @Test("all features unlocked when Pro is active")
     func proUnlockedAllFeatures() {
-        runOnMain {
-            let manager = SubscriptionManager()
-            for feature in ProFeature.allCases {
-                #expect(FeatureGate.isUnlocked(feature, manager: manager))
-            }
+        let manager = SubscriptionManager()
+        for feature in ProFeature.allCases {
+            #expect(FeatureGate.isUnlocked(feature, manager: manager))
         }
     }
 }
