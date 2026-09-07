@@ -33,7 +33,12 @@ public struct Stereotypes: Codable, Sendable {
     public var `protocol`: Stereotype?
 }
 
-/// Spotted character with background color and optional name for a stereotype
+/// Spotted character with background color and optional name for a stereotype.
+///
+/// PlantUML only. The spot — a single character and a colour — is PlantUML
+/// syntax, so there is no Mermaid or nomnoml rendering to add here; those
+/// emitters use their own format-native labels. Documented as a
+/// PlantUML-specific feature in `docs/user/reference.md`.
 public struct Stereotype: Codable, Sendable {
     /// The stereotype label shown after the spot (e.g. `struct`), or `nil` for spot-only.
     public var name: String?
