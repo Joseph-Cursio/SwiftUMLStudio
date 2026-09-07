@@ -8,6 +8,14 @@ extension SyntaxStructure {
         }
     }
 
+    // Maps an ElementKind to its nomnoml textual representation.
+    //
+    // The stereotype labels below are nomnoml's own and are deliberately not
+    // read from `configuration.stereotypes` — those carry a PlantUML spot that
+    // nomnoml has no syntax for. Note `protocol` renders as `interface`: that
+    // is nomnoml's classifier keyword, not a drift from `Stereotype.protocol`,
+    // so feeding the configured name through here would change every existing
+    // diagram. See `SyntaxStructure+PlantUML.plantUMLText(for:generics:context:)`.
     private func nomnomlText(
         for kind: ElementKind,
         generics: String?,

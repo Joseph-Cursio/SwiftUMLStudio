@@ -9,6 +9,11 @@ extension SyntaxStructure {
     }
 
     // Maps an ElementKind to its Mermaid textual representation.
+    //
+    // The stereotype labels below are Mermaid's own and are deliberately not
+    // read from `configuration.stereotypes`: those carry a PlantUML spot (a
+    // character and a colour) that Mermaid has no syntax for. See
+    // `SyntaxStructure+PlantUML.plantUMLText(for:generics:context:)`.
     private func mermaidText(
         for kind: ElementKind,
         generics: String?,

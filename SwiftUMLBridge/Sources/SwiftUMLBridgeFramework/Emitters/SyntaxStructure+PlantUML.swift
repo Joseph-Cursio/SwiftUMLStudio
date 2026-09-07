@@ -9,6 +9,13 @@ extension SyntaxStructure {
     }
 
     // Maps an ElementKind to its PlantUML textual representation.
+    //
+    // This is the only emitter that reads `configuration.stereotypes`, and that
+    // is by design rather than an oversight in the other two: a `Stereotype` is
+    // a spot — one character and a colour, rendered `<< (C, DarkSeaGreen) >>` —
+    // which is PlantUML syntax with no counterpart in Mermaid's `<<label>>` or
+    // nomnoml's `<label>`. `docs/user/reference.md` documents custom spot
+    // stereotypes as a PlantUML-specific feature.
     private func plantUMLText(
         for kind: ElementKind,
         generics: String?,
