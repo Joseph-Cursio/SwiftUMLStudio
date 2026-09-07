@@ -20,6 +20,14 @@ public protocol ClassDiagramGenerating: Sendable {
         with configuration: Configuration,
         sdkPath: String?
     ) -> DiagramScript
+
+    /// The type inventory behind a class diagram, without the diagram.
+    ///
+    /// `ProjectAnalyzer` counts types per module and never renders anything. It was reaching
+    /// for `ClassDiagramGenerator` concretely because this was the one thing the protocol did
+    /// not offer — the abstraction covered rendering and stopped short of the analysis the
+    /// rendering is built on.
+    func analyzeTypes(for paths: [String], sdkPath: String?) -> [TypeInfo]
 }
 
 /// Default parameter for sdkPath so callers don't need to pass it.
@@ -29,6 +37,10 @@ public extension ClassDiagramGenerating {
         with configuration: Configuration
     ) -> DiagramScript {
         generateScript(for: paths, with: configuration, sdkPath: nil)
+    }
+
+    func analyzeTypes(for paths: [String]) -> [TypeInfo] {
+        analyzeTypes(for: paths, sdkPath: nil)
     }
 
     func generateScript(
@@ -78,9 +90,22 @@ public protocol DependencyGraphGenerating: Sendable {
         with configuration: Configuration,
         sdkPath: String?
     ) -> DepsScript
+
+    /// The edge list behind a dependency diagram, without the diagram. Same reason as
+    /// `ClassDiagramGenerating.analyzeTypes(for:sdkPath:)`: `ProjectAnalyzer` detects cycles
+    /// and counts modules off these edges and renders nothing.
+    func extractEdges(
+        for paths: [String],
+        mode: DepsMode,
+        with configuration: Configuration
+    ) -> [DependencyEdge]
 }
 
 public extension DependencyGraphGenerating {
+    func extractEdges(for paths: [String], mode: DepsMode) -> [DependencyEdge] {
+        extractEdges(for: paths, mode: mode, with: .default)
+    }
+
     func generateScript(
         forPackage description: SPMPackageDescription,
         packageRoot: URL,

@@ -54,7 +54,19 @@ struct ModuleSummary: Sendable, Hashable {
 }
 
 nonisolated enum ProjectAnalyzer {
-    static func analyze(paths: [String]) -> ProjectSummary {
+    /// The four generators are defaulted parameters rather than locals, which is the seam
+    /// `DiagramViewModel` next door already uses — `classGenerator: any ClassDiagramGenerating
+    /// = ClassDiagramGenerator()`, with `MockClassGenerator` and `MockDepsGenerator` written
+    /// against it in the test target. `analyze` reaches for the same protocols and was the
+    /// only caller in the app that named the concrete types, so a test of the summary
+    /// arithmetic had to put real Swift files on disk to get any types at all.
+    static func analyze(
+        paths: [String],
+        classGenerator: any ClassDiagramGenerating = ClassDiagramGenerator(),
+        depsGenerator: any DependencyGraphGenerating = DependencyGraphGenerator(),
+        sequenceGenerator: any SequenceDiagramGenerating = SequenceDiagramGenerator(),
+        stateGenerator: any StateMachineGenerating = StateMachineGenerator()
+    ) -> ProjectSummary {
         guard paths.isEmpty == false else {
             return ProjectSummary(
                 totalFiles: 0, totalTypes: 0, typeBreakdown: [:],
@@ -63,17 +75,15 @@ nonisolated enum ProjectAnalyzer {
                 stateMachines: []
             )
         }
-        let generator = ClassDiagramGenerator()
-        let types = generator.analyzeTypes(for: paths)
+        let types = classGenerator.analyzeTypes(for: paths)
 
-        let depGenerator = DependencyGraphGenerator()
-        let typeEdges = depGenerator.extractEdges(for: paths, mode: .types)
-        let moduleEdges = depGenerator.extractEdges(for: paths, mode: .modules)
+        let typeEdges = depsGenerator.extractEdges(for: paths, mode: .types)
+        let moduleEdges = depsGenerator.extractEdges(for: paths, mode: .modules)
 
         let cycles = DependencyGraphModel(edges: typeEdges).detectCycles()
 
-        let entryPoints = SequenceDiagramGenerator().findEntryPoints(for: paths)
-        let stateMachines = StateMachineGenerator().findCandidates(for: paths)
+        let entryPoints = sequenceGenerator.findEntryPoints(for: paths)
+        let stateMachines = stateGenerator.findCandidates(for: paths)
 
         let typeBreakdown = buildTypeBreakdown(from: types)
         let topConnected = findTopConnectedTypes(from: typeEdges)
@@ -99,22 +109,22 @@ nonisolated enum ProjectAnalyzer {
     /// (test targets excluded, matching `sourceFileToModuleMap`).
     static func analyze(
         package description: SPMPackageDescription,
-        packageRoot: URL
+        packageRoot: URL,
+        classGenerator: any ClassDiagramGenerating = ClassDiagramGenerator()
     ) -> ProjectSummary {
         let pathToModule = description.sourceFileToModuleMap(packageRoot: packageRoot)
-        let aggregate = analyze(paths: pathToModule.keys.sorted())
+        let aggregate = analyze(paths: pathToModule.keys.sorted(), classGenerator: classGenerator)
 
         var filesPerModule: [String: Int] = [:]
         for module in pathToModule.values {
             filesPerModule[module, default: 0] += 1
         }
 
-        let typesGenerator = ClassDiagramGenerator()
         var typesPerModule: [String: Int] = [:]
         for target in description.targets where target.kind != .test {
             let targetRoot = packageRoot.appendingPathComponent(target.path)
             let sourcePaths = target.sources.map { targetRoot.appendingPathComponent($0).path }
-            typesPerModule[target.name] = typesGenerator.analyzeTypes(for: sourcePaths).count
+            typesPerModule[target.name] = classGenerator.analyzeTypes(for: sourcePaths).count
         }
 
         let breakdown = description.targets

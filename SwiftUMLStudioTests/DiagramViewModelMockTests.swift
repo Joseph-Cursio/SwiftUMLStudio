@@ -37,6 +37,17 @@ final class MockClassGenerator: ClassDiagramGenerating, @unchecked Sendable {
     private(set) var lastPaths: [String] = []
     private(set) var lastConfiguration: Configuration?
 
+    /// Canned type inventory for `analyzeTypes`, which `ProjectAnalyzer` uses to count types
+    /// per module. Empty by default so existing tests are unaffected.
+    var stubbedTypes: [TypeInfo] = []
+    private(set) var analyzeCallCount = 0
+
+    func analyzeTypes(for paths: [String], sdkPath _: String?) -> [TypeInfo] {
+        analyzeCallCount += 1
+        lastPaths = paths
+        return stubbedTypes
+    }
+
     func generateScript(
         for paths: [String],
         with configuration: Configuration,
@@ -115,6 +126,22 @@ final class MockDepsGenerator: DependencyGraphGenerating, @unchecked Sendable {
     private(set) var lastPaths: [String] = []
     private(set) var lastMode: DepsMode?
     private(set) var lastConfiguration: Configuration?
+
+    /// Canned edge list for `extractEdges`, which `ProjectAnalyzer` uses for cycle detection
+    /// and module counting. Empty by default so existing tests are unaffected.
+    var stubbedEdges: [DependencyEdge] = []
+    private(set) var extractCallCount = 0
+
+    func extractEdges(
+        for paths: [String],
+        mode: DepsMode,
+        with _: Configuration
+    ) -> [DependencyEdge] {
+        extractCallCount += 1
+        lastPaths = paths
+        lastMode = mode
+        return stubbedEdges
+    }
 
     private(set) var packageCallCount = 0
     private(set) var lastDescription: SPMPackageDescription?
