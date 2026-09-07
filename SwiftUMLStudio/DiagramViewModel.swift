@@ -179,9 +179,12 @@ final class DiagramViewModel {
         }
     }
 
-    func save(isProUnlocked: Bool = false) {
-        saveToHistory()
-        saveSnapshot(isProUnlocked: isProUnlocked)
+    /// One save is one event, so it reads the clock once and hands the same instant to both
+    /// records. They used to take an independent read each, which meant a history entry and the
+    /// snapshot beside it disagreed about when the user pressed Save.
+    func save(isProUnlocked: Bool = false, at savedAt: Date = Date()) {
+        saveToHistory(at: savedAt)
+        saveSnapshot(isProUnlocked: isProUnlocked, at: savedAt)
     }
 
     /// Replace the current selection with a freshly granted set of paths.

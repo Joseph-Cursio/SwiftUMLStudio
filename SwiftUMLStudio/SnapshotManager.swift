@@ -21,15 +21,21 @@ enum SnapshotManager {
     /// `paths`; pass `[]` (default) for non-bookmarked callers — the snapshot
     /// remains usable for identity matching, only cross-session read access
     /// won't be restorable.
+    /// `at` is the instant the snapshot records. It is a parameter because `timestamp` decides
+    /// which snapshot is "the previous one" — `fetchSnapshots` sorts by it and `latestSnapshot`
+    /// takes the first match — and a caller that cannot say when two snapshots were taken cannot
+    /// test that ordering at all.
     static func saveSnapshot(
         from summary: ProjectSummary,
         paths: [String],
         bookmarks: [Data?] = [],
+        at savedAt: Date = Date(),
         modelContext: ModelContext
     ) {
+        // `identifier` is not passed: `ProjectSnapshot.init` already defaults it to a fresh UUID,
+        // so the argument that used to be here minted a second one and threw the first away.
         let snapshot = ProjectSnapshot(
-            identifier: UUID(),
-            timestamp: Date(),
+            timestamp: savedAt,
             typeCount: summary.totalTypes,
             relationshipCount: summary.totalRelationships,
             moduleCount: summary.moduleImports.count,

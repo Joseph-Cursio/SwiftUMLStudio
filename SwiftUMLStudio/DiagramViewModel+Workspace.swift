@@ -185,12 +185,13 @@ extension DiagramViewModel {
         snapshots = SnapshotManager.fetchSnapshots(modelContext: modelContext)
     }
 
-    func saveSnapshot(isProUnlocked: Bool) {
+    func saveSnapshot(isProUnlocked: Bool, at savedAt: Date = Date()) {
         guard isProUnlocked, let summary = projectSummary else { return }
         SnapshotManager.saveSnapshot(
             from: summary,
             paths: selectedPaths,
             bookmarks: selectedPathBookmarks,
+            at: savedAt,
             modelContext: modelContext
         )
         loadSnapshots()
