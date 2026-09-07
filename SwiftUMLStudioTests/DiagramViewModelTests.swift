@@ -194,10 +194,11 @@ private func generateAndWait(
 
     viewModel.generate()
 
-    // Give the Task a moment to start and run its synchronous guard checks.
-    // The ViewModel now has a 300ms debounce sleep, so we must wait longer than that.
-    try? await Task.sleep(for: .milliseconds(400))
-    await Task.yield()
+    // Wait for the work itself, not for a duration. This used to sleep 400ms against the view
+    // model's 300ms debounce, which is a 100ms margin shared with every other test running in
+    // parallel — adding one main-actor test elsewhere in the suite was enough to make all six
+    // callers fail together, while each still passed when run alone.
+    await viewModel.currentTask?.value
 
     return viewModel.isGenerating
 }
