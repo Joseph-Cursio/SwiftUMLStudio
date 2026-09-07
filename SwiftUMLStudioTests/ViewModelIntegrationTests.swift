@@ -11,178 +11,146 @@ import Testing
 import SwiftUMLBridgeFramework
 @testable import SwiftUMLStudio
 
-// MARK: - GCD dispatch helpers
-
-private func runOnMain(_ block: @MainActor () -> Void) {
-    if Thread.isMainThread {
-        MainActor.assumeIsolated(block)
-    } else {
-        DispatchQueue.main.sync { MainActor.assumeIsolated(block) }
-    }
-}
-
-private func runOnMain(_ block: @MainActor () throws -> Void) throws {
-    if Thread.isMainThread {
-        try MainActor.assumeIsolated(block)
-    } else {
-        var thrownError: (any Error)?
-        DispatchQueue.main.sync {
-            do { try MainActor.assumeIsolated(block) } catch { thrownError = error }
-        }
-        if let err = thrownError { throw err }
-    }
-}
-
 // MARK: - DiagramViewModel History Integration Tests
 
-@Suite("DiagramViewModel History Integration")
+@Suite("DiagramViewModel History Integration") @MainActor
 struct DiagramViewModelHistoryIntegrationTests {
 
     @Test("loadHistory returns entities after saving one via the context")
     func loadHistoryAfterSave() throws {
-        try runOnMain {
-            let persistence = PersistenceController(inMemory: true)
-            let modelContext = persistence.container.mainContext
+        let persistence = PersistenceController(inMemory: true)
+        let modelContext = persistence.container.mainContext
 
-            let entity = DiagramEntity()
-            entity.identifier = UUID()
-            entity.name = "History Test"
-            entity.mode = DiagramMode.classDiagram.rawValue
-            entity.format = DiagramFormat.plantuml.rawValue
-            entity.timestamp = Date()
-            entity.scriptText = "@startuml\nclass A\n@enduml"
-            modelContext.insert(entity)
-            try modelContext.save()
+        let entity = DiagramEntity()
+        entity.identifier = UUID()
+        entity.name = "History Test"
+        entity.mode = DiagramMode.classDiagram.rawValue
+        entity.format = DiagramFormat.plantuml.rawValue
+        entity.timestamp = Date()
+        entity.scriptText = "@startuml\nclass A\n@enduml"
+        modelContext.insert(entity)
+        try modelContext.save()
 
-            let viewModel = DiagramViewModel(persistenceController: persistence)
-            viewModel.loadHistory()
+        let viewModel = DiagramViewModel(persistenceController: persistence)
+        viewModel.loadHistory()
 
-            #expect(viewModel.history.count >= 1)
-            #expect(viewModel.history.contains { $0.name == "History Test" })
-        }
+        #expect(viewModel.history.count >= 1)
+        #expect(viewModel.history.contains { $0.name == "History Test" })
     }
 
     @Test("deleteHistoryItem removes the entity and updates history array")
     func deleteHistoryItem() throws {
-        try runOnMain {
-            let persistence = PersistenceController(inMemory: true)
-            let modelContext = persistence.container.mainContext
+        let persistence = PersistenceController(inMemory: true)
+        let modelContext = persistence.container.mainContext
 
-            let entity = DiagramEntity()
-            entity.identifier = UUID()
-            entity.name = "To Be Deleted"
-            entity.mode = DiagramMode.classDiagram.rawValue
-            entity.timestamp = Date()
-            modelContext.insert(entity)
-            try modelContext.save()
+        let entity = DiagramEntity()
+        entity.identifier = UUID()
+        entity.name = "To Be Deleted"
+        entity.mode = DiagramMode.classDiagram.rawValue
+        entity.timestamp = Date()
+        modelContext.insert(entity)
+        try modelContext.save()
 
-            let viewModel = DiagramViewModel(persistenceController: persistence)
-            viewModel.loadHistory()
+        let viewModel = DiagramViewModel(persistenceController: persistence)
+        viewModel.loadHistory()
 
-            let entityToDelete = try #require(viewModel.history.first { $0.name == "To Be Deleted" })
-            viewModel.deleteHistoryItem(entityToDelete)
+        let entityToDelete = try #require(viewModel.history.first { $0.name == "To Be Deleted" })
+        viewModel.deleteHistoryItem(entityToDelete)
 
-            #expect(viewModel.history.contains { $0.name == "To Be Deleted" } == false)
+        #expect(viewModel.history.contains { $0.name == "To Be Deleted" } == false)
 
-            let descriptor = FetchDescriptor<DiagramEntity>()
-            let remaining = try modelContext.fetch(descriptor)
-            #expect(remaining.contains { $0.name == "To Be Deleted" } == false)
-        }
+        let descriptor = FetchDescriptor<DiagramEntity>()
+        let remaining = try modelContext.fetch(descriptor)
+        #expect(remaining.contains { $0.name == "To Be Deleted" } == false)
     }
 
     @Test("loadHistory returns results sorted by timestamp descending")
     func loadHistorySortOrder() throws {
-        try runOnMain {
-            let persistence = PersistenceController(inMemory: true)
-            let modelContext = persistence.container.mainContext
-            let now = Date()
+        let persistence = PersistenceController(inMemory: true)
+        let modelContext = persistence.container.mainContext
+        let now = Date()
 
-            for idx in 0..<3 {
-                let entity = DiagramEntity()
-                entity.identifier = UUID()
-                entity.name = "Ordered \(idx)"
-                entity.mode = DiagramMode.classDiagram.rawValue
-                entity.timestamp = now.addingTimeInterval(TimeInterval(idx * 100))
-                modelContext.insert(entity)
-            }
-            try modelContext.save()
-
-            let viewModel = DiagramViewModel(persistenceController: persistence)
-            viewModel.loadHistory()
-
-            let orderedNames = viewModel.history.map { $0.name ?? "" }
-            #expect(orderedNames == ["Ordered 2", "Ordered 1", "Ordered 0"])
+        for idx in 0..<3 {
+            let entity = DiagramEntity()
+            entity.identifier = UUID()
+            entity.name = "Ordered \(idx)"
+            entity.mode = DiagramMode.classDiagram.rawValue
+            entity.timestamp = now.addingTimeInterval(TimeInterval(idx * 100))
+            modelContext.insert(entity)
         }
+        try modelContext.save()
+
+        let viewModel = DiagramViewModel(persistenceController: persistence)
+        viewModel.loadHistory()
+
+        let orderedNames = viewModel.history.map { $0.name ?? "" }
+        #expect(orderedNames == ["Ordered 2", "Ordered 1", "Ordered 0"])
     }
 
     @Test("loadDiagram restores ViewModel state from a DiagramEntity")
     func loadDiagramRestoresState() throws {
-        try runOnMain {
-            let persistence = PersistenceController(inMemory: true)
-            let modelContext = persistence.container.mainContext
+        let persistence = PersistenceController(inMemory: true)
+        let modelContext = persistence.container.mainContext
 
-            // Test sequence diagram restoration
-            let seqEntity = DiagramEntity()
-            seqEntity.identifier = UUID()
-            seqEntity.mode = DiagramMode.sequenceDiagram.rawValue
-            seqEntity.entryPoint = "Foo.bar"
-            seqEntity.timestamp = Date()
-            modelContext.insert(seqEntity)
+        // Test sequence diagram restoration
+        let seqEntity = DiagramEntity()
+        seqEntity.identifier = UUID()
+        seqEntity.mode = DiagramMode.sequenceDiagram.rawValue
+        seqEntity.entryPoint = "Foo.bar"
+        seqEntity.timestamp = Date()
+        modelContext.insert(seqEntity)
 
-            // Test dependency graph restoration (uses entryPoint for depsMode)
-            let depsEntity = DiagramEntity()
-            depsEntity.identifier = UUID()
-            depsEntity.mode = DiagramMode.dependencyGraph.rawValue
-            depsEntity.entryPoint = DepsMode.modules.rawValue
-            depsEntity.timestamp = Date()
-            modelContext.insert(depsEntity)
+        // Test dependency graph restoration (uses entryPoint for depsMode)
+        let depsEntity = DiagramEntity()
+        depsEntity.identifier = UUID()
+        depsEntity.mode = DiagramMode.dependencyGraph.rawValue
+        depsEntity.entryPoint = DepsMode.modules.rawValue
+        depsEntity.timestamp = Date()
+        modelContext.insert(depsEntity)
 
-            try modelContext.save()
+        try modelContext.save()
 
-            let viewModel = DiagramViewModel(persistenceController: persistence)
+        let viewModel = DiagramViewModel(persistenceController: persistence)
 
-            // Verify sequence restoration
-            viewModel.loadDiagram(seqEntity)
-            #expect(viewModel.diagramMode == .sequenceDiagram)
-            #expect(viewModel.entryPoint == "Foo.bar")
+        // Verify sequence restoration
+        viewModel.loadDiagram(seqEntity)
+        #expect(viewModel.diagramMode == .sequenceDiagram)
+        #expect(viewModel.entryPoint == "Foo.bar")
 
-            // Verify dependency restoration
-            viewModel.loadDiagram(depsEntity)
-            #expect(viewModel.diagramMode == .dependencyGraph)
-            #expect(viewModel.depsMode == .modules)
-        }
+        // Verify dependency restoration
+        viewModel.loadDiagram(depsEntity)
+        #expect(viewModel.diagramMode == .dependencyGraph)
+        #expect(viewModel.depsMode == .modules)
     }
 
     @Test("save() generates a descriptive name and stores it in history")
     func saveGeneratesName() throws {
-        try runOnMain {
-            let persistence = PersistenceController(inMemory: true)
-            let viewModel = DiagramViewModel(persistenceController: persistence)
+        let persistence = PersistenceController(inMemory: true)
+        let viewModel = DiagramViewModel(persistenceController: persistence)
 
-            // Create a fake script so we have something to save. `loadDiagram`
-            // restores selection/mode from the entity, so it has to run before the
-            // state under test is applied — otherwise it overwrites it.
-            let entity = DiagramEntity()
-            entity.scriptText = "@startuml\n@enduml"
-            persistence.container.mainContext.insert(entity)
-            viewModel.loadDiagram(entity)
+        // Create a fake script so we have something to save. `loadDiagram`
+        // restores selection/mode from the entity, so it has to run before the
+        // state under test is applied — otherwise it overwrites it.
+        let entity = DiagramEntity()
+        entity.scriptText = "@startuml\n@enduml"
+        persistence.container.mainContext.insert(entity)
+        viewModel.loadDiagram(entity)
 
-            viewModel.selectedPaths = ["/Users/joe/Projects/MyApp/Sources/Main.swift"]
-            viewModel.diagramMode = .classDiagram
+        viewModel.selectedPaths = ["/Users/joe/Projects/MyApp/Sources/Main.swift"]
+        viewModel.diagramMode = .classDiagram
 
-            viewModel.save()
-            viewModel.loadHistory()
+        viewModel.save()
+        viewModel.loadHistory()
 
-            let saved = try #require(viewModel.history.first)
-            #expect(saved.name == "Main.swift")
-            #expect(saved.mode == DiagramMode.classDiagram.rawValue)
-        }
+        let saved = try #require(viewModel.history.first)
+        #expect(saved.name == "Main.swift")
+        #expect(saved.mode == DiagramMode.classDiagram.rawValue)
     }
 }
 
 // MARK: - Diagram Generation Pipeline Integration Tests
 
-@Suite("Diagram Generation Pipeline")
+@Suite("Diagram Generation Pipeline") @MainActor
 struct DiagramGenerationPipelineTests {
 
     // MARK: Helpers

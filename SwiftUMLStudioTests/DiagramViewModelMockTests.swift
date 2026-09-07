@@ -19,16 +19,6 @@ import Testing
 @testable import SwiftUMLBridgeFramework
 @testable import SwiftUMLStudio
 
-// MARK: - GCD dispatch helpers
-
-private func runOnMain(_ block: @MainActor () -> Void) {
-    if Thread.isMainThread {
-        MainActor.assumeIsolated(block)
-    } else {
-        DispatchQueue.main.sync { MainActor.assumeIsolated(block) }
-    }
-}
-
 // MARK: - Mock Generators
 
 /// A mock class diagram generator that records calls and returns a canned DiagramScript.
@@ -179,7 +169,7 @@ final class MockDepsGenerator: DependencyGraphGenerating, @unchecked Sendable {
 
 // MARK: - DiagramViewModel Mock Generation Tests
 
-@Suite("DiagramViewModel Mock Generation")
+@Suite("DiagramViewModel Mock Generation") @MainActor
 struct DiagramViewModelMockTests {
 
     // MARK: - Class Diagram Generation

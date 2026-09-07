@@ -11,134 +11,88 @@ import Testing
 import SwiftUMLBridgeFramework
 @testable import SwiftUMLStudio
 
-// MARK: - GCD dispatch helpers
-
-private func runOnMain(_ block: @MainActor () -> Void) {
-    if Thread.isMainThread {
-        MainActor.assumeIsolated(block)
-    } else {
-        DispatchQueue.main.sync { MainActor.assumeIsolated(block) }
-    }
-}
-
-private func runOnMain(_ block: @MainActor () throws -> Void) throws {
-    if Thread.isMainThread {
-        try MainActor.assumeIsolated(block)
-    } else {
-        var thrownError: (any Error)?
-        DispatchQueue.main.sync {
-            do { try MainActor.assumeIsolated(block) } catch { thrownError = error }
-        }
-        if let err = thrownError { throw err }
-    }
-}
-
 // MARK: - DiagramViewModel Tests
 
-@Suite("DiagramViewModel Defaults and Guards")
+@Suite("DiagramViewModel Defaults and Guards") @MainActor
 struct DiagramViewModelTests {
 
     // MARK: Default property values
 
     @Test("default diagramMode is classDiagram")
     func defaultDiagramMode() {
-        runOnMain {
-            let viewModel = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
-            #expect(viewModel.diagramMode == .classDiagram)
-        }
+        let viewModel = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
+        #expect(viewModel.diagramMode == .classDiagram)
     }
 
     @Test("default diagramFormat is plantuml")
     func defaultDiagramFormat() {
-        runOnMain {
-            let viewModel = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
-            #expect(viewModel.diagramFormat == .plantuml)
-        }
+        let viewModel = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
+        #expect(viewModel.diagramFormat == .plantuml)
     }
 
     @Test("default depsMode is types")
     func defaultDepsMode() {
-        runOnMain {
-            let viewModel = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
-            #expect(viewModel.depsMode == .types)
-        }
+        let viewModel = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
+        #expect(viewModel.depsMode == .types)
     }
 
     @Test("default sequenceDepth is 3")
     func defaultSequenceDepth() {
-        runOnMain {
-            let viewModel = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
-            #expect(viewModel.sequenceDepth == 3)
-        }
+        let viewModel = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
+        #expect(viewModel.sequenceDepth == 3)
     }
 
     @Test("default entryPoint is empty string")
     func defaultEntryPoint() {
-        runOnMain {
-            let viewModel = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
-            #expect(viewModel.entryPoint == "")
-        }
+        let viewModel = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
+        #expect(viewModel.entryPoint == "")
     }
 
     @Test("default selectedPaths is empty")
     func defaultSelectedPaths() {
-        runOnMain {
-            let viewModel = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
-            #expect(viewModel.selectedPaths.isEmpty)
-        }
+        let viewModel = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
+        #expect(viewModel.selectedPaths.isEmpty)
     }
 
     @Test("default isGenerating is false")
     func defaultIsGenerating() {
-        runOnMain {
-            let viewModel = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
-            #expect(viewModel.isGenerating == false)
-        }
+        let viewModel = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
+        #expect(viewModel.isGenerating == false)
     }
 
     @Test("default errorMessage is nil")
     func defaultErrorMessage() {
-        runOnMain {
-            let viewModel = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
-            #expect(viewModel.errorMessage == nil)
-        }
+        let viewModel = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
+        #expect(viewModel.errorMessage == nil)
     }
 
     @Test("default restoreNotice is nil")
     func defaultRestoreNotice() {
-        runOnMain {
-            let viewModel = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
-            #expect(viewModel.restoreNotice == nil)
-        }
+        let viewModel = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
+        #expect(viewModel.restoreNotice == nil)
     }
 
     // MARK: currentScript
 
     @Test("currentScript is nil initially for classDiagram mode")
     func currentScriptNilForClassDiagram() {
-        runOnMain {
-            let viewModel = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
-            viewModel.diagramMode = .classDiagram
-            #expect(viewModel.currentScript == nil)
-        }
+        let viewModel = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
+        viewModel.diagramMode = .classDiagram
+        #expect(viewModel.currentScript == nil)
     }
 
     @Test("currentScript is nil initially for sequenceDiagram mode")
     func currentScriptNilForSequenceDiagram() {
-        runOnMain {
-            let viewModel = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
-            viewModel.diagramMode = .sequenceDiagram
-            #expect(viewModel.currentScript == nil)
-        }
+        let viewModel = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
+        viewModel.diagramMode = .sequenceDiagram
+        #expect(viewModel.currentScript == nil)
     }
 
     @Test("currentScript is nil initially for dependencyGraph mode")
     func currentScriptNilForDependencyGraph() {
-        runOnMain {
-            let viewModel = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
-            viewModel.diagramMode = .dependencyGraph
-            #expect(viewModel.currentScript == nil)
-        }
+        let viewModel = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
+        viewModel.diagramMode = .dependencyGraph
+        #expect(viewModel.currentScript == nil)
     }
 
     // MARK: generate() guard logic
@@ -195,41 +149,33 @@ struct DiagramViewModelTests {
 
     @Test("refreshEntryPoints clears when no paths selected")
     func refreshEntryPointsClearsWhenNoPathsSelected() {
-        runOnMain {
-            let viewModel = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
-            viewModel.availableEntryPoints = ["Foo.bar"]
-            viewModel.selectedPaths = []
-            viewModel.refreshEntryPoints()
-            #expect(viewModel.availableEntryPoints.isEmpty)
-        }
+        let viewModel = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
+        viewModel.availableEntryPoints = ["Foo.bar"]
+        viewModel.selectedPaths = []
+        viewModel.refreshEntryPoints()
+        #expect(viewModel.availableEntryPoints.isEmpty)
     }
 
     // MARK: pathSummary
 
     @Test("pathSummary with no paths")
     func pathSummaryNoPaths() {
-        runOnMain {
-            let viewModel = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
-            #expect(viewModel.pathSummary == "No source selected")
-        }
+        let viewModel = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
+        #expect(viewModel.pathSummary == "No source selected")
     }
 
     @Test("pathSummary with one path shows filename")
     func pathSummaryOnePath() {
-        runOnMain {
-            let viewModel = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
-            viewModel.selectedPaths = ["/Users/test/MyApp/Sources/AppDelegate.swift"]
-            #expect(viewModel.pathSummary == "AppDelegate.swift")
-        }
+        let viewModel = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
+        viewModel.selectedPaths = ["/Users/test/MyApp/Sources/AppDelegate.swift"]
+        #expect(viewModel.pathSummary == "AppDelegate.swift")
     }
 
     @Test("pathSummary with multiple paths shows count")
     func pathSummaryMultiplePaths() {
-        runOnMain {
-            let viewModel = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
-            viewModel.selectedPaths = ["/a/First.swift", "/b/Second.swift", "/c/Third.swift"]
-            #expect(viewModel.pathSummary == "First.swift + 2 more")
-        }
+        let viewModel = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
+        viewModel.selectedPaths = ["/a/First.swift", "/b/Second.swift", "/c/Third.swift"]
+        #expect(viewModel.pathSummary == "First.swift + 2 more")
     }
 }
 
