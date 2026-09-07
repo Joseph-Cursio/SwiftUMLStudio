@@ -11,11 +11,6 @@ public struct StateScript: Sendable {
     /// An empty script (used when no candidate matches).
     public static let empty = StateScript(text: "", format: .plantuml)
 
-    /// Encode diagram text for PlantUML URL embedding.
-    public func encodeText() -> String {
-        DiagramText(rawValue: text).encodedValue
-    }
-
     internal init(model: StateMachineModel, configuration: Configuration) {
         switch configuration.format {
         case .plantuml:

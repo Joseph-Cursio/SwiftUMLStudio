@@ -14,11 +14,6 @@ public struct SequenceScript: Sendable {
     /// An empty script (used when no entry point matches).
     public static let empty = SequenceScript(text: "", format: .plantuml)
 
-    /// Encode diagram text for PlantUML URL embedding (same encoding as DiagramScript).
-    public func encodeText() -> String {
-        DiagramText(rawValue: text).encodedValue
-    }
-
     internal init(
         traversedEdges: [CallEdge],
         entryType: String,

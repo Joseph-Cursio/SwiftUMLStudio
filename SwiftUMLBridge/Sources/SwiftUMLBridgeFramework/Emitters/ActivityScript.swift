@@ -14,11 +14,6 @@ public struct ActivityScript: Sendable {
     /// An empty script (used when the entry point is not found).
     public static let empty = ActivityScript(text: "", format: .plantuml)
 
-    /// Encode diagram text for URL embedding (same encoding as DiagramScript).
-    public func encodeText() -> String {
-        DiagramText(rawValue: text).encodedValue
-    }
-
     internal init(graph: ActivityGraph, configuration: Configuration) {
         self.format = configuration.format
         switch configuration.format {

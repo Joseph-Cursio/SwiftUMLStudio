@@ -119,11 +119,6 @@ public struct DiagramScript: @unchecked Sendable {
         return result
     }
 
-    /// Encode diagram text for PlantUML URL embedding
-    public func encodeText() -> String {
-        DiagramText(rawValue: text).encodedValue
-    }
-
     /// Default styling block (PlantUML only; empty string for Mermaid)
     internal var defaultStyling: String {
         guard format == .plantuml else { return "" }

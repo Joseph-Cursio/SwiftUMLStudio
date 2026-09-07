@@ -20,8 +20,18 @@ public protocol DiagramOutputting: Sendable {
     var componentLayout: ComponentLayout? { get }
 }
 
-/// Default nil implementations for optional layout data.
+/// Default implementations: the shared text encoding, and nil for the optional
+/// layout data.
 public extension DiagramOutputting {
+    /// Encode the diagram text for PlantUML URL embedding.
+    ///
+    /// Every conformer spelled this the same way — seven copies of one line.
+    /// A conformer that needs a different encoding still overrides it.
+    func encodeText() -> String {
+        DiagramText(rawValue: text).encodedValue
+    }
+
+
     var layoutGraph: LayoutGraph? { nil }
     var sequenceLayout: SequenceLayout? { nil }
     var activityLayout: ActivityLayout? { nil }
