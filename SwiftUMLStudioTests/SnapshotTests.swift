@@ -206,6 +206,40 @@ struct SnapshotManagerTests {
         #expect(Set(latest!.decodedProjectPaths) == Set(targetPaths))
     }
 
+    /// The half of `latestSnapshot`'s name that was not covered.
+    ///
+    /// The test above saves two snapshots with *different* paths, so it proves the filter and says
+    /// nothing about "latest". Two snapshots for the *same* paths could not be written before:
+    /// `saveSnapshot` read the clock itself, so a test could not say which was newer, and two
+    /// saves landing in one tick would have made the assertion flaky rather than wrong.
+    @Test("latestSnapshot returns the newest of several snapshots for the same paths")
+    func latestSnapshotPicksTheNewest() throws {
+        let controller = PersistenceController(inMemory: true)
+        let modelContext = controller.container.mainContext
+        let targetPaths = ["/project/a"]
+
+        let older = makeTestSummary(totalFiles: 10)
+        let newer = makeTestSummary(totalFiles: 99)
+
+        // Saved newest-first, so passing the test cannot be an accident of insertion order.
+        SnapshotManager.saveSnapshot(
+            from: newer,
+            paths: targetPaths,
+            at: Date(timeIntervalSince1970: 2_000),
+            modelContext: modelContext
+        )
+        SnapshotManager.saveSnapshot(
+            from: older,
+            paths: targetPaths,
+            at: Date(timeIntervalSince1970: 1_000),
+            modelContext: modelContext
+        )
+
+        let latest = SnapshotManager.latestSnapshot(for: targetPaths, modelContext: modelContext)
+        #expect(latest?.fileCount == 99)
+        #expect(latest?.timestamp == Date(timeIntervalSince1970: 2_000))
+    }
+
     @Test("latestSnapshot returns nil when no matching paths")
     func latestSnapshotNoMatch() {
         let controller = PersistenceController(inMemory: true)
@@ -213,6 +247,39 @@ struct SnapshotManagerTests {
 
         let result = SnapshotManager.latestSnapshot(for: ["/nonexistent"], modelContext: modelContext)
         #expect(result == nil)
+    }
+
+    /// One press of Save is one event.
+    ///
+    /// `save` used to call `saveToHistory` and `saveSnapshot`, each of which read the clock for
+    /// itself, so the two records it wrote disagreed about when the user pressed Save. Now it
+    /// reads once and hands the instant down.
+    @Test("save stamps the history entry and the snapshot with one instant")
+    func saveUsesOneInstantForBothRecords() throws {
+        let persistence = PersistenceController(inMemory: true)
+        let modelContext = persistence.container.mainContext
+        let viewModel = DiagramViewModel(persistenceController: persistence)
+        viewModel.selectedPaths = ["/tmp/Foo.swift"]
+        viewModel.projectSummary = makeTestSummary()
+
+        // `currentScript` is a computed property; restoring a history entry is how a test gives
+        // it one, and `saveToHistory` returns early without it.
+        let seed = DiagramEntity()
+        seed.timestamp = Date(timeIntervalSince1970: 1)
+        seed.mode = DiagramMode.classDiagram.rawValue
+        seed.format = DiagramFormat.plantuml.rawValue
+        seed.scriptText = "@startuml\nclass Foo\n@enduml"
+        modelContext.insert(seed)
+        try modelContext.save()
+        viewModel.loadDiagram(seed)
+
+        let pressedSave = Date(timeIntervalSince1970: 5_000)
+        viewModel.save(isProUnlocked: true, at: pressedSave)
+
+        viewModel.loadHistory()
+        viewModel.loadSnapshots()
+        #expect(viewModel.history.first?.timestamp == pressedSave)
+        #expect(viewModel.snapshots.first?.timestamp == pressedSave)
     }
 
     @Test("saveSnapshot persists path bookmarks alongside paths")
