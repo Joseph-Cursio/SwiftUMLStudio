@@ -35,9 +35,6 @@ public struct ComponentScript: Sendable {
         self.componentLayout = nil
     }
 
-    public func encodeText() -> String {
-        DiagramText(rawValue: text).encodedValue
-    }
 }
 
 extension ComponentScript: DiagramOutputting {}

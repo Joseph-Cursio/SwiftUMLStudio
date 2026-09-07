@@ -11,11 +11,6 @@ public struct DepsScript: Sendable {
     /// Positioned layout graph (available when format is `.svg`).
     public let layoutGraph: LayoutGraph?
 
-    /// Encode diagram text for PlantUML URL embedding (same encoding as DiagramScript).
-    public func encodeText() -> String {
-        DiagramText(rawValue: text).encodedValue
-    }
-
     internal init(model: DependencyGraphModel, configuration: Configuration) {
         self.format = configuration.format
         let cycleNodes = model.detectCycles()

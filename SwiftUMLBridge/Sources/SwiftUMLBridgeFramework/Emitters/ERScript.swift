@@ -8,10 +8,6 @@ public struct ERScript: Sendable {
     /// An empty script (returned when no `@Model` types are found).
     public static let empty = ERScript(text: "", format: .plantuml)
 
-    public func encodeText() -> String {
-        DiagramText(rawValue: text).encodedValue
-    }
-
     internal init(model: ERModel, configuration: Configuration) {
         switch configuration.format {
         case .plantuml:
