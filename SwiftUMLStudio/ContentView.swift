@@ -289,17 +289,8 @@ private struct PlantUMLConsentAlert: ViewModifier {
                 set: { if !$0 { request = nil } }
             )
         ) {
-            Button("Continue") {
-                PlantUMLConsent.grant()
-                viewModel.generate()
-                request = nil
-            }
-            Button("Cancel", role: .cancel) {
-                if let pending = request {
-                    viewModel.diagramFormat = pending.previous
-                }
-                request = nil
-            }
+            Button("Continue") { grantConsent() }
+            Button("Cancel", role: .cancel) { declineConsent() }
         } message: {
             Text(
                 "PlantUML diagrams are rendered by planttext.com, a third-party "
@@ -308,6 +299,25 @@ private struct PlantUMLConsentAlert: ViewModifier {
                 + "network use."
             )
         }
+    }
+
+    /// Persist the consent, generate with the format that prompted for it, and dismiss.
+    private func grantConsent() {
+        PlantUMLConsent.grant()
+        viewModel.generate()
+        request = nil
+    }
+
+    /// Put the format back the way it was before the selection that raised this prompt.
+    ///
+    /// The restore is the part worth naming: dismissing without it leaves the picker showing
+    /// `.plantuml` while nothing was generated, so the UI claims a format the user declined.
+    /// `request.previous` exists for exactly this and nothing else reads it.
+    private func declineConsent() {
+        if let pending = request {
+            viewModel.diagramFormat = pending.previous
+        }
+        request = nil
     }
 }
 

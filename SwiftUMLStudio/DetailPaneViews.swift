@@ -153,9 +153,7 @@ struct DiagramPreviewView: View {
                 }
             }
             .onChange(of: viewModel.currentScript?.text) { _, _ in
-                viewport.reset()
-                viewport.selectedNodeId = nil
-                viewport.hoveredNodeId = nil
+                viewport.clearForNewDiagram()
             }
         }
     }

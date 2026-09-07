@@ -45,6 +45,18 @@ final class DiagramViewport {
         }
     }
 
+    /// Everything a new diagram invalidates: the pan/zoom transform, and the two node ids that
+    /// refer to nodes the new script may not contain.
+    ///
+    /// The three calls were written out in an `onChange` no test could fire, and the *set* of
+    /// them is the thing worth stating — a fourth id added to this type later has to be cleared
+    /// here too, and there was nowhere for that obligation to live.
+    func clearForNewDiagram() {
+        reset()
+        selectedNodeId = nil
+        hoveredNodeId = nil
+    }
+
     func fitToWindow() {
         guard let fit = Self.fitScale(content: contentSize, visible: visibleSize) else { return }
         withAnimation(.easeInOut(duration: 0.25)) {
