@@ -100,7 +100,7 @@ extension SyntaxStructure {
         guard let actualElement = renderableMember(from: element, context: context) else { return nil }
 
         var prefix = ""
-        if context.configuration.elements.showMemberAccessLevelAttribute {
+        if context.elements.showMemberAccessLevelAttribute {
             prefix = nomnomlAccessPrefix(for: actualElement)
         }
 
