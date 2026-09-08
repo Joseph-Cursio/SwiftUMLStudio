@@ -14,7 +14,7 @@ extension SyntaxStructure {
         guard let kind else { return nil }
         guard skip(element: self, basedOn: context.configuration) == false else { return nil }
 
-        let generics: String? = context.configuration.elements.showGenerics ? genericsStatement() : nil
+        let generics: String? = context.elements.showGenerics ? genericsStatement() : nil
         guard let textualRepresentation = textBuilder(kind, generics, context) else {
             return nil
         }

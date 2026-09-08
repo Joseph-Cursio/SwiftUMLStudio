@@ -5,6 +5,14 @@ class DiagramContext {
     private(set) var configuration: Configuration
     let format: DiagramFormat
 
+    /// The element-rendering options, without the hop through `configuration`.
+    ///
+    /// Callers holding a context were reaching `context.configuration.elements.showGenerics` —
+    /// three levels of knowledge about how a context stores its settings, for a value the context
+    /// can hand over directly. `configuration` stays public for the callers that want the whole
+    /// thing (`skip(element:basedOn:)` takes it entire).
+    var elements: ElementOptions { configuration.elements }
+
     var uniqueNameForElement: [SyntaxStructure: String] = [:]
 
     var uniqElementNames: [String] = []

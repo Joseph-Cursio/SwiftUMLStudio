@@ -47,14 +47,14 @@ public struct DiagramScript: @unchecked Sendable {
     private func buildDefinitions(from items: [SyntaxStructure]) -> String {
         var adjustedItems = items
 
-        if context.configuration.elements.showNestedTypes {
+        if context.elements.showNestedTypes {
             adjustedItems = adjustedItems.populateNestedTypes()
         }
 
         adjustedItems = adjustedItems.orderedByProtocolsFirstExtensionsLast()
 
         if context.configuration.shallExtensionsBeMerged {
-            let indicator = context.configuration.elements.mergedExtensionMemberIndicator
+            let indicator = context.elements.mergedExtensionMemberIndicator
             adjustedItems = adjustedItems.mergeExtensions(mergedMemberIndicator: indicator)
         }
 
