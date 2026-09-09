@@ -22,7 +22,7 @@ struct ProjectDashboardView: View {
                         ModuleBreakdownSection(modules: summary.moduleBreakdown)
                     }
                     if !insights.isEmpty {
-                        insightsSection
+                        InsightsSection(insights: insights)
                     }
                     if !suggestions.isEmpty {
                         suggestionsSection
@@ -57,18 +57,6 @@ struct ProjectDashboardView: View {
         }
     }
 
-    // MARK: - Insights
-
-    private var insightsSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Insights")
-                .font(.headline)
-            ForEach(insights) { insight in
-                InsightRowView(insight: insight)
-            }
-        }
-    }
-
     // MARK: - Suggestions
 
     private var suggestionsSection: some View {
@@ -85,6 +73,24 @@ struct ProjectDashboardView: View {
 }
 
 // MARK: - Extracted Subviews
+
+/// The insights list.
+///
+/// Takes the insights alone. The dashboard is handed `onSuggestionTap`, a fresh closure on every
+/// update its parent runs, so the dashboard itself never compares equal — this does.
+struct InsightsSection: View {
+    let insights: [Insight]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Insights")
+                .font(.headline)
+            ForEach(insights) { insight in
+                InsightRowView(insight: insight)
+            }
+        }
+    }
+}
 
 struct StatCardView: View {
     let value: Int
