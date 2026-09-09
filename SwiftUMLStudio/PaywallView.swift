@@ -42,9 +42,9 @@ struct PaywallView<Manager: SubscriptionProviding>: View {
 
     var body: some View {
         VStack(spacing: 24) {
-            header
+            PaywallHeader()
             featureList
-            purchaseButtons
+            PaywallPurchaseButtons(subscriptionManager: subscriptionManager)
             restoreLink
             if let error = subscriptionManager.purchaseError {
                 Text(error)
@@ -57,21 +57,6 @@ struct PaywallView<Manager: SubscriptionProviding>: View {
     }
 
     // MARK: - Subviews
-
-    private var header: some View {
-        VStack(spacing: 8) {
-            Image(systemName: "star.circle.fill")
-                .font(.system(size: 48))
-                .foregroundStyle(.yellow)
-                .accessibilityHidden(true)
-            Text("Upgrade to Pro")
-                .font(.title.bold())
-            Text("Unlock the full power of SwiftUML Studio")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-        }
-    }
 
     private var featureList: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -98,7 +83,51 @@ struct PaywallView<Manager: SubscriptionProviding>: View {
         }
     }
 
-    private var purchaseButtons: some View {
+    private var restoreLink: some View {
+        HStack {
+            Button("Restore Purchases") {
+                Task { await subscriptionManager.restorePurchases() }
+            }
+            .buttonStyle(.link)
+            .font(.caption)
+
+            Spacer()
+
+            Button("Not Now") { dismiss() }
+                .buttonStyle(.link)
+                .font(.caption)
+        }
+    }
+}
+
+// MARK: - Subviews
+
+/// The star, the title and the strapline.
+///
+/// Reads nothing, so it is skipped on every update the purchase flow drives — products arriving,
+/// a purchase failing, the restore link reporting.
+private struct PaywallHeader: View {
+    var body: some View {
+        VStack(spacing: 8) {
+            Image(systemName: "star.circle.fill")
+                .font(.system(size: 48))
+                .foregroundStyle(.yellow)
+                .accessibilityHidden(true)
+            Text("Upgrade to Pro")
+                .font(.title.bold())
+            Text("Unlock the full power of SwiftUML Studio")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+        }
+    }
+}
+
+/// One button per product, or a loading line while the store is fetching them.
+private struct PaywallPurchaseButtons<Manager: SubscriptionProviding>: View {
+    let subscriptionManager: Manager
+
+    var body: some View {
         VStack(spacing: 8) {
             ForEach(subscriptionManager.products, id: \.id) { product in
                 Button {
@@ -115,22 +144,6 @@ struct PaywallView<Manager: SubscriptionProviding>: View {
                     .foregroundStyle(.secondary)
                     .font(.caption)
             }
-        }
-    }
-
-    private var restoreLink: some View {
-        HStack {
-            Button("Restore Purchases") {
-                Task { await subscriptionManager.restorePurchases() }
-            }
-            .buttonStyle(.link)
-            .font(.caption)
-
-            Spacer()
-
-            Button("Not Now") { dismiss() }
-                .buttonStyle(.link)
-                .font(.caption)
         }
     }
 }
