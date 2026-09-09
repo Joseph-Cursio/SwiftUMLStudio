@@ -9,11 +9,17 @@ public enum ComponentExtractor {
 
     /// Map an `SPMPackageDescription` (already loaded by `SPMPackageReader`)
     /// to a `ComponentModel`. Per-target public types are listed via
-    /// `ClassDiagramGenerator.analyzeTypes` over each target's source paths.
+    /// `ClassDiagramGenerating.analyzeTypes` over each target's source paths.
+    ///
+    /// `analyzer` is the protocol rather than the concrete generator, which is what every other
+    /// entry point in this package already takes — `ProjectAnalyzer` and `DiagramViewModel` both
+    /// declare `classGenerator: any ClassDiagramGenerating` and the package ships
+    /// `MockClassGenerator` against it. This one had been left concrete, so it was the single
+    /// site where a caller could not substitute the generator the others let them swap.
     public static func extract(
         package description: SPMPackageDescription,
         packageRoot: URL,
-        analyzer: ClassDiagramGenerator = ClassDiagramGenerator(),
+        analyzer: any ClassDiagramGenerating = ClassDiagramGenerator(),
         includeTestTargets: Bool = false
     ) -> ComponentModel {
         let visibleTargets = description.targets.filter {
