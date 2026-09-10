@@ -99,6 +99,15 @@ final class DiagramViewModel {
     let componentGenerator: any ComponentDiagramGenerating
 
     init(
+        // Declined. `PersistenceController` is a one-property struct over a SwiftData
+        // `ModelContainer`, and its seam is `init(inMemory:)` — which the tests already use
+        // **114 times across 12 files**. `concrete-type-usage` is right that this is a
+        // dependency and not a kernel (SwiftProjectLint's own notes name it as one of the two types
+        // that forced its kernel storage test to be a positive check rather than a denylist), and
+        // the substitution it asks for is already available in the form SwiftData supports.
+        // A protocol over `container: ModelContainer` would abstract the one property whose type is
+        // the thing a test varies.
+        // swiftprojectlint:disable:next concrete-type-usage
         persistenceController: PersistenceController = PersistenceController.shared,
         classGenerator: any ClassDiagramGenerating = ClassDiagramGenerator(),
         sequenceGenerator: any SequenceDiagramGenerating = SequenceDiagramGenerator(),
