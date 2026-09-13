@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 @testable import SwiftUMLBridgeFramework
 
@@ -96,6 +97,50 @@ struct StringExtensionsTests {
     func isMatchingQuestionWildcard() {
         #expect("MyClass".isMatching(searchPattern: "MyClass?") == false)
         #expect("MyClas".isMatching(searchPattern: "MyCla?"))
+    }
+
+    // MARK: - glob metacharacters that are regex-special
+
+    /// **Three characters were regex-special and glob-literal, and the escape class missed all
+    /// three.** `}` produced an invalid pattern; `^` and `$` produced patterns that compile and
+    /// can never match, because the translation had already added the real anchors.
+    ///
+    /// Each of these fails against the old implementation, and `a^b` / `a$b` fail *silently* —
+    /// a valid regex matching nothing is exactly the shape a test has to state, because nothing
+    /// throws.
+    @Test("a glob containing a regex metacharacter matches itself", arguments: [
+        "a}b", "a^b", "a$b", "a.b", "a+b", "a|b", "a(b)c", "a{b", "a\\b"
+    ])
+    func globMetacharacterMatchesItself(glob: String) throws {
+        let pattern = glob.globPatternToRegex()
+        #expect(throws: Never.self) { try NSRegularExpression(pattern: pattern, options: []) }
+        #expect(glob.isMatching(searchPattern: glob), "\(glob) should match itself via \(pattern)")
+    }
+
+    /// The anchors this function adds must survive the escape pass — which is why the escape
+    /// runs on `self` and the wrap comes after. Escaping the wrapped string would produce
+    /// `\^…\$`, a pattern matching a literal caret.
+    @Test("the added anchors are not themselves escaped")
+    func addedAnchorsSurvive() {
+        let pattern = "abc".globPatternToRegex()
+        #expect(pattern == "^abc$")
+    }
+
+    /// `[` and `]` stay unescaped on purpose: they are glob syntax — `pathContainsGlobSyntax`
+    /// lists `[` as one of the four characters that make a path a glob — and a glob character
+    /// class is spelled the same way in a regex.
+    @Test("a glob character class still selects its members")
+    func globCharacterClassStillWorks() {
+        #expect("b".isMatching(searchPattern: "[abc]"))
+        #expect("d".isMatching(searchPattern: "[abc]") == false)
+    }
+
+    /// **A pattern that will not compile matches nothing, and used to match everything.** An
+    /// unbalanced `[` is a malformed glob; the guard read `else { return true }`, so a filter
+    /// written to NARROW a set admitted every candidate instead, with no diagnostic.
+    @Test("a malformed glob matches nothing rather than everything")
+    func malformedGlobMatchesNothing() {
+        #expect("totally/unrelated.txt".isMatching(searchPattern: "a[b") == false)
     }
 
     @Test("isMatching is anchored at start and end")
