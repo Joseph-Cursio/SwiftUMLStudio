@@ -46,7 +46,7 @@ let package = Package(
         // routing — is testable without generating a single diagram.
         .testTarget(
             name: "SwiftUMLBridgeCLITests",
-            dependencies: ["swiftumlbridge"],
+            dependencies: ["swiftumlbridge", "SwiftUMLBridgeFramework"],
             swiftSettings: [.swiftLanguageMode(.v6)]
         )
     ]
