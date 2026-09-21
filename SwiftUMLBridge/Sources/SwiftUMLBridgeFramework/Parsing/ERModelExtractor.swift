@@ -105,11 +105,11 @@ final class ERModelExtractor: SyntaxVisitor {
 
     // MARK: - Attribute helpers
 
-    private static func hasModelAttribute(_ attributes: AttributeListSyntax) -> Bool {
+    static func hasModelAttribute(_ attributes: AttributeListSyntax) -> Bool {
         hasAttribute(attributes, named: "Model")
     }
 
-    private static func hasAttribute(
+    static func hasAttribute(
         _ attributes: AttributeListSyntax, named name: String
     ) -> Bool {
         for attribute in attributes {

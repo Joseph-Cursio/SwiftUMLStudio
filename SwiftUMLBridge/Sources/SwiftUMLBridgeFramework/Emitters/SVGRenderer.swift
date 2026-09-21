@@ -179,14 +179,14 @@ public struct SVGRenderer: Sendable {
 
     /// Deterministic hue (0–359) for a module name — sums the name's unicode
     /// scalars mod 360, matching the Studio canvas color derivation.
-    private static func moduleHue(for module: String) -> Int {
+    static func moduleHue(for module: String) -> Int {
         let hash = module.unicodeScalars.reduce(0) { $0 &+ Int($1.value) }
         return ((hash % 360) + 360) % 360
     }
 
     // MARK: - Edge Rendering
 
-    private static func renderEdge(_ edge: LayoutEdge) -> String {
+    static func renderEdge(_ edge: LayoutEdge) -> String {
         guard edge.points.count >= 2 else { return "" }
 
         let markerId: String
