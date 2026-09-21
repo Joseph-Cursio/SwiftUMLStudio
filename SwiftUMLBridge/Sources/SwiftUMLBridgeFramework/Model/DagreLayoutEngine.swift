@@ -271,7 +271,7 @@ public struct DagreLayoutEngine: Sendable {
     // MARK: - Fallback
 
     /// Simple grid layout when JavaScriptCore fails.
-    private static func fallbackLayout(_ graph: LayoutGraph) -> LayoutGraph {
+    static func fallbackLayout(_ graph: LayoutGraph) -> LayoutGraph {
         var result = graph
         let columns = max(Int(ceil(sqrt(Double(graph.nodes.count)))), 1)
         let spacingX: Double = 250

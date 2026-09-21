@@ -47,7 +47,7 @@ public enum CoreDataModelExtractor {
         return try contentsURL(in: modelDirs[0])
     }
 
-    private static func contentsURL(in modelDirectory: URL) throws -> URL {
+    static func contentsURL(in modelDirectory: URL) throws -> URL {
         let url = modelDirectory.appendingPathComponent("contents")
         guard FileManager.default.fileExists(atPath: url.path) else {
             throw ExtractionError.missingContentsFile(modelDirectory.path)
@@ -151,7 +151,7 @@ public enum CoreDataModelExtractor {
 
     /// Drops a relationship whose inverse already appears in the list, so each
     /// edge is emitted once rather than twice (Core Data declares both sides).
-    private static func dedupe(relationships: [ERRelationship]) -> [ERRelationship] {
+    static func dedupe(relationships: [ERRelationship]) -> [ERRelationship] {
         var seen: Set<String> = []
         var result: [ERRelationship] = []
         for relationship in relationships {

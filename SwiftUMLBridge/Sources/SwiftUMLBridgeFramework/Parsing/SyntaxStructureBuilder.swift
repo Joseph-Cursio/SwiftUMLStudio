@@ -148,7 +148,7 @@ final class SyntaxStructureBuilder: SyntaxVisitor {
         }
     }
 
-    private func isStaticOrClass(_ modifiers: DeclModifierListSyntax) -> Bool {
+    func isStaticOrClass(_ modifiers: DeclModifierListSyntax) -> Bool {
         modifiers.contains {
             $0.name.tokenKind == .keyword(.static) || $0.name.tokenKind == .keyword(.class)
         }
