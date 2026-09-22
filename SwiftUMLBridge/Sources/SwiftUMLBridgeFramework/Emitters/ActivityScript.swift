@@ -104,9 +104,6 @@ private extension ActivityScript {
         return "N\(id)"
     }
 
-    static func plantUMLEscape(_ text: String) -> String {
-        text.replacingOccurrences(of: "\"", with: "\\\"")
-    }
 }
 
 // MARK: - Mermaid (flowchart flavor)
@@ -167,6 +164,15 @@ private extension ActivityScript {
         }
         return "\(from) --> \(to)"
     }
+}
+
+extension ActivityScript: DiagramOutputting {}
+
+// Internal rather than private so a test can call them directly.
+extension ActivityScript {
+    static func plantUMLEscape(_ text: String) -> String {
+        text.replacingOccurrences(of: "\"", with: "\\\"")
+    }
 
     static func mermaidEscape(_ text: String) -> String {
         text.replacingOccurrences(of: "\"", with: "&quot;")
@@ -175,5 +181,3 @@ private extension ActivityScript {
             .replacingOccurrences(of: "|", with: "&#124;")
     }
 }
-
-extension ActivityScript: DiagramOutputting {}

@@ -74,12 +74,6 @@ private extension StateScript {
         return lines
     }
 
-    /// Normalize the wildcard source token `*` to PlantUML / Mermaid's initial
-    /// pseudo-state `[*]`.
-    static func renderStateToken(_ name: String) -> String {
-        name == "*" ? "[*]" : name
-    }
-
     static func transitionLabel(_ transition: StateTransition) -> String {
         var parts: [String] = []
         if let trigger = transition.trigger, !trigger.isEmpty {
@@ -103,3 +97,12 @@ private extension StateScript {
 }
 
 extension StateScript: DiagramOutputting {}
+
+// Internal rather than private so a test can call it directly.
+extension StateScript {
+    /// Normalize the wildcard source token `*` to PlantUML / Mermaid's initial
+    /// pseudo-state `[*]`.
+    static func renderStateToken(_ name: String) -> String {
+        name == "*" ? "[*]" : name
+    }
+}

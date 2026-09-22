@@ -157,7 +157,12 @@ private extension ERScript {
         }
         return line
     }
+}
 
+extension ERScript: DiagramOutputting {}
+
+// Internal rather than private so a test can call them directly.
+extension ERScript {
     /// Mermaid type tokens may not contain whitespace, brackets, or angle
     /// brackets. Collapse any such characters to underscores so the parser
     /// accepts the output.
@@ -177,5 +182,3 @@ private extension ERScript {
         raw.isEmpty ? "relates" : raw
     }
 }
-
-extension ERScript: DiagramOutputting {}

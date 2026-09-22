@@ -34,7 +34,6 @@ public struct ComponentScript: Sendable {
         self.format = format
         self.componentLayout = nil
     }
-
 }
 
 extension ComponentScript: DiagramOutputting {}
@@ -93,7 +92,8 @@ private extension ComponentScript {
 
 // MARK: - Helpers
 
-private extension ComponentScript {
+// Internal rather than private so a test can call it directly.
+extension ComponentScript {
     /// Convert a target name into a valid PlantUML / Mermaid identifier.
     static func safeAlias(_ name: String) -> String {
         name.replacingOccurrences(of: "-", with: "_")

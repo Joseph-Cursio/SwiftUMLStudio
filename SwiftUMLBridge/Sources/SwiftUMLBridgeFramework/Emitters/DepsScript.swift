@@ -166,15 +166,6 @@ private extension DepsScript {
         return lines.joined(separator: "\n")
     }
 
-    /// Convert a type/module name to a Mermaid-safe identifier (no spaces, generics, etc.).
-    static func mermaidId(_ name: String) -> String {
-        name
-            .replacingOccurrences(of: "<", with: "_")
-            .replacingOccurrences(of: ">", with: "_")
-            .replacingOccurrences(of: " ", with: "_")
-            .replacingOccurrences(of: ".", with: "_")
-            .replacingOccurrences(of: "-", with: "_")
-    }
 }
 
 // MARK: - SVG
@@ -247,5 +238,18 @@ private extension DepsScript {
             return "\(escaped) «\(stereotype)»"
         }
         return escaped
+    }
+}
+
+// Internal rather than private so a test can call it directly.
+extension DepsScript {
+    /// Convert a type/module name to a Mermaid-safe identifier (no spaces, generics, etc.).
+    static func mermaidId(_ name: String) -> String {
+        name
+            .replacingOccurrences(of: "<", with: "_")
+            .replacingOccurrences(of: ">", with: "_")
+            .replacingOccurrences(of: " ", with: "_")
+            .replacingOccurrences(of: ".", with: "_")
+            .replacingOccurrences(of: "-", with: "_")
     }
 }
