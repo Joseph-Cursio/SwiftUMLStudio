@@ -53,7 +53,7 @@ extension Array where Element == SyntaxStructure {
         return items
     }
 
-    private func isNestedType(_ structure: SyntaxStructure) -> Bool {
+    func isNestedType(_ structure: SyntaxStructure) -> Bool {
         structure.kind == .class
             || structure.kind == .struct
             || structure.kind == .enum

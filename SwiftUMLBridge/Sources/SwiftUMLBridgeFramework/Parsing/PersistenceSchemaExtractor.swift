@@ -175,7 +175,7 @@ public enum PersistenceSchemaExtractor {
 
         // MARK: - Inheritance check
 
-        private func conformsToGRDBRecord(_ clause: InheritanceClauseSyntax) -> Bool {
+        func conformsToGRDBRecord(_ clause: InheritanceClauseSyntax) -> Bool {
             for inherited in clause.inheritedTypes {
                 let raw = inherited.type.trimmedDescription
                 // Strip generics + protocol composition (`A & B`)
@@ -214,7 +214,7 @@ public enum PersistenceSchemaExtractor {
             return result
         }
 
-        private func isStatic(_ modifiers: DeclModifierListSyntax) -> Bool {
+        func isStatic(_ modifiers: DeclModifierListSyntax) -> Bool {
             modifiers.contains { $0.name.tokenKind == .keyword(.static) }
         }
 

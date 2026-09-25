@@ -88,7 +88,7 @@ final class SyntaxStructureBuilder: SyntaxVisitor {
     }
 
     /// Qualified name for a variable within the current type stack context.
-    private func qualifiedVarName(_ varName: String) -> String {
+    func qualifiedVarName(_ varName: String) -> String {
         let typeNames = typeStack.compactMap(\.structure.name)
         return (typeNames + [varName]).joined(separator: ".")
     }

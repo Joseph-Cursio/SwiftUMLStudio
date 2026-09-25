@@ -80,7 +80,7 @@ class DiagramContext {
         connections.append(connect)
     }
 
-    private func skipLinking(element: SyntaxStructure, basedOn excludeElements: [String]?) -> Bool {
+    func skipLinking(element: SyntaxStructure, basedOn excludeElements: [String]?) -> Bool {
         element.isExcluded(byPatterns: excludeElements)
     }
 
