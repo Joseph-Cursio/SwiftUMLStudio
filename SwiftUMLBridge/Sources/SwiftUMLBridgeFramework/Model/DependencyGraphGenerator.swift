@@ -248,7 +248,7 @@ public struct DependencyGraphGenerator: DependencyGraphGenerating, Sendable {
 
     // MARK: - Filtering helpers
 
-    private func shouldSkip(element: SyntaxStructure, configuration: Configuration) -> Bool {
+    func shouldSkip(element: SyntaxStructure, configuration: Configuration) -> Bool {
         guard let kind = element.kind else { return true }
         guard ElementKind.processable.contains(kind) else { return true }
 
@@ -268,7 +268,7 @@ public struct DependencyGraphGenerator: DependencyGraphGenerating, Sendable {
         return false
     }
 
-    private func shouldExclude(name: String, configuration: Configuration) -> Bool {
+    func shouldExclude(name: String, configuration: Configuration) -> Bool {
         guard let excludePatterns = configuration.elements.exclude else { return false }
         return excludePatterns.contains(where: { name.isMatching(searchPattern: $0) })
     }

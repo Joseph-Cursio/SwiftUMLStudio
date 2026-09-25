@@ -110,7 +110,7 @@ public enum CoreDataModelExtractor {
         return result
     }
 
-    private static func parseRelationships(in entityElement: XMLElement, owner: String) -> [ERRelationship] {
+    static func parseRelationships(in entityElement: XMLElement, owner: String) -> [ERRelationship] {
         let relationshipNodes = (try? entityElement.nodes(forXPath: "relationship")) ?? []
         var result: [ERRelationship] = []
         for case let relationship as XMLElement in relationshipNodes {
