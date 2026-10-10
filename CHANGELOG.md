@@ -52,6 +52,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `*.profraw` / `*.profdata` are gitignored — an instrumented test run
   drops one in the repository root.
 
+### Fixed — Bridge
+
+- **Two names that sanitize alike are no longer drawn as one node.**
+  `DepsScript.mermaidId` and `ComponentScript.safeAlias` rewrite several
+  characters to `_`, so `Outer.Inner` and `Outer_Inner` both became the
+  identifier `Outer_Inner`. The deps Mermaid emitter then declared both
+  under that one id: the renderer drew a single node with the second
+  label, the first type vanished, and its edges joined the other's. The
+  component PlantUML and Mermaid emitters had the same flaw, and in
+  Mermaid a provided interface (`A` + `B` → `A_B`) could also merge with
+  a component named `A_B`. Each emitter now hands out identifiers from a
+  per-diagram `DiagramIdentifiers` table: the first name keeps its
+  sanitized id and a colliding name gets `_2`, `_3`, …. A diagram with no
+  collision is unchanged byte for byte. Found by an injectivity property
+  prototyped in SwiftInferProperties against SwiftUMLBridge.
+
 ---
 
 ## [1.1.0] — 2026-08-16
