@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUMLBridgeFramework
 
 struct Insight: Identifiable, Sendable {
     let identifier = UUID()
