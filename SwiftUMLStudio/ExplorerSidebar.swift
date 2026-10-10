@@ -3,7 +3,7 @@ import SwiftUMLBridgeFramework
 
 struct ExplorerSidebar: View {
     @Bindable var viewModel: DiagramViewModel
-    @Environment(SubscriptionManager.self) private var subscriptionManager
+    let subscriptionManager: SubscriptionManager
     @State private var showPaywall = false
     @State private var reminderEnabled = ReviewReminderManager.isEnabled()
 

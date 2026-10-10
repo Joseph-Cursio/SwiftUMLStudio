@@ -114,7 +114,7 @@ struct ContentView: View {
 
     private var explorerLayout: some View {
         NavigationSplitView {
-            ExplorerSidebar(viewModel: viewModel)
+            ExplorerSidebar(viewModel: viewModel, subscriptionManager: subscriptionManager)
                 .navigationSplitViewColumnWidth(min: 250, ideal: 320)
         } detail: {
             ExplorerDetailView(viewModel: viewModel)
