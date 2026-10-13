@@ -27,6 +27,7 @@ final class NativeCanvasCoverageUITests: XCTestCase {
             "-appMode", "Developer",
             "-testFixturePath", fixturePath
         ]
+        app.launchArguments += UITestLaunchArguments.plantUMLConsentUndecided
         app.launch()
     }
 

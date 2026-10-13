@@ -81,11 +81,11 @@ calls some features rely on.
 
 | Behavior | Direct download | App Store |
 |---|---|---|
-| Default diagram format | PlantUML | **Mermaid** — so no diagram leaves your machine unless you opt in |
+| Default diagram format | PlantUML — its preview still asks before anything is sent | **Mermaid** — so no diagram leaves your machine unless you opt in |
 | **Open Package…** (SPM package loading) | Available | **Unavailable** — it shells out to `swift package describe`, which the sandbox forbids |
 | Component diagrams, per-module dashboard, module-grouped layout | Available | Unavailable, since all three require a loaded package |
 | Inferred property/return types | Resolved via SourceKit | **Declared types only** — see below |
-| PlantUML rendering | Available | Available, after a one-time consent prompt |
+| PlantUML rendering | Available, after one-time consent | Available, after one-time consent |
 
 **On inferred types.** The App Store build cannot load SourceKit from the system
 toolchain, so it parses with SwiftSyntax alone. Every diagram type is still
@@ -181,7 +181,7 @@ Pro-only suggestions display a lock icon. Tapping them opens the paywall.
 
 ### Explorer Diagram Preview
 
-When you select a suggestion or history item, the detail pane switches from the dashboard to a rendered diagram preview. The preview uses the same web view as Developer Mode — PlantUML diagrams are fetched as SVG from planttext.com; Mermaid diagrams are rendered locally via Mermaid.js.
+When you select a suggestion or history item, the detail pane switches from the dashboard to a rendered diagram preview. The preview uses the same web view as Developer Mode — PlantUML diagrams are fetched as SVG from planttext.com once you allow it (until then the preview asks; see [below](#plantuml-sends-your-diagram-source-to-a-third-party)); Mermaid diagrams are rendered locally via Mermaid.js.
 
 ---
 
@@ -299,28 +299,42 @@ In Developer Mode, the **Format** picker in the inspector strip (above the detai
 
 | Format | Preview rendering | Markup extension | Notes |
 |---|---|---|---|
-| **PlantUML** | SVG fetched from planttext.com (requires internet) | `.puml` | Light-mode rendering only — planttext.com is outside our control. Uploads your diagram source to a third party; asks for consent once. See [below](#plantuml-sends-your-diagram-source-to-a-third-party) |
+| **PlantUML** | SVG fetched from planttext.com (requires internet) | `.puml` | Light-mode rendering only — planttext.com is outside our control. Uploads your diagram source to a third party; the preview asks once before anything is sent. See [below](#plantuml-sends-your-diagram-source-to-a-third-party) |
 | **Mermaid** | Rendered locally via the bundled `MermaidHTMLBuilder` WebView | `.mmd` | Adapts to dark mode via `colorScheme` |
 | **Nomnoml** | Rendered locally via the bundled `NomnomlHTMLBuilder` WebView | `.nomnoml` | Native for class and dependency diagrams. Sequence, activity, state, ER and component diagrams fall back to Mermaid, which previews and exports (`.mmd`) as Mermaid. Canvas content stays light because `nomnoml.js` uses hardcoded colors |
 | **SVG** | Native SwiftUI `Canvas` renderer using a Dagre layout produced by JavaScriptCore | n/a (rendered in-app) | The fastest, most interactive option; supports node selection, reveal-in-source, and PDF/PNG export |
 
 You can switch formats after generation — click **Generate** again to re-render in the new format. The format picker exposes all four cases, and the active script's `format` field controls which renderer is used in the preview pane.
 
-In Explorer Mode, the format is not exposed — the app uses the build's default for the visual preview (PlantUML in the direct download build, Mermaid in the App Store build).
+In Explorer Mode, the format is not exposed — the app uses the build's default for the visual preview (PlantUML in the direct download build, Mermaid in the App Store build). A PlantUML preview asks before anything is sent, exactly as in Developer Mode, and **Use Mermaid Instead** is how Explorer switches to a local format.
 
 ### PlantUML Sends Your Diagram Source to a Third Party
 
 This is the one format that leaves your machine, so it is worth stating plainly.
 PlantUML has no local renderer in Studio: previewing a PlantUML diagram encodes
 the generated markup and requests an SVG from **planttext.com**, a third-party
-service not operated by us. That markup describes your code's structure — type
-names, member names and signatures, and the relationships between them. It does
-not include function bodies or literal values.
+service not operated by us. For most diagram types that markup describes your
+code's structure — type names, member names and signatures, and the
+relationships between them — and not function bodies or literal values. An
+activity diagram is the exception: it is drawn from a method's body, so its
+markup carries that method's statements and conditions, each shortened to 80
+characters.
 
 Because of this, the picker labels the option **"PlantUML (planttext.com)"**,
-and the first time you select it Studio raises a consent alert describing the
-upload. **Continue** grants it and remembers the choice; **Cancel** reverts to
-the previous format. Subsequent selections don't re-prompt.
+and nothing is sent until you agree. The first time a PlantUML diagram would be
+previewed — whether you picked PlantUML, it is the direct build's default, a
+history item you reopened is PlantUML, or the format you picked can't draw that
+diagram type — the preview shows a card describing the upload instead:
+
+- **Preview with planttext.com** sends it and remembers the choice; later
+  PlantUML previews load straight away.
+- **Use Mermaid Instead** switches the diagram to Mermaid, which renders
+  locally, and remembers that too: a build that defaults to PlantUML starts in
+  Mermaid on the next launch. Picking PlantUML again later shows the card again.
+
+Generating PlantUML is local, so **Export** (in either mode) and Developer
+Mode's **Markup** tab work without agreeing to anything. The card appears in
+both builds and both modes, and your answer covers both modes.
 
 Mermaid, Nomnoml, and SVG all render locally from bundled resources and make no
 network requests at all — no CDN fallback, no telemetry. If your source is
@@ -733,7 +747,7 @@ Toggle this in the Snapshots section of the Explorer sidebar.
 
 ## Known Limitations
 
-**Internet connection required for PlantUML rendering.** PlantUML diagrams are rendered server-side by planttext.com and require an active internet connection — and send your diagram source there, which is why the first selection asks for consent (see [above](#plantuml-sends-your-diagram-source-to-a-third-party)). Mermaid and Nomnoml render locally from bundled copies of their JavaScript and work fully offline, with no CDN fallback. The raw markup (in Developer Mode's Markup tab) is always available offline regardless of format.
+**Internet connection required for PlantUML rendering.** PlantUML diagrams are rendered server-side by planttext.com and require an active internet connection — and send your diagram source there, which is why the preview asks before the first upload (see [above](#plantuml-sends-your-diagram-source-to-a-third-party)). Mermaid and Nomnoml render locally from bundled copies of their JavaScript and work fully offline, with no CDN fallback. The raw markup (in Developer Mode's Markup tab) is always available offline regardless of format.
 
 **The App Store build cannot load Swift Packages or resolve inferred types.** Both need calls the App Sandbox forbids. See [App Store and Direct Download Builds](#app-store-and-direct-download-builds) for the full comparison.
 

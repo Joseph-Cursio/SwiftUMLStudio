@@ -8,6 +8,7 @@ final class DashboardUITests: XCTestCase {
         continueAfterFailure = false
         app = XCUIApplication()
         app.launchArguments += ["-appMode", "Developer"]
+        app.launchArguments += UITestLaunchArguments.plantUMLConsentUndecided
         app.launch()
     }
 
@@ -69,6 +70,27 @@ final class DashboardUITests: XCTestCase {
             selected.hasPrefix("PlantUML"),
             "PlantUML should be selected by default, got '\(selected)'"
         )
+    }
+
+    /// The direct build defaults to PlantUML, but a user who declined planttext.com starts in
+    /// Mermaid rather than meeting the consent card again on every launch.
+    @MainActor
+    func testDeclinedPlantUMLConsentStartsInMermaid() throws {
+        app.terminate()
+        app = XCUIApplication()
+        app.launchArguments += ["-appMode", "Developer"]
+        app.launchArguments += UITestLaunchArguments.plantUMLConsentDeclined
+        app.launch()
+
+        let formatPicker = app.popUpButtons["formatPicker"]
+        XCTAssertTrue(
+            formatPicker.waitForExistence(timeout: UITestTimeout.element),
+            "Format picker should exist in Developer mode"
+        )
+        let startsInMermaid = expectation(
+            for: NSPredicate(format: "value BEGINSWITH 'Mermaid'"), evaluatedWith: formatPicker
+        )
+        wait(for: [startsInMermaid], timeout: UITestTimeout.element)
     }
 
     @MainActor

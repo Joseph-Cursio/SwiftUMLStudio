@@ -22,7 +22,10 @@ extension DiagramViewModel {
         let formatString = entity.format ?? ""
 
         diagramMode = DiagramMode(rawValue: modeString) ?? .classDiagram
-        diagramFormat = DiagramFormat(rawValue: formatString) ?? .plantuml
+        // An entry with no readable format keeps the build's default rather than
+        // forcing PlantUML, which the App Store build does not start in.
+        let pickerFormat = DiagramFormat(rawValue: formatString)
+        diagramFormat = pickerFormat ?? Self.buildDefaultFormat
 
         if diagramMode == .sequenceDiagram {
             entryPoint = entity.entryPoint ?? ""
@@ -44,9 +47,11 @@ extension DiagramViewModel {
         if let text = entity.scriptText {
             // The picker restores to what the user chose, but the script keeps the format its text
             // is written in — the two differ when the Bridge fell back to another language, and
-            // the preview and Export pick their renderer from the script's.
+            // the preview and Export pick their renderer from the script's. With neither format
+            // readable the text is taken as PlantUML, what the oldest entries hold; its preview
+            // still waits for consent.
             let scriptFormat = entity.scriptFormat.flatMap(DiagramFormat.init(rawValue:))
-                ?? diagramFormat
+                ?? pickerFormat ?? .plantuml
             restoredScript = SimpleDiagramScript(text: text, format: scriptFormat)
         } else {
             restoredScript = nil

@@ -241,13 +241,13 @@ The App Store build cannot load SourceKit from the system toolchain — another 
 
 ### Studio asks for permission before rendering PlantUML
 
-Expected on first use. PlantUML has no local renderer: previewing one uploads the generated markup to planttext.com, a third-party service. Studio discloses this once and remembers your answer — **Continue** grants it, **Cancel** reverts to the previous format. Mermaid, Nomnoml, and SVG render locally and never prompt. See [Studio User Guide → PlantUML Sends Your Diagram Source to a Third Party](studio-user-guide.md#plantuml-sends-your-diagram-source-to-a-third-party).
+Expected on first use, in both builds. PlantUML has no local renderer: previewing one uploads the generated markup to planttext.com, a third-party service. Until you agree, the preview shows a card instead of the diagram, and Studio remembers your answer — **Preview with planttext.com** sends it, **Use Mermaid Instead** switches to Mermaid, which renders locally. Only a PlantUML preview asks — including one Studio falls back to when the selected format can't draw the diagram; Mermaid, Nomnoml, and SVG previews render locally. See [Studio User Guide → PlantUML Sends Your Diagram Source to a Third Party](studio-user-guide.md#plantuml-sends-your-diagram-source-to-a-third-party).
 
 ### Diagram preview is blank but the source pane shows markup
 
 The preview pipeline differs by format:
 
-- **PlantUML** — rendered by planttext.com via WebView. This is the only format that needs the network: with no connection, or before you grant the upload consent, the preview stays blank while the Markup tab still shows the source.
+- **PlantUML** — rendered by planttext.com via WebView. This is the only format that needs the network: with no connection the preview stays blank while the Markup tab still shows the source. (Before you allow the upload, the preview shows the consent card rather than a blank pane.)
 - **Mermaid, Nomnoml** — rendered via WebView from JavaScript bundled into the app. These work offline; there is no CDN fallback, so a blank preview here means a WebKit asset failure (rare) rather than a network problem. Check the in-app log for a missing `mermaid.min.js`, `nomnoml.js`, or `graphre.js`.
 - **Native SVG / Canvas** (class / sequence / activity / dependency / state / component) — rendered locally. A blank preview here means the layout pass found no nodes, which usually indicates an upstream extraction failure rather than a render bug.
 

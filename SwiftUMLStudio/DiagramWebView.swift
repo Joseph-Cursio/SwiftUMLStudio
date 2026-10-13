@@ -10,10 +10,16 @@ import WebKit
 import SwiftUMLBridgeFramework
 
 /// Renders a diagram using the native SwiftUI WebView (macOS 26+).
-/// - PlantUML diagrams load a remote URL via `WebView(url:)`.
+/// - PlantUML diagrams go to ``PlantTextPreview``, which loads planttext.com only after
+///   ``PlantUMLConsent`` is granted and otherwise asks in place of the preview.
 /// - Mermaid diagrams load an HTML string into a `WebPage` instance.
 struct DiagramWebView: View {
     var script: (any DiagramOutputting)?
+    /// The Format picker's value, so the PlantUML preview can explain a fallback.
+    var requestedFormat: DiagramFormat?
+    var consent: PlantUMLConsent = .shared
+    /// Offered on the PlantUML consent card; `nil` hides that choice.
+    var onUseMermaid: (() -> Void)?
 
     @Environment(\.colorScheme) private var colorScheme
     @State private var localPage = WebPage()
@@ -24,9 +30,13 @@ struct DiagramWebView: View {
         Group {
             switch script?.format {
             case .plantuml:
-                if let encoded = script.map({ $0.encodeText() }),
-                   let url = URL(string: "https://www.planttext.com/api/plantuml/svg/\(encoded)") {
-                    WebView(url: url)
+                if let script {
+                    PlantTextPreview(
+                        script: script,
+                        requestedFormat: requestedFormat,
+                        consent: consent,
+                        onUseMermaid: onUseMermaid
+                    )
                 }
             case .mermaid:
                 localWebView(html: MermaidHTMLBuilder.mermaidHTML(script?.text ?? "", dark: dark))

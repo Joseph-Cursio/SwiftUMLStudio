@@ -55,6 +55,8 @@ struct DiagramDetailView: View {
 
 struct DiagramPreviewView: View {
     let viewModel: DiagramViewModel
+    /// Injected by tests, which must not read or change the developer's own decision.
+    var consent: PlantUMLConsent = .shared
     @State private var viewport = DiagramViewport()
 
     var body: some View {
@@ -85,7 +87,12 @@ struct DiagramPreviewView: View {
                                 NativeComponentDiagramView(layout: componentLayout, viewport: viewport)
                             }
                         } else {
-                            DiagramWebView(script: script)
+                            DiagramWebView(
+                                script: script,
+                                requestedFormat: viewModel.diagramFormat,
+                                consent: consent,
+                                onUseMermaid: useMermaid
+                            )
                         }
                     } else if (viewModel.diagramMode == .sequenceDiagram
                         || viewModel.diagramMode == .activityDiagram)
@@ -156,6 +163,12 @@ struct DiagramPreviewView: View {
                 viewport.clearForNewDiagram()
             }
         }
+    }
+
+    /// The consent card's Mermaid switch, offered only when there is a source to regenerate from.
+    private var useMermaid: (() -> Void)? {
+        guard viewModel.canRegenerate else { return nil }
+        return { viewModel.switchToMermaid() }
     }
 
     private var showsViewportControls: Bool {

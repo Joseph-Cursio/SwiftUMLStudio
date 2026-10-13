@@ -66,4 +66,75 @@ struct DiagramPreviewViewTests {
             try view.inspect().find(viewWithAccessibilityIdentifier: "stateMachineConfidenceBanner")
         }
     }
+
+    // MARK: - PlantUML consent
+
+    @Test("a reopened PlantUML history item asks before it is sent anywhere")
+    func restoredPlantUMLAsks() throws {
+        let viewModel = DiagramViewModel(persistenceController: .init(inMemory: true))
+        viewModel.diagramFormat = .plantuml
+        viewModel.restoredScript = SimpleDiagramScript(text: "@startuml\nclass Foo\n@enduml", format: .plantuml)
+        let (consent, suiteName) = PlantUMLConsentTestSupport.makeConsent()
+        defer { UserDefaults.standard.removePersistentDomain(forName: suiteName) }
+        let view = DiagramPreviewView(viewModel: viewModel, consent: consent)
+
+        let card = try view.inspect().find(PlantUMLConsentCard.self).actualView()
+        #expect(card.isFallback == false)
+    }
+
+    @Test("a PlantUML script under another picked format asks, and says why it is PlantUML")
+    func fallbackPlantUMLAsks() throws {
+        let viewModel = DiagramViewModel(persistenceController: .init(inMemory: true))
+        viewModel.diagramFormat = .nomnoml
+        viewModel.restoredScript = SimpleDiagramScript(text: "@startuml\n[App]\n@enduml", format: .plantuml)
+        let (consent, suiteName) = PlantUMLConsentTestSupport.makeConsent()
+        defer { UserDefaults.standard.removePersistentDomain(forName: suiteName) }
+        let view = DiagramPreviewView(viewModel: viewModel, consent: consent)
+
+        #expect(try view.inspect().find(PlantUMLConsentCard.self).actualView().isFallback)
+    }
+
+    @Test("a Mermaid script never shows the consent card")
+    func mermaidDoesNotAsk() throws {
+        let viewModel = DiagramViewModel(persistenceController: .init(inMemory: true))
+        viewModel.restoredScript = SimpleDiagramScript(text: "classDiagram\nclass Foo", format: .mermaid)
+        let (consent, suiteName) = PlantUMLConsentTestSupport.makeConsent()
+        defer { UserDefaults.standard.removePersistentDomain(forName: suiteName) }
+        let view = DiagramPreviewView(viewModel: viewModel, consent: consent)
+
+        #expect((try? view.inspect().find(PlantUMLConsentCard.self)) == nil)
+    }
+
+    @Test("without a source to regenerate from, the card offers no Mermaid switch")
+    func noMermaidSwitchWithoutSource() throws {
+        let viewModel = DiagramViewModel(persistenceController: .init(inMemory: true))
+        viewModel.restoredScript = SimpleDiagramScript(text: "@startuml\nclass Foo\n@enduml", format: .plantuml)
+        let (consent, suiteName) = PlantUMLConsentTestSupport.makeConsent()
+        defer { UserDefaults.standard.removePersistentDomain(forName: suiteName) }
+        let view = DiagramPreviewView(viewModel: viewModel, consent: consent)
+
+        #expect(try view.inspect().find(PlantUMLConsentCard.self).actualView().onUseMermaid == nil)
+    }
+
+    @Test("Use Mermaid Instead declines, switches to Mermaid and regenerates")
+    func useMermaidSwitchesAndRegenerates() throws {
+        let viewModel = DiagramViewModel(persistenceController: .init(inMemory: true))
+        viewModel.selectedPaths = ["/tmp/Foo.swift"]
+        viewModel.diagramFormat = .plantuml
+        viewModel.restoredScript = SimpleDiagramScript(text: "@startuml\nclass Foo\n@enduml", format: .plantuml)
+        let (consent, suiteName) = PlantUMLConsentTestSupport.makeConsent()
+        let view = DiagramPreviewView(viewModel: viewModel, consent: consent)
+        defer {
+            viewModel.currentTask?.cancel()
+            UserDefaults.standard.removePersistentDomain(forName: suiteName)
+        }
+
+        let useMermaid = try #require(view.inspect().find(PlantUMLConsentCard.self).actualView().onUseMermaid)
+        useMermaid()
+
+        #expect(consent.decision == .declined)
+        #expect(viewModel.diagramFormat == .mermaid)
+        #expect(viewModel.restoredScript == nil)
+        #expect(viewModel.isGenerating)
+    }
 }

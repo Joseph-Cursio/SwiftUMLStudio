@@ -38,14 +38,7 @@ final class DiagramViewModel {
     /// restoring a snapshot triggers a generate via `onChange(selectedPaths)`
     /// — the notice would be wiped before the UI could display it.
     var restoreNotice: String?
-    #if APP_STORE_BUILD
-    // Default to Mermaid in the sandbox build so new users don't ship their
-    // diagram source to planttext.com on first launch. PlantUML stays
-    // available behind a one-time consent prompt — see [[PlantUMLConsent]].
-    var diagramFormat: DiagramFormat = .mermaid
-    #else
-    var diagramFormat: DiagramFormat = .plantuml
-    #endif
+    var diagramFormat: DiagramFormat = DiagramViewModel.buildDefaultFormat
     var diagramMode: DiagramMode = .classDiagram
     var entryPoint: String = ""
     var availableEntryPoints: [String] = []

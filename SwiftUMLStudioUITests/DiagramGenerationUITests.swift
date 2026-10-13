@@ -21,6 +21,7 @@ final class DiagramGenerationUITests: XCTestCase {
             "-appMode", "Developer",
             "-testFixturePath", fixturePath
         ]
+        app.launchArguments += UITestLaunchArguments.plantUMLConsentUndecided
         app.launch()
     }
 
@@ -58,8 +59,11 @@ final class DiagramGenerationUITests: XCTestCase {
 
     // MARK: - Class Diagram Generation
 
+    /// The direct build's default format is PlantUML, which renders on planttext.com, so the
+    /// generated preview is the consent card until the user allows it. It is never a web view:
+    /// that would mean the diagram had been uploaded unasked.
     @MainActor
-    func testClassDiagramGeneratesPreview() throws {
+    func testClassDiagramPreviewAsksBeforeUploading() throws {
         // Switch to Preview tab
         let detailTabs = app.tabGroups["detailTabs"]
         XCTAssertTrue(
@@ -68,19 +72,24 @@ final class DiagramGenerationUITests: XCTestCase {
         )
         detailTabs.tabs["Preview"].click()
 
-        // The web view should appear after generation completes
-        let webView = app.webViews.firstMatch
         XCTAssertTrue(
-            webView.waitForExistence(timeout: UITestTimeout.element),
-            "Diagram preview web view should appear after class diagram generation"
+            app.buttons["plantUMLConsentAllowButton"].waitForExistence(timeout: UITestTimeout.element),
+            "The PlantUML preview should ask for consent after class diagram generation"
         )
+        XCTAssertTrue(
+            app.buttons["plantUMLConsentUseMermaidButton"].exists,
+            "With a source to regenerate from, the card should offer Mermaid"
+        )
+        XCTAssertFalse(app.webViews.firstMatch.exists, "Nothing should load before consent")
     }
 
     @MainActor
     func testMarkupTabShowsContent() throws {
         // Wait for diagram to generate
-        let webView = app.webViews.firstMatch
-        _ = webView.waitForExistence(timeout: UITestTimeout.element)
+        XCTAssertTrue(
+            app.buttons["plantUMLConsentAllowButton"].waitForExistence(timeout: UITestTimeout.element),
+            "The PlantUML preview should be generated"
+        )
 
         // Find and click the Markup tab
         let detailTabs = app.tabGroups["detailTabs"]
@@ -108,8 +117,11 @@ final class DiagramGenerationUITests: XCTestCase {
     @MainActor
     func testSwitchToNomnomlGeneratesPreview() throws {
         // Wait for initial generation to complete
+        XCTAssertTrue(
+            app.buttons["plantUMLConsentAllowButton"].waitForExistence(timeout: UITestTimeout.element),
+            "The PlantUML preview should be generated"
+        )
         let webView = app.webViews.firstMatch
-        _ = webView.waitForExistence(timeout: UITestTimeout.element)
 
         // Find the format picker (menu style)
         let formatPicker = app.popUpButtons["formatPicker"]
