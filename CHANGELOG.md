@@ -214,6 +214,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   file argument typed through a symlink, which the CLI missed even though
   its own working directory is already resolved.
 
+### Fixed — Studio
+
+- **A diagram reopened from history renders in the language its text is
+  written in.** History saved only the Format picker's value and rebuilt
+  the script with it, but several diagrams fall back to another language:
+  state and ER in SVG emit Mermaid, component in Nomnoml emits PlantUML,
+  and sequence, activity, state and ER in Nomnoml emit Mermaid. Reopened,
+  such a diagram came back labelled with the picker's format, so the
+  preview handed Mermaid to nomnoml.js or wrapped it as raw SVG, and
+  Export saved its source with the wrong extension. `DiagramEntity` now
+  also stores the script's own format, and reopening restores the picker
+  to what the user chose and the script to the format of its text.
+  Entries saved before the fix carry no script format and reopen as
+  before; regenerating one and saving it again records it.
+
 ### Documentation
 
 - **The user docs say what `--format svg` and `--format nomnoml` do on

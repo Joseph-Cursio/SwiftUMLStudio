@@ -42,7 +42,12 @@ extension DiagramViewModel {
         restoreSelection(from: entity)
 
         if let text = entity.scriptText {
-            restoredScript = SimpleDiagramScript(text: text, format: diagramFormat)
+            // The picker restores to what the user chose, but the script keeps the format its text
+            // is written in — the two differ when the Bridge fell back to another language, and
+            // the preview and Export pick their renderer from the script's.
+            let scriptFormat = entity.scriptFormat.flatMap(DiagramFormat.init(rawValue:))
+                ?? diagramFormat
+            restoredScript = SimpleDiagramScript(text: text, format: scriptFormat)
         } else {
             restoredScript = nil
         }
