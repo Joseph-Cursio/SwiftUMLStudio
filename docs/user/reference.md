@@ -113,7 +113,7 @@ Every subcommand's `--format` accepts `plantuml`, `mermaid`, `nomnoml`, and `svg
 | `deps` | Nomnoml graph, in both `--types` and `--modules` mode | SVG document, in both `--types` and `--modules` mode |
 | `state` | Mermaid `stateDiagram-v2` (fallback) | Mermaid `stateDiagram-v2` (fallback) |
 | `er` | Mermaid `erDiagram` (fallback) | Mermaid `erDiagram` (fallback) |
-| `component` | PlantUML `component` diagram (fallback) | SVG document |
+| `component` | Mermaid `flowchart TD` (fallback) | SVG document |
 
 `plantuml` and `mermaid` are native for every subcommand, except that `component --format mermaid` emits a `flowchart TD`, since Mermaid has no component dialect.
 
@@ -130,8 +130,7 @@ With `--output browser` (the default) or `browserImageOnly`, where the diagram g
 |---|---|
 | SVG document | Written to `diagram.svg` in the temporary directory, replacing any earlier one, and opened with the app macOS has registered for `.svg` files |
 | Nomnoml (`classdiagram`, `deps`) | Opened at nomnoml.com |
-| Mermaid fallback from `--format nomnoml` (`sequence`, `activity`, `state`, `er`) or `--format svg` (`state`, `er`) | Opened at mermaid.live, as with `--format mermaid` |
-| PlantUML fallback (`component --format nomnoml`) | Opened at planttext.com, as with `--format plantuml` |
+| Mermaid fallback from `--format nomnoml` (`sequence`, `activity`, `state`, `er`, `component`) or `--format svg` (`state`, `er`) | Opened at mermaid.live, as with `--format mermaid` |
 
 ---
 
@@ -475,7 +474,7 @@ swiftumlbridge er Resources/MyApp.xcdatamodeld --output consoleOnly > er.puml
 
 ### component
 
-Generate a PlantUML (or Mermaid fallback) Component diagram from a Swift Package. Components are SPM targets, edges come from `target_dependencies`, and provided interfaces are the public Swift types declared inside each target. The Mermaid output uses `flowchart TD` with subgraphs since Mermaid has no dedicated component-diagram dialect.
+Generate a PlantUML (or Mermaid fallback) Component diagram from a Swift Package. Components are SPM targets, edges come from `target_dependencies`, and provided interfaces are the public Swift types declared inside each target. The Mermaid output uses `flowchart TD` with subgraphs since Mermaid has no dedicated component-diagram dialect; `--format nomnoml` prints the same Mermaid text, since Nomnoml has no component dialect either.
 
 ```
 swiftumlbridge component --package <path> [options]
@@ -491,7 +490,7 @@ swiftumlbridge component --package <path> [options]
 
 | Option | Type | Default | Description |
 |---|---|---|---|
-| `--format <format>` | `DiagramFormat?` | `plantuml` | Diagram language. One of: `plantuml`, `mermaid`, `nomnoml`, `svg`. `nomnoml` falls back to PlantUML. See [Formats by Subcommand](#formats-by-subcommand). |
+| `--format <format>` | `DiagramFormat?` | `plantuml` | Diagram language. One of: `plantuml`, `mermaid`, `nomnoml`, `svg`. `nomnoml` falls back to Mermaid text. See [Formats by Subcommand](#formats-by-subcommand). |
 | `--output <output>` | `ClassDiagramOutput?` | `browser` | Output destination. One of: `browser`, `browserImageOnly`, `consoleOnly`. |
 | `--include-test-targets` | Flag | `false` | Include `.testTarget` targets. By default test targets are filtered out so the diagram focuses on shipping components. |
 | `--help` | Flag | — | Print subcommand help and exit. |
@@ -1442,7 +1441,7 @@ The diagram language for generated output. Used across every diagram type.
 |---|---|---|
 | `.plantuml` | `"plantuml"` | PlantUML syntax (default) |
 | `.mermaid` | `"mermaid"` | Mermaid.js syntax |
-| `.nomnoml` | `"nomnoml"` | Nomnoml syntax. Native for class diagrams and dependency graphs; other diagram types fall back to Mermaid, or to PlantUML for component diagrams. |
+| `.nomnoml` | `"nomnoml"` | Nomnoml syntax. Native for class diagrams and dependency graphs; other diagram types fall back to Mermaid. |
 | `.svg` | `"svg"` | A standalone SVG document laid out by the framework's native renderer, which also fills the script's layout property for Studio's `Canvas` views. Native for class, sequence, activity, dependency, and component diagrams; state and ER diagrams fall back to Mermaid text. |
 
 The CLI's `--format` flag accepts all four values on every subcommand. [Formats by Subcommand](#formats-by-subcommand) lists what each subcommand produces for `nomnoml` and `svg`. In the Studio app the same cases appear in the Format picker: Nomnoml renders inside the in-app WebView, and SVG output feeds the native Canvas renderer.
@@ -1771,7 +1770,7 @@ erDiagram
 public struct ComponentScript: Sendable, DiagramOutputting
 ```
 
-Holds a rendered Component diagram. PlantUML is the primary output (standard `component` syntax with `<<library>>` / `<<executable>>` / `<<test>>` stereotypes); Mermaid falls back to a `flowchart TD` with subgraphs because Mermaid has no component-diagram dialect.
+Holds a rendered Component diagram. PlantUML is the primary output (standard `component` syntax with `<<library>>` / `<<executable>>` / `<<test>>` stereotypes); Mermaid falls back to a `flowchart TD` with subgraphs because Mermaid has no component-diagram dialect. `.nomnoml` produces that same Mermaid text and reports `.mermaid`, since Nomnoml has no component dialect either.
 
 ```swift
 public let text: String

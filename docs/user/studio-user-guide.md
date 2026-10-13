@@ -301,7 +301,7 @@ In Developer Mode, the **Format** picker in the inspector strip (above the detai
 |---|---|---|---|
 | **PlantUML** | SVG fetched from planttext.com (requires internet) | `.puml` | Light-mode rendering only — planttext.com is outside our control. Uploads your diagram source to a third party; asks for consent once. See [below](#plantuml-sends-your-diagram-source-to-a-third-party) |
 | **Mermaid** | Rendered locally via the bundled `MermaidHTMLBuilder` WebView | `.mmd` | Adapts to dark mode via `colorScheme` |
-| **Nomnoml** | Rendered locally via the bundled `NomnomlHTMLBuilder` WebView | `.nomnoml` | Native for class and dependency diagrams. Sequence, activity, state and ER diagrams fall back to Mermaid, which previews and exports (`.mmd`) as Mermaid; component diagrams fall back to PlantUML. Canvas content stays light because `nomnoml.js` uses hardcoded colors |
+| **Nomnoml** | Rendered locally via the bundled `NomnomlHTMLBuilder` WebView | `.nomnoml` | Native for class and dependency diagrams. Sequence, activity, state, ER and component diagrams fall back to Mermaid, which previews and exports (`.mmd`) as Mermaid. Canvas content stays light because `nomnoml.js` uses hardcoded colors |
 | **SVG** | Native SwiftUI `Canvas` renderer using a Dagre layout produced by JavaScriptCore | n/a (rendered in-app) | The fastest, most interactive option; supports node selection, reveal-in-source, and PDF/PNG export |
 
 You can switch formats after generation — click **Generate** again to re-render in the new format. The format picker exposes all four cases, and the active script's `format` field controls which renderer is used in the preview pane.

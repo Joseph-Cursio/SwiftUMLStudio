@@ -22,8 +22,7 @@ This repository contains two related products:
 | Dependency graph (modules + types) | ✓ | ✓ | ✓ | ✓ |
 
 A dash means the format has no dialect for that diagram type, so the emitter
-falls back — to Mermaid in every case except Component/Nomnoml, which falls back
-to PlantUML. The CLI accepts every format for every diagram type; see
+falls back to Mermaid. The CLI accepts every format for every diagram type; see
 [Formats by Subcommand](docs/user/reference.md#formats-by-subcommand) for what
 each combination prints and where browser output sends it.
 

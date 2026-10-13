@@ -258,13 +258,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   names are ASCII, so no theme's `rawValue` changed; the range now
   spans the string's UTF-16 length.
 
+### Changed — Bridge
+
+- **Component diagrams requested in Nomnoml fall back to Mermaid, like
+  sequence, activity, state and ER.** Nomnoml has no component dialect,
+  and `ComponentScript` was the one emitter that sent that case to
+  PlantUML instead. In Studio, a component diagram previewed in Nomnoml
+  mode was therefore uploaded to planttext.com — with no consent prompt,
+  since Studio asked only when PlantUML itself was picked — while the
+  consent text promised that Mermaid and Nomnoml render locally.
+  `.nomnoml` now produces the same `flowchart TD` text as `.mermaid` and
+  reports `.mermaid`, so Studio previews it with the bundled Mermaid
+  renderer and exports it as `.mmd`; no Nomnoml-mode diagram reaches
+  planttext.com any more. On the CLI, `component --format nomnoml` now
+  prints Mermaid rather than PlantUML, and `--output browser` opens it at
+  mermaid.live instead of planttext.com. The format switch names
+  `.plantuml` explicitly instead of using `default:`, so a future
+  `DiagramFormat` case is a compile error there rather than a silent
+  PlantUML fallback.
+
 ### Fixed — Studio
 
 - **A diagram reopened from history renders in the language its text is
   written in.** History saved only the Format picker's value and rebuilt
   the script with it, but several diagrams fall back to another language:
-  state and ER in SVG emit Mermaid, component in Nomnoml emits PlantUML,
-  and sequence, activity, state and ER in Nomnoml emit Mermaid. Reopened,
+  state and ER in SVG emit Mermaid, and sequence, activity, state, ER and
+  component in Nomnoml emit Mermaid. Reopened,
   such a diagram came back labelled with the picker's format, so the
   preview handed Mermaid to nomnoml.js or wrapped it as raw SVG, and
   Export saved its source with the wrong extension. `DiagramEntity` now
