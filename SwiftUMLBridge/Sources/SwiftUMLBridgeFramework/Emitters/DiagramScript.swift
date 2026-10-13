@@ -27,7 +27,10 @@ public struct DiagramScript: @unchecked Sendable {
         context = DiagramContext(configuration: configuration)
 
         let methodStart = ContinuousClock.now
-        let definitions = buildDefinitions(from: items)
+        // `.svg` is laid out by `LayoutGraphBuilder` from the items themselves, so text definitions
+        // built for it would be thrown away, and preparing the items for them was a second
+        // preparation that duplicated merged members and nested types (#73).
+        let definitions = format == .svg ? "" : buildDefinitions(from: items)
 
         switch format {
         case .plantuml:
