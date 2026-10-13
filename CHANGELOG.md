@@ -250,6 +250,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed — Studio
 
+- **A PlantUML diagram reopened from history renders.** A restored
+  history item is a `SimpleDiagramScript`, which still overrode
+  `encodeText()` with a placeholder from before the Bridge's encoding was
+  public: it percent-encoded the raw text into the planttext.com URL.
+  planttext.com could not decode that and drew its "Welcome to PlantUML!"
+  placeholder instead of the diagram. The override is gone, so a restored
+  item encodes exactly like the script it was saved from (#57).
 - **A diagram reopened from history renders in the language its text is
   written in.** History saved only the Format picker's value and rebuilt
   the script with it, but several diagrams fall back to another language:
