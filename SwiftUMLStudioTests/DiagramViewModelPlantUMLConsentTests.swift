@@ -28,8 +28,7 @@ struct DiagramViewModelPlantUMLConsentTests {
     func launchFormatPreference(
         start: DiagramFormat, decision: PlantUMLConsent.Decision, expected: DiagramFormat
     ) {
-        let (consent, suiteName) = PlantUMLConsentTestSupport.makeConsent(decision)
-        defer { UserDefaults.standard.removePersistentDomain(forName: suiteName) }
+        let consent = PlantUMLConsentTestSupport.makeConsent(decision)
         let viewModel = makeViewModel()
         viewModel.diagramFormat = start
 

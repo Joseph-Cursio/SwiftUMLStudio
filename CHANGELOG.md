@@ -76,6 +76,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   launch arguments, which are never written back, and assert the consent
   card in place of a planttext.com web view.
 
+- **The Studio unit tests no longer leave empty plists in
+  `~/Library/Preferences`.** The consent tests and
+  `ReviewReminderManagerTests` gave each test its own
+  `UserDefaults(suiteName:)` suite (`test-plantuml-consent-<UUID>`,
+  `test-<UUID>`) and removed the domain afterwards. cfprefsd still keeps
+  an empty `<suite>.plist` for every suite written to, so each run added
+  a few dozen files; 320+ consent and 153 reminder files had piled up.
+  Deleting them from the tests would race cfprefsd. Instead,
+  `PlantUMLConsent` and `ReviewReminderManager` now read and write
+  through a `KeyValueStore` protocol — the five `UserDefaults` methods
+  they use, with `UserDefaults` conforming as is. The app still passes
+  `.standard` under the same keys, so existing consent and reminder
+  settings carry over. The tests use an in-memory store.
+  `KeyValueStoreTests` runs the same checks against that store and
+  against `UserDefaults`, through one fixed suite,
+  `name.JosephCursio.SwiftUMLStudio.UnitTests`, which every run reuses.
+  The leftover files can be removed once each is checked to hold `{}`.
+
 ### Fixed — Bridge
 
 - **`classdiagram` no longer diagrams the whole current directory when its
@@ -92,6 +110,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   already do when they find nothing. Only `classdiagram` applies file
   filters; the other subcommands, Studio and the framework API are
   unchanged.
+- **Every `--exclude` and `files.exclude` entry applies, not only the
+  last.** `FileCollector.getFiles(for:in:honoring:)` replaced its set of
+  excluded files with each exclude glob in turn, so only the last entry
+  excluded anything. The documented
+  `classdiagram Sources/ --exclude Sources/Generated/ --exclude Sources/Mocks/`
+  dropped `Mocks` and kept `Generated`, and a `.swiftumlbridge.yml` with
+  several `files.exclude` patterns honoured only the last one. Include
+  globs had a related fault: a file matching two of them came back twice,
+  as did a file with include globs and two exclude entries, and include
+  results followed the order of the globs rather than the order the
+  files were found. Files are now filtered in one pass: dropped if any
+  exclude glob matches, kept if any include glob does, each at most once
+  and in the order found.
 - **A PlantUML diagram reaches planttext.com whole** (#57). `DiagramText`
   deflated the script with `compression_encode_buffer`, passing the
   string's `Character` count as both the number of bytes to read and the
@@ -285,6 +316,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   already did for a directory with a symlinked parent. Globs anchored at
   such a directory resolve it too, which is why they use `realpath(3)`:
   `canonicalPathKey` leaves a final symlink unresolved.
+- **An include or exclude entry whose directories run through a symlink,
+  or hold `.` or `..`, matches** (#59). The two fixes above resolve the
+  search directory, but an absolute or `~` entry never uses it, so
+  `classdiagram --exclude '/tmp/proj/Generated/*.swift'` built a regex
+  anchored at `/tmp/…` that no enumerated `/private/tmp/…` file could
+  match, and a relative entry could still run through a symlink below the
+  search directory. Enumeration never reports a `.` or `..` component
+  either, so `./Sources/**/*.swift` and `Other/../Sources` matched
+  nothing, wherever the directory was. Each entry's directories, up to
+  its first glob syntax, now go through `realpath(3)` as the search
+  directory does; from there on the entry is still taken as written. An
+  entry with no glob syntax had been rescued by a substring match only
+  where the symlink just adds a prefix, as `/tmp` → `/private/tmp` does.
+  It now names a directory by its real path and a file by its resolved
+  parent and its own name. Entries are matched by where the files are,
+  so one naming a symlinked directory acts on the directory it leads to,
+  and on a case-insensitive volume those leading directories match in
+  any case. `matchGlobs` lists a directory that is itself a symlink
+  through the link, rather than finding nothing there.
 - **A CRLF line break after an `@Relationship` inverse no longer draws
   the relationship twice.** `ERModelExtractor` read the property name in
   `inverse: \Book.author` up to the first `,`, `)`, space, tab or `"\n"`.

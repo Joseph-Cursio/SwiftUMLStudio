@@ -532,7 +532,8 @@ The configuration file is a YAML file named `.swiftumlbridge.yml`. All fields ar
 # ─── files ─────────────────────────────────────────────────────────────────
 files:
   include:
-    # Glob patterns relative to the current directory.
+    # Glob patterns relative to the current directory. Absolute and ~ paths
+    # work too, but select only files under the current directory.
     # When non-empty, positional <paths> arguments are ignored.
     # Type: [String]  Default: []
     - "Sources/**/*.swift"
@@ -1157,7 +1158,7 @@ relationships:
       - "NS*"                       # wildcard match
 ```
 
-**`elements.exclude` patterns match against type names (not file paths).** `files.include` and `files.exclude` patterns match against file paths relative to the working directory.
+**`elements.exclude` patterns match against type names (not file paths).** `files.include` and `files.exclude` patterns match against file paths: a relative pattern is taken from the working directory, an absolute or `~` one as written. Symlinks, `.` and `..` in a pattern's directories, up to its first wildcard, are resolved before matching.
 
 ---
 

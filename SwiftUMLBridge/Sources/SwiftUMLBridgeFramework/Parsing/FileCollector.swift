@@ -10,59 +10,35 @@ public struct FileCollector: Sendable {
     ///   - paths: array of file paths or just use `["."]`
     ///   - directory: root of recursive search
     ///   - fileOptions: containing include/exclude information via Globs
-    /// - Returns: an array of URLs
+    /// - Returns: an array of URLs, in the order they were found
     public func getFiles(for paths: [String], in directory: String, honoring fileOptions: FileOptions?) -> [URL] {
-        var included: [Glob] = []
-        var excluded: [Glob] = []
+        let include = fileOptions?.include ?? []
+        let exclude = fileOptions?.exclude ?? []
 
-        var searchPaths: [String] = paths
-        var files: [URL] = []
-        var filesNotExcluded: [URL] = []
+        // Include globs choose the files themselves, so search the whole directory.
+        let allFiles = getFiles(for: include.isEmpty ? paths : ["."], in: directory)
 
-        if let include = fileOptions?.include, !include.isEmpty {
-            searchPaths = ["."]
+        guard let fileOptions, fileOptions.someProvided else {
+            return allFiles
         }
+        BridgeLogger.shared.info("paths will be ignored in favor of configuration  \(fileOptions.description)")
 
-        let allFiles = getFiles(for: searchPaths, in: directory)
-        var filesExcluded: [URL] = []
-        if let exclude = fileOptions?.exclude, !exclude.isEmpty {
-            excluded = expandGlobs(exclude.joined(separator: ","), in: directory)
-        } else {
-            filesNotExcluded = allFiles
-        }
+        let included = expandGlobs(include.joined(separator: ","), in: directory)
+        let excluded = expandGlobs(exclude.joined(separator: ","), in: directory)
 
-        if let fileOptions = fileOptions, fileOptions.someProvided {
-            BridgeLogger.shared.info("paths will be ignored in favor of configuration  \(fileOptions.description)")
-        }
-
+        // One pass over `allFiles`, so a file comes back at most once and in
+        // the order it was found: dropped if any exclude glob matches it and,
+        // when there are include globs, kept only if one of them does.
         // The globs are anchored where enumeration reports files, so test each
         // file in that form too: an explicit file argument keeps the spelling
         // it was given, which may run through a symlink.
-        let matchPaths = fileOptions?.someProvided == true
-            ? Dictionary(allFiles.map { ($0, enumeratedPath(of: $0)) }, uniquingKeysWith: { first, _ in first })
-            : [:]
-        func isMatched(_ url: URL, by glob: Glob) -> Bool {
-            glob.matches(matchPaths[url] ?? url.path)
-        }
-
-        excluded.forEach { glob in
-            filesExcluded = allFiles.filter { isMatched($0, by: glob) }
-            let notExcluded = allFiles.filter { !isMatched($0, by: glob) }
-            filesNotExcluded.append(contentsOf: notExcluded)
-        }
-
-        if let include = fileOptions?.include, !include.isEmpty {
-            included = expandGlobs(include.joined(separator: ","), in: directory)
-            included.forEach { glob in
-                files.append(contentsOf: filesNotExcluded.filter { isMatched($0, by: glob) })
+        return allFiles.filter { url in
+            let path = enumeratedPath(of: url)
+            if excluded.contains(where: { $0.matches(path) }) {
+                return false
             }
-        } else {
-            files = allFiles
+            return include.isEmpty || included.contains { $0.matches(path) }
         }
-
-        files = files.filter { filesExcluded.contains($0) == false }
-
-        return files
     }
 
     func getFiles(for paths: [String], in directory: String = FileManager.default.currentDirectoryPath) -> [URL] {

@@ -41,8 +41,7 @@ struct PlantTextPreviewTests {
 
     @Test("the card's Allow button grants consent")
     func allowGrantsConsent() throws {
-        let (consent, suiteName) = PlantUMLConsentTestSupport.makeConsent()
-        defer { UserDefaults.standard.removePersistentDomain(forName: suiteName) }
+        let consent = PlantUMLConsentTestSupport.makeConsent()
         let view = PlantTextPreview(script: plantUML, requestedFormat: .plantuml, consent: consent)
 
         let card = try view.inspect().find(PlantUMLConsentCard.self).actualView()
@@ -55,8 +54,7 @@ struct PlantTextPreviewTests {
 
     @Test("Use Mermaid Instead records the decline, then switches format")
     func useMermaidDeclinesAndSwitches() throws {
-        let (consent, suiteName) = PlantUMLConsentTestSupport.makeConsent()
-        defer { UserDefaults.standard.removePersistentDomain(forName: suiteName) }
+        let consent = PlantUMLConsentTestSupport.makeConsent()
         var switched = false
         let view = PlantTextPreview(
             script: plantUML, requestedFormat: .plantuml, consent: consent, onUseMermaid: { switched = true }
@@ -72,16 +70,14 @@ struct PlantTextPreviewTests {
 
     @Test("a declined preview still asks rather than loading")
     func declinedStillAsks() throws {
-        let (consent, suiteName) = PlantUMLConsentTestSupport.makeConsent(.declined)
-        defer { UserDefaults.standard.removePersistentDomain(forName: suiteName) }
+        let consent = PlantUMLConsentTestSupport.makeConsent(.declined)
         let view = PlantTextPreview(script: plantUML, requestedFormat: .plantuml, consent: consent)
         _ = try view.inspect().find(PlantUMLConsentCard.self)
     }
 
     @Test("revoking consent brings the card back in place of the preview")
     func revokingBringsCardBack() throws {
-        let (consent, suiteName) = PlantUMLConsentTestSupport.makeConsent(.granted)
-        defer { UserDefaults.standard.removePersistentDomain(forName: suiteName) }
+        let consent = PlantUMLConsentTestSupport.makeConsent(.granted)
         let view = PlantTextPreview(script: plantUML, requestedFormat: .plantuml, consent: consent)
 
         // Not inspected while granted: that body is a real WebView(url:).
@@ -92,8 +88,7 @@ struct PlantTextPreviewTests {
 
     @Test("the card explains a PlantUML script when another format was picked")
     func fallbackIsExplained() throws {
-        let (consent, suiteName) = PlantUMLConsentTestSupport.makeConsent()
-        defer { UserDefaults.standard.removePersistentDomain(forName: suiteName) }
+        let consent = PlantUMLConsentTestSupport.makeConsent()
         let view = PlantTextPreview(script: plantUML, requestedFormat: .nomnoml, consent: consent)
         #expect(try view.inspect().find(PlantUMLConsentCard.self).actualView().isFallback)
     }
