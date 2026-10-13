@@ -20,10 +20,11 @@ public struct StateScript: Sendable {
             self.text = StateScript.buildMermaidText(model: model)
             self.format = .mermaid
         case .nomnoml:
-            // nomnoml has no state-diagram syntax; fall back to Mermaid text
+            // nomnoml has no state-diagram syntax; fall back to Mermaid text and
+            // report `.mermaid` so presenters hand it to a Mermaid renderer
             // (matches SequenceScript's behavior for the same limitation).
             self.text = StateScript.buildMermaidText(model: model)
-            self.format = .nomnoml
+            self.format = .mermaid
         case .svg:
             // No native SVG layout engine for state diagrams yet; piggyback on
             // the Mermaid pipeline by emitting Mermaid text and overriding the

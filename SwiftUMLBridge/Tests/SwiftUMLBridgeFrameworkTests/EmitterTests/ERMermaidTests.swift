@@ -125,7 +125,7 @@ struct ERMermaidTests {
 
     // MARK: - Format piggybacking
 
-    @Test("nomnoml format reuses the Mermaid emitter")
+    @Test("nomnoml format reuses the Mermaid emitter and reports mermaid")
     func nomnomlFormatFallsBackToMermaid() {
         let model = ERModel(
             entities: [EREntity(name: "Note", attributes: [
@@ -133,7 +133,7 @@ struct ERMermaidTests {
             ])]
         )
         let script = makeScript(model: model, format: .nomnoml)
-        #expect(script.format == .nomnoml)
+        #expect(script.format == .mermaid)
         #expect(script.text.hasPrefix("erDiagram"))
     }
 

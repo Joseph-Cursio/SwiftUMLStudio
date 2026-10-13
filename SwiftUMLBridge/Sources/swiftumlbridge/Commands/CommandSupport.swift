@@ -6,7 +6,7 @@ import SwiftUMLBridgeFramework
 /// subcommand. Flattened into each command via `@OptionGroup`, so the
 /// command-line surface is unchanged.
 struct CommonDiagramOptions: ParsableArguments {
-    @Option(help: "Diagram format. Options: plantuml, mermaid")
+    @Option(help: "Diagram format.")
     var format: DiagramFormat?
 
     @Option(help: ArgumentHelp(

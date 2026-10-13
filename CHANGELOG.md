@@ -67,6 +67,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   Studio's native canvas. Every interpolated string now goes through
   `jsStringLiteral`, which JSON-encodes it and also escapes U+2028 and
   U+2029, so the literal evaluates back to exactly the name.
+- **A node whose name starts with `cluster:` is laid out as a node.**
+  `DagreLayoutEngine` gave each module's cluster the dagre id
+  `cluster:<module>` but used every node's own id unchanged, then read
+  back anything starting with `cluster:` as a cluster. A deps `--modules`
+  directory named `cluster:Core` — or a raw-identifier type — was drawn
+  at (0, 0), half off the canvas, with an empty `Core` module box beside
+  it. A node whose id was exactly another cluster's, such as
+  `cluster:Core` in module `Core`, was the same dagre node as that
+  cluster, so the script failed and the graph dropped to the grid with no
+  module boxes. Nodes now take the dagre id `node:<id>`, so the two
+  namespaces can no longer meet.
 - **Two names that sanitize alike are no longer drawn as one node.**
   `DepsScript.mermaidId` and `ComponentScript.safeAlias` rewrite several
   characters to `_`, so `Outer.Inner` and `Outer_Inner` both became the
@@ -169,6 +180,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   `␌` in its label. Exported and CLI-opened `.svg` files were affected. A diagram saved to
   Studio's history before the fix keeps its old text until it is
   regenerated. New tests parse each renderer's output as XML.
+- **`--format nomnoml` on `sequence`, `activity`, `state` and `er` opens
+  at mermaid.live instead of nomnoml.com** (#85). These four have no
+  Nomnoml emitter and fall back to Mermaid text, but their scripts still
+  reported `.nomnoml`. `BrowserPresenter` picks its site from that, so
+  browser output handed Mermaid source to nomnoml.com, which drew it as
+  literal text or failed to parse it. Studio chose the same way: its
+  preview fed the text to `nomnoml.js`, and **Export markup…** saved it
+  as `.nomnoml`. The fallbacks now report `.mermaid`, as the
+  `--format svg` fallback in `state` and `er` already did, so the CLI
+  opens mermaid.live and Studio previews and exports the text as
+  Mermaid. A diagram reopened from Studio's history still takes the
+  format picker's value rather than the script's, so it is still sent
+  to `nomnoml.js`.
+- **`--format` help no longer lists only `plantuml` and `mermaid`**
+  (#82). The hand-written "Options: plantuml, mermaid" sat beside
+  ArgumentParser's own "(values: plantuml, mermaid, nomnoml, svg)",
+  which it derives from `DiagramFormat`. Only the generated list is
+  left, so the two cannot disagree again.
 
 ### Fixed — Studio
 

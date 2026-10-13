@@ -23,7 +23,7 @@ extension SwiftUMLBridgeCLI {
         ))
         var output: ClassDiagramOutput?
 
-        @Option(help: "Diagram format. Options: plantuml, mermaid")
+        @Option(help: "Diagram format.")
         var format: DiagramFormat?
 
         @Option(help: "macOS SDK path for type inference resolution (e.g. `$(xcrun --show-sdk-path -sdk macosx)`)")

@@ -85,8 +85,8 @@ struct SequenceDiagramGeneratorEdgeCaseTests {
         #expect(script.text.contains("helper") == false)
     }
 
-    @Test("generateScript with nomnoml format propagates format")
-    func nomnomlFormatPropagation() throws {
+    @Test("generateScript with nomnoml format falls back to Mermaid and reports mermaid")
+    func nomnomlFormatFallsBackToMermaid() throws {
         let source = """
         class Foo {
             func run() { self.helper() }
@@ -101,7 +101,8 @@ struct SequenceDiagramGeneratorEdgeCaseTests {
         let script = generator.generateScript(
             for: [path], entryType: "Foo", entryMethod: "run", with: config
         )
-        #expect(script.format == .nomnoml)
+        #expect(script.format == .mermaid)
+        #expect(script.text.hasPrefix("sequenceDiagram"))
     }
 
     @Test("generateScript with svg format propagates format")
