@@ -74,8 +74,7 @@ struct DiagramPreviewViewTests {
         let viewModel = DiagramViewModel(persistenceController: .init(inMemory: true))
         viewModel.diagramFormat = .plantuml
         viewModel.restoredScript = SimpleDiagramScript(text: "@startuml\nclass Foo\n@enduml", format: .plantuml)
-        let (consent, suiteName) = PlantUMLConsentTestSupport.makeConsent()
-        defer { UserDefaults.standard.removePersistentDomain(forName: suiteName) }
+        let consent = PlantUMLConsentTestSupport.makeConsent()
         let view = DiagramPreviewView(viewModel: viewModel, consent: consent)
 
         let card = try view.inspect().find(PlantUMLConsentCard.self).actualView()
@@ -87,8 +86,7 @@ struct DiagramPreviewViewTests {
         let viewModel = DiagramViewModel(persistenceController: .init(inMemory: true))
         viewModel.diagramFormat = .nomnoml
         viewModel.restoredScript = SimpleDiagramScript(text: "@startuml\n[App]\n@enduml", format: .plantuml)
-        let (consent, suiteName) = PlantUMLConsentTestSupport.makeConsent()
-        defer { UserDefaults.standard.removePersistentDomain(forName: suiteName) }
+        let consent = PlantUMLConsentTestSupport.makeConsent()
         let view = DiagramPreviewView(viewModel: viewModel, consent: consent)
 
         #expect(try view.inspect().find(PlantUMLConsentCard.self).actualView().isFallback)
@@ -98,8 +96,7 @@ struct DiagramPreviewViewTests {
     func mermaidDoesNotAsk() throws {
         let viewModel = DiagramViewModel(persistenceController: .init(inMemory: true))
         viewModel.restoredScript = SimpleDiagramScript(text: "classDiagram\nclass Foo", format: .mermaid)
-        let (consent, suiteName) = PlantUMLConsentTestSupport.makeConsent()
-        defer { UserDefaults.standard.removePersistentDomain(forName: suiteName) }
+        let consent = PlantUMLConsentTestSupport.makeConsent()
         let view = DiagramPreviewView(viewModel: viewModel, consent: consent)
 
         #expect((try? view.inspect().find(PlantUMLConsentCard.self)) == nil)
@@ -109,8 +106,7 @@ struct DiagramPreviewViewTests {
     func noMermaidSwitchWithoutSource() throws {
         let viewModel = DiagramViewModel(persistenceController: .init(inMemory: true))
         viewModel.restoredScript = SimpleDiagramScript(text: "@startuml\nclass Foo\n@enduml", format: .plantuml)
-        let (consent, suiteName) = PlantUMLConsentTestSupport.makeConsent()
-        defer { UserDefaults.standard.removePersistentDomain(forName: suiteName) }
+        let consent = PlantUMLConsentTestSupport.makeConsent()
         let view = DiagramPreviewView(viewModel: viewModel, consent: consent)
 
         #expect(try view.inspect().find(PlantUMLConsentCard.self).actualView().onUseMermaid == nil)
@@ -122,12 +118,9 @@ struct DiagramPreviewViewTests {
         viewModel.selectedPaths = ["/tmp/Foo.swift"]
         viewModel.diagramFormat = .plantuml
         viewModel.restoredScript = SimpleDiagramScript(text: "@startuml\nclass Foo\n@enduml", format: .plantuml)
-        let (consent, suiteName) = PlantUMLConsentTestSupport.makeConsent()
+        let consent = PlantUMLConsentTestSupport.makeConsent()
         let view = DiagramPreviewView(viewModel: viewModel, consent: consent)
-        defer {
-            viewModel.currentTask?.cancel()
-            UserDefaults.standard.removePersistentDomain(forName: suiteName)
-        }
+        defer { viewModel.currentTask?.cancel() }
 
         let useMermaid = try #require(view.inspect().find(PlantUMLConsentCard.self).actualView().onUseMermaid)
         useMermaid()

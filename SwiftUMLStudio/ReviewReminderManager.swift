@@ -8,22 +8,22 @@ enum ReviewReminderManager {
     private static let reminderIntervalKey = "reviewReminderDays"
 
     /// Whether the user has enabled review reminders.
-    static func isEnabled(defaults: UserDefaults = .standard) -> Bool {
+    static func isEnabled(defaults: any KeyValueStore = UserDefaults.standard) -> Bool {
         defaults.integer(forKey: reminderIntervalKey) > 0
     }
 
     /// Current reminder interval in days (0 = disabled).
-    static func intervalDays(defaults: UserDefaults = .standard) -> Int {
+    static func intervalDays(defaults: any KeyValueStore = UserDefaults.standard) -> Int {
         defaults.integer(forKey: reminderIntervalKey)
     }
 
     /// Set the reminder interval in days.
-    static func setIntervalDays(_ value: Int, defaults: UserDefaults = .standard) {
+    static func setIntervalDays(_ value: Int, defaults: any KeyValueStore = UserDefaults.standard) {
         defaults.set(value, forKey: reminderIntervalKey)
     }
 
     /// Request notification permission and schedule a recurring reminder.
-    static func enableReminder(intervalDays: Int = 14, defaults: UserDefaults = .standard) {
+    static func enableReminder(intervalDays: Int = 14, defaults: any KeyValueStore = UserDefaults.standard) {
         setIntervalDays(intervalDays, defaults: defaults)
 
         Task {
@@ -36,14 +36,14 @@ enum ReviewReminderManager {
     }
 
     /// Cancel and disable the reminder.
-    static func disableReminder(defaults: UserDefaults = .standard) {
+    static func disableReminder(defaults: any KeyValueStore = UserDefaults.standard) {
         setIntervalDays(0, defaults: defaults)
         let center = UNUserNotificationCenter.current()
         center.removePendingNotificationRequests(withIdentifiers: [reminderIdentifier])
     }
 
     /// Reschedule after a snapshot is saved (resets the timer).
-    static func rescheduleIfEnabled(defaults: UserDefaults = .standard) {
+    static func rescheduleIfEnabled(defaults: any KeyValueStore = UserDefaults.standard) {
         guard isEnabled(defaults: defaults) else { return }
         scheduleReminder(intervalDays: intervalDays(defaults: defaults))
     }

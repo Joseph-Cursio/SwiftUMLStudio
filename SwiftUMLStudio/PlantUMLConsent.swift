@@ -10,10 +10,11 @@ import Observation
 /// Other formats (Mermaid, Nomnoml, SVG) render locally and do not require
 /// consent.
 ///
-/// The decision lives in the `UserDefaults` it is built with. The app uses
-/// ``shared``; tests build their own from a throwaway suite, because the unit
-/// tests run inside the app and share its defaults — a test that revoked
-/// consent through `UserDefaults.standard` cleared the developer's own.
+/// The decision lives in the ``KeyValueStore`` it is built with. The app uses
+/// ``shared``, over `UserDefaults.standard`; tests build their own in memory,
+/// because the unit tests run inside the app and share its defaults — a test
+/// that revoked consent through `UserDefaults.standard` cleared the developer's
+/// own.
 @Observable
 final class PlantUMLConsent {
     enum Decision: CaseIterable {
@@ -22,17 +23,17 @@ final class PlantUMLConsent {
         case declined
     }
 
-    static let shared = PlantUMLConsent(defaults: .standard)
+    static let shared = PlantUMLConsent(defaults: UserDefaults.standard)
 
     /// The key a grant has always been stored under, so a grant given before
     /// the store existed still counts.
     nonisolated static let grantedKey = "plantUMLRenderingConsented"
     nonisolated static let declinedKey = "plantUMLRenderingDeclined"
 
-    @ObservationIgnored private let defaults: UserDefaults
+    @ObservationIgnored private let defaults: any KeyValueStore
     private(set) var decision: Decision
 
-    init(defaults: UserDefaults) {
+    init(defaults: any KeyValueStore) {
         self.defaults = defaults
         if defaults.bool(forKey: Self.grantedKey) {
             decision = .granted
