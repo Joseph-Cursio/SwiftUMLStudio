@@ -198,6 +198,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   ArgumentParser's own "(values: plantuml, mermaid, nomnoml, svg)",
   which it derives from `DiagramFormat`. Only the generated list is
   left, so the two cannot disagree again.
+- **Include and exclude globs match under a directory reached through a
+  symlink.** `FileCollector.getFiles(for:in:honoring:)` anchored each
+  glob at `directory` as the caller spelled it, but `FileManager`
+  reports enumerated files under the directory's resolved path, so a
+  walk of `/tmp/x` yields `/private/tmp/x/…`. Under `/tmp`,
+  `/var/folders` (`FileManager.temporaryDirectory`) or any symlinked
+  parent, an include glob matched nothing and an exclude glob dropped
+  nothing. This is why three FileCollector and Glob tests failed for a
+  checkout under `/private/tmp`: `Bundle.module` spells its fixture path
+  `/tmp/…`. Globs are now anchored at the canonical path
+  (`canonicalPathKey`; `resolvingSymlinksInPath()` strips `/private`
+  again, so it cannot be used), and each file is tested with its parent
+  resolved the same way. That also lets an exclude glob catch an explicit
+  file argument typed through a symlink, which the CLI missed even though
+  its own working directory is already resolved.
 
 ### Documentation
 
