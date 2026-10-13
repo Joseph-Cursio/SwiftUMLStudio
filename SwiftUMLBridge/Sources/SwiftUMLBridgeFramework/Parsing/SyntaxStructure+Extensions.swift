@@ -1,12 +1,34 @@
 import Foundation
 
 extension Array where Element == SyntaxStructure {
+    /// The structures a class diagram walks, in drawing order: nested types flattened when the
+    /// configuration shows them, protocols first and extensions last, and extensions merged into
+    /// their types when it asks for that. The steps below edit structures in place, so they run
+    /// on a private copy: the same items always prepare to the same result, and the caller's
+    /// structures are left as they were (#73).
+    func preparedForClassDiagram(with configuration: Configuration) -> [SyntaxStructure] {
+        var prepared = SyntaxStructure.clonedForest(of: self)
+        if configuration.elements.showNestedTypes {
+            prepared = prepared.populateNestedTypes()
+        }
+        prepared = prepared.orderedByProtocolsFirstExtensionsLast()
+        if configuration.shallExtensionsBeMerged {
+            let indicator = configuration.elements.mergedExtensionMemberIndicator
+            prepared = prepared.mergeExtensions(mergedMemberIndicator: indicator)
+        }
+        return prepared
+    }
+
     /// order: protocols first, then non-extensions (i.e protocols, structs, classes, enums, actors). Extensions last.
     func orderedByProtocolsFirstExtensionsLast() -> [SyntaxStructure] {
         sorted(by: { $0.kind ?? .struct < $1.kind ?? .struct })
     }
 
     /// merges extensions with their parent types
+    ///
+    /// Appends each extension's members into its type's `substructure` and sets their
+    /// `memberSuffix`, editing the structures in place. Diagram code calls it only through
+    /// `preparedForClassDiagram(with:)`, which hands it a private copy.
     /// - Parameter mergedMemberIndicator: string appended as suffix to a member that originates from an extension
     /// - Returns: new array with at most 1 extension per type
     func mergeExtensions(mergedMemberIndicator: String? = "<&bolt>") -> [SyntaxStructure] {
@@ -35,6 +57,8 @@ extension Array where Element == SyntaxStructure {
         return processedItems
     }
 
+    /// Flattens nested types into the list, setting each one's `parent` in place. Diagram code
+    /// calls it only through `preparedForClassDiagram(with:)`, which hands it a private copy.
     func populateNestedTypes(parent: SyntaxStructure? = nil) -> [SyntaxStructure] {
         var items: [SyntaxStructure] = []
         for structure in self where isNestedType(structure) {

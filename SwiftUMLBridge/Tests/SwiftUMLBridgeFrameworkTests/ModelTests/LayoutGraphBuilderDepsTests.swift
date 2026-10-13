@@ -112,7 +112,8 @@ struct LayoutGraphBuilderDepsTests {
     @Test("nested type with parent produces composition edge")
     func classDiagramNestedTypeCompositionEdge() {
         // Inner must be in Outer's substructure so populateNestedTypes sets the parent link.
-        // Manually setting child.parent is overwritten by prepareItems → populateNestedTypes.
+        // Manually setting child.parent is overwritten when preparedForClassDiagram runs
+        // populateNestedTypes on its own copy.
         let child = SyntaxStructure(kind: .struct, name: "Inner")
         let parent = SyntaxStructure(kind: .class, name: "Outer", substructure: [child])
         let graph = LayoutGraphBuilder.buildClassDiagram(from: [parent], configuration: .default)

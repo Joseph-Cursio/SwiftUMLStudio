@@ -96,6 +96,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed — Bridge
 
+- **SVG class diagrams with merged extensions list each merged member once
+  and draw a type nested in an extension once** (#73). For `.svg`,
+  `DiagramScript` prepared the parsed items twice: once for text
+  definitions it then discarded, and once in `LayoutGraphBuilder`.
+  Preparation edited the shared `SyntaxStructure` objects in place. It
+  appended each extension's members to its type and set their `<&bolt>`
+  suffix. So with `--merge-extensions --format svg`, or a config with
+  `showExtensions: merged` and `format: svg`, the second pass listed every
+  merged member twice and drew a second box for a type nested in an
+  extension. `.svg` now skips the unused text definitions. Preparation
+  now runs in one function shared by the text emitters and the SVG
+  builder, on a private copy of the items. Repeated or concurrent
+  diagrams from one parse now give the same output, and a `.merged` run
+  no longer leaves `<&bolt>` on a later `.all` one.
 - **`classdiagram` no longer diagrams the whole current directory when its
   file selection comes out empty.** The command collected and filtered
   its files, then passed the paths to `ClassDiagramGenerator.generate(for:)`,

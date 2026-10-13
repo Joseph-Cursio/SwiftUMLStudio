@@ -27,7 +27,10 @@ public struct DiagramScript: @unchecked Sendable {
         context = DiagramContext(configuration: configuration)
 
         let methodStart = ContinuousClock.now
-        let definitions = buildDefinitions(from: items)
+        // `.svg` is laid out by `LayoutGraphBuilder` from the items themselves, so text definitions
+        // built for it would be thrown away, and preparing the items for them was a second
+        // preparation that duplicated merged members and nested types (#73).
+        let definitions = format == .svg ? "" : buildDefinitions(from: items)
 
         switch format {
         case .plantuml:
@@ -45,18 +48,7 @@ public struct DiagramScript: @unchecked Sendable {
     }
 
     private func buildDefinitions(from items: [SyntaxStructure]) -> String {
-        var adjustedItems = items
-
-        if context.elements.showNestedTypes {
-            adjustedItems = adjustedItems.populateNestedTypes()
-        }
-
-        adjustedItems = adjustedItems.orderedByProtocolsFirstExtensionsLast()
-
-        if context.configuration.shallExtensionsBeMerged {
-            let indicator = context.elements.mergedExtensionMemberIndicator
-            adjustedItems = adjustedItems.mergeExtensions(mergedMemberIndicator: indicator)
-        }
+        let adjustedItems = items.preparedForClassDiagram(with: context.configuration)
 
         // Exactly what the loop below will draw; the context adds the names their edges use.
         context.reserveIdentifiers(drawing: adjustedItems.filter { $0.isDrawn(in: context.configuration) })
