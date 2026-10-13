@@ -13,9 +13,19 @@ struct DagreLayoutEngineNameTests {
     /// Names that change meaning when pasted between `"` in a JS script:
     /// `Old\Code` loses its backslash (`\C` is an identity escape), `Trail\`
     /// escapes the closing quote, and a raw line terminator ends the literal.
+    /// A backslash before an escape letter is read as that escape: `Be\ta`
+    /// holds a TAB and `Oct\1` a U+0001, while `\x` and `\u` with no hex digits
+    /// after them are a syntax error (#60). `Esc\"ape` undid an escaper that
+    /// handled only `"`: its backslash escaped the added one, so the quote
+    /// ended the literal.
     static let jsSignificantNames = [
         "Old\\Code",
         "Trail\\",
+        "Be\\ta",
+        "Oct\\1",
+        "Hex\\x",
+        "Uni\\u",
+        "Esc\\\"ape",
         "Line\nBreak",
         "Carriage\rReturn",
         "Say \"hi\"",
@@ -25,8 +35,9 @@ struct DagreLayoutEngineNameTests {
 
     /// Asserts `graph` came from dagre, not from `fallbackLayout`: the two
     /// nodes joined by its one edge sit on separate ranks, where the grid
-    /// fallback puts both on its first row, and the edge has route points,
-    /// which the fallback never sets.
+    /// fallback puts both on its first row, the edge has route points, which
+    /// the fallback never sets, and no box is left at the origin, half off
+    /// the canvas.
     private func expectDagreLayout(
         _ graph: LayoutGraph, source: String, target: String
     ) throws {
@@ -37,6 +48,7 @@ struct DagreLayoutEngineNameTests {
         #expect(sourceNode.posY != targetNode.posY)
         #expect(graph.edges.count == 1)
         #expect(graph.edges.first?.points.count ?? 0 >= 2)
+        #expect(graph.nodesOutsideCanvas.isEmpty)
     }
 
     @Test("jsStringLiteral evaluates back to the original string",

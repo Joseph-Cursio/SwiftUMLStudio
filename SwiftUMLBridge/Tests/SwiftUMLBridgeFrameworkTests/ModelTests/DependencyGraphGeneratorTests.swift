@@ -169,6 +169,35 @@ struct DependencyGraphGeneratorTests {
         #expect(WellFormedXML.error(in: script.text) == nil)
     }
 
+    /// The directory name becomes a dagre node id. Pasted into the layout script with only `"`
+    /// escaped, `Old\` ended in an escaped quote and dropped the whole graph to the grid
+    /// fallback, while `\P` and `\t` read as `P` and TAB, so dagre placed a node the lookup back
+    /// by id never found: it stayed at (0, 0) and its import edges were not routed (#60).
+    @Test(
+        "modules-mode SVG lays out a directory named with a backslash",
+        arguments: ["Old\\", "Win\\Path", "Be\\ta"]
+    )
+    func modulesSVGWithBackslashDirectoryIsLaidOut(name: String) throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("dagre-backslash-\(UUID().uuidString)")
+        let directory = root.appendingPathComponent(name)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        try "import Foundation\nimport Combine\nstruct A {}\n".write(
+            to: directory.appendingPathComponent("A.swift"), atomically: true, encoding: .utf8
+        )
+
+        let script = generator.generateScript(
+            for: [root.path], mode: .modules, with: Configuration(format: .svg)
+        )
+        let graph = try #require(script.layoutGraph)
+
+        #expect(graph.nodes.contains { $0.id == name })
+        #expect(graph.edges.count == 2)
+        #expect(graph.edges.allSatisfy { $0.points.count >= 2 })
+        #expect(graph.nodesOutsideCanvas.isEmpty)
+    }
+
     // MARK: - Format
 
     @Test("mermaid format produces graph TD header")

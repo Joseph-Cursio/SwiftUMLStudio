@@ -145,7 +145,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   long ASCII input; they now decode the payload and compare it with the
   script.
 - **A module or type name with a backslash or line break is laid out by
-  dagre again** (#81). `DagreLayoutEngine` pastes node ids, module names
+  dagre again** (#60, #81). `DagreLayoutEngine` pastes node ids, module names
   and cluster ids between `"` in the script it runs on JavaScriptCore,
   and escaped only `"`. A deps `--modules` node is a directory name, and
   macOS allows `\` and newlines in those. `Old\Code` evaluated to
