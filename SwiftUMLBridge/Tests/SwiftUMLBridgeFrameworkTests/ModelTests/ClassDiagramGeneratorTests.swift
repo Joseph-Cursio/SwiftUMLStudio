@@ -143,6 +143,18 @@ struct ClassDiagramGeneratorTests {
         #expect(WellFormedXML.error(in: script.text) == nil)
     }
 
+    /// A type annotation's label keeps a comment written inside it, and `swiftc` accepts a
+    /// control character in a comment, which XML forbids (#80).
+    @Test("svg output stays well-formed for a control character in a comment inside a type annotation")
+    func svgWithControlCharacterInTypeAnnotationCommentIsWellFormed() {
+        let script = generator.generateScript(
+            for: "struct Holder { let values: [/* \u{07} */ Int] }\n", with: Configuration(format: .svg)
+        )
+
+        #expect(script.text.contains("/* \u{2407} */"))
+        #expect(WellFormedXML.error(in: script.text) == nil)
+    }
+
     // MARK: - generateScript from paths
 
     @Test("generateScript from nonexistent path produces minimal script")

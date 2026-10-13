@@ -145,6 +145,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   them. The output is otherwise unchanged. A diagram saved to Studio's
   history before the fix keeps its old text until it is regenerated. New
   tests parse the output as XML as well as checking substrings.
+- **A control character in a label no longer makes an SVG diagram
+  malformed** (#80). Every SVG renderer — class, dependency, activity,
+  sequence and component — sends its text through `xmlEscaped`, which
+  escaped only `&`, `<`, `>` and `"`. XML 1.0 forbids every C0 control
+  except tab, line feed and carriage return, and also U+FFFE and U+FFFF,
+  and it rejects a character reference to one too. So a single such
+  character made `XMLParser` reject the whole document. They got in
+  through a source folder whose name holds one (APFS accepts
+  U+0001–U+001F), in `deps --modules --format svg`, and through Swift
+  source that `swiftc` accepts: a form feed inside a statement, or a
+  control character in a comment inside an `if` condition or a type
+  annotation, which the activity and class labels keep. `xmlEscaped` now
+  replaces a C0 control with its Control Pictures glyph (U+0007 becomes
+  `␇`), so the label still shows where it was, and U+FFFE and U+FFFF
+  with U+FFFD. It also walks Unicode scalars instead of `Character`s.
+  The old replacements matched whole characters, so a `<` or `&`
+  followed by a combining mark went out unescaped and broke the document
+  as well. Text with none of these characters comes out unchanged.
+  Activity labels, in every format, now also collapse a form feed,
+  vertical tab or CRLF inside a statement into one space, as they already
+  did spaces, tabs and line feeds, so a form-feed line no longer leaves a
+  `␌` in its label. Exported and CLI-opened `.svg` files were affected. A diagram saved to
+  Studio's history before the fix keeps its old text until it is
+  regenerated. New tests parse each renderer's output as XML.
 
 ### Documentation
 
