@@ -82,9 +82,9 @@ struct SequenceMermaidTests {
         #expect(script.format == .mermaid)
     }
 
-    @Test("encodeText returns non-empty string")
-    func encodeTextNonEmpty() {
+    @Test("encodeText decodes back to exactly the script")
+    func encodeTextRoundTrips() {
         let script = makeScript(edges: makeEdges())
-        #expect(script.encodeText().isEmpty == false)
+        #expect(PlantUMLTextDecoding.decode(script.encodeText()) == script.text)
     }
 }

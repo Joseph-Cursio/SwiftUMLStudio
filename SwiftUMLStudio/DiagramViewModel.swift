@@ -209,11 +209,9 @@ final class DiagramViewModel {
 }
 
 /// A simple implementation of DiagramOutputting for restoring history items.
+///
+/// It keeps the protocol's `encodeText()`, the same PlantUML encoding the Bridge's scripts use.
 struct SimpleDiagramScript: DiagramOutputting {
     let text: String
     let format: DiagramFormat
-
-    func encodeText() -> String {
-        text.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? text
-    }
 }
