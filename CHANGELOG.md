@@ -94,6 +94,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   those and every alias already issued. Diagrams with no collision keep
   every alias; in one that collides, each skipped suffix moves the aliases
   issued after it up by one more.
+- **An SVG class diagram no longer draws two extensions as one box**
+  (#55). `LayoutGraphBuilder.uniqueId` checked candidates against a
+  name-to-id map that each new id for a name overwrote, so a name's
+  fourth declaration got its second one's id again — `Foo`, `Foo_1`,
+  `Foo_2`, `Foo_1`. Dagre keys nodes by id, so both `Foo_1` boxes got one
+  position and size and were drawn on top of each other, in `.svg` output
+  and on Studio's native class canvas. Ids now come from a set of every
+  issued id, with each drawn name reserved up front: a name's first
+  declaration keeps it, later ones take the next free `_n`, and ids that
+  never collided are spelled as before. The same map decided where edges
+  end, and also got that wrong: an edge to a supertype landed on the
+  supertype's extension (`Sub → Base_1`), a composition edge to a nested
+  type on that type's extension, and an edge to an undeclared `Foo_1` on
+  Foo's extension node. Edge ends are now resolved once every node
+  exists. A supertype or conformance resolves by name to a type, never an
+  extension unless the diagram declares no such type; where several types
+  share the name, it picks the one in the referring declaration's file,
+  then its module, then the first. A nested type hangs off the
+  declaration that contains it, or, inside an extension, off the extended
+  type as seen from the extension's file — or off that extension itself
+  when the diagram draws no such type. An end the diagram does not
+  declare drops the edge. A nested type whose parent sorts after it,
+  such as one inside an extension of an undeclared type, now gets the
+  composition edge it used to be missing.
 
 ---
 
