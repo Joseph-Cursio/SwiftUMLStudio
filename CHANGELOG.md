@@ -54,6 +54,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed — Bridge
 
+- **A module or type name with a backslash or line break is laid out by
+  dagre again** (#81). `DagreLayoutEngine` pastes node ids, module names
+  and cluster ids between `"` in the script it runs on JavaScriptCore,
+  and escaped only `"`. A deps `--modules` node is a directory name, and
+  macOS allows `\` and newlines in those. `Old\Code` evaluated to
+  `OldCode`, so dagre's result no longer matched the node, which stayed
+  at (0, 0) with its edges unrouted. `Trail\` escaped the closing quote,
+  and a raw LF or CR ended the literal; either way the script failed to
+  parse and the whole graph dropped to the grid fallback. This reached
+  `swiftumlbridge deps --modules --format svg` and the modules graph on
+  Studio's native canvas. Every interpolated string now goes through
+  `jsStringLiteral`, which JSON-encodes it and also escapes U+2028 and
+  U+2029, so the literal evaluates back to exactly the name.
 - **Two names that sanitize alike are no longer drawn as one node.**
   `DepsScript.mermaidId` and `ComponentScript.safeAlias` rewrite several
   characters to `_`, so `Outer.Inner` and `Outer_Inner` both became the
@@ -156,6 +169,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   `␌` in its label. Exported and CLI-opened `.svg` files were affected. A diagram saved to
   Studio's history before the fix keeps its old text until it is
   regenerated. New tests parse each renderer's output as XML.
+
+### Documentation
+
+- **The user docs say what `--format svg` and `--format nomnoml` do on
+  the CLI** (#82). The reference, user guide and README said the CLI
+  emits text only for `plantuml` and `mermaid` and never writes SVG to
+  stdout. In fact every subcommand's `--format` accepts all four values.
+  `svg` prints a standalone `<svg>` document for `classdiagram`,
+  `sequence`, `activity`, `deps` and `component`, and browser output
+  writes it to a temporary `diagram.svg` and opens it. `state` and `er`
+  print Mermaid instead. Only `classdiagram` and `deps` emit real Nomnoml.
+  The reference's new **Formats by Subcommand** table lists every
+  combination and where browser output sends it, and the README's
+  diagram-types table now credits dependency graphs with Nomnoml output.
 
 ---
 
