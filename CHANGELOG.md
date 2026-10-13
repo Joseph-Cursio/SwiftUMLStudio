@@ -226,6 +226,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   already did for a directory with a symlinked parent. Globs anchored at
   such a directory resolve it too, which is why they use `realpath(3)`:
   `canonicalPathKey` leaves a final symlink unresolved.
+- **A CRLF line break after an `@Relationship` inverse no longer draws
+  the relationship twice.** `ERModelExtractor` read the property name in
+  `inverse: \Book.author` up to the first `,`, `)`, space, tab or `"\n"`.
+  In Swift `"\r\n"` is one `Character`, and it is not equal to `"\n"`, so
+  in a CRLF file a line break straight after the key path did not end the
+  name, and the inverse came back as `author` plus the line break. The
+  explicit `Author.books` then no longer matched the implicit
+  `Book.author` it covers, so both were kept and the diagram drew a second
+  `Book` → `Author` edge labelled `author`. A lone `\r` line break did the
+  same. This reached `swiftumlbridge er` in every format and Studio's ER
+  diagram. The name is now the identifier after the dot — letters,
+  digits, `_` and the backticks of an escaped name — so any line break,
+  whitespace or comment ends it.
 - **A module whose name starts with a combining mark keeps it in its
   cluster id.** `DagreLayoutEngine` names each module's cluster
   `cluster:<module>` and, reading the layout back, dropped the prefix's
