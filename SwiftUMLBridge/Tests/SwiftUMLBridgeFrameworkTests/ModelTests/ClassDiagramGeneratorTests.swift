@@ -131,6 +131,18 @@ struct ClassDiagramGeneratorTests {
         #expect(script.format == .svg)
     }
 
+    /// A raw identifier can hold `--`, and the renderer used to copy each node label into an XML
+    /// comment, where `--` is illegal (#56).
+    @Test("svg output stays well-formed for a raw-identifier type name containing a double hyphen")
+    func svgWithDoubleHyphenRawIdentifierIsWellFormed() {
+        let script = generator.generateScript(
+            for: "struct `Old--Code` { let value: Int }\n", with: Configuration(format: .svg)
+        )
+
+        #expect(script.text.contains("Old--Code"))
+        #expect(WellFormedXML.error(in: script.text) == nil)
+    }
+
     // MARK: - generateScript from paths
 
     @Test("generateScript from nonexistent path produces minimal script")
