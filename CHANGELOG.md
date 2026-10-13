@@ -150,7 +150,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   The old replacements matched whole characters, so a `<` or `&`
   followed by a combining mark went out unescaped and broke the document
   as well. Text with none of these characters comes out unchanged.
-  Exported and CLI-opened `.svg` files were affected. A diagram saved to
+  Activity labels, in every format, now also collapse a form feed,
+  vertical tab or CRLF inside a statement into one space, as they already
+  did spaces, tabs and line feeds, so a form-feed line no longer leaves a
+  `␌` in its label. Exported and CLI-opened `.svg` files were affected. A diagram saved to
   Studio's history before the fix keeps its old text until it is
   regenerated. New tests parse each renderer's output as XML.
 

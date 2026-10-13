@@ -41,7 +41,8 @@ struct ActivitySVGRendererWellFormednessTests {
     }
 
     /// A form feed is whitespace to Swift, so `swiftc` accepts this body, and the line holding it
-    /// lands inside the `forEach` call's action label (#80).
+    /// lands inside the `forEach` call's action label (#80). `compactText` collapses it with the
+    /// rest of the whitespace.
     @Test("a form-feed line inside a function body leaves the document well-formed")
     func formFeedLineInFunctionBodyIsWellFormed() throws {
         let source = """
@@ -57,7 +58,7 @@ struct ActivitySVGRendererWellFormednessTests {
         let graph = try #require(ActivityFlowExtractor.extract(from: source, entryType: "Runner", entryMethod: "run"))
         let script = ActivityScript(graph: graph, configuration: Configuration(format: .svg))
 
-        #expect(script.text.contains("values.forEach"))
+        #expect(script.text.contains(">values.forEach { value in print(value) }</text>"))
         #expect(WellFormedXML.error(in: script.text) == nil)
     }
 
