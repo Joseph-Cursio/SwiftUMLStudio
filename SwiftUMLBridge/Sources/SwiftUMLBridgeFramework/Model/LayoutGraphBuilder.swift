@@ -11,23 +11,91 @@ struct LayoutGraphBuilder {
         from items: [SyntaxStructure],
         configuration: Configuration
     ) -> LayoutGraph {
-        let adjustedItems = prepareItems(items, configuration: configuration)
+        let drawn = prepareItems(items, configuration: configuration).compactMap { item -> DrawnItem? in
+            guard let kind = item.kind, ElementKind.processable.contains(kind) else { return nil }
+            guard let name = item.fullName ?? item.name else { return nil }
+            return DrawnItem(item: item, kind: kind, name: name)
+        }
         var nodes: [LayoutNode] = []
-        var edges: [LayoutEdge] = []
-        var nameToId: [String: String] = [:]
+        var edges: [PendingEdge] = []
+        var nodeIds = NodeIdAllocator(reserving: drawn.map(\.name))
+        // Edges name their ends; a name resolves to its first declaration — the type itself,
+        // since types sort before their extensions.
+        var firstIdForName: [String: String] = [:]
 
-        for item in adjustedItems {
-            guard let kind = item.kind, ElementKind.processable.contains(kind) else { continue }
-            guard let itemName = item.fullName ?? item.name else { continue }
-
-            let nodeId = uniqueId(for: itemName, existing: &nameToId)
-            nodes.append(buildNode(from: item, nodeId: nodeId, kind: kind, configuration: configuration))
-            nameToId[itemName] = nodeId
-            edges.append(contentsOf: buildEdges(from: item, nodeId: nodeId, kind: kind, nameToId: nameToId))
+        for entry in drawn {
+            let nodeId = nodeIds.issue(for: entry.name)
+            nodes.append(buildNode(from: entry.item, nodeId: nodeId, kind: entry.kind, configuration: configuration))
+            if firstIdForName[entry.name] == nil {
+                firstIdForName[entry.name] = nodeId
+            }
+            edges.append(contentsOf: buildEdges(from: entry.item, nodeId: nodeId, kind: entry.kind))
         }
 
-        edges = resolveAndFilterEdges(edges, nameToId: nameToId, nodeIds: Set(nodes.map(\.id)))
-        return LayoutGraph(nodes: nodes, edges: edges)
+        return LayoutGraph(nodes: nodes, edges: edges.compactMap { $0.resolved(through: firstIdForName) })
+    }
+
+    private struct DrawnItem {
+        let item: SyntaxStructure
+        let kind: ElementKind
+        let name: String
+    }
+
+    /// One end of a `PendingEdge`: a node id, or the name of the element that should own the end.
+    private enum EdgeEnd {
+        case node(String)
+        case named(String)
+    }
+
+    /// An edge whose ends are known by node id or, until every node exists, by element name.
+    private struct PendingEdge {
+        let source: EdgeEnd
+        let target: EdgeEnd
+        let style: EdgeStyle
+
+        /// The edge between the nodes its ends name, or `nil` when an end names an element the
+        /// diagram does not draw. A name is never matched against node ids: an undeclared
+        /// `Foo_1` must not land on the node issued `Foo_1` as the second declaration of `Foo`.
+        func resolved(through firstIdForName: [String: String]) -> LayoutEdge? {
+            guard let sourceId = id(of: source, firstIdForName), let targetId = id(of: target, firstIdForName)
+            else { return nil }
+            return LayoutEdge(sourceId: sourceId, targetId: targetId, style: style)
+        }
+
+        private func id(of end: EdgeEnd, _ firstIdForName: [String: String]) -> String? {
+            switch end {
+            case .node(let nodeId): return nodeId
+            case .named(let name): return firstIdForName[name]
+            }
+        }
+    }
+
+    /// Hands out node ids that are distinct within one diagram. The dagre layout keys nodes by
+    /// id, so two nodes sharing one are placed, sized and drawn as one.
+    ///
+    /// Every drawn element's name is reserved up front, so the first declaration of a name keeps
+    /// it and a later one's `_n` suffix never takes a name declared further on.
+    private struct NodeIdAllocator {
+        private var taken: Set<String>
+        private var issuedNames: Set<String> = []
+
+        init(reserving names: [String]) {
+            taken = Set(names)
+        }
+
+        mutating func issue(for name: String) -> String {
+            var nodeId = name
+            if issuedNames.contains(name) {
+                var counter = 1
+                repeat {
+                    nodeId = "\(name)_\(counter)"
+                    counter += 1
+                } while taken.contains(nodeId)
+            }
+            issuedNames.insert(name)
+            taken.insert(nodeId)
+            return nodeId
+        }
     }
 
     private static func prepareItems(_ items: [SyntaxStructure], configuration: Configuration) -> [SyntaxStructure] {
@@ -62,37 +130,19 @@ struct LayoutGraphBuilder {
         )
     }
 
-    private static func buildEdges(
-        from item: SyntaxStructure, nodeId: String, kind: ElementKind, nameToId: [String: String]
-    ) -> [LayoutEdge] {
-        var edges: [LayoutEdge] = []
+    private static func buildEdges(from item: SyntaxStructure, nodeId: String, kind: ElementKind) -> [PendingEdge] {
+        var edges: [PendingEdge] = []
         if let inheritedTypes = item.inheritedTypes {
             for parent in inheritedTypes {
                 guard let parentName = parent.name?.removeAngleBracketsWithContent() else { continue }
                 let edgeStyle = edgeStyleForInheritance(parentName: parentName, itemKind: kind)
-                edges.append(LayoutEdge(sourceId: nodeId, targetId: parentName, style: edgeStyle))
+                edges.append(PendingEdge(source: .node(nodeId), target: .named(parentName), style: edgeStyle))
             }
         }
-        if let parent = item.parent, let parentName = parent.fullName ?? parent.name,
-           let parentId = nameToId[parentName] {
-            edges.append(LayoutEdge(sourceId: parentId, targetId: nodeId, style: .composition))
+        if let parent = item.parent, let parentName = parent.fullName ?? parent.name {
+            edges.append(PendingEdge(source: .named(parentName), target: .node(nodeId), style: .composition))
         }
         return edges
-    }
-
-    private static func resolveAndFilterEdges(
-        _ edges: [LayoutEdge], nameToId: [String: String], nodeIds: Set<String>
-    ) -> [LayoutEdge] {
-        var resolved = edges
-        for idx in resolved.indices {
-            if let mappedId = nameToId[resolved[idx].targetId] {
-                resolved[idx] = LayoutEdge(
-                    sourceId: resolved[idx].sourceId, targetId: mappedId,
-                    label: resolved[idx].label, style: resolved[idx].style
-                )
-            }
-        }
-        return resolved.filter { nodeIds.contains($0.sourceId) && nodeIds.contains($0.targetId) }
     }
 
     // MARK: - Dependency Graph
@@ -141,17 +191,6 @@ struct LayoutGraphBuilder {
 
     private static func edgeStyleForInheritance(parentName: String, itemKind: ElementKind) -> EdgeStyle {
         itemKind == .extension ? .dependency : .inheritance
-    }
-
-    private static func uniqueId(for name: String, existing: inout [String: String]) -> String {
-        if existing[name] == nil { return name }
-        var counter = 1
-        var candidate = "\(name)_\(counter)"
-        while existing.values.contains(candidate) {
-            counter += 1
-            candidate = "\(name)_\(counter)"
-        }
-        return candidate
     }
 
     private static func extractMembers(
