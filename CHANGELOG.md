@@ -108,11 +108,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   supertype's extension (`Sub → Base_1`), a composition edge to a nested
   type on that type's extension, and an edge to an undeclared `Foo_1` on
   Foo's extension node. Edge ends are now resolved once every node
-  exists. A supertype or conformance resolves by name to the name's first
-  declaration — the type itself, as in the Mermaid and PlantUML output; a
-  nested type hangs off the declaration that contains it, or off the
-  extended type when that is an extension; and an end the diagram does
-  not declare drops the edge. A nested type whose parent sorts after it,
+  exists. A supertype or conformance resolves by name to a type, never an
+  extension unless the diagram declares no such type; where several types
+  share the name, it picks the one in the referring declaration's file,
+  then its module, then the first. A nested type hangs off the
+  declaration that contains it, or, inside an extension, off the extended
+  type as seen from the extension's file. An end the diagram does not
+  declare drops the edge. A nested type whose parent sorts after it,
   such as one inside an extension of an undeclared type, now gets the
   composition edge it used to be missing.
 

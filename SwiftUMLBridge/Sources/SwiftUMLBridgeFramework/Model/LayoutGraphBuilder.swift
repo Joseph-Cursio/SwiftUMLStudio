@@ -37,35 +37,69 @@ struct LayoutGraphBuilder {
         let name: String
     }
 
+    /// Where a declaration lives, for picking among types that share a name.
+    private struct Scope {
+        let filePath: String?
+        let module: String?
+
+        init(of item: SyntaxStructure) {
+            filePath = item.sourceLocation?.filePath
+            module = item.module
+        }
+    }
+
     /// One end of a `PendingEdge`, known by node id or — until every node exists — by what owns it.
     private enum EdgeEnd {
         case node(String)
-        /// The first declaration of a name: the type itself, since types sort before extensions.
-        case named(String)
-        /// A particular declaration, or the first declaration of its name when it is not drawn.
-        case declaration(ObjectIdentifier, name: String)
+        /// A type named `name`, as seen from a declaration in `scope`.
+        case named(String, from: Scope)
+        /// A particular declaration, or its name as seen from its own scope when it is not drawn.
+        case declaration(ObjectIdentifier, name: String, scope: Scope)
+    }
+
+    /// A drawn declaration, as `EdgeEndIds` needs it to choose among same-named types.
+    private struct Declared {
+        let nodeId: String
+        let isExtension: Bool
+        let scope: Scope
     }
 
     /// The node ids an `EdgeEnd` can resolve to, gathered while the nodes are built.
     private struct EdgeEndIds {
-        private var firstIdForName: [String: String] = [:]
+        private var declaredForName: [String: [Declared]] = [:]
         private var idForDeclaration: [ObjectIdentifier: String] = [:]
 
         mutating func record(_ nodeId: String, for entry: DrawnItem) {
-            if firstIdForName[entry.name] == nil {
-                firstIdForName[entry.name] = nodeId
-            }
+            let declared = Declared(nodeId: nodeId, isExtension: entry.kind == .extension, scope: Scope(of: entry.item))
+            declaredForName[entry.name, default: []].append(declared)
             idForDeclaration[ObjectIdentifier(entry.item)] = nodeId
         }
 
-        /// A name is never matched against node ids: an undeclared `Foo_1` must not land on the
-        /// node issued `Foo_1` as the second declaration of `Foo`.
         func id(of end: EdgeEnd) -> String? {
             switch end {
             case .node(let nodeId): return nodeId
-            case .named(let name): return firstIdForName[name]
-            case .declaration(let declaration, let name): return idForDeclaration[declaration] ?? firstIdForName[name]
+            case .named(let name, let scope): return id(forName: name, from: scope)
+            case .declaration(let declaration, let name, let scope):
+                return idForDeclaration[declaration] ?? id(forName: name, from: scope)
             }
+        }
+
+        /// The type a name means where it is written, close to how Swift looks it up: one
+        /// declared in the same file, then in the same module, then the first in the diagram.
+        /// An extension stands in only for a type the diagram does not declare. A name is never
+        /// matched against node ids: an undeclared `Foo_1` must not land on the node issued
+        /// `Foo_1` as the second declaration of `Foo`.
+        private func id(forName name: String, from scope: Scope) -> String? {
+            guard let declared = declaredForName[name] else { return nil }
+            let types = declared.filter { !$0.isExtension }
+            guard let first = types.first else { return declared.first?.nodeId }
+            if let filePath = scope.filePath, let local = types.first(where: { $0.scope.filePath == filePath }) {
+                return local.nodeId
+            }
+            if let module = scope.module, let sibling = types.first(where: { $0.scope.module == module }) {
+                return sibling.nodeId
+            }
+            return first.nodeId
         }
     }
 
@@ -149,15 +183,17 @@ struct LayoutGraphBuilder {
             for parent in inheritedTypes {
                 guard let parentName = parent.name?.removeAngleBracketsWithContent() else { continue }
                 let edgeStyle = edgeStyleForInheritance(parentName: parentName, itemKind: kind)
-                edges.append(PendingEdge(source: .node(nodeId), target: .named(parentName), style: edgeStyle))
+                let target = EdgeEnd.named(parentName, from: Scope(of: item))
+                edges.append(PendingEdge(source: .node(nodeId), target: target, style: edgeStyle))
             }
         }
         if let parent = item.parent, let parentName = parent.fullName ?? parent.name {
             // A nested type hangs off the declaration that contains it, so the second of two
-            // same-named types keeps its own children; one nested in an extension hangs off the type.
+            // same-named types keeps its own children; one nested in an extension hangs off the
+            // type the extension extends, as seen from the extension's file.
             let parentEnd: EdgeEnd = parent.kind == .extension
-                ? .named(parentName)
-                : .declaration(ObjectIdentifier(parent), name: parentName)
+                ? .named(parentName, from: Scope(of: parent))
+                : .declaration(ObjectIdentifier(parent), name: parentName, scope: Scope(of: parent))
             edges.append(PendingEdge(source: parentEnd, target: .node(nodeId), style: .composition))
         }
         return edges
