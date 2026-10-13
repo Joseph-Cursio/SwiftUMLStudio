@@ -231,6 +231,7 @@ extension DiagramViewModel {
 
         entity.sequenceDepth = sequenceDepth
         entity.scriptText = currentScript.text
+        entity.scriptFormat = currentScript.format.rawValue
         entity.paths = try? JSONEncoder().encode(selectedPaths)
         entity.pathBookmarks = selectedPathBookmarks.isEmpty
             ? nil

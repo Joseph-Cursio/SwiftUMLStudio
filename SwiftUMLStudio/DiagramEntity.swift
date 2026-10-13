@@ -5,7 +5,13 @@ import SwiftData
 final class DiagramEntity {
     var identifier: UUID
     var mode: String?
+    /// The Format picker's value when the diagram was saved — restores the picker.
     var format: String?
+    /// The format `scriptText` is actually written in, which differs from `format` when the
+    /// Bridge fell back to another language (state in `.svg` emits Mermaid, component in
+    /// `.nomnoml` emits PlantUML). Optional and additive: entities saved before this was
+    /// recorded have `nil` here and fall back to `format`.
+    var scriptFormat: String?
     var entryPoint: String?
     var sequenceDepth: Int
     var paths: Data?
@@ -22,6 +28,7 @@ final class DiagramEntity {
         identifier: UUID = UUID(),
         mode: String? = nil,
         format: String? = nil,
+        scriptFormat: String? = nil,
         entryPoint: String? = nil,
         sequenceDepth: Int = 0,
         paths: Data? = nil,
@@ -33,6 +40,7 @@ final class DiagramEntity {
         self.identifier = identifier
         self.mode = mode
         self.format = format
+        self.scriptFormat = scriptFormat
         self.entryPoint = entryPoint
         self.sequenceDepth = sequenceDepth
         self.paths = paths
