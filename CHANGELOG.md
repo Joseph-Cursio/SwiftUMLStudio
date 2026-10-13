@@ -76,6 +76,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   launch arguments, which are never written back, and assert the consent
   card in place of a planttext.com web view.
 
+- **The Studio unit tests no longer leave empty plists in
+  `~/Library/Preferences`.** The consent tests and
+  `ReviewReminderManagerTests` gave each test its own
+  `UserDefaults(suiteName:)` suite (`test-plantuml-consent-<UUID>`,
+  `test-<UUID>`) and removed the domain afterwards. cfprefsd still keeps
+  an empty `<suite>.plist` for every suite written to, so each run added
+  a few dozen files; 320+ consent and 153 reminder files had piled up.
+  Deleting them from the tests would race cfprefsd. Instead,
+  `PlantUMLConsent` and `ReviewReminderManager` now read and write
+  through a `KeyValueStore` protocol — the five `UserDefaults` methods
+  they use, with `UserDefaults` conforming as is. The app still passes
+  `.standard` under the same keys, so existing consent and reminder
+  settings carry over. The tests use an in-memory store.
+  `KeyValueStoreTests` runs the same checks against that store and
+  against `UserDefaults`, through one fixed suite,
+  `name.JosephCursio.SwiftUMLStudio.UnitTests`, which every run reuses.
+  The leftover files can be removed once each is checked to hold `{}`.
+
 ### Fixed — Bridge
 
 - **A PlantUML diagram reaches planttext.com whole** (#57). `DiagramText`
