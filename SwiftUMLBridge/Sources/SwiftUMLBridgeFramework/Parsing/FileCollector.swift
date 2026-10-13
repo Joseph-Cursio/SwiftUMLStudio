@@ -91,12 +91,18 @@ public struct FileCollector: Sendable {
     }
 
     func getFiles(for url: URL) -> [URL] {
-        let isDirectory = (try? url.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory ?? false
+        // A search directory can itself be a symlink. Its resource values
+        // describe the link, not the directory, and an enumerator started at
+        // the link yields nothing, so walk the directory it resolves to. Files
+        // come back under that real path, as they already do for a directory
+        // with a symlinked parent.
+        let directory = URL(fileURLWithPath: canonicalPath(url.path))
+        let isDirectory = (try? directory.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory ?? false
         if isDirectory {
             var files = [URL]()
             let options: FileManager.DirectoryEnumerationOptions = [.skipsHiddenFiles, .skipsPackageDescendants]
             if let enumerator = FileManager.default.enumerator(
-                at: url, includingPropertiesForKeys: [.isRegularFileKey], options: options
+                at: directory, includingPropertiesForKeys: [.isRegularFileKey], options: options
             ) {
                 for case let fileURL as URL in enumerator {
                     do {

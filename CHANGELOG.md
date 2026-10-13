@@ -207,12 +207,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   parent, an include glob matched nothing and an exclude glob dropped
   nothing. This is why three FileCollector and Glob tests failed for a
   checkout under `/private/tmp`: `Bundle.module` spells its fixture path
-  `/tmp/…`. Globs are now anchored at the canonical path
-  (`canonicalPathKey`; `resolvingSymlinksInPath()` strips `/private`
-  again, so it cannot be used), and each file is tested with its parent
-  resolved the same way. That also lets an exclude glob catch an explicit
-  file argument typed through a symlink, which the CLI missed even though
-  its own working directory is already resolved.
+  `/tmp/…`. Globs are now anchored at the real path, as `realpath(3)`
+  gives it (`resolvingSymlinksInPath()` strips `/private` again, so it
+  cannot be used), and each file is tested with its parent resolved the
+  same way. That also lets an exclude glob catch an explicit file
+  argument typed through a symlink, which the CLI missed even though its
+  own working directory is already resolved.
+- **A search directory that is itself a symlink is searched.**
+  `FileCollector` asked the search path's resource values whether it was
+  a directory. Those describe a symlink rather than what it points to, so
+  a symlink to a directory came back as if it were a single Swift source
+  file, and parsing it found nothing: `swiftumlbridge classdiagram <link>`
+  printed an empty `classDiagram`. Every generator collects files this
+  way, so each diagram command was affected, as was Studio when given
+  such a path. Starting the enumerator at the link would not have helped,
+  because it yields nothing there. The directory is now resolved before
+  it is walked, and its files come back under its real path, as they
+  already did for a directory with a symlinked parent. Globs anchored at
+  such a directory resolve it too, which is why they use `realpath(3)`:
+  `canonicalPathKey` leaves a final symlink unresolved.
 
 ### Fixed — Studio
 
