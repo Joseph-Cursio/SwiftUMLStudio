@@ -92,8 +92,9 @@ public struct SVGRenderer: Sendable {
         let stereotype = node.stereotype ?? "class"
         let fill = headerFill[stereotype] ?? headerFill["class"]!
 
-        var svg = "\n<!-- \(node.label.xmlEscaped) -->\n"
-        svg += "<g>\n"
+        // The label appears only in the <text> elements. It is not copied into an XML comment,
+        // because a comment cannot contain `--` and no escaping makes it legal there (#56).
+        var svg = "\n<g>\n"
 
         // Background rect with rounded corners
         svg += "  <rect x=\"\(fmt(leftX))\" y=\"\(fmt(topY))\" "
@@ -163,8 +164,8 @@ public struct SVGRenderer: Sendable {
         let hue = moduleHue(for: cluster.id)
         let color = "hsl(\(hue), 55%, 60%)"
 
-        var svg = "\n<!-- module: \(cluster.label.xmlEscaped) -->\n"
-        svg += "<g>\n"
+        // No label comment, for the reason given in `renderNode` (#56).
+        var svg = "\n<g>\n"
         svg += "  <rect x=\"\(fmt(leftX))\" y=\"\(fmt(topY))\" "
         svg += "width=\"\(fmt(cluster.width))\" height=\"\(fmt(cluster.height))\" "
         svg += "rx=\"\(cornerRadius * 2)\" ry=\"\(cornerRadius * 2)\" "
