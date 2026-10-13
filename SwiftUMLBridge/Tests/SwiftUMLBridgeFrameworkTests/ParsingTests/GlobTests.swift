@@ -130,6 +130,87 @@ struct GlobTests {
         #expect(globs.count >= 1)
     }
 
+    // MARK: - splitGlobEntry
+
+    @Test("splitGlobEntry anchors a relative entry at the search directory, glob syntax and all")
+    func splitRelativeEntry() {
+        let split = splitGlobEntry("**/*.swift", in: "/d [old]*")
+        #expect(split.anchor == "/d [old]*")
+        #expect(split.pattern == "**/*.swift")
+    }
+
+    @Test("splitGlobEntry extends the anchor over plain leading directories")
+    func splitPlainLeadingDirectories() {
+        let split = splitGlobEntry("Sources/Sub/*.swift", in: "/d")
+        #expect(split.anchor == "/d/Sources/Sub")
+        #expect(split.pattern == "*.swift")
+    }
+
+    @Test("splitGlobEntry anchors an absolute entry that starts with a pattern at the root")
+    func splitRootEntry() {
+        let split = splitGlobEntry("/**/*.swift", in: "/d")
+        #expect(split.anchor == "/")
+        #expect(split.pattern == "**/*.swift")
+    }
+
+    @Test("splitGlobEntry anchors an absolute entry at its own leading directories")
+    func splitAbsoluteEntry() {
+        let split = splitGlobEntry("/a/b/*.swift", in: "/d")
+        #expect(split.anchor == "/a/b")
+        #expect(split.pattern == "*.swift")
+    }
+
+    @Test("splitGlobEntry starts the pattern at a brace token")
+    func splitAtBraceToken() {
+        let split = splitGlobEntry("Sources/<<<0>>>/*.swift", in: "/d")
+        #expect(split.anchor == "/d/Sources")
+        #expect(split.pattern == "<<<0>>>/*.swift")
+    }
+
+    @Test("splitGlobEntry drops a trailing slash, as expandPath does")
+    func splitTrailingSlash() {
+        let split = splitGlobEntry("Sources/**/", in: "/d")
+        #expect(split.anchor == "/d/Sources")
+        #expect(split.pattern == "**")
+    }
+
+    @Test("splitGlobEntry drops a doubled slash before the pattern")
+    func splitDoubledSlash() {
+        let split = splitGlobEntry("Sources//*.swift", in: "/d")
+        #expect(split.anchor == "/d/Sources")
+        #expect(split.pattern == "*.swift")
+    }
+
+    @Test("splitGlobEntry leaves an entry without glob syntax all anchor")
+    func splitNoGlobSyntax() {
+        let split = splitGlobEntry("Sources/Foo.swift", in: "/d")
+        #expect(split.anchor == "/d/Sources/Foo.swift")
+        #expect(split.pattern.isEmpty)
+    }
+
+    // MARK: - globRegexPattern
+
+    @Test("globRegexPattern matches the anchor literally and the pattern as a glob")
+    func regexLiteralAnchor() {
+        #expect(globRegexPattern(anchor: "/d [old]", pattern: "*.swift") == "^\\/d \\[old]\\/([^/]+)?\\.swift$")
+    }
+
+    @Test("globRegexPattern does not double the slash after a root anchor")
+    func regexRootAnchor() {
+        #expect(globRegexPattern(anchor: "/", pattern: "**") == "^\\/.+$")
+    }
+
+    @Test("globRegexPattern matches an anchor with no pattern exactly")
+    func regexAnchorOnly() {
+        #expect(globRegexPattern(anchor: "/d*/Foo.swift", pattern: "") == "^\\/d\\*\\/Foo\\.swift$")
+    }
+
+    @Test("globRegexPattern replaces brace tokens in the pattern")
+    func regexBraceTokens() {
+        let regex = globRegexPattern(anchor: "/d", pattern: "<<<0>>>.swift", tokens: ["<<<0>>>": "(A|B)"])
+        #expect(regex == "^\\/d\\/(A|B)\\.swift$")
+    }
+
     // MARK: - Glob.matches
 
     @Test("Glob.path matches exact path")

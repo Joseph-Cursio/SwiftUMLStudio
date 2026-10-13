@@ -102,27 +102,53 @@ internal func enumeratedPath(ofEntry path: String) -> String {
     return enumeratedPath(of: URL(fileURLWithPath: path))
 }
 
-/// `path`, an include or exclude entry expanded to an absolute path, with the
-/// components before its first glob syntax in the form directory enumeration
-/// reports them. Those name a directory, so they go through `canonicalPath`;
-/// the rest is kept as written. Resolving the search directory is not enough:
+/// `entry`, an include or exclude entry, expanded to an absolute path and split
+/// at its first component with glob syntax. The `anchor` is the directory the
+/// components before it name, in the form directory enumeration reports it:
+/// through `canonicalPath`, since resolving the search directory is not enough —
 /// an absolute or `~` entry never uses it, and a relative entry can run through
-/// a symlink below it. A `{…}` group is glob syntax too, though by now it is a
-/// `<<<n>>>` token. An entry with no glob syntax goes to `enumeratedPath(ofEntry:)`.
-internal func enumeratedPath(ofPattern path: String) -> String {
-    let components = path.components(separatedBy: "/")
-    let patternStart = components.firstIndex { pathContainsGlobSyntax($0) || $0.contains("<<<") }
-    guard let patternStart else { return enumeratedPath(ofEntry: path) }
+/// a symlink below it. The `pattern` is the rest, as `expandPath` spells it.
+/// Only the entry is searched for glob syntax: a relative entry's search
+/// directory is a literal path however it is named, so it is always anchor.
+/// A `{…}` group is glob syntax too, though by now it is a `<<<n>>>` token. An
+/// entry with no glob syntax is all anchor, by `enumeratedPath(ofEntry:)`.
+internal func splitGlobEntry(_ entry: String, in directory: String) -> (anchor: String, pattern: String) {
+    let path = expandPath(entry, in: directory).path
+    let components = entry.components(separatedBy: "/")
+    guard let patternStart = components.firstIndex(where: { pathContainsGlobSyntax($0) || $0.contains("<<<") })
+    else {
+        return (enumeratedPath(ofEntry: path), "")
+    }
     let leading = components[..<patternStart].joined(separator: "/")
-    let anchor = canonicalPath(leading.isEmpty ? "/" : leading)
-    let pattern = components[patternStart...].joined(separator: "/")
-    return anchor.hasSuffix("/") ? anchor + pattern : anchor + "/" + pattern
+    let anchor = leading.isEmpty && entry.hasPrefix("/") ? "/" : expandPath(leading, in: directory).path
+    let prefix = anchor.hasSuffix("/") ? anchor : anchor + "/"
+    // Not expected, but should expansion not keep the anchor, read it all as a glob.
+    guard path.hasPrefix(prefix) else { return ("/", String(path.dropFirst())) }
+    // A doubled slash before the pattern, as in `Sources//*.swift`, names no directory.
+    return (canonicalPath(anchor), String(path.dropFirst(prefix.count).drop { $0 == "/" }))
+}
+
+/// The anchored regex for an entry split by `splitGlobEntry`, with each
+/// `<<<n>>>` token in `pattern` replaced by its alternation from `tokens`. The
+/// anchor is a literal path, so it is escaped whole: read as glob syntax, a
+/// directory named `Proj [old]` became a character class that never matched
+/// it, and a `*` or `?` in a directory name matched its siblings as well.
+internal func globRegexPattern(anchor: String, pattern: String, tokens: [String: String] = [:]) -> String {
+    guard !pattern.isEmpty else {
+        return "^\(NSRegularExpression.escapedPattern(for: anchor))$"
+    }
+    var patternRegex = String(pattern.globPatternToRegex().dropFirst())
+    for (token, replacement) in tokens {
+        patternRegex = patternRegex.replacingOccurrences(of: token, with: replacement)
+    }
+    let directory = anchor.hasSuffix("/") ? anchor : anchor + "/"
+    return "^" + NSRegularExpression.escapedPattern(for: directory) + patternRegex
 }
 
 /// Expand one or more comma-delimited file paths using glob syntax
 internal func expandGlobs(_ paths: String, in directory: String) -> [Glob] {
     // Each entry is anchored where enumeration will report its files, by
-    // `enumeratedPath(ofEntry:)` or `enumeratedPath(ofPattern:)`, which resolve
+    // `enumeratedPath(ofEntry:)` or `splitGlobEntry(_:in:)`, which resolve
     // the search directory along with the rest of the entry's directories.
     guard pathContainsGlobSyntax(paths) else {
         return parseCommaDelimitedList(paths).map {
@@ -139,16 +165,13 @@ internal func expandGlobs(_ paths: String, in directory: String) -> [Glob] {
         tokens[token] = "(\(options.joined(separator: "|")))"
         paths.replaceSubrange(range, with: token)
     }
-    return parseCommaDelimitedList(paths).map { path -> Glob in
-        var path = expandPath(path, in: directory).path
+    return parseCommaDelimitedList(paths).map { entry -> Glob in
+        let path = expandPath(entry, in: directory).path
         if FileManager.default.fileExists(atPath: path) {
             return .path(enumeratedPath(ofEntry: path))
         }
-        path = enumeratedPath(ofPattern: path)
-        var regex = path.globPatternToRegex()
-        for (token, replacement) in tokens {
-            regex = regex.replacingOccurrences(of: token, with: replacement)
-        }
+        let (anchor, pattern) = splitGlobEntry(entry, in: directory)
+        let regex = globRegexPattern(anchor: anchor, pattern: pattern, tokens: tokens)
         do {
             return try .regex(NSRegularExpression(pattern: regex, options: []))
         } catch {
