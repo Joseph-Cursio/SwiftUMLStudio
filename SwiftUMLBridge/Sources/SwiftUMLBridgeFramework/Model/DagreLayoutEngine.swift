@@ -75,8 +75,12 @@ public struct DagreLayoutEngine: Sendable {
 
     // MARK: - JavaScript Generation
 
-    /// Prefix applied to compound-graph parent node IDs so they can be told
-    /// apart from real nodes when the layout result is serialized back.
+    /// Prefixes that give real nodes and module clusters separate dagre id
+    /// namespaces, so the layout result can be split back into the two.
+    /// Prefixing only the clusters was not enough: a node whose own id began
+    /// with `cluster:` was read back as a cluster, and a node whose id was
+    /// `cluster:<module>` was the same dagre node as that module's cluster.
+    private static let nodeIdPrefix = "node:"
     private static let clusterIdPrefix = "cluster:"
 
     /// Groups node IDs by their owning module. Returns an empty map when no
@@ -125,7 +129,7 @@ public struct DagreLayoutEngine: Sendable {
             let cluster = jsStringLiteral(clusterIdPrefix + module)
             result += "    graph.setNode(\(cluster), { label: \(jsStringLiteral(module)) });\n"
             for nodeId in nodeIds {
-                result += "    graph.setParent(\(jsStringLiteral(nodeId)), \(cluster));\n"
+                result += "    graph.setParent(\(jsStringLiteral(nodeIdPrefix + nodeId)), \(cluster));\n"
             }
         }
         return result
@@ -134,7 +138,7 @@ public struct DagreLayoutEngine: Sendable {
     private static func buildNodeStatements(for graph: LayoutGraph) -> String {
         var result = ""
         for node in graph.nodes {
-            let nodeId = jsStringLiteral(node.id)
+            let nodeId = jsStringLiteral(nodeIdPrefix + node.id)
             result += "    graph.setNode(\(nodeId), { width: \(node.width), height: \(node.height) });\n"
         }
         return result
@@ -143,8 +147,8 @@ public struct DagreLayoutEngine: Sendable {
     private static func buildEdgeStatements(for graph: LayoutGraph) -> String {
         var result = ""
         for (idx, edge) in graph.edges.enumerated() {
-            let source = jsStringLiteral(edge.sourceId)
-            let target = jsStringLiteral(edge.targetId)
+            let source = jsStringLiteral(nodeIdPrefix + edge.sourceId)
+            let target = jsStringLiteral(nodeIdPrefix + edge.targetId)
             result += "    graph.setEdge(\(source), \(target), { id: \"e\(idx)\" });\n"
         }
         return result
@@ -175,7 +179,7 @@ public struct DagreLayoutEngine: Sendable {
                 var n = graph.node(v);
                 if (!n) return;
                 var box = { x: n.x, y: n.y, width: n.width, height: n.height };
-                if (v.indexOf("cluster:") === 0) {
+                if (v.indexOf(\(jsStringLiteral(clusterIdPrefix))) === 0) {
                     box.label = n.label;
                     clusters[v] = box;
                 } else {
@@ -235,7 +239,7 @@ public struct DagreLayoutEngine: Sendable {
         _ nodesDict: [String: [String: Double]], to result: inout LayoutGraph
     ) {
         for idx in result.nodes.indices {
-            guard let pos = nodesDict[result.nodes[idx].id] else { continue }
+            guard let pos = nodesDict[nodeIdPrefix + result.nodes[idx].id] else { continue }
             result.nodes[idx].posX = pos["x"] ?? 0
             result.nodes[idx].posY = pos["y"] ?? 0
             result.nodes[idx].width = pos["width"] ?? result.nodes[idx].width
@@ -258,8 +262,8 @@ public struct DagreLayoutEngine: Sendable {
             }
 
             for idx in result.edges.indices
-            where result.edges[idx].sourceId == source
-                && result.edges[idx].targetId == target
+            where nodeIdPrefix + result.edges[idx].sourceId == source
+                && nodeIdPrefix + result.edges[idx].targetId == target
                 && result.edges[idx].points.isEmpty {
                 result.edges[idx].points = layoutPoints
                 break
