@@ -196,6 +196,43 @@ struct ERModelExtractorTests {
         #expect(relationship.label == "books")
     }
 
+    /// `"\r\n"` is a single `Character` that is not equal to `"\n"`, so a
+    /// line break straight after the key path must still end the name.
+    @Test("inverse key path ends at a line break of any style", arguments: ["\n", "\r\n", "\r"])
+    func inverseEndsAtLineBreak(lineBreak: String) throws {
+        let source = [
+            "@Model class Author {",
+            "    @Relationship(inverse: \\Book.author",
+            "        , deleteRule: .cascade) var books: [Book] = []",
+            "}",
+            "@Model class Book {",
+            "    var author: Author?",
+            "}"
+        ].joined(separator: lineBreak)
+        let model = ERModelExtractor.extract(from: source)
+        #expect(model.relationships.count == 1)
+        let relationship = try #require(model.relationships.first)
+        #expect(relationship.label == "books")
+        #expect(relationship.inverseLabel == "author")
+    }
+
+    @Test("backtick-escaped inverse is deduped against its declared property")
+    func backtickInverseIsDeduped() throws {
+        let source = """
+        @Model final class Author {
+            @Relationship(inverse: \\Book.`default`)
+            var books: [Book] = []
+        }
+        @Model final class Book {
+            var `default`: Author?
+        }
+        """
+        let model = ERModelExtractor.extract(from: source)
+        #expect(model.relationships.count == 1)
+        let relationship = try #require(model.relationships.first)
+        #expect(relationship.inverseLabel == "`default`")
+    }
+
     @Test("property referring to a non-@Model type stays an attribute")
     func nonModelReferenceIsAttribute() throws {
         let source = """
