@@ -1,24 +1,26 @@
 import Foundation
 @testable import SwiftUMLStudio
 
-/// Consent stores backed by a throwaway `UserDefaults` suite.
+/// Consent stores kept in memory.
 ///
 /// The unit tests run inside the app and share its defaults, so a test that used
 /// ``PlantUMLConsent/shared`` would read — or change — the developer's own decision.
+/// A throwaway `UserDefaults` suite avoids that but leaves an empty plist in
+/// `~/Library/Preferences` on every run, so these never reach `UserDefaults` at all.
 @MainActor
 enum PlantUMLConsentTestSupport {
 
-    /// A store holding `decision`, and the suite to remove when the test ends.
+    /// A store holding `decision`, kept in `storage`.
     static func makeConsent(
-        _ decision: PlantUMLConsent.Decision = .undecided
-    ) -> (consent: PlantUMLConsent, suiteName: String) {
-        let suiteName = "test-plantuml-consent-\(UUID().uuidString)"
-        let consent = PlantUMLConsent(defaults: UserDefaults(suiteName: suiteName)!)
+        _ decision: PlantUMLConsent.Decision = .undecided,
+        storage: any KeyValueStore = InMemoryKeyValueStore()
+    ) -> PlantUMLConsent {
+        let consent = PlantUMLConsent(defaults: storage)
         switch decision {
         case .granted: consent.grant()
         case .declined: consent.decline()
         case .undecided: break
         }
-        return (consent, suiteName)
+        return consent
     }
 }
