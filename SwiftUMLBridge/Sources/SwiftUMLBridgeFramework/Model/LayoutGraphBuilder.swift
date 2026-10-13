@@ -19,20 +19,16 @@ struct LayoutGraphBuilder {
         var nodes: [LayoutNode] = []
         var edges: [PendingEdge] = []
         var nodeIds = NodeIdAllocator(reserving: drawn.map(\.name))
-        // Edges name their ends; a name resolves to its first declaration — the type itself,
-        // since types sort before their extensions.
-        var firstIdForName: [String: String] = [:]
+        var endIds = EdgeEndIds()
 
         for entry in drawn {
             let nodeId = nodeIds.issue(for: entry.name)
             nodes.append(buildNode(from: entry.item, nodeId: nodeId, kind: entry.kind, configuration: configuration))
-            if firstIdForName[entry.name] == nil {
-                firstIdForName[entry.name] = nodeId
-            }
+            endIds.record(nodeId, for: entry)
             edges.append(contentsOf: buildEdges(from: entry.item, nodeId: nodeId, kind: entry.kind))
         }
 
-        return LayoutGraph(nodes: nodes, edges: edges.compactMap { $0.resolved(through: firstIdForName) })
+        return LayoutGraph(nodes: nodes, edges: edges.compactMap { $0.resolved(through: endIds) })
     }
 
     private struct DrawnItem {
@@ -41,32 +37,49 @@ struct LayoutGraphBuilder {
         let name: String
     }
 
-    /// One end of a `PendingEdge`: a node id, or the name of the element that should own the end.
+    /// One end of a `PendingEdge`, known by node id or — until every node exists — by what owns it.
     private enum EdgeEnd {
         case node(String)
+        /// The first declaration of a name: the type itself, since types sort before extensions.
         case named(String)
+        /// A particular declaration, or the first declaration of its name when it is not drawn.
+        case declaration(ObjectIdentifier, name: String)
     }
 
-    /// An edge whose ends are known by node id or, until every node exists, by element name.
+    /// The node ids an `EdgeEnd` can resolve to, gathered while the nodes are built.
+    private struct EdgeEndIds {
+        private var firstIdForName: [String: String] = [:]
+        private var idForDeclaration: [ObjectIdentifier: String] = [:]
+
+        mutating func record(_ nodeId: String, for entry: DrawnItem) {
+            if firstIdForName[entry.name] == nil {
+                firstIdForName[entry.name] = nodeId
+            }
+            idForDeclaration[ObjectIdentifier(entry.item)] = nodeId
+        }
+
+        /// A name is never matched against node ids: an undeclared `Foo_1` must not land on the
+        /// node issued `Foo_1` as the second declaration of `Foo`.
+        func id(of end: EdgeEnd) -> String? {
+            switch end {
+            case .node(let nodeId): return nodeId
+            case .named(let name): return firstIdForName[name]
+            case .declaration(let declaration, let name): return idForDeclaration[declaration] ?? firstIdForName[name]
+            }
+        }
+    }
+
+    /// An edge whose ends are resolved to node ids once every node exists.
     private struct PendingEdge {
         let source: EdgeEnd
         let target: EdgeEnd
         let style: EdgeStyle
 
         /// The edge between the nodes its ends name, or `nil` when an end names an element the
-        /// diagram does not draw. A name is never matched against node ids: an undeclared
-        /// `Foo_1` must not land on the node issued `Foo_1` as the second declaration of `Foo`.
-        func resolved(through firstIdForName: [String: String]) -> LayoutEdge? {
-            guard let sourceId = id(of: source, firstIdForName), let targetId = id(of: target, firstIdForName)
-            else { return nil }
+        /// diagram does not draw.
+        func resolved(through endIds: EdgeEndIds) -> LayoutEdge? {
+            guard let sourceId = endIds.id(of: source), let targetId = endIds.id(of: target) else { return nil }
             return LayoutEdge(sourceId: sourceId, targetId: targetId, style: style)
-        }
-
-        private func id(of end: EdgeEnd, _ firstIdForName: [String: String]) -> String? {
-            switch end {
-            case .node(let nodeId): return nodeId
-            case .named(let name): return firstIdForName[name]
-            }
         }
     }
 
@@ -140,7 +153,12 @@ struct LayoutGraphBuilder {
             }
         }
         if let parent = item.parent, let parentName = parent.fullName ?? parent.name {
-            edges.append(PendingEdge(source: .named(parentName), target: .node(nodeId), style: .composition))
+            // A nested type hangs off the declaration that contains it, so the second of two
+            // same-named types keeps its own children; one nested in an extension hangs off the type.
+            let parentEnd: EdgeEnd = parent.kind == .extension
+                ? .named(parentName)
+                : .declaration(ObjectIdentifier(parent), name: parentName)
+            edges.append(PendingEdge(source: parentEnd, target: .node(nodeId), style: .composition))
         }
         return edges
     }

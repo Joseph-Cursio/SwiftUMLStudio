@@ -54,14 +54,39 @@ struct LayoutGraphBuilderNodeIdTests {
             == ["Foo", "Foo_1", "Foo_2"])
     }
 
-    @Test("the laid-out SVG places no two nodes at one centre")
+    @Test("each name numbers its repeats from 1")
+    func suffixCounterIsPerName() {
+        #expect(graph(for: "struct Foo {}\nstruct Bar {}\nextension Foo {}\nextension Bar {}").nodes.map(\.id)
+            == ["Foo", "Bar", "Foo_1", "Bar_1"])
+    }
+
+    @Test("a nested type's qualified name is reserved")
+    func nestedQualifiedNameIsReserved() {
+        let source = "struct Outer { struct Inner {} }\n"
+            + "extension Outer {\n    struct Inner {}\n    struct Inner_1 {}\n}"
+        #expect(graph(for: source).nodes.map(\.id)
+            == ["Outer", "Outer.Inner", "Outer.Inner_2", "Outer.Inner_1", "Outer_1"])
+    }
+
+    @Test("a name the diagram does not draw is not reserved")
+    func undrawnNameIsNotReserved() {
+        let items = [
+            SyntaxStructure(kind: .struct, name: "Foo"),
+            SyntaxStructure(kind: .extension, name: "Foo"),
+            SyntaxStructure(kind: .varGlobal, name: "Foo_1")
+        ]
+        #expect(LayoutGraphBuilder.buildClassDiagram(from: items, configuration: .default).nodes.map(\.id)
+            == ["Foo", "Foo_1"])
+    }
+
+    @Test("dagre lays out the colliding diagram with no two nodes at one centre")
     func laidOutNodesDoNotOverlap() throws {
-        let script = ClassDiagramGenerator().generateScript(
-            for: Self.collidingSources[0], with: Configuration(format: .svg)
-        )
-        let nodes = try #require(script.layoutGraph?.nodes)
-        #expect(nodes.count == 4)
-        let centres = nodes.map { "\($0.posX),\($0.posY)" }
+        let graph = graph(for: Self.collidingSources[0])
+        let laidOut = DagreLayoutEngine.layout(graph)
+        // The grid fallback never overlaps, so it would pass this test without dagre running.
+        try #require(laidOut.nodes.map(\.posX) != DagreLayoutEngine.fallbackLayout(graph).nodes.map(\.posX))
+        #expect(laidOut.nodes.count == 4)
+        let centres = laidOut.nodes.map { "\($0.posX),\($0.posY)" }
         #expect(Set(centres).count == centres.count, "centres: \(centres)")
     }
 
@@ -86,6 +111,29 @@ struct LayoutGraphBuilderNodeIdTests {
     @Test("a type nested in an extension hangs off the type it extends")
     func typeNestedInExtensionHangsOffTheType() {
         #expect(edges(for: "struct Foo {}\nextension Foo { struct Inner {} }") == ["Foo -> Foo.Inner"])
+    }
+
+    @Test("the second of two same-named types keeps its own nested types")
+    func nestedTypesHangOffTheirOwnDeclaration() {
+        #expect(edges(for: "struct Fixture { struct Row {} }\nstruct Fixture { enum Kind {} }")
+            == ["Fixture -> Fixture.Row", "Fixture_1 -> Fixture.Kind"])
+    }
+
+    @Test("a doubly nested type hangs off its qualified parent")
+    func doublyNestedCompositionUsesQualifiedParent() {
+        #expect(edges(for: "struct A { struct B { struct C {} } }") == ["A -> A.B", "A.B -> A.B.C"])
+    }
+
+    @Test("a nested type's edge is drawn when its parent sorts after it")
+    func compositionEdgeToLaterParent() {
+        // Extensions sort last, so the extension of an undeclared type follows its nested type.
+        #expect(edges(for: "extension Foo { struct Inner {} }") == ["Foo -> Foo.Inner"])
+    }
+
+    @Test("edges keep declaration order")
+    func edgeOrderFollowsDeclarations() {
+        #expect(edges(for: "class Base {}\nstruct Outer { struct Inner {} }\nclass Sub: Base {}")
+            == ["Outer -> Outer.Inner", "Sub -> Base"])
     }
 
     @Test("an extension's conformance edge starts at the extension")

@@ -104,12 +104,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   issued id, with each drawn name reserved up front: a name's first
   declaration keeps it, later ones take the next free `_n`, and ids that
   never collided are spelled as before. The same map decided where edges
-  end, and also got that wrong: a supertype's edge landed on its
-  extension (`Sub → Base_1`), a nested type's composition edge on the
-  nested type's extension, and an edge to an undeclared `Foo_1` on Foo's
-  extension node. Edge ends now resolve by name to the name's first
-  declaration — the type, as in the Mermaid and PlantUML output — and an
-  end the diagram does not declare drops the edge.
+  end, and also got that wrong: an edge to a supertype landed on the
+  supertype's extension (`Sub → Base_1`), a composition edge to a nested
+  type on that type's extension, and an edge to an undeclared `Foo_1` on
+  Foo's extension node. Edge ends are now resolved once every node
+  exists. A supertype or conformance resolves by name to the name's first
+  declaration — the type itself, as in the Mermaid and PlantUML output; a
+  nested type hangs off the declaration that contains it, or off the
+  extended type when that is an extension; and an end the diagram does
+  not declare drops the edge. A nested type whose parent sorts after it,
+  such as one inside an extension of an undeclared type, now gets the
+  composition edge it used to be missing.
 
 ---
 
