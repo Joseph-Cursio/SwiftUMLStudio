@@ -78,6 +78,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed — Bridge
 
+- **Every `--exclude` and `files.exclude` entry applies, not only the
+  last.** `FileCollector.getFiles(for:in:honoring:)` replaced its set of
+  excluded files with each exclude glob in turn, so only the last entry
+  excluded anything. The documented
+  `classdiagram Sources/ --exclude Sources/Generated/ --exclude Sources/Mocks/`
+  dropped `Mocks` and kept `Generated`, and a `.swiftumlbridge.yml` with
+  several `files.exclude` patterns honoured only the last one. Include
+  globs had a related fault: a file matching two of them came back twice,
+  as did a file with include globs and two exclude entries, and include
+  results followed the order of the globs rather than the order the
+  files were found. Files are now filtered in one pass: dropped if any
+  exclude glob matches, kept if any include glob does, each at most once
+  and in the order found.
 - **A PlantUML diagram reaches planttext.com whole** (#57). `DiagramText`
   deflated the script with `compression_encode_buffer`, passing the
   string's `Character` count as both the number of bytes to read and the
