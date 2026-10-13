@@ -8,6 +8,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — Studio
+
+- **A Settings window, with a toggle to withdraw PlantUML consent.**
+  **Settings…** in the app menu (⌘,) offers **Render PlantUML previews
+  with planttext.com**. Until now a grant could only be withdrawn with
+  `defaults delete` (a decline could already be changed, since the card
+  comes back on the next PlantUML preview). Turning the toggle on grants
+  consent; turning it off returns it to undecided — not to declined,
+  which would also switch a direct build's launch format to Mermaid.
+  Either way the next PlantUML preview asks again. It takes effect at once: the consent store
+  is observable, so a PlantUML preview already on screen goes back to
+  the card. The card now says the choice can be changed in Settings.
+
 ### Fixed — Studio (test infrastructure)
 
 - **The UI test suite runs again — all 30 tests, which had been failing.**

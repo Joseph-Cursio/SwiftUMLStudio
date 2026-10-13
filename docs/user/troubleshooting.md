@@ -241,7 +241,7 @@ The App Store build cannot load SourceKit from the system toolchain — another 
 
 ### Studio asks for permission before rendering PlantUML
 
-Expected on first use, in both builds. PlantUML has no local renderer: previewing one uploads the generated markup to planttext.com, a third-party service. Until you agree, the preview shows a card instead of the diagram, and Studio remembers your answer — **Preview with planttext.com** sends it, **Use Mermaid Instead** switches to Mermaid, which renders locally. Only a PlantUML preview asks — including one Studio falls back to when the selected format can't draw the diagram; Mermaid, Nomnoml, and SVG previews render locally. See [Studio User Guide → PlantUML Sends Your Diagram Source to a Third Party](studio-user-guide.md#plantuml-sends-your-diagram-source-to-a-third-party).
+Expected on first use, and again after a decline or after turning the Settings toggle off, in both builds. PlantUML has no local renderer: previewing one uploads the generated markup to planttext.com, a third-party service. Until you agree, the preview shows a card instead of the diagram, and Studio remembers your answer — **Preview with planttext.com** sends it, **Use Mermaid Instead** switches to Mermaid, which renders locally. Only a PlantUML preview asks — including one Studio falls back to when the selected format can't draw the diagram; Mermaid, Nomnoml, and SVG previews render locally. To change your answer later, use **Render PlantUML previews with planttext.com** in **Settings…** (⌘,). See [Studio User Guide → PlantUML Sends Your Diagram Source to a Third Party](studio-user-guide.md#plantuml-sends-your-diagram-source-to-a-third-party).
 
 ### Diagram preview is blank but the source pane shows markup
 

@@ -83,7 +83,7 @@ struct PlantUMLConsentCard: View {
                     Text("The selected format can't draw this diagram, so it was generated as PlantUML.")
                         .accessibilityIdentifier("plantUMLConsentFallbackNote")
                 }
-                Text("Exporting the source sends nothing. Studio remembers your choice.")
+                Text("Exporting the source sends nothing. Studio remembers your choice; change it in Settings.")
                     .font(.caption)
             }
         } actions: {
