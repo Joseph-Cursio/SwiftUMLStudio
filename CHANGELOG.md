@@ -131,6 +131,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   declare drops the edge. A nested type whose parent sorts after it,
   such as one inside an extension of an undeclared type, now gets the
   composition edge it used to be missing.
+- **A `--` in a label no longer makes class-diagram or dependency-graph
+  SVG malformed** (#56). `SVGRenderer` wrote each node's label, and each
+  module cluster's, into an XML comment ahead of its `<g>`. XML forbids
+  `--` inside a comment, and no escape makes it legal there, so a source
+  folder named `Old--Code` produced `<!-- Old--Code -->` in
+  `deps --modules --format svg` output, and `XMLParser` rejected the
+  whole document. Class diagrams broke the same way for a raw-identifier
+  type such as `` `Old--Code` ``, and in package mode for a SwiftPM target
+  of that name, which labels a module cluster. Exported and CLI-opened
+  `.svg` files carried the same text. The two comments are gone: they
+  repeated the `<text>` element inside the same `<g>`, and no code read
+  them. The output is otherwise unchanged. A diagram saved to Studio's
+  history before the fix keeps its old text until it is regenerated. New
+  tests parse the output as XML as well as checking substrings.
 
 ---
 

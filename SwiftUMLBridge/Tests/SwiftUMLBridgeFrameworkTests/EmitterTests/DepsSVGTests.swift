@@ -97,6 +97,13 @@ struct DepsSVGTests {
         #expect(script.text.contains("Foundation"))
     }
 
+    @Test("a module name containing a double hyphen leaves the SVG well-formed")
+    func doubleHyphenModuleNameIsWellFormed() {
+        let script = makeScript(edges: [DependencyEdge(from: "Old--Code", to: "Foundation", kind: .imports)])
+        #expect(WellFormedXML.error(in: script.text) == nil)
+        #expect(script.text.contains(">Old--Code</text>"))
+    }
+
     // MARK: - Empty graph
 
     @Test("empty edges still produce valid SVG")

@@ -267,7 +267,6 @@ struct SVGRendererTests {
         graph.clusters = [cluster]
         let svg = SVGRenderer.render(graph)
 
-        #expect(svg.contains("<!-- module: Networking -->"))
         #expect(svg.contains(">Networking</text>"))
         // Dashed, tinted rectangle.
         #expect(svg.contains("stroke-dasharray=\"6,3\""))
@@ -287,12 +286,12 @@ struct SVGRendererTests {
         #expect(first.contains("hsl("))
     }
 
-    @Test("graph without clusters renders no module comment")
-    func noClustersNoModuleComment() {
+    @Test("graph without clusters renders no cluster box")
+    func noClustersNoClusterBox() {
         var node = LayoutNode(id: "cls", label: "Solo", stereotype: "class")
         node.posX = 100; node.posY = 60; node.width = 120; node.height = 50
         let svg = SVGRenderer.render(LayoutGraph(nodes: [node]))
-        #expect(svg.contains("<!-- module:") == false)
+        #expect(svg.contains("fill-opacity=\"0.10\"") == false)
     }
 
     // MARK: - Dimensions

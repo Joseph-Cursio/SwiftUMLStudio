@@ -123,6 +123,27 @@ struct DependencyGraphGeneratorTests {
         #expect(script.text.contains(parentDir))
     }
 
+    /// The directory name becomes a node label, and the renderer used to copy each label into an
+    /// XML comment, where `--` is illegal (#56).
+    @Test("modules-mode SVG stays well-formed when a directory name contains a double hyphen")
+    func modulesSVGWithDoubleHyphenDirectoryIsWellFormed() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("svg-comment-\(UUID().uuidString)")
+        let directory = root.appendingPathComponent("Old--Code")
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        try "import Foundation\n".write(
+            to: directory.appendingPathComponent("A.swift"), atomically: true, encoding: .utf8
+        )
+
+        let script = generator.generateScript(
+            for: [root.path], mode: .modules, with: Configuration(format: .svg)
+        )
+
+        #expect(script.text.contains(">Old--Code</text>"))
+        #expect(WellFormedXML.error(in: script.text) == nil)
+    }
+
     // MARK: - Format
 
     @Test("mermaid format produces graph TD header")
