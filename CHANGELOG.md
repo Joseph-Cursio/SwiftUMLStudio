@@ -52,6 +52,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `*.profraw` / `*.profdata` are gitignored — an instrumented test run
   drops one in the repository root.
 
+- **Running the Studio unit tests no longer clears your PlantUML
+  consent, and the UI tests no longer upload to planttext.com.** The unit
+  tests run inside the app, so `PlantUMLConsentTests`' `revoke()` on
+  `UserDefaults.standard` reset the developer's own decision every run;
+  the consent store now takes a `UserDefaults`, and the tests use
+  throwaway suites. The UI tests launched the direct build on its
+  PlantUML default with the SampleProject fixture, sending its diagram to
+  planttext.com on each run; they now pin consent to undecided through
+  launch arguments, which are never written back, and assert the consent
+  card in place of a planttext.com web view.
+
 ### Fixed — Bridge
 
 - **A module or type name with a backslash or line break is laid out by
@@ -284,6 +295,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   JavaScriptCore and check what reaches `nomnoml.draw`; the old test
   decoded the base64 in Swift as UTF-8, which the page never did. The
   Mermaid preview was not affected.
+- **A PlantUML preview asks before anything reaches planttext.com — on
+  every route, in both builds.** M14 asked for consent when the Format
+  picker changed to PlantUML, but the preview loaded planttext.com for
+  any PlantUML script without checking it, so a script that became
+  current another way was uploaded unasked: the direct build's default
+  format (Explorer, the default mode, has no picker at all); a reopened
+  PlantUML history item, behind the alert, where Cancel could not take
+  it back; any regeneration while the alert was open — a restore's path
+  or mode change, Open, or a debounced generate already in flight; and
+  the component diagram's Nomnoml fallback. Even an empty ER or state
+  result contacted planttext.com with Mermaid selected, because the
+  Bridge's "nothing found" scripts are typed PlantUML. `PlantTextPreview`
+  is now the only code that builds a planttext.com URL, and only with
+  consent; until then the preview shows a card that says what would be
+  sent, with **Preview with planttext.com** and **Use Mermaid Instead**.
+  The modal alert is gone and changing format just regenerates, since
+  making PlantUML text is local; the Markup tab and Export work without
+  consent. A decline is remembered, so a direct build starts in Mermaid
+  next launch instead of asking again. Direct-build users who never
+  chose PlantUML in the Format picker never consented — the default
+  never raised the old alert — so they now meet the card on their first
+  PlantUML preview, until they answer it. In the App Store build, a
+  history entry with no readable format no longer switches the picker
+  to PlantUML; the picker falls back to the build's default format.
 
 ### Documentation
 
