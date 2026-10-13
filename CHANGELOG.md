@@ -67,6 +67,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   Studio's native canvas. Every interpolated string now goes through
   `jsStringLiteral`, which JSON-encodes it and also escapes U+2028 and
   U+2029, so the literal evaluates back to exactly the name.
+- **A node whose name starts with `cluster:` is laid out as a node.**
+  `DagreLayoutEngine` gave each module's cluster the dagre id
+  `cluster:<module>` but used every node's own id unchanged, then read
+  back anything starting with `cluster:` as a cluster. A deps `--modules`
+  directory named `cluster:Core` — or a raw-identifier type — was drawn
+  at (0, 0), half off the canvas, with an empty `Core` module box beside
+  it. A node whose id was exactly another cluster's, such as
+  `cluster:Core` in module `Core`, was the same dagre node as that
+  cluster, so the script failed and the graph dropped to the grid with no
+  module boxes. Nodes now take the dagre id `node:<id>`, so the two
+  namespaces can no longer meet.
 - **Two names that sanitize alike are no longer drawn as one node.**
   `DepsScript.mermaidId` and `ComponentScript.safeAlias` rewrite several
   characters to `_`, so `Outer.Inner` and `Outer_Inner` both became the
