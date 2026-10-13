@@ -33,9 +33,9 @@ extension DiagramViewModel {
     /// Starts a PlantUML-default build in Mermaid when the user declined planttext.com, so they
     /// are not asked again on every launch.
     ///
-    /// Called once at launch rather than from `init`: tests build view models without injecting a
-    /// consent store, and reading ``PlantUMLConsent/shared`` there would tie them to the
-    /// developer's own decision.
+    /// ContentView calls it when it creates its view model, rather than `init` doing it: tests
+    /// build view models without injecting a consent store, and reading ``PlantUMLConsent/shared``
+    /// there would tie them to the developer's own decision.
     func applyLaunchFormatPreference(consent: PlantUMLConsent) {
         if diagramFormat == .plantuml && consent.decision == .declined {
             diagramFormat = .mermaid

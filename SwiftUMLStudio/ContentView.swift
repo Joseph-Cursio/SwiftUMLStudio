@@ -4,7 +4,14 @@ import UniformTypeIdentifiers
 
 struct ContentView: View {
     @Environment(SubscriptionManager.self) private var subscriptionManager
-    @State private var viewModel = DiagramViewModel()
+    /// Starts in Mermaid instead of a PlantUML default when the user declined planttext.com.
+    /// Applied here, before the first render, so the format's `onChange` never sees the switch:
+    /// from `.task` it ran a generation with nothing selected, which Explorer showed as a spinner.
+    @State private var viewModel: DiagramViewModel = {
+        let viewModel = DiagramViewModel()
+        viewModel.applyLaunchFormatPreference(consent: .shared)
+        return viewModel
+    }()
     @State private var showPaywall = false
     @AppStorage("appMode") private var appMode: AppMode = .explorer
 
@@ -74,7 +81,6 @@ struct ContentView: View {
             openPanel()
         }
         .task {
-            viewModel.applyLaunchFormatPreference(consent: .shared)
             viewModel.loadHistory()
             viewModel.loadSnapshots()
             loadTestFixtureIfNeeded()
