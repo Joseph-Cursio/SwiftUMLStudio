@@ -203,7 +203,27 @@ struct DiagramViewModelHistoryTests {
         viewModel.loadDiagram(entity)
 
         #expect(viewModel.diagramMode == .classDiagram)
-        #expect(viewModel.diagramFormat == .plantuml)
+        #expect(viewModel.diagramFormat == DiagramViewModel.buildDefaultFormat)
+    }
+
+    @Test("an entry with no readable format keeps the build default picker and reads its text as PlantUML")
+    func loadDiagramUnreadableFormats() {
+        let persistence = PersistenceController(inMemory: true)
+        let viewModel = DiagramViewModel(persistenceController: persistence)
+        viewModel.diagramFormat = .mermaid
+
+        let entity = DiagramEntity()
+        entity.identifier = UUID()
+        entity.timestamp = Date()
+        entity.mode = DiagramMode.classDiagram.rawValue
+        entity.format = nil
+        entity.scriptText = "@startuml\nclass Foo\n@enduml"
+        persistence.container.mainContext.insert(entity)
+
+        viewModel.loadDiagram(entity)
+
+        #expect(viewModel.diagramFormat == DiagramViewModel.buildDefaultFormat)
+        #expect(viewModel.currentScript?.format == .plantuml)
     }
 
     @Test("loadDiagram with nil paths does not crash")
