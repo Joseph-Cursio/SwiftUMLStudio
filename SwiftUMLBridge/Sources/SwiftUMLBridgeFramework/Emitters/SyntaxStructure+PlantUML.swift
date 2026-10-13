@@ -87,18 +87,18 @@ extension SyntaxStructure {
     }
 
     func addLinking(context: DiagramContext) {
-        let effectiveTypes = effectiveInheritedTypes()
-        guard !effectiveTypes.isEmpty else { return }
-        for parent in effectiveTypes {
-            if parent.name?.contains("&") == true {
-                parent.name?
-                    .components(separatedBy: "&")
-                    .forEach {
-                        let trimmed = $0.trimmingCharacters(in: .whitespacesAndNewlines)
-                        context.addLinking(item: self, parent: SyntaxStructure(name: trimmed))
-                    }
-            } else {
-                context.addLinking(item: self, parent: parent)
+        for parent in linkParents() {
+            context.addLinking(item: self, parent: parent)
+        }
+    }
+
+    /// The parents `addLinking` draws an edge to: inherited types plus macro-synthesised
+    /// conformances, with a composition `A & B` split into its parts.
+    func linkParents() -> [SyntaxStructure] {
+        effectiveInheritedTypes().flatMap { parent -> [SyntaxStructure] in
+            guard let name = parent.name, name.contains("&") else { return [parent] }
+            return name.components(separatedBy: "&").map {
+                SyntaxStructure(name: $0.trimmingCharacters(in: .whitespacesAndNewlines))
             }
         }
     }

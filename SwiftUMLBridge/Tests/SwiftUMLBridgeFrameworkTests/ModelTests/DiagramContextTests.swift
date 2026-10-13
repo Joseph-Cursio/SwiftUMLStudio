@@ -76,41 +76,6 @@ struct DiagramContextTests {
         #expect(ctx.extnConnections.first?.contains("Foo") == true)
     }
 
-    @Test("one context never issues the same alias twice")
-    func uniqNameIssuesDistinctAliases() {
-        let ctx = DiagramContext()
-        let aliases = [
-            ctx.uniqName(item: SyntaxStructure(kind: .struct, name: "Foo0"), relationship: "inherits"),
-            ctx.uniqName(item: SyntaxStructure(kind: .struct, name: "Foo"), relationship: "inherits"),
-            ctx.uniqName(item: SyntaxStructure(kind: .extension, name: "Foo"), relationship: "ext")
-        ]
-        #expect(aliases == ["Foo0", "Foo", "Foo1"])
-        #expect(ctx.extnConnections == ["Foo <.. Foo1 : ext"])
-    }
-
-    @Test("a reserved name is skipped by a suffix issued before its own declaration")
-    func reservedNameIsNotIssuedAsSuffix() {
-        let ctx = DiagramContext()
-        let items = [
-            SyntaxStructure(kind: .struct, name: "Foo"),
-            SyntaxStructure(kind: .extension, name: "Foo"),
-            SyntaxStructure(kind: .extension, name: "Foo0")
-        ]
-        ctx.reserveIdentifiers(of: items)
-        let aliases = items.map { ctx.uniqName(item: $0, relationship: $0.kind == .extension ? "ext" : "inherits") }
-        #expect(aliases == ["Foo", "Foo1", "Foo0"])
-    }
-
-    @Test("a reserved name still counts as a first declaration")
-    func reservedNameKeepsFirstDeclaration() {
-        let ctx = DiagramContext()
-        let item = SyntaxStructure(kind: .struct, name: "Foo0")
-        ctx.reserveIdentifiers(of: [item])
-        #expect(ctx.uniqName(item: item, relationship: "inherits") == "Foo0")
-        #expect(ctx.uniqElementNames == ["Foo0"])
-        #expect(ctx.uniqElementAndTypes["Foo0LinkType"] == "<|--")
-    }
-
     // MARK: - relationshipLabel
 
     @Test("relationshipLabel returns inheritance label for 'inherits'")

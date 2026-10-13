@@ -18,9 +18,9 @@ class DiagramContext {
     var uniqElementNames: [String] = []
     var uniqElementAndTypes: [String: String] = [:]
 
-    /// Every id an element may be declared under: the names of the elements the diagram will
-    /// draw, plus each alias `uniqName` has issued. A suffixed alias must avoid all of them, or
-    /// Mermaid and PlantUML declare two elements under one id.
+    /// Every id the diagram uses: the ids `reserveIdentifiers(drawing:)` found in it, plus each
+    /// alias `uniqName` has issued. A suffixed alias must avoid all of them, or Mermaid and
+    /// PlantUML draw two elements as one.
     ///
     /// Kept apart from `uniqElementNames` on purpose. `addLinking` looks names up there by raw
     /// name, and a type literally named `Foo0` must still count as a first declaration.
@@ -51,17 +51,19 @@ class DiagramContext {
 
     var index = 0
 
-    func addLinking(item: SyntaxStructure, parent: SyntaxStructure) {
-        var linkTo = parent.name?.removeAngleBracketsWithContent() ?? "___"
-
-        if linkTo.starts(with: "@") {
-            linkTo = "\"\(linkTo)\""
-        }
-
+    /// The id `addLinking` writes for `parent`'s end of an edge, or `nil` when
+    /// `relationships.inheritance.exclude` suppresses the edge.
+    func linkTarget(for parent: SyntaxStructure) -> String? {
         guard skipLinking(
             element: parent,
             basedOn: configuration.relationships.inheritance?.exclude
-        ) == false else { return }
+        ) == false else { return nil }
+        let linkTo = parent.name?.removeAngleBracketsWithContent() ?? "___"
+        return linkTo.starts(with: "@") ? "\"\(linkTo)\"" : linkTo
+    }
+
+    func addLinking(item: SyntaxStructure, parent: SyntaxStructure) {
+        guard let linkTo = linkTarget(for: parent) else { return }
         guard let fullName = item.fullName else { return }
         let namedConnection = (uniqElementAndTypes[linkTo] != nil)
             ? "\(uniqElementAndTypes[linkTo] ?? "--ERROR--")"
@@ -116,12 +118,34 @@ class DiagramContext {
         }
     }
 
-    /// Reserve the names of the elements the diagram is about to draw, before the first alias is
-    /// issued. A first declaration keeps its own name as its alias, so a suffixed alias handed out
-    /// earlier must not take a name that is only declared later — `struct Foo {}`,
+    /// Whether this format draws an edge from each nested type to its parent.
+    private var drawsNestedTypeConnections: Bool {
+        format == .plantuml || format == .nomnoml || format == .svg
+    }
+
+    /// Reserve every id the diagram will use, before the first alias is issued: the names of the
+    /// elements it draws, and the names its edges give elements it does not draw — a supertype,
+    /// a conformance or raw type, and a hidden parent of a drawn nested type. Mermaid and
+    /// PlantUML give an edge's undeclared end a node of its own, so a suffix that took one of
+    /// those names would join two elements. A first declaration keeps its own name as its alias,
+    /// so a suffix must not take a name declared only later either: `struct Foo {}`,
     /// `extension Foo {}`, `extension Foo0 {}` would otherwise declare `Foo0` twice.
-    func reserveIdentifiers(of items: [SyntaxStructure]) {
-        takenIdentifiers.formUnion(items.compactMap(\.fullName))
+    ///
+    /// `items` must be exactly the elements the diagram draws. A hidden element's name that
+    /// nothing in the diagram uses must not shift an alias.
+    func reserveIdentifiers(drawing items: [SyntaxStructure]) {
+        let drawn = Set(items)
+        for item in items {
+            if let fullName = item.fullName {
+                takenIdentifiers.insert(fullName)
+            }
+            takenIdentifiers.formUnion(item.linkParents().compactMap(linkTarget(for:)))
+            // `collectNestedTypeConnections` falls back to the raw name of a parent it did not draw.
+            if drawsNestedTypeConnections, let parent = item.parent, !drawn.contains(parent),
+               let parentName = parent.name {
+                takenIdentifiers.insert(parentName)
+            }
+        }
     }
 
     func uniqName(item: SyntaxStructure, relationship: String) -> String {
@@ -170,7 +194,7 @@ class DiagramContext {
     }
 
     func collectNestedTypeConnections(items: [SyntaxStructure]) {
-        guard format == .plantuml || format == .nomnoml || format == .svg else { return }
+        guard drawsNestedTypeConnections else { return }
         for item in items where item.parent != nil {
             guard let name = uniqueNameForElement[item],
                   let parent = item.parent,

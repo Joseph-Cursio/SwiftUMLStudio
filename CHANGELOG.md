@@ -84,11 +84,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   `struct Foo0 {}`, `struct Foo {}`, `extension Foo {}` declared the
   extension as `Foo0` — Mermaid `class Foo0["Foo"]`, PlantUML
   `class "Foo" as Foo0` — alongside the real `Foo0`, and the `ext` edge
-  and any nested-type edge pointed at both. A suffix now skips every name
-  the diagram draws and every alias already issued; the names are
-  reserved before the first alias, so one declared only later is skipped
-  too. Diagrams with no collision keep every alias; in one that collides,
-  aliases issued after a skipped suffix move up by one.
+  and any nested-type edge pointed at both. A suffix could likewise take a
+  name only an edge uses — `class A: A0 {}` plus `extension A {}` drew A
+  inheriting from its own extension — since Mermaid and PlantUML give an
+  edge's undeclared end a node of its own. Before the first alias is
+  issued, the diagram now reserves every id it will use: the names it
+  draws, its edges' supertypes, conformances and raw types, and (where
+  nested-type edges are drawn) a hidden parent's name. A suffix skips
+  those and every alias already issued. Diagrams with no collision keep
+  every alias; in one that collides, each skipped suffix moves the aliases
+  issued after it up by one more.
 
 ---
 

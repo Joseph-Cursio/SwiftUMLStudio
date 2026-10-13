@@ -58,8 +58,8 @@ public struct DiagramScript: @unchecked Sendable {
             adjustedItems = adjustedItems.mergeExtensions(mergedMemberIndicator: indicator)
         }
 
-        // Only what the loop below will draw: a hidden type's name must not shift an alias.
-        context.reserveIdentifiers(of: adjustedItems.filter { item in
+        // Exactly what the loop below will draw; the context adds the names their edges use.
+        context.reserveIdentifiers(drawing: adjustedItems.filter { item in
             guard let kind = item.kind, ElementKind.processable.contains(kind) else { return false }
             return item.skip(element: item, basedOn: context.configuration) == false
         })
