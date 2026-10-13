@@ -65,15 +65,17 @@ internal func expandPath(_ path: String, in directory: String) -> URL {
     return URL(fileURLWithPath: directory).appendingPathComponent(path)
 }
 
-/// `path` as directory enumeration spells it. `FileManager` reports a walked
-/// directory's entries under the directory's canonical path, with every
-/// symlink in it resolved: a walk started at `/tmp/x` yields `/private/tmp/x/…`.
-/// `canonicalPathKey` gives that same form; `standardizingPath` and
-/// `resolvingSymlinksInPath()` do not, because both strip `/private` again.
+/// `path` as directory enumeration spells it: its real path, with every
+/// symlink resolved, as `realpath(3)` gives it. `FileManager` reports a walked
+/// directory's entries under that path: a walk started at `/tmp/x` yields
+/// `/private/tmp/x/…`. `standardizingPath` and `resolvingSymlinksInPath()`
+/// strip `/private` again, and `canonicalPathKey` leaves a final symlink
+/// unresolved — a search directory can be one — so none of them will do.
 /// A path that does not exist is returned unchanged.
 internal func canonicalPath(_ path: String) -> String {
-    let url = URL(fileURLWithPath: path)
-    return (try? url.resourceValues(forKeys: [.canonicalPathKey]).canonicalPath) ?? path
+    guard let resolved = realpath(path, nil) else { return path }
+    defer { free(resolved) }
+    return String(cString: resolved)
 }
 
 /// `url`'s path in the form directory enumeration reports it: the parent goes
