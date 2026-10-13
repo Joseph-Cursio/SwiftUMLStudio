@@ -54,6 +54,18 @@ struct DepsSVGTests {
         #expect(script.layoutGraph?.edges.count == 2)
     }
 
+    @Test("a module directory named with a backslash is laid out by dagre",
+          arguments: ["Old\\Code", "Trail\\"])
+    func backslashModuleIsLaidOut(name: String) throws {
+        let edge = DependencyEdge(from: name, to: "Foundation", kind: .imports)
+        let graph = try #require(makeScript(edges: [edge]).layoutGraph)
+        let module = try #require(graph.nodes.first { $0.id == name })
+        let foundation = try #require(graph.nodes.first { $0.id == "Foundation" })
+        // Not left at the origin, and not on the grid fallback's single row.
+        #expect(module.posX != 0 || module.posY != 0)
+        #expect(module.posY != foundation.posY)
+    }
+
     // MARK: - SVG content
 
     @Test("SVG output contains node names as text elements")
