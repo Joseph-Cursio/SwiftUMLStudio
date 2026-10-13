@@ -51,6 +51,20 @@ struct ThemeTests {
         #expect(Theme.superhero.rawValue == "superhero")
     }
 
+    /// Each has more UTF-16 units than `Character`s, with a camel-case
+    /// boundary in the units a `Character`-count range left out.
+    @Test("camelCaseToKebapCase reaches a boundary after wide characters",
+          arguments: [
+            ("😀😀aB", "😀😀a-b"),
+            ("é😀xY", "é😀x-y"),
+            ("\u{1F468}\u{200D}\u{1F469}\u{200D}\u{1F467}fooBar",
+             "\u{1F468}\u{200D}\u{1F469}\u{200D}\u{1F467}foo-bar"),
+            ("😀😀ABc", "😀😀a-bc")
+          ])
+    func kebabCaseAfterWideCharacters(input: String, expected: String) {
+        #expect(input.camelCaseToKebapCase() == expected)
+    }
+
     @Test("preferred list is non-empty and contains known themes")
     func preferredListNonEmpty() {
         #expect(Theme.preferred.isEmpty == false)

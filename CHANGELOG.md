@@ -237,6 +237,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   renderer and Studio's native canvas color a module box from its id,
   so the box took another name's hue. Such a name reaches the layout as
   a SwiftPM target in package mode. The prefix is now dropped by scalar.
+- **`camelCaseToKebapCase` searches the whole string.** It gave
+  `NSRegularExpression` a range as long as the string's `Character`
+  count, where an `NSRange` counts UTF-16 units, so a camel-case
+  boundary in the last units went unsplit whenever the string held an
+  emoji or other wide character: `"😀😀aB"` came out `"😀😀ab"`. Theme
+  names are ASCII, so no theme's `rawValue` changed; the range now
+  spans the string's UTF-16 length.
 
 ### Fixed — Studio
 
