@@ -17,7 +17,7 @@ extension SwiftUMLBridgeCLI {
         @Option(help: "Path to a Package.swift directory.")
         var package: String
 
-        @Option(help: "Diagram format. Options: plantuml, mermaid")
+        @Option(help: "Diagram format.")
         var format: DiagramFormat?
 
         @Option(help: ArgumentHelp(

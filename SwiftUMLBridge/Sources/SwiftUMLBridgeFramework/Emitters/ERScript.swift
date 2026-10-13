@@ -17,10 +17,11 @@ public struct ERScript: Sendable {
             self.text = ERScript.buildMermaidText(model: model)
             self.format = .mermaid
         case .nomnoml:
-            // Nomnoml has no ER-specific syntax; fall back to Mermaid text so
-            // DiagramWebView can still render something (matches StateScript).
+            // Nomnoml has no ER-specific syntax; fall back to Mermaid text and
+            // report `.mermaid` so DiagramWebView and BrowserPresenter render it
+            // through Mermaid (matches StateScript).
             self.text = ERScript.buildMermaidText(model: model)
-            self.format = .nomnoml
+            self.format = .mermaid
         case .svg:
             // No native SVG layout for ER yet; piggyback on the Mermaid pipeline
             // so DiagramWebView routes through MermaidHTMLBuilder.

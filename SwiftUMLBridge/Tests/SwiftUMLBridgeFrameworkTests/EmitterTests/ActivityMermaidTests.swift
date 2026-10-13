@@ -4,9 +4,9 @@ import Testing
 @Suite("ActivityScript — Mermaid")
 struct ActivityMermaidTests {
 
-    private func makeScript(graph: ActivityGraph) -> ActivityScript {
+    private func makeScript(graph: ActivityGraph, format: DiagramFormat = .mermaid) -> ActivityScript {
         var config = Configuration.default
-        config.format = .mermaid
+        config.format = format
         return ActivityScript(graph: graph, configuration: config)
     }
 
@@ -112,5 +112,17 @@ struct ActivityMermaidTests {
         )
         let script = makeScript(graph: graph)
         #expect(script.format == .mermaid)
+    }
+
+    @Test("nomnoml format falls back to Mermaid text, reports mermaid")
+    func nomnomlFallsBackToMermaid() {
+        let graph = ActivityGraph(
+            nodes: [ActivityNode(id: 0, kind: .start, label: "")],
+            edges: [],
+            entryType: "Foo", entryMethod: "run"
+        )
+        let script = makeScript(graph: graph, format: .nomnoml)
+        #expect(script.format == .mermaid)
+        #expect(script.text.hasPrefix("flowchart TD"))
     }
 }
