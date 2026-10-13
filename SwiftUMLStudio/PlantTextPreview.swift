@@ -75,8 +75,8 @@ struct PlantUMLConsentCard: View {
             VStack(spacing: 8) {
                 Text(
                     "PlantUML previews are drawn by planttext.com, a third-party service. "
-                    + "Showing this one sends its PlantUML source — type names, members and "
-                    + "relationships, but no function bodies — to that service over HTTPS. "
+                    + "Showing this one sends its PlantUML source — the same text Export "
+                    + "saves — to that service over HTTPS. "
                     + "Mermaid, Nomnoml and SVG previews are drawn on this Mac."
                 )
                 if isFallback {

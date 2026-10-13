@@ -313,9 +313,12 @@ In Explorer Mode, the format is not exposed — the app uses the build's default
 This is the one format that leaves your machine, so it is worth stating plainly.
 PlantUML has no local renderer in Studio: previewing a PlantUML diagram encodes
 the generated markup and requests an SVG from **planttext.com**, a third-party
-service not operated by us. That markup describes your code's structure — type
-names, member names and signatures, and the relationships between them. It does
-not include function bodies or literal values.
+service not operated by us. For most diagram types that markup describes your
+code's structure — type names, member names and signatures, and the
+relationships between them — and not function bodies or literal values. An
+activity diagram is the exception: it is drawn from a method's body, so its
+markup carries that method's statements and conditions, each shortened to 80
+characters.
 
 Because of this, the picker labels the option **"PlantUML (planttext.com)"**,
 and nothing is sent until you agree. The first time a PlantUML diagram would be
