@@ -67,6 +67,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   sanitized id and a colliding name gets `_2`, `_3`, …. A diagram with no
   collision is unchanged byte for byte. Found by an injectivity property
   prototyped in SwiftInferProperties against SwiftUMLBridge.
+- **An if/guard join in an activity diagram now sits below its longer
+  branch** (#53). `ActivitySVGRenderer.computeRows` promised longest-path
+  layering but kept the first row it gave each node, so when branches of
+  different length met, the join took its row from the shorter one. It
+  landed level with or above the longer branch's last node, and the edge
+  into it was drawn as a dashed loop back-edge — in `.svg` output and on
+  Studio's native activity canvas, which shares `ActivityLayout`. Rows now
+  come from a DFS from the start node that sets aside back-edges, then
+  Kahn's algorithm over the remaining edges, so every predecessor is
+  placed before its successor. Nodes start never reaches still go to row 0
+  and cannot stall the pass.
 
 ---
 
