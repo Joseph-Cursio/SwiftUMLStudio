@@ -78,6 +78,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   Kahn's algorithm over the remaining edges, so every predecessor is
   placed before its successor. Nodes start never reaches still go to row 0
   and cannot stall the pass.
+- **A class-diagram extension no longer takes another type's id** (#54).
+  `DiagramContext.uniqName` gives a repeated name the next value of one
+  diagram-wide counter as a suffix, and never checked the result. So
+  `struct Foo0 {}`, `struct Foo {}`, `extension Foo {}` declared the
+  extension as `Foo0` — Mermaid `class Foo0["Foo"]`, PlantUML
+  `class "Foo" as Foo0` — alongside the real `Foo0`, and the `ext` edge
+  and any nested-type edge pointed at both. A suffix now skips every name
+  the diagram draws and every alias already issued; the names are
+  reserved before the first alias, so one declared only later is skipped
+  too. Diagrams with no collision keep every alias; in one that collides,
+  aliases issued after a skipped suffix move up by one.
 
 ---
 

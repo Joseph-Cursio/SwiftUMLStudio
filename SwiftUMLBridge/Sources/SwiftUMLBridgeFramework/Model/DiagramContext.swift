@@ -17,6 +17,14 @@ class DiagramContext {
 
     var uniqElementNames: [String] = []
     var uniqElementAndTypes: [String: String] = [:]
+
+    /// Every id an element may be declared under: the names of the elements the diagram will
+    /// draw, plus each alias `uniqName` has issued. A suffixed alias must avoid all of them, or
+    /// Mermaid and PlantUML declare two elements under one id.
+    ///
+    /// Kept apart from `uniqElementNames` on purpose. `addLinking` looks names up there by raw
+    /// name, and a type literally named `Foo0` must still count as a first declaration.
+    private(set) var takenIdentifiers: Set<String> = []
     private(set) var connections: [String] = []
     private(set) var extnConnections: [String] = []
 
@@ -108,13 +116,25 @@ class DiagramContext {
         }
     }
 
+    /// Reserve the names of the elements the diagram is about to draw, before the first alias is
+    /// issued. A first declaration keeps its own name as its alias, so a suffixed alias handed out
+    /// earlier must not take a name that is only declared later — `struct Foo {}`,
+    /// `extension Foo {}`, `extension Foo0 {}` would otherwise declare `Foo0` twice.
+    func reserveIdentifiers(of items: [SyntaxStructure]) {
+        takenIdentifiers.formUnion(items.compactMap(\.fullName))
+    }
+
     func uniqName(item: SyntaxStructure, relationship: String) -> String {
         guard let name = item.fullName else { return "" }
         var newName = name
         let linkTypeKey = name + "LinkType"
         if uniqElementNames.contains(name) {
-            newName += "\(index)"
-            index += 1
+            // The counter is diagram-wide, so where no candidate is taken every alias is what
+            // it always was; a taken candidate is skipped, never reused.
+            repeat {
+                newName = name + "\(index)"
+                index += 1
+            } while takenIdentifiers.contains(newName)
             let hasMatchingParent = uniqueNameForElement.keys
                 .first(where: { $0.name == name && $0.kind != .extension }) != nil
             if item.kind == ElementKind.extension, hasMatchingParent {
@@ -144,6 +164,7 @@ class DiagramContext {
                 uniqElementAndTypes[linkTypeKey] = linkTypeGeneric
             }
         }
+        takenIdentifiers.insert(newName)
         uniqueNameForElement[item] = newName
         return newName
     }
