@@ -122,13 +122,10 @@ public struct DagreLayoutEngine: Sendable {
     private static func buildClusterStatements(for modules: [String: [String]]) -> String {
         var result = ""
         for (module, nodeIds) in modules.sorted(by: { $0.key < $1.key }) {
-            let clusterId = clusterIdPrefix + module
-            let escapedCluster = clusterId.replacingOccurrences(of: "\"", with: "\\\"")
-            let escapedLabel = module.replacingOccurrences(of: "\"", with: "\\\"")
-            result += "    graph.setNode(\"\(escapedCluster)\", { label: \"\(escapedLabel)\" });\n"
+            let cluster = jsStringLiteral(clusterIdPrefix + module)
+            result += "    graph.setNode(\(cluster), { label: \(jsStringLiteral(module)) });\n"
             for nodeId in nodeIds {
-                let escapedNode = nodeId.replacingOccurrences(of: "\"", with: "\\\"")
-                result += "    graph.setParent(\"\(escapedNode)\", \"\(escapedCluster)\");\n"
+                result += "    graph.setParent(\(jsStringLiteral(nodeId)), \(cluster));\n"
             }
         }
         return result
@@ -137,8 +134,8 @@ public struct DagreLayoutEngine: Sendable {
     private static func buildNodeStatements(for graph: LayoutGraph) -> String {
         var result = ""
         for node in graph.nodes {
-            let escapedId = node.id.replacingOccurrences(of: "\"", with: "\\\"")
-            result += "    graph.setNode(\"\(escapedId)\", { width: \(node.width), height: \(node.height) });\n"
+            let nodeId = jsStringLiteral(node.id)
+            result += "    graph.setNode(\(nodeId), { width: \(node.width), height: \(node.height) });\n"
         }
         return result
     }
@@ -146,11 +143,27 @@ public struct DagreLayoutEngine: Sendable {
     private static func buildEdgeStatements(for graph: LayoutGraph) -> String {
         var result = ""
         for (idx, edge) in graph.edges.enumerated() {
-            let escapedSrc = edge.sourceId.replacingOccurrences(of: "\"", with: "\\\"")
-            let escapedTgt = edge.targetId.replacingOccurrences(of: "\"", with: "\\\"")
-            result += "    graph.setEdge(\"\(escapedSrc)\", \"\(escapedTgt)\", { id: \"e\(idx)\" });\n"
+            let source = jsStringLiteral(edge.sourceId)
+            let target = jsStringLiteral(edge.targetId)
+            result += "    graph.setEdge(\(source), \(target), { id: \"e\(idx)\" });\n"
         }
         return result
+    }
+
+    /// Renders `value` as a JavaScript string literal, quotes included, that
+    /// evaluates back to exactly `value`. Node ids and module names are caller
+    /// text — a module is a directory name — so they can hold `\`, `"`, or a
+    /// line break, each of which changes what a hand-quoted literal means.
+    /// A JSON string escapes all of those and is also a valid JS literal, but
+    /// JSON leaves U+2028 and U+2029 raw, and engines before ES2019 read them
+    /// as line terminators, so they are escaped here as well.
+    static func jsStringLiteral(_ value: String) -> String {
+        // Encoding a `String` never throws — only non-finite floats do.
+        guard let data = try? JSONEncoder().encode(value),
+              let json = String(bytes: data, encoding: .utf8) else { return "\"\"" }
+        return json
+            .replacingOccurrences(of: "\u{2028}", with: "\\u2028")
+            .replacingOccurrences(of: "\u{2029}", with: "\\u2029")
     }
 
     private static let layoutAndSerialize = """
