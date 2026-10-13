@@ -65,5 +65,9 @@ struct SwiftUMLStudioApp: App {
                 .keyboardShortcut("o", modifiers: .command)
             }
         }
+
+        Settings {
+            SettingsView()
+        }
     }
 }

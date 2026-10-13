@@ -49,8 +49,8 @@ final class PlantUMLConsent {
 
     func decline() { record(.declined) }
 
-    /// Back to undecided — used by tests and any future Settings surface that
-    /// offers a "revoke" toggle.
+    /// Back to undecided, so the next PlantUML preview asks again — what turning
+    /// off the Settings toggle does.
     func revoke() { record(.undecided) }
 
     private func record(_ newDecision: Decision) {

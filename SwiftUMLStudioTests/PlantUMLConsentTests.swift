@@ -1,4 +1,6 @@
 import Foundation
+import Observation
+import os
 import Testing
 @testable import SwiftUMLStudio
 
@@ -42,6 +44,22 @@ struct PlantUMLConsentTests {
         consent.revoke()
         #expect(consent.decision == .undecided)
         #expect(PlantUMLConsent(defaults: defaults).decision == .undecided)
+    }
+
+    @Test("a change of decision notifies observers, so open previews and Settings update at once")
+    func changeNotifiesObservers() {
+        let (consent, suiteName) = PlantUMLConsentTestSupport.makeConsent(.granted)
+        defer { UserDefaults.standard.removePersistentDomain(forName: suiteName) }
+        let changed = OSAllocatedUnfairLock(initialState: false)
+        withObservationTracking {
+            _ = consent.isGranted
+        } onChange: {
+            changed.withLock { $0 = true }
+        }
+
+        consent.revoke()
+
+        #expect(changed.withLock { $0 })
     }
 
     @Test("a grant stored under the original key still counts")

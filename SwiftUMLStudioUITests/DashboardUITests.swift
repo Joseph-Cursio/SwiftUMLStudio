@@ -93,6 +93,23 @@ final class DashboardUITests: XCTestCase {
         wait(for: [startsInMermaid], timeout: UITestTimeout.element)
     }
 
+    /// Settings offers the PlantUML consent toggle, off while the decision is undecided. The test
+    /// does not click it: that would write the app's stored defaults.
+    @MainActor
+    func testSettingsShowsPlantUMLConsentToggle() throws {
+        app.typeKey(",", modifierFlags: .command)
+
+        let toggle = app.descendants(matching: .any).matching(identifier: "plantUMLConsentToggle").firstMatch
+        XCTAssertTrue(
+            toggle.waitForExistence(timeout: UITestTimeout.element),
+            "Settings should offer the PlantUML consent toggle"
+        )
+        let isOff = (toggle.value as? Int) == 0 || (toggle.value as? String) == "0"
+        XCTAssertTrue(
+            isOff, "The toggle should be off while consent is undecided, got \(String(describing: toggle.value))"
+        )
+    }
+
     @MainActor
     func testDepthStepperAppearsInSequenceMode() throws {
         let modePicker = app.outlines["modePicker"]

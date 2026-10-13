@@ -299,7 +299,7 @@ In Developer Mode, the **Format** picker in the inspector strip (above the detai
 
 | Format | Preview rendering | Markup extension | Notes |
 |---|---|---|---|
-| **PlantUML** | SVG fetched from planttext.com (requires internet) | `.puml` | Light-mode rendering only — planttext.com is outside our control. Uploads your diagram source to a third party; the preview asks once before anything is sent. See [below](#plantuml-sends-your-diagram-source-to-a-third-party) |
+| **PlantUML** | SVG fetched from planttext.com (requires internet) | `.puml` | Light-mode rendering only — planttext.com is outside our control. Uploads your diagram source to a third party; the preview asks before anything is sent. See [below](#plantuml-sends-your-diagram-source-to-a-third-party) |
 | **Mermaid** | Rendered locally via the bundled `MermaidHTMLBuilder` WebView | `.mmd` | Adapts to dark mode via `colorScheme` |
 | **Nomnoml** | Rendered locally via the bundled `NomnomlHTMLBuilder` WebView | `.nomnoml` | Native for class and dependency diagrams. Sequence, activity, state, ER and component diagrams fall back to Mermaid, which previews and exports (`.mmd`) as Mermaid. Canvas content stays light because `nomnoml.js` uses hardcoded colors |
 | **SVG** | Native SwiftUI `Canvas` renderer using a Dagre layout produced by JavaScriptCore | n/a (rendered in-app) | The fastest, most interactive option; supports node selection, reveal-in-source, and PDF/PNG export |
@@ -335,6 +335,11 @@ diagram type — the preview shows a card describing the upload instead:
 Generating PlantUML is local, so **Export** (in either mode) and Developer
 Mode's **Markup** tab work without agreeing to anything. The card appears in
 both builds and both modes, and your answer covers both modes.
+
+To change your answer later, open **Settings…** from the app menu (⌘,) and use
+**Render PlantUML previews with planttext.com**. Turning it on allows the
+upload; turning it off withdraws your consent straight away — a PlantUML
+preview on screen goes back to the card, and the next one asks again.
 
 Mermaid, Nomnoml, and SVG all render locally from bundled resources and make no
 network requests at all — no CDN fallback, no telemetry. If your source is
