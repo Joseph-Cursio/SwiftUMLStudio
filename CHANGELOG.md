@@ -133,6 +133,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   history before the fix keeps its old text until it is regenerated. New
   tests parse the output as XML as well as checking substrings.
 
+### Documentation
+
+- **The user docs say what `--format svg` and `--format nomnoml` do on
+  the CLI** (#82). The reference, user guide and README said the CLI
+  emits text only for `plantuml` and `mermaid` and never writes SVG to
+  stdout. In fact every subcommand's `--format` accepts all four values.
+  `svg` prints a standalone `<svg>` document for `classdiagram`,
+  `sequence`, `activity`, `deps` and `component`, and browser output
+  writes it to a temporary `diagram.svg` and opens it. `state` and `er`
+  print Mermaid instead. Only `classdiagram` and `deps` emit real Nomnoml.
+  The reference's new **Formats by Subcommand** table lists every
+  combination and where browser output sends it, and the README's
+  diagram-types table now credits dependency graphs with Nomnoml output.
+
 ---
 
 ## [1.1.0] — 2026-08-16

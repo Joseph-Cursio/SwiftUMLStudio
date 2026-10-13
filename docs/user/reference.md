@@ -8,6 +8,7 @@ Complete reference for all CLI options, YAML configuration fields, element kinds
 
 1. [CLI Reference](#cli-reference)
    - [Root Command](#root-command)
+   - [Formats by Subcommand](#formats-by-subcommand)
    - [classdiagram](#classdiagram)
    - [sequence](#sequence)
    - [deps](#deps)
@@ -100,6 +101,41 @@ The default subcommand is `classdiagram`. Running `swiftumlbridge` with no verb 
 
 ---
 
+### Formats by Subcommand
+
+Every subcommand's `--format` accepts `plantuml`, `mermaid`, `nomnoml`, and `svg`. Not every diagram type has a Nomnoml or SVG emitter, though, and where one is missing the subcommand falls back to another language. This table shows what `--output consoleOnly` prints for each:
+
+| Subcommand | `--format nomnoml` | `--format svg` |
+|---|---|---|
+| `classdiagram` | Nomnoml class diagram | SVG document; with `--package`, each target's types sit in a labelled grouping box |
+| `sequence` | Mermaid `sequenceDiagram` (fallback) | SVG document |
+| `activity` | Mermaid `flowchart TD` (fallback) | SVG document |
+| `deps` | Nomnoml graph, in both `--types` and `--modules` mode | SVG document, in both `--types` and `--modules` mode |
+| `state` | Mermaid `stateDiagram-v2` (fallback) | Mermaid `stateDiagram-v2` (fallback) |
+| `er` | Mermaid `erDiagram` (fallback) | Mermaid `erDiagram` (fallback) |
+| `component` | PlantUML `component` diagram (fallback) | SVG document |
+
+`plantuml` and `mermaid` are native for every subcommand, except that `component --format mermaid` emits a `flowchart TD`, since Mermaid has no component dialect.
+
+An SVG document is a complete, standalone `<svg …>` element, drawn from the same layout that SwiftUML Studio's native canvas renders, so you can redirect it straight to a file:
+
+```bash
+swiftumlbridge classdiagram Sources/ --format svg --output consoleOnly > classes.svg
+swiftumlbridge deps Sources/ --modules --format svg --output consoleOnly > modules.svg
+```
+
+With `--output browser` (the default) or `browserImageOnly`, where the diagram goes depends on the language the subcommand actually produced:
+
+| Produced | Browser output |
+|---|---|
+| SVG document | Written to `diagram.svg` in the temporary directory, replacing any earlier one, and opened with the app macOS has registered for `.svg` files |
+| Nomnoml (`classdiagram`, `deps`) | Opened at nomnoml.com |
+| Mermaid fallback from `--format svg` (`state`, `er`) | Opened at mermaid.live, as with `--format mermaid` |
+| Mermaid fallback from `--format nomnoml` (`sequence`, `activity`, `state`, `er`) | Opened at nomnoml.com, which cannot render Mermaid. Use `--format mermaid` for these subcommands instead. |
+| PlantUML fallback (`component --format nomnoml`) | Opened at planttext.com, as with `--format plantuml` |
+
+---
+
 ### classdiagram
 
 Generate a PlantUML or Mermaid class diagram from Swift source files.
@@ -120,7 +156,7 @@ swiftumlbridge classdiagram [<paths>...] [options]
 |---|---|---|---|
 | `--config <path>` | `String?` | `nil` | Path to a custom `.swiftumlbridge.yml` file. When omitted, looks for `.swiftumlbridge.yml` in the current directory, then falls back to built-in defaults. |
 | `--exclude <path>...` | `[String]` | `[]` | File or directory paths to exclude. Takes precedence over positional path arguments. May be specified multiple times. |
-| `--format <format>` | `DiagramFormat?` | `plantuml` | Diagram language. One of: `plantuml`, `mermaid`. Overrides the `format` field in the config file. |
+| `--format <format>` | `DiagramFormat?` | `plantuml` | Diagram language. One of: `plantuml`, `mermaid`, `nomnoml`, `svg`. All four are native. Overrides the `format` field in the config file. See [Formats by Subcommand](#formats-by-subcommand). |
 | `--output <format>` | `ClassDiagramOutput?` | `browser` | Output destination. One of: `browser`, `browserImageOnly`, `consoleOnly`. |
 | `--sdk <path>` | `String?` | `nil` | macOS SDK path for improved type inference. Typically `$(xcrun --show-sdk-path -sdk macosx)`. |
 | `--package <path>` | `String?` | `nil` | Path to a `Package.swift` directory. Activates module-aware mode: each type is tagged with its SPM target and rendered with an additional module stereotype. Overrides positional `<paths>` arguments. |
@@ -190,7 +226,7 @@ swiftumlbridge sequence [<paths>...] --entry Type.method [options]
 | Option | Type | Default | Description |
 |---|---|---|---|
 | `--depth <n>` | `Int` | `3` | Maximum call-graph depth to traverse from the entry point. |
-| `--format <format>` | `DiagramFormat?` | `plantuml` | Diagram language. One of: `plantuml`, `mermaid`. |
+| `--format <format>` | `DiagramFormat?` | `plantuml` | Diagram language. One of: `plantuml`, `mermaid`, `nomnoml`, `svg`. `nomnoml` falls back to Mermaid text. See [Formats by Subcommand](#formats-by-subcommand). |
 | `--output <format>` | `ClassDiagramOutput?` | `browser` | Output destination. One of: `browser`, `browserImageOnly`, `consoleOnly`. |
 | `--config <path>` | `String?` | `nil` | Path to a custom `.swiftumlbridge.yml` config file. |
 | `--sdk <path>` | `String?` | `nil` | macOS SDK path (reserved; not currently used by the sequence extractor). |
@@ -257,7 +293,7 @@ swiftumlbridge deps [<paths>...] [--modules] [--types] [--public-only] [--exclud
 | Option | Type | Default | Description |
 |---|---|---|---|
 | `--exclude <pattern>...` | `[String]` | `[]` | Exclude type or module names matching these glob patterns. May be specified multiple times. |
-| `--format <format>` | `DiagramFormat?` | `plantuml` | Diagram language. One of: `plantuml`, `mermaid`. |
+| `--format <format>` | `DiagramFormat?` | `plantuml` | Diagram language. One of: `plantuml`, `mermaid`, `nomnoml`, `svg`. All four are native, in both `--types` and `--modules` mode. See [Formats by Subcommand](#formats-by-subcommand). |
 | `--output <format>` | `ClassDiagramOutput?` | `browser` | Output destination. One of: `browser`, `browserImageOnly`, `consoleOnly`. |
 | `--package <path>` | `String?` | `nil` | Path to a `Package.swift` directory. Activates module-aware mode: in `--modules` each SPM `target_dependencies` pair becomes an edge (authoritative — system frameworks are excluded); in `--types` each inheritance / conformance edge is tagged with the owning SPM target name, rendered as a `<<Module>>` stereotype. Overrides `<paths>`. Test targets are excluded. |
 | `--config <path>` | `String?` | `nil` | Path to a custom `.swiftumlbridge.yml` config file. |
@@ -317,7 +353,7 @@ swiftumlbridge activity [<paths>...] --entry Type.method [options]
 
 | Option | Type | Default | Description |
 |---|---|---|---|
-| `--format <format>` | `DiagramFormat?` | `plantuml` | Diagram language. One of: `plantuml`, `mermaid`. |
+| `--format <format>` | `DiagramFormat?` | `plantuml` | Diagram language. One of: `plantuml`, `mermaid`, `nomnoml`, `svg`. `nomnoml` falls back to Mermaid text. See [Formats by Subcommand](#formats-by-subcommand). |
 | `--output <format>` | `ClassDiagramOutput?` | `browser` | Output destination. One of: `browser`, `browserImageOnly`, `consoleOnly`. |
 | `--config <path>` | `String?` | `nil` | Path to a custom `.swiftumlbridge.yml` config file. |
 | `--help` | Flag | — | Print subcommand help and exit. |
@@ -365,7 +401,7 @@ swiftumlbridge state [<paths>...] [--list | --state HostType.EnumType] [options]
 
 | Option | Type | Default | Description |
 |---|---|---|---|
-| `--format <format>` | `DiagramFormat?` | `plantuml` | Diagram language. One of: `plantuml`, `mermaid`. |
+| `--format <format>` | `DiagramFormat?` | `plantuml` | Diagram language. One of: `plantuml`, `mermaid`, `nomnoml`, `svg`. `nomnoml` and `svg` both fall back to Mermaid text. See [Formats by Subcommand](#formats-by-subcommand). |
 | `--output <format>` | `ClassDiagramOutput?` | `browser` | Output destination. One of: `browser`, `browserImageOnly`, `consoleOnly`. |
 | `--config <path>` | `String?` | `nil` | Path to a custom `.swiftumlbridge.yml` config file. |
 | `--help` | Flag | — | Print subcommand help and exit. |
@@ -407,7 +443,7 @@ swiftumlbridge er [<paths>...] [options]
 
 | Option | Type | Default | Description |
 |---|---|---|---|
-| `--format <format>` | `DiagramFormat?` | `plantuml` | Diagram language. One of: `plantuml`, `mermaid`. |
+| `--format <format>` | `DiagramFormat?` | `plantuml` | Diagram language. One of: `plantuml`, `mermaid`, `nomnoml`, `svg`. `nomnoml` and `svg` both fall back to Mermaid text. See [Formats by Subcommand](#formats-by-subcommand). |
 | `--output <output>` | `ClassDiagramOutput?` | `browser` | Output destination. One of: `browser`, `browserImageOnly`, `consoleOnly`. |
 | `--config <path>` | `String?` | `nil` | Path to a custom `.swiftumlbridge.yml` config file. |
 | `--help` | Flag | — | Print subcommand help and exit. |
@@ -456,7 +492,7 @@ swiftumlbridge component --package <path> [options]
 
 | Option | Type | Default | Description |
 |---|---|---|---|
-| `--format <format>` | `DiagramFormat?` | `plantuml` | Diagram language. One of: `plantuml`, `mermaid`. |
+| `--format <format>` | `DiagramFormat?` | `plantuml` | Diagram language. One of: `plantuml`, `mermaid`, `nomnoml`, `svg`. `nomnoml` falls back to PlantUML. See [Formats by Subcommand](#formats-by-subcommand). |
 | `--output <output>` | `ClassDiagramOutput?` | `browser` | Output destination. One of: `browser`, `browserImageOnly`, `consoleOnly`. |
 | `--include-test-targets` | Flag | `false` | Include `.testTarget` targets. By default test targets are filtered out so the diagram focuses on shipping components. |
 | `--help` | Flag | — | Print subcommand help and exit. |
@@ -662,16 +698,17 @@ texts:
 # ─── format ────────────────────────────────────────────────────────────────
 format: plantuml
   # Diagram language for the generated output.
-  # Type: plantuml | mermaid  Default: plantuml
+  # Type: plantuml | mermaid | nomnoml | svg  Default: plantuml
   # Can be overridden at runtime with the --format CLI flag.
-  # Applies to both classdiagram and sequence subcommands.
+  # Applies to every subcommand except component, which reads no config file.
+  # See "Formats by Subcommand" for which diagram types fall back.
 ```
 
 ---
 
 ## Diagram Formats
 
-SwiftUMLBridge supports two output diagram languages, applied to both class diagrams and sequence diagrams.
+This section describes the PlantUML and Mermaid output for class diagrams, sequence diagrams, and dependency graphs. For which subcommands also emit Nomnoml and SVG, see [Formats by Subcommand](#formats-by-subcommand).
 
 ### Class Diagrams
 
@@ -1066,13 +1103,15 @@ PlantUML accepts any HTML 4 color name. A representative set:
 
 ## Output Destinations
 
-Controlled by the `--output` CLI flag. Applies to both PlantUML and Mermaid formats, and to both `classdiagram` and `sequence` subcommands.
+Controlled by the `--output` CLI flag, on every subcommand.
 
 | Value | PlantUML behavior | Mermaid behavior |
 |---|---|---|
 | `browser` | Opens interactive planttext.com editor | Opens Mermaid Live editor (`mermaid.live`) |
 | `browserImageOnly` | Opens a PNG render at planttext.com | Same as `browser` for Mermaid |
 | `consoleOnly` | Prints raw PlantUML to stdout | Prints raw Mermaid to stdout |
+
+Nomnoml output opens at nomnoml.com for both browser values, and `consoleOnly` prints the Nomnoml text. SVG output is written to `diagram.svg` in the temporary directory and opened for both browser values, and `consoleOnly` prints the SVG document. See [Formats by Subcommand](#formats-by-subcommand) for which subcommands produce each.
 
 **PlantUML encoding:** ZLIB deflate followed by PlantUML's custom base64 alphabet (`0-9A-Za-z-_=`).
 
@@ -1404,12 +1443,12 @@ The diagram language for generated output. Used across every diagram type.
 |---|---|---|
 | `.plantuml` | `"plantuml"` | PlantUML syntax (default) |
 | `.mermaid` | `"mermaid"` | Mermaid.js syntax |
-| `.nomnoml` | `"nomnoml"` | Nomnoml class-diagram syntax (rendered locally; primarily used by SwiftUML Studio's WebView) |
-| `.svg` | `"svg"` | Pre-laid-out SVG via the framework's native Dagre renderer (used by Studio's `Canvas` views; not emitted by the CLI as text) |
+| `.nomnoml` | `"nomnoml"` | Nomnoml syntax. Native for class diagrams and dependency graphs; other diagram types fall back to Mermaid, or to PlantUML for component diagrams. |
+| `.svg` | `"svg"` | A standalone SVG document laid out by the framework's native renderer, which also fills the script's layout property for Studio's `Canvas` views. Native for class, sequence, activity, dependency, and component diagrams; state and ER diagrams fall back to Mermaid text. |
 
-The CLI's `--format` flag accepts `plantuml` and `mermaid`. The `.nomnoml` and `.svg` cases are exposed in the Studio app's Format picker — Nomnoml is rendered locally inside the in-app WebView, and `.svg` produces a layout graph consumed by the native Canvas renderer rather than text written to stdout.
+The CLI's `--format` flag accepts all four values on every subcommand. [Formats by Subcommand](#formats-by-subcommand) lists what each subcommand produces for `nomnoml` and `svg`. In the Studio app the same cases appear in the Format picker: Nomnoml renders inside the in-app WebView, and SVG output feeds the native Canvas renderer.
 
-Set on `Configuration.format` programmatically, or use the `--format` CLI flag for the two text-emitting formats.
+Set on `Configuration.format` programmatically, with the `format` key in `.swiftumlbridge.yml`, or with the `--format` CLI flag.
 
 ---
 
@@ -1797,7 +1836,7 @@ Both `BrowserPresenter` and `ConsolePresenter` implement this protocol. `ClassDi
 public struct BrowserPresenter: DiagramPresenting
 ```
 
-Opens the diagram in the default macOS browser via `NSWorkspace`. Format-aware: routes PlantUML to planttext.com and Mermaid to mermaid.live. Works for both class and sequence diagrams.
+Opens the diagram via `NSWorkspace`. Format-aware: routes PlantUML to planttext.com, Mermaid to mermaid.live, and Nomnoml to nomnoml.com, and writes SVG to a temporary `diagram.svg` that it opens with the app registered for `.svg` files. Works for every diagram type.
 
 ```swift
 // Available render formats (PlantUML only; Mermaid always opens mermaid.live)
@@ -1818,6 +1857,8 @@ init(format: BrowserPresentationFormat = .default)
 | `.plantuml` | `.png` | `https://www.planttext.com/api/plantuml/png/<encoded>` |
 | `.plantuml` | `.svg` | `https://www.planttext.com/api/plantuml/svg/<encoded>` |
 | `.mermaid` | any | `https://mermaid.live/view#base64:<base64json>` |
+| `.nomnoml` | any | `https://nomnoml.com/#view/<percent-encoded>` |
+| `.svg` | any | `diagram.svg` in the temporary directory, where the script text is written first |
 
 ---
 

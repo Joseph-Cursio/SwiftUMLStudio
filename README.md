@@ -19,11 +19,13 @@ This repository contains two related products:
 | State machine | ✓ | ✓ | — | — |
 | Entity-Relationship (SwiftData / Core Data / GRDB / SQLite.swift) | ✓ | ✓ | — | — |
 | Component (SPM targets + provided interfaces) | ✓ | ✓* | — | ✓ |
-| Dependency graph (modules + types) | ✓ | ✓ | — | ✓ |
+| Dependency graph (modules + types) | ✓ | ✓ | ✓ | ✓ |
 
 A dash means the format has no dialect for that diagram type, so the emitter
 falls back — to Mermaid in every case except Component/Nomnoml, which falls back
-to PlantUML — and reports the format it actually produced.
+to PlantUML. The CLI accepts every format for every diagram type; see
+[Formats by Subcommand](docs/user/reference.md#formats-by-subcommand) for what
+each combination prints and where browser output sends it.
 
 \* Mermaid has no component dialect; Component diagrams emit a `flowchart TD`
 with `subgraph` clusters.
@@ -94,7 +96,7 @@ Parsing Layer          Model Layer            Emitter Layer
 SourceKitten     →     Types, graphs,    →    PlantUML
 SwiftSyntax            call edges,            Mermaid.js
                        control flow,          Nomnoml
-                       import edges,          Native SVG (Studio)
+                       import edges,          Native SVG
                        ER models
 ```
 
@@ -133,6 +135,7 @@ See [Building](#building) below — the same steps used during development.
 ```bash
 swiftumlbridge classdiagram Sources/ --format plantuml
 swiftumlbridge classdiagram Sources/ --format mermaid --output consoleOnly > diagram.mmd
+swiftumlbridge classdiagram Sources/ --format svg --output consoleOnly > diagram.svg
 swiftumlbridge classdiagram --package /path/to/MyPackage   # SPM module-aware
 ```
 
@@ -191,7 +194,8 @@ swiftumlbridge component --package . --include-test-targets     # opt in to test
 ### Common flags
 
 ```
---format plantuml|mermaid           Output format (default: plantuml)
+--format plantuml|mermaid|nomnoml|svg
+                                    Output format (default: plantuml)
 --output browser|browserImageOnly|consoleOnly
                                     Destination (default: browser).
                                     consoleOnly prints to stdout — pipe to a file.
@@ -201,10 +205,13 @@ swiftumlbridge component --package . --include-test-targets     # opt in to test
                                     (classdiagram + component subcommands)
 ```
 
-> The `DiagramFormat` enum also has `nomnoml` and `svg` cases. Those are
-> exposed in the SwiftUML Studio app — Nomnoml renders inside the in-app
-> WebView, and `svg` produces a layout consumed by the native Canvas
-> renderer — but the CLI itself emits text only for `plantuml` and `mermaid`.
+> Every subcommand accepts all four formats. `svg` prints a standalone
+> `<svg>` document for class, sequence, activity, dependency, and component
+> diagrams; with the default `browser` output it is written to a temporary
+> `diagram.svg` and opened instead. `nomnoml` emits Nomnoml for class and
+> dependency diagrams. Elsewhere both fall back as the
+> [diagram types table](#diagram-types) shows — state and ER diagrams print
+> Mermaid even for `--format svg`.
 
 ## Configuration
 
