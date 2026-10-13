@@ -26,15 +26,11 @@ struct ClassDiagramPreparationTests {
         )
     }
 
-    private func ids(_ graph: LayoutGraph?) -> [String] { graph?.nodes.map(\.id) ?? [] }
+    private func ids(_ graph: LayoutGraph?) -> [String] { graph?.nodeIds ?? [] }
 
-    private func members(_ graph: LayoutGraph?) -> [[String]] {
-        graph?.nodes.map { $0.compartments.flatMap(\.items) } ?? []
-    }
+    private func members(_ graph: LayoutGraph?) -> [[String]] { graph?.memberLines ?? [] }
 
-    private func edges(_ graph: LayoutGraph?) -> [String] {
-        graph?.edges.map { "\($0.sourceId) -> \($0.targetId)" } ?? []
-    }
+    private func edges(_ graph: LayoutGraph?) -> [String] { graph?.edgeEnds ?? [] }
 
     // MARK: - The SVG Path Prepares Once
 

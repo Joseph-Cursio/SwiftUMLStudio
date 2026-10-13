@@ -48,18 +48,7 @@ public struct DiagramScript: @unchecked Sendable {
     }
 
     private func buildDefinitions(from items: [SyntaxStructure]) -> String {
-        var adjustedItems = items
-
-        if context.elements.showNestedTypes {
-            adjustedItems = adjustedItems.populateNestedTypes()
-        }
-
-        adjustedItems = adjustedItems.orderedByProtocolsFirstExtensionsLast()
-
-        if context.configuration.shallExtensionsBeMerged {
-            let indicator = context.elements.mergedExtensionMemberIndicator
-            adjustedItems = adjustedItems.mergeExtensions(mergedMemberIndicator: indicator)
-        }
+        let adjustedItems = items.preparedForClassDiagram(with: context.configuration)
 
         // Exactly what the loop below will draw; the context adds the names their edges use.
         context.reserveIdentifiers(drawing: adjustedItems.filter { $0.isDrawn(in: context.configuration) })

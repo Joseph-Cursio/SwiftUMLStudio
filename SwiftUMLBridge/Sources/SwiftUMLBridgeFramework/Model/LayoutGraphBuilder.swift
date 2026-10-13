@@ -11,7 +11,7 @@ struct LayoutGraphBuilder {
         from items: [SyntaxStructure],
         configuration: Configuration
     ) -> LayoutGraph {
-        let drawn = prepareItems(items, configuration: configuration).compactMap { item -> DrawnItem? in
+        let drawn = items.preparedForClassDiagram(with: configuration).compactMap { item -> DrawnItem? in
             guard let kind = item.kind, ElementKind.processable.contains(kind) else { return nil }
             guard let name = item.fullName ?? item.name else { return nil }
             return DrawnItem(item: item, kind: kind, name: name)
@@ -150,20 +150,6 @@ struct LayoutGraphBuilder {
             taken.insert(nodeId)
             return nodeId
         }
-    }
-
-    private static func prepareItems(_ items: [SyntaxStructure], configuration: Configuration) -> [SyntaxStructure] {
-        var adjusted = items
-        if configuration.elements.showNestedTypes {
-            adjusted = adjusted.populateNestedTypes()
-        }
-        adjusted = adjusted.orderedByProtocolsFirstExtensionsLast()
-        if configuration.shallExtensionsBeMerged {
-            adjusted = adjusted.mergeExtensions(
-                mergedMemberIndicator: configuration.elements.mergedExtensionMemberIndicator
-            )
-        }
-        return adjusted
     }
 
     private static func buildNode(

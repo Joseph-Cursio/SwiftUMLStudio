@@ -5,6 +5,8 @@ import Foundation
 /// - Concurrency safety: This mutable reference type is marked `@unchecked Sendable` because it is
 ///   constructed synchronously on a single thread (inside a `Task.detached` closure) and then handed
 ///   back to the `@MainActor` for read-only consumption. No concurrent mutation occurs.
+///   Class-diagram preparation, which does edit structures, works on a private copy
+///   (`preparedForClassDiagram(with:)`), so parsed structures stay read-only after construction.
 ///   **If parallel file processing is ever added (e.g., via a task group), this type must be
 ///   restructured as a value type or actor-isolated type to avoid data races.**
 internal class SyntaxStructure: NSObject, Codable, @unchecked Sendable {
