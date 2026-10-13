@@ -6,6 +6,7 @@ final class AppFlowTests: XCTestCase {
     func testMainUIElements() throws {
         let app = XCUIApplication()
         app.launchArguments += ["-appMode", "Developer"]
+        app.launchArguments += UITestLaunchArguments.plantUMLConsentUndecided
         app.launch()
 
         // Sidebar tabs
@@ -34,6 +35,7 @@ final class AppFlowTests: XCTestCase {
     func testSidebarHistory() throws {
         let app = XCUIApplication()
         app.launchArguments += ["-appMode", "Developer"]
+        app.launchArguments += UITestLaunchArguments.plantUMLConsentUndecided
         app.launch()
 
         let historyTab = app.radioButtons["History"]

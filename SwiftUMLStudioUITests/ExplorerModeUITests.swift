@@ -8,6 +8,7 @@ final class ExplorerModeUITests: XCTestCase {
         continueAfterFailure = false
         app = XCUIApplication()
         app.launchArguments += ["-appMode", "Explorer"]
+        app.launchArguments += UITestLaunchArguments.plantUMLConsentUndecided
         app.launch()
     }
 

@@ -95,6 +95,8 @@ struct PlantUMLConsentCard: View {
                     .accessibilityIdentifier("plantUMLConsentUseMermaidButton")
             }
         }
+        // Without `.contain` the card's identifier replaces its buttons' own.
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("plantUMLConsentCard")
     }
 }
