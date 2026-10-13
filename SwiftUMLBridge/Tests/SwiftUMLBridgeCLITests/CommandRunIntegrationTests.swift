@@ -280,4 +280,21 @@ struct CommandRunIntegrationTests {
 
         await #expect(throws: (any Error).self) { try await command.run() }
     }
+
+    /// An empty selection used to reach a generator that reads an empty path
+    /// list as "the current directory" and diagrammed every Swift file there.
+    /// `ClassDiagramFileSelectionTests` checks the output from a real cwd; this
+    /// in-process run is the one coverage can see.
+    @Test("classdiagram reports a directory with no Swift files rather than diagramming the cwd")
+    func classDiagramRejectsEmptySelection() async throws {
+        let empty = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("swiftumlbridge-cli-empty-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: empty, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: empty) }
+        var command = try SwiftUMLBridgeCLI.ClassDiagramCommand.parse([
+            empty.path, "--output", "consoleOnly"
+        ])
+
+        await #expect(throws: CLIError.self) { try await command.run() }
+    }
 }

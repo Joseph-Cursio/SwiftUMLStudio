@@ -7,6 +7,7 @@ enum CLIError: Error, CustomStringConvertible {
     case stateCandidateNotFound(identifier: String)
     case erModelNotFound
     case componentModelNotFound
+    case noSwiftFiles
 
     var description: String {
         switch self {
@@ -19,6 +20,9 @@ enum CLIError: Error, CustomStringConvertible {
         case .componentModelNotFound:
             return "No components were extracted from the SPM package. "
                 + "Make sure `swift package describe` succeeds in the package directory."
+        case .noSwiftFiles:
+            return "No Swift files were found in the given paths, "
+                + "or the files.include / files.exclude (--exclude) filters left none."
         }
     }
 }
