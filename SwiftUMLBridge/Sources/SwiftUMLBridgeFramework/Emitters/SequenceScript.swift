@@ -21,20 +21,23 @@ public struct SequenceScript: Sendable {
         configuration: Configuration,
         typeLocations: [String: SourceLocation] = [:]
     ) {
-        self.format = configuration.format
         switch configuration.format {
         case .plantuml:
+            self.format = .plantuml
             self.text = SequenceScript.buildPlantUMLText(
                 traversedEdges: traversedEdges, entryType: entryType, entryMethod: entryMethod
             )
             self.sequenceLayout = nil
         case .mermaid, .nomnoml:
             // nomnoml does not support sequence diagrams; fall back to Mermaid
+            // and report `.mermaid` so presenters hand the text to a Mermaid renderer
+            self.format = .mermaid
             self.text = SequenceScript.buildMermaidText(
                 traversedEdges: traversedEdges, entryType: entryType, entryMethod: entryMethod
             )
             self.sequenceLayout = nil
         case .svg:
+            self.format = .svg
             let layout = SequenceSVGRenderer.computeLayout(
                 traversedEdges: traversedEdges,
                 entryType: entryType,

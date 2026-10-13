@@ -99,10 +99,10 @@ struct StateMermaidTests {
         #expect(script.text.contains("idle --> retrying : tick() [retryCount > 0]"))
     }
 
-    @Test("nomnoml format falls back to Mermaid text, reports nomnoml")
+    @Test("nomnoml format falls back to Mermaid text, reports mermaid")
     func nomnomlFallsBackToMermaidText() {
         let script = makeScript(model: makeModel(), format: .nomnoml)
-        #expect(script.format == .nomnoml)
+        #expect(script.format == .mermaid)
         #expect(script.text.hasPrefix("stateDiagram-v2"))
     }
 
