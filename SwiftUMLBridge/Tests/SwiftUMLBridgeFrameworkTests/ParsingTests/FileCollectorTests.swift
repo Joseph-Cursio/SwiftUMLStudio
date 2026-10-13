@@ -119,6 +119,21 @@ struct FileCollectorTests {
         #expect(filteredFiles.allSatisfy { !$0.lastPathComponent.hasPrefix("Mock") })
     }
 
+    @Test("getFiles honors include entries written with . and .. components")
+    func getFilesWithDotComponents() {
+        func included(_ entry: String) -> Set<String> {
+            var opts = FileOptions()
+            opts.include = [entry]
+            let files = collector.getFiles(for: ["."], in: projectMockURL.path, honoring: opts)
+            return Set(files.map(\.lastPathComponent))
+        }
+        let mocks = included("**/Mock*.swift")
+        #expect(mocks.isEmpty == false)
+        #expect(included("./**/Mock*.swift") == mocks)
+        #expect(included("Level 1/../**/Mock*.swift") == mocks)
+        #expect(included("./Mock0File.swift") == ["Mock0File.swift"])
+    }
+
     @Test("getFiles excludes hidden files")
     func getFilesExcludesHiddenFiles() {
         let files = collector.getFiles(for: projectMockURL)

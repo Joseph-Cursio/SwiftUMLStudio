@@ -258,6 +258,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   already did for a directory with a symlinked parent. Globs anchored at
   such a directory resolve it too, which is why they use `realpath(3)`:
   `canonicalPathKey` leaves a final symlink unresolved.
+- **An include or exclude entry whose directories run through a symlink,
+  or hold `.` or `..`, matches** (#59). The two fixes above resolve the
+  search directory, but an absolute or `~` entry never uses it, so
+  `classdiagram --exclude '/tmp/proj/Generated/*.swift'` built a regex
+  anchored at `/tmp/…` that no enumerated `/private/tmp/…` file could
+  match, and a relative entry could still run through a symlink below the
+  search directory. Enumeration never reports a `.` or `..` component
+  either, so `./Sources/**/*.swift` and `Other/../Sources` matched
+  nothing, wherever the directory was. Each entry's directories, up to
+  its first glob syntax, now go through `realpath(3)` as the search
+  directory does; from there on the entry is still taken as written. An
+  entry with no glob syntax had been rescued by a substring match only
+  where the symlink just adds a prefix, as `/tmp` → `/private/tmp` does.
+  It now names a directory by its real path and a file by its resolved
+  parent and its own name. Entries are matched by where the files are,
+  so one naming a symlinked directory acts on the directory it leads to,
+  and on a case-insensitive volume those leading directories match in
+  any case.
 - **A CRLF line break after an `@Relationship` inverse no longer draws
   the relationship twice.** `ERModelExtractor` read the property name in
   `inverse: \Book.author` up to the first `,`, `)`, space, tab or `"\n"`.

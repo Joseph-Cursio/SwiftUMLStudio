@@ -71,11 +71,14 @@ internal func expandPath(_ path: String, in directory: String) -> URL {
 /// `/private/tmp/x/…`. `standardizingPath` and `resolvingSymlinksInPath()`
 /// strip `/private` again, and `canonicalPathKey` leaves a final symlink
 /// unresolved — a search directory can be one — so none of them will do.
+/// The result is spelled as `URL.path` spells it, as every path matched against
+/// a glob is: `realpath` returns names as stored, and one made by `mkdir` in a
+/// shell or by a git checkout is stored composed, which `URL` decomposes.
 /// A path that does not exist is returned unchanged.
 internal func canonicalPath(_ path: String) -> String {
     guard let resolved = realpath(path, nil) else { return path }
     defer { free(resolved) }
-    return String(cString: resolved)
+    return URL(fileURLWithPath: String(cString: resolved)).path
 }
 
 /// `url`'s path in the form directory enumeration reports it: the parent goes
@@ -86,14 +89,44 @@ internal func enumeratedPath(of url: URL) -> String {
     return URL(fileURLWithPath: parent).appendingPathComponent(url.lastPathComponent).path
 }
 
+/// `path`, an include or exclude entry taken as written, with no glob expansion,
+/// and expanded to an absolute path, in the form directory enumeration reports
+/// what it names. A directory goes through `canonicalPath`, as a walk started
+/// there reports its files; anything else goes through `enumeratedPath(of:)`,
+/// keeping its name.
+internal func enumeratedPath(ofEntry path: String) -> String {
+    var isDirectory: ObjCBool = false
+    if FileManager.default.fileExists(atPath: path, isDirectory: &isDirectory), isDirectory.boolValue {
+        return canonicalPath(path)
+    }
+    return enumeratedPath(of: URL(fileURLWithPath: path))
+}
+
+/// `path`, an include or exclude entry expanded to an absolute path, with the
+/// components before its first glob syntax in the form directory enumeration
+/// reports them. Those name a directory, so they go through `canonicalPath`;
+/// the rest is kept as written. Resolving the search directory is not enough:
+/// an absolute or `~` entry never uses it, and a relative entry can run through
+/// a symlink below it. A `{…}` group is glob syntax too, though by now it is a
+/// `<<<n>>>` token. An entry with no glob syntax goes to `enumeratedPath(ofEntry:)`.
+internal func enumeratedPath(ofPattern path: String) -> String {
+    let components = path.components(separatedBy: "/")
+    let patternStart = components.firstIndex { pathContainsGlobSyntax($0) || $0.contains("<<<") }
+    guard let patternStart else { return enumeratedPath(ofEntry: path) }
+    let leading = components[..<patternStart].joined(separator: "/")
+    let anchor = canonicalPath(leading.isEmpty ? "/" : leading)
+    let pattern = components[patternStart...].joined(separator: "/")
+    return anchor.hasSuffix("/") ? anchor + pattern : anchor + "/" + pattern
+}
+
 /// Expand one or more comma-delimited file paths using glob syntax
 internal func expandGlobs(_ paths: String, in directory: String) -> [Glob] {
-    // Anchor the globs where enumeration will report the files. Anchored at a
-    // spelling through a symlink, such as `/tmp/x`, they matched nothing.
-    let directory = canonicalPath(directory)
+    // Each entry is anchored where enumeration will report its files, by
+    // `enumeratedPath(ofEntry:)` or `enumeratedPath(ofPattern:)`, which resolve
+    // the search directory along with the rest of the entry's directories.
     guard pathContainsGlobSyntax(paths) else {
         return parseCommaDelimitedList(paths).map {
-            .path(expandPath($0, in: directory).path)
+            .path(enumeratedPath(ofEntry: expandPath($0, in: directory).path))
         }
     }
     var paths = paths
@@ -107,10 +140,11 @@ internal func expandGlobs(_ paths: String, in directory: String) -> [Glob] {
         paths.replaceSubrange(range, with: token)
     }
     return parseCommaDelimitedList(paths).map { path -> Glob in
-        let path = expandPath(path, in: directory).path
+        var path = expandPath(path, in: directory).path
         if FileManager.default.fileExists(atPath: path) {
-            return .path(path)
+            return .path(enumeratedPath(ofEntry: path))
         }
+        path = enumeratedPath(ofPattern: path)
         var regex = path.globPatternToRegex()
         for (token, replacement) in tokens {
             regex = regex.replacingOccurrences(of: token, with: replacement)
