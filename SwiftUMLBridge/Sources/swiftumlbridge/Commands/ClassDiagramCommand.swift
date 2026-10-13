@@ -90,6 +90,10 @@ extension SwiftUMLBridgeCLI {
 
             let directory = FileManager.default.currentDirectoryPath
             let files = FileCollector().getFiles(for: paths, in: directory, honoring: bridgeConfig.files)
+            // The generator collects these paths again, and an empty list
+            // means "the current directory" there — handing it one would
+            // diagram every Swift file the paths and filters just ruled out.
+            guard !files.isEmpty else { throw CLIError.noSwiftFiles }
             await generator.generate(
                 for: files.map(\.path), with: bridgeConfig,
                 presentedBy: presenter, sdkPath: sdk

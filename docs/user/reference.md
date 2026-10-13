@@ -166,6 +166,8 @@ swiftumlbridge classdiagram [<paths>...] [options]
 
 **Extension flags are mutually exclusive.** If more than one is passed, the last one wins.
 
+If the paths and the `files.include` / `files.exclude` / `--exclude` filters leave no Swift files, the command fails with an error.
+
 **Examples:**
 
 ```bash

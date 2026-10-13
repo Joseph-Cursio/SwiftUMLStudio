@@ -297,6 +297,8 @@ Multiple `--exclude` values are supported:
 swiftumlbridge classdiagram Sources/ --exclude Sources/Generated/ --exclude Sources/Stubs/
 ```
 
+If the paths, `files.include`, and the exclusions leave no Swift files at all, `classdiagram` exits with an error. See [Troubleshooting](troubleshooting.md#classdiagram-exits-with-no-swift-files-were-found).
+
 ### Choosing a Diagram Format
 
 The `--format` flag selects the diagram language. It overrides the `format` key in the config file.

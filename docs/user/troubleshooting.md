@@ -137,6 +137,16 @@ The ER extractor recognizes four stacks (see [User Guide → Generating ER Diagr
 
 If you have a mixed project, point `er` at every relevant root in one invocation — the entities and relationships are merged into a single diagram.
 
+### `classdiagram` exits with "No Swift files were found"
+
+The paths you passed, filtered by the config's `files.include` / `files.exclude` and any `--exclude` flags, left nothing to parse. Check, in order:
+
+- **`files.include` matches nothing.** The patterns are globs relative to the **current working directory**, not the config file's directory or a positional path, and once any are set the positional paths are ignored (see [Positional paths are ignored](#positional-paths-are-ignored)). Run from the directory the patterns were written for.
+- **An exclusion covers everything.** `--exclude` replaces the config's `files.exclude` rather than adding to it, and either one removes a file even when `files.include` selects it.
+- **The path holds no Swift files.** Only `.swift` sources are collected; hidden directories and package bundles are skipped.
+
+Before this was an error, the same run printed a diagram of every Swift file under the working directory — the files the filters had just ruled out.
+
 ---
 
 ## Diagram Quality
