@@ -112,13 +112,25 @@ struct ClassDiagramPreparationRepeatTests {
         #expect(extensionMembers.allSatisfy { $0.memberSuffix == nil && $0.parent == nil })
     }
 
-    @Test("the prepared items are copies, never the caller's")
+    /// Every structure reachable from `roots` through `substructure`, by identity.
+    private func identities(under roots: [SyntaxStructure]) -> Set<ObjectIdentifier> {
+        var seen: Set<ObjectIdentifier> = []
+        var pending = roots
+        while let next = pending.popLast() {
+            guard seen.insert(ObjectIdentifier(next)).inserted else { continue }
+            pending.append(contentsOf: next.substructure ?? [])
+        }
+        return seen
+    }
+
+    @Test("the prepared items and their members are copies, never the caller's")
     func preparedItemsAreCopies() {
         let parsed = items("struct Foo { struct Inner {} }\nextension Foo { func bar() {} }")
         let prepared = parsed.preparedForClassDiagram(with: Configuration(elements: Self.merged))
         #expect(prepared.map(\.fullName) == ["Foo", "Foo.Inner"])
-        let allCopies = prepared.allSatisfy { copy in !parsed.contains { $0 === copy } }
-        #expect(allCopies)
+        // Nested types and members too, not only the top-level items the caller holds.
+        let shared = identities(under: parsed).intersection(identities(under: prepared))
+        #expect(shared.isEmpty)
     }
 
     // MARK: - Parent Identity After Copying
@@ -134,7 +146,10 @@ struct ClassDiagramPreparationRepeatTests {
         }
     }
 
-    @Test("same-named types in two files keep their own members, modules and nested types")
+    /// Pins one build's output and checks a second build repeats it. The merged `bar()` lands on
+    /// the first `Foo`, not the one in the extension's file, because `mergeExtensions` matches by
+    /// name; that predates #73 and is recorded here as it is, not endorsed.
+    @Test("same-named types in two files give the same graph when built twice")
     func sameNamedTypesInTwoFiles() {
         let count = SyntaxStructure(kind: .varInstance, name: "count", typename: "Int")
         let other = SyntaxStructure(kind: .varInstance, name: "other", typename: "Int")
