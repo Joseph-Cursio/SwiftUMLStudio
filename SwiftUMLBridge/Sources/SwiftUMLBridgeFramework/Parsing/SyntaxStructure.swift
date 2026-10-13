@@ -32,6 +32,9 @@ internal class SyntaxStructure: NSObject, Codable, @unchecked Sendable {
         self.typename = typename
     }
 
+    // A new stored property must also be copied in `init(copying:)` and listed in
+    // `SyntaxStructureCloneTests.storedProperties`.
+
     /// access level
     internal let accessibility: ElementAccessibility?
     internal let attribute: String?
@@ -76,6 +79,54 @@ internal class SyntaxStructure: NSObject, Codable, @unchecked Sendable {
         case runtimename = "key.runtime_name"
         case substructure = "key.substructure"
         case typename = "key.typename"
+    }
+
+    /// A copy of `original` that shares every field preparation never writes, and has no
+    /// `substructure` or `parent` yet: `clonedForest(of:)` fills those in. It is a designated init
+    /// on purpose, so a new `let` fails to compile until it is copied here; a new `var` is caught
+    /// by `SyntaxStructureCloneTests.storedPropertiesArePinned` instead.
+    private init(copying original: SyntaxStructure) {
+        accessibility = original.accessibility
+        attribute = original.attribute
+        attributes = original.attributes
+        elements = original.elements
+        inheritedTypes = original.inheritedTypes
+        kind = original.kind
+        name = original.name
+        runtimename = original.runtimename
+        typename = original.typename
+        memberSuffix = original.memberSuffix
+        sourceLocation = original.sourceLocation
+        module = original.module
+        super.init()
+    }
+
+    /// A private copy of every structure reachable from `roots` through `substructure`, members
+    /// included, for class-diagram preparation to edit without touching the parsed structures (#73).
+    ///
+    /// - A structure reached twice is copied once, so the copies alias exactly as the originals do.
+    /// - `parent` points at the parent's copy, or at the original parent when that lies outside the
+    ///   forest: preparation only reads such a parent, never writes it.
+    /// - `inheritedTypes`, `attributes` and `elements` are shared, since nothing writes them.
+    static func clonedForest(of roots: [SyntaxStructure]) -> [SyntaxStructure] {
+        var copies: [ObjectIdentifier: SyntaxStructure] = [:]
+        // Keeps every original alive until the parents are re-pointed, so no identifier is reused.
+        var pairs: [(original: SyntaxStructure, clone: SyntaxStructure)] = []
+
+        func clone(_ original: SyntaxStructure) -> SyntaxStructure {
+            if let existing = copies[ObjectIdentifier(original)] { return existing }
+            let duplicate = SyntaxStructure(copying: original)
+            copies[ObjectIdentifier(original)] = duplicate
+            pairs.append((original, duplicate))
+            duplicate.substructure = original.substructure?.map(clone)
+            return duplicate
+        }
+
+        let clonedRoots = roots.map(clone)
+        for pair in pairs {
+            pair.clone.parent = pair.original.parent.map { copies[ObjectIdentifier($0)] ?? $0 }
+        }
+        return clonedRoots
     }
 
     internal func find(_ type: ElementKind = .struct, named searchName: String) -> SyntaxStructure? {
