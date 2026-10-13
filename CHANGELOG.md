@@ -54,6 +54,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed — Bridge
 
+- **A PlantUML diagram reaches planttext.com whole** (#57). `DiagramText`
+  deflated the script with `compression_encode_buffer`, passing the
+  string's `Character` count as both the number of bytes to read and the
+  size of the output buffer. A diagram with more UTF-8 bytes than
+  `Character`s — any non-ASCII text, such as a `Café` type, a `naïve`
+  property, a CJK name or an emoji, and also a `\r\n` line break, which
+  is one `Character` — lost its last `utf8.count − count` bytes, so
+  `@enduml` and then the last declarations never reached the renderer. A
+  script that did not compress below its own length came out as `""` and
+  the URL had no payload: the smallest deps graph, `@startuml\n@enduml`,
+  and a one-edge graph both did. Every generated script's PlantUML URL
+  went through it — the CLI's `browser` and `browserImageOnly` output and
+  Studio's preview of a freshly generated diagram. `DiagramText` now uses
+  `NSData.compressed(using: .zlib)`, which reads every byte and sizes its
+  own output. It is the same encoder, so a script the old call encoded
+  whole — ASCII with no `\r\n`, compressing below its own length — still
+  gets the same payload. If compression ever fails, the payload falls
+  back to PlantUML's uncompressed `~h` hex form instead of an empty
+  string. The `encodeText()` tests only checked for a non-empty result on
+  long ASCII input; they now decode the payload and compare it with the
+  script.
 - **A module or type name with a backslash or line break is laid out by
   dagre again** (#81). `DagreLayoutEngine` pastes node ids, module names
   and cluster ids between `"` in the script it runs on JavaScriptCore,

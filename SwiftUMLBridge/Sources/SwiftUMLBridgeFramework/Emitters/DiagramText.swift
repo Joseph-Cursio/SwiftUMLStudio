@@ -1,31 +1,37 @@
-import Compression
 import Foundation
 
 struct DiagramText: RawRepresentable {
     var rawValue: String
 
+    /// The text in PlantUML's text encoding: its UTF-8 deflated, in PlantUML's base64 alphabet.
     var encodedValue: String {
-        let compressedData = deflate(rawValue)
-        let encodedText = base64plantuml(compressedData)
-        return encodedText
+        guard let compressedData = deflate(rawValue) else { return hexEncoded(rawValue) }
+        return base64plantuml(compressedData)
     }
 }
 
 private extension DiagramText {
-    func deflate(_ text: String) -> NSData {
-        let sourceString = text
-        let sourceBuffer = Array(sourceString.utf8)
-        let destinationBuffer = UnsafeMutablePointer<UInt8>.allocate(capacity: sourceString.count)
-        let algorithm = COMPRESSION_ZLIB
-        let compressedSize = compression_encode_buffer(destinationBuffer, sourceString.count,
-                                                       sourceBuffer, sourceString.count,
-                                                       nil,
-                                                       algorithm)
-        return NSData(bytesNoCopy: destinationBuffer, length: compressedSize)
+    /// Raw DEFLATE (RFC 1951) of every UTF-8 byte of `text`, or `nil` if the encoder fails.
+    ///
+    /// Foundation sizes the output itself. `compression_encode_buffer` was handed the
+    /// `Character` count as both the source length and the destination capacity, so non-ASCII
+    /// text lost its last `utf8.count - count` bytes, and text that did not compress below its
+    /// own length encoded to `""` (#57). The encoder is still `COMPRESSION_ZLIB`, so text the
+    /// old call read whole and fit still deflates to the same bytes.
+    func deflate(_ text: String) -> NSData? {
+        try? (Data(text.utf8) as NSData).compressed(using: .zlib)
     }
 }
 
 internal extension DiagramText {
+    /// PlantUML's uncompressed text encoding: `~h`, then each UTF-8 byte of `text` in hex.
+    ///
+    /// Far longer than the deflated form, so it is used only if the encoder fails — a URL
+    /// that renders the whole diagram rather than one with an empty payload.
+    func hexEncoded(_ text: String) -> String {
+        "~h" + text.utf8.map { String(format: "%02x", $0) }.joined()
+    }
+
     func base64plantuml(_ compressedData: NSData) -> String {
         let bytes = [UInt8](compressedData)
 

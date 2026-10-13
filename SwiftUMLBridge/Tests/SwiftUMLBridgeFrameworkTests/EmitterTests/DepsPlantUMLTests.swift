@@ -92,14 +92,14 @@ struct DepsPlantUMLTests {
 
     // MARK: - encodeText
 
-    @Test("encodeText returns a non-empty string for non-trivial diagrams")
-    func encodeTextNonEmpty() {
-        // Use enough edges to produce a diagram larger than the ZLIB destination buffer (source.count)
-        let edges = (1...10).flatMap { num in [
-            DependencyEdge(from: "TypeA\(num)", to: "TypeB\(num)", kind: .conforms),
-            DependencyEdge(from: "TypeB\(num)", to: "TypeC\(num)", kind: .inherits)
-        ]}
+    @Test("encodeText decodes back to exactly the script, however few edges", arguments: [0, 1, 20])
+    func encodeTextRoundTrips(edgeCount: Int) {
+        // With no edges the script is just "@startuml\n@enduml", and with one it is barely
+        // longer. Neither compresses below its own length, so both once encoded to "" (#57).
+        let edges = (0..<edgeCount).map { num in
+            DependencyEdge(from: "Dog\(num)", to: "Animal\(num)", kind: .inherits)
+        }
         let script = makeScript(edges: edges)
-        #expect(script.encodeText().isEmpty == false)
+        #expect(PlantUMLTextDecoding.decode(script.encodeText()) == script.text)
     }
 }

@@ -40,11 +40,10 @@ struct DiagramScriptTests {
         #expect(script.text.contains("ImageCache"))
     }
 
-    @Test("encodeText returns non-empty string")
-    func encodeTextNonEmpty() {
+    @Test("encodeText decodes back to exactly the script")
+    func encodeTextRoundTrips() {
         let script = DiagramScript(items: [], configuration: .default)
-        let encoded = script.encodeText()
-        #expect(encoded.isEmpty == false)
+        #expect(PlantUMLTextDecoding.decode(script.encodeText()) == script.text)
     }
 
     @Test("default styling includes hide empty members")
