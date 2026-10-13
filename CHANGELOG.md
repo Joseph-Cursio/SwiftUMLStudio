@@ -212,9 +212,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   also stores the script's own format, and reopening restores the picker
   to what the user chose and the script to the format of its text.
   Entries saved before the fix carry no script format and reopen as
-  before; regenerating one and saving it again records it. The Nomnoml
-  fallbacks of sequence, activity, state and ER are restored correctly
-  once the Bridge reports them as Mermaid (#85).
+  before; regenerating one and saving it again records it.
 
 ### Documentation
 
