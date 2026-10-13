@@ -189,12 +189,17 @@ struct ActivityGraphBuilder {
 
     // MARK: - Text helpers
 
+    /// Collapses each run of whitespace and line breaks in `text` into one space, then truncates
+    /// it past 80 characters.
+    ///
+    /// The split is on `.whitespacesAndNewlines`. It used to be on `.whitespaces` after replacing
+    /// `"\n"`, which left a form feed, vertical tab or CRLF inside a statement in its label (#80).
+    /// `.controlCharacters` is deliberately not added: it holds the format characters too, such
+    /// as the zero-width joiner inside an emoji sequence, which a split would break apart. A
+    /// control character a comment holds stays, and `xmlEscaped` draws it in SVG.
     static func compactText(_ text: String) -> String {
-        let stripped = text
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-            .replacingOccurrences(of: "\n", with: " ")
-        let collapsed = stripped
-            .components(separatedBy: .whitespaces)
+        let collapsed = text
+            .components(separatedBy: .whitespacesAndNewlines)
             .filter { !$0.isEmpty }
             .joined(separator: " ")
         if collapsed.count > 80 {

@@ -34,6 +34,33 @@ struct SVGRendererWellFormednessTests {
         #expect(svg.contains(">\(label.xmlEscaped)</text>"))
     }
 
+    /// XML forbids these characters outright, and the renderer used to copy them into the
+    /// document raw (#80).
+    @Test(
+        "a forbidden character in any text slot is replaced, leaving the document well-formed",
+        arguments: WellFormedXML.forbiddenCharacterLabels
+    )
+    func forbiddenCharacterInEveryTextSlotIsReplaced(label: String) {
+        var cluster = LayoutCluster(id: "Core", label: label)
+        cluster.posX = 150; cluster.posY = 120; cluster.width = 280; cluster.height = 200
+        var source = LayoutNode(
+            id: "source", label: label, stereotype: label, compartments: [NodeCompartment(items: [label])]
+        )
+        source.posX = 100; source.posY = 60; source.width = 160; source.height = 80
+        var target = LayoutNode(id: "target", label: "Target", stereotype: "struct")
+        target.posX = 100; target.posY = 200; target.width = 120; target.height = 50
+        var edge = LayoutEdge(sourceId: "source", targetId: "target", label: label, style: .dependency)
+        edge.points = [LayoutPoint(posX: 100, posY: 100), LayoutPoint(posX: 100, posY: 175)]
+        var graph = LayoutGraph(nodes: [source, target], edges: [edge])
+        graph.clusters = [cluster]
+        let svg = SVGRenderer.render(graph)
+
+        #expect(WellFormedXML.error(in: svg) == nil)
+        // Node label, compartment item, cluster label and edge label, then the stereotype.
+        #expect(svg.ranges(of: ">\(label.xmlEscaped)</text>").count == 4)
+        #expect(svg.contains("&#x00AB;\(label.xmlEscaped)&#x00BB;</text>"))
+    }
+
     @Test("a graph with clusters, nodes, compartments and labelled edges is well-formed")
     func fullGraphIsWellFormed() {
         var cluster = LayoutCluster(id: "Core", label: "Core")
