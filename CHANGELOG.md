@@ -78,6 +78,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed — Bridge
 
+- **`classdiagram` no longer diagrams the whole current directory when its
+  file selection comes out empty.** The command collected and filtered
+  its files, then passed the paths to `ClassDiagramGenerator.generate(for:)`,
+  which collected them again — and `FileCollector` reads an empty path
+  list as "the current directory". So a `files.include` that matched
+  nothing, a `files.exclude` or `--exclude` that matched everything, or a
+  path holding no Swift files produced a diagram of every Swift file under
+  the working directory, with exit status 0: the files the selection had
+  just ruled out. It now fails with `No Swift files were found in the
+  given paths, or the files.include / files.exclude (--exclude) filters
+  left none.` and a non-zero exit, as `er`, `state` and `component`
+  already do when they find nothing. Only `classdiagram` applies file
+  filters; the other subcommands, Studio and the framework API are
+  unchanged.
 - **A PlantUML diagram reaches planttext.com whole** (#57). `DiagramText`
   deflated the script with `compression_encode_buffer`, passing the
   string's `Character` count as both the number of bytes to read and the
