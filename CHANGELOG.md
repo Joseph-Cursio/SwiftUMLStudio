@@ -303,6 +303,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   and on a case-insensitive volume those leading directories match in
   any case. `matchGlobs` lists a directory that is itself a symlink
   through the link, rather than finding nothing there.
+- **Include and exclude globs match under a directory whose name holds
+  `[`, `*` or `?`.** A relative entry was read as a glob together with
+  the search directory it was appended to, so a project in a folder
+  named `Proj [old]` turned `[old]` into a character class that never
+  matched the folder: an include glob selected nothing and an exclude
+  glob dropped nothing, with no diagnostic. A `*` or `?` in a directory
+  name let a glob match sibling directories as well. Splitting each
+  entry at its first glob syntax, as the fix above does, split inside
+  such a directory. Only the entry is searched for glob syntax now, so
+  the search directory is always part of the resolved anchor, and the
+  anchor is matched literally; only the rest is read as a glob.
 - **A CRLF line break after an `@Relationship` inverse no longer draws
   the relationship twice.** `ERModelExtractor` read the property name in
   `inverse: \Book.author` up to the first `,`, `)`, space, tab or `"\n"`.

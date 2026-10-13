@@ -1156,7 +1156,7 @@ relationships:
       - "NS*"                       # wildcard match
 ```
 
-**`elements.exclude` patterns match against type names (not file paths).** `files.include` and `files.exclude` patterns match against file paths: a relative pattern is taken from the working directory, an absolute or `~` one as written. Symlinks, `.` and `..` in a pattern's directories, up to its first wildcard, are resolved before matching.
+**`elements.exclude` patterns match against type names (not file paths).** `files.include` and `files.exclude` patterns match against file paths: a relative pattern is taken from the working directory, whose own path is matched as written even when it contains `*`, `?` or `[`; an absolute or `~` one as written. Symlinks, `.` and `..` in a pattern's directories, up to its first wildcard, are resolved before matching.
 
 ---
 
