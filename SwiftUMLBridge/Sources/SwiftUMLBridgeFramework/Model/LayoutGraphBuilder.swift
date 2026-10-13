@@ -55,6 +55,9 @@ struct LayoutGraphBuilder {
         case named(String, from: Scope)
         /// A particular declaration, or its name as seen from its own scope when it is not drawn.
         case declaration(ObjectIdentifier, name: String, scope: Scope)
+        /// The type an extension extends, as seen from the extension's scope; the extension
+        /// itself when the diagram draws no such type.
+        case extended(ObjectIdentifier, name: String, scope: Scope)
     }
 
     /// A drawn declaration, as `EdgeEndIds` needs it to choose among same-named types.
@@ -78,21 +81,25 @@ struct LayoutGraphBuilder {
         func id(of end: EdgeEnd) -> String? {
             switch end {
             case .node(let nodeId): return nodeId
-            case .named(let name, let scope): return id(forName: name, from: scope)
+            case .named(let name, let scope):
+                return typeId(forName: name, from: scope) ?? declaredForName[name]?.first?.nodeId
             case .declaration(let declaration, let name, let scope):
-                return idForDeclaration[declaration] ?? id(forName: name, from: scope)
+                return idForDeclaration[declaration]
+                    ?? typeId(forName: name, from: scope) ?? declaredForName[name]?.first?.nodeId
+            case .extended(let declaration, let name, let scope):
+                return typeId(forName: name, from: scope)
+                    ?? idForDeclaration[declaration] ?? declaredForName[name]?.first?.nodeId
             }
         }
 
         /// The type a name means where it is written, close to how Swift looks it up: one
-        /// declared in the same file, then in the same module, then the first in the diagram.
-        /// An extension stands in only for a type the diagram does not declare. A name is never
-        /// matched against node ids: an undeclared `Foo_1` must not land on the node issued
-        /// `Foo_1` as the second declaration of `Foo`.
-        private func id(forName name: String, from scope: Scope) -> String? {
-            guard let declared = declaredForName[name] else { return nil }
-            let types = declared.filter { !$0.isExtension }
-            guard let first = types.first else { return declared.first?.nodeId }
+        /// declared in the same file, then in the same module, then the first in the diagram;
+        /// `nil` when the diagram draws no type of that name, only extensions or nothing. A name
+        /// is never matched against node ids: an undeclared `Foo_1` must not land on the node
+        /// issued `Foo_1` as the second declaration of `Foo`.
+        private func typeId(forName name: String, from scope: Scope) -> String? {
+            let types = (declaredForName[name] ?? []).filter { !$0.isExtension }
+            guard let first = types.first else { return nil }
             if let filePath = scope.filePath, let local = types.first(where: { $0.scope.filePath == filePath }) {
                 return local.nodeId
             }
@@ -190,9 +197,10 @@ struct LayoutGraphBuilder {
         if let parent = item.parent, let parentName = parent.fullName ?? parent.name {
             // A nested type hangs off the declaration that contains it, so the second of two
             // same-named types keeps its own children; one nested in an extension hangs off the
-            // type the extension extends, as seen from the extension's file.
+            // type the extension extends, as seen from the extension's file — or off the
+            // extension itself when the diagram draws no such type.
             let parentEnd: EdgeEnd = parent.kind == .extension
-                ? .named(parentName, from: Scope(of: parent))
+                ? .extended(ObjectIdentifier(parent), name: parentName, scope: Scope(of: parent))
                 : .declaration(ObjectIdentifier(parent), name: parentName, scope: Scope(of: parent))
             edges.append(PendingEdge(source: parentEnd, target: .node(nodeId), style: .composition))
         }

@@ -113,7 +113,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   share the name, it picks the one in the referring declaration's file,
   then its module, then the first. A nested type hangs off the
   declaration that contains it, or, inside an extension, off the extended
-  type as seen from the extension's file. An end the diagram does not
+  type as seen from the extension's file — or off that extension itself
+  when the diagram draws no such type. An end the diagram does not
   declare drops the edge. A nested type whose parent sorts after it,
   such as one inside an extension of an undeclared type, now gets the
   composition edge it used to be missing.

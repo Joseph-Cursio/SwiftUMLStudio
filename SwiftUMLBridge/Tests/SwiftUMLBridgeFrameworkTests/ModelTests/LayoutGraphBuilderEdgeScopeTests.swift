@@ -81,6 +81,56 @@ struct LayoutGraphBuilderEdgeScopeTests {
         #expect(edges(for: items) == ["Sub -> Base"])
     }
 
+    @Test("a same-file type beats an earlier type in the same module")
+    func sameFileBeatsEarlierSameModuleType() {
+        let items = [
+            declared(.class, "Base", in: "Core/A.swift", module: "Core"),
+            declared(.class, "Base", in: "Core/B.swift", module: "Core"),
+            declared(.class, "Sub", in: "Core/B.swift", module: "Core", inheriting: ["Base"])
+        ]
+        #expect(edges(for: items) == ["Sub -> Base_1"])
+    }
+
+    @Test("within the same module, the first type is used")
+    func firstOfTwoSameModuleTypes() {
+        let items = [
+            declared(.struct, "Name", in: "Tool/Name.swift", module: "Tool"),
+            declared(.struct, "Name", in: "Core/A.swift", module: "Core"),
+            declared(.struct, "Name", in: "Core/B.swift", module: "Core"),
+            declared(.struct, "User", in: "Core/User.swift", module: "Core", inheriting: ["Name"])
+        ]
+        #expect(edges(for: items) == ["User -> Name_1"])
+    }
+
+    @Test("within the same file, the first type is used")
+    func firstOfTwoSameFileTypes() {
+        let source = "#if DEBUG\nclass Base {}\n#else\nclass Base {}\n#endif\nclass Sub: Base {}"
+        let graph = LayoutGraphBuilder.buildClassDiagram(
+            from: SyntaxStructure.create(from: source)?.substructure ?? [], configuration: .default
+        )
+        #expect(graph.edges.map { "\($0.sourceId) -> \($0.targetId)" } == ["Sub -> Base"])
+    }
+
+    @Test("two files with the same name in different folders are different files")
+    func sameBasenameIsNotSameFile() {
+        let items = [
+            declared(.class, "Base", in: "App/Base.swift"),
+            declared(.class, "Base", in: "Tests/Base.swift"),
+            declared(.class, "Sub", in: "Tests/Base.swift", inheriting: ["Base"])
+        ]
+        #expect(edges(for: items) == ["Sub -> Base_1"])
+    }
+
+    @Test("a supertype the diagram declares only as extensions resolves to the first one")
+    func extensionOnlySupertypeUsesFirstExtension() {
+        let items = [
+            declared(.extension, "Bar", in: "X.swift"),
+            declared(.extension, "Bar", in: "Y.swift"),
+            declared(.struct, "Foo", in: "Y.swift", inheriting: ["Bar"])
+        ]
+        #expect(edges(for: items) == ["Foo -> Bar"])
+    }
+
     // MARK: - A nested type's own parent
 
     @Test("every type kind keeps its own nested types", arguments: ["class", "enum", "actor", "struct"])
@@ -137,5 +187,14 @@ struct LayoutGraphBuilderEdgeScopeTests {
             declared(.extension, "String", in: "A.swift", nesting: [SyntaxStructure(kind: .struct, name: "Inner")])
         ]
         #expect(edges(for: items) == ["String -> String.Inner"])
+    }
+
+    @Test("with no such type drawn, a type nested in an extension hangs off that very extension")
+    func undeclaredTypeNestsInItsOwnExtension() {
+        let items = [
+            declared(.extension, "String", in: "A.swift", nesting: [SyntaxStructure(kind: .struct, name: "A")]),
+            declared(.extension, "String", in: "B.swift", nesting: [SyntaxStructure(kind: .struct, name: "B")])
+        ]
+        #expect(edges(for: items) == ["String -> String.A", "String_1 -> String.B"])
     }
 }
