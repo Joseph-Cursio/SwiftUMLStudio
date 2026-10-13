@@ -162,10 +162,12 @@ final class ERModelExtractor: SyntaxVisitor {
         let afterBackslash = afterInverse[afterInverse.index(after: backslash)...]
         guard let dot = afterBackslash.firstIndex(of: ".") else { return nil }
         let propertyStart = afterBackslash.index(after: dot)
-        let remainder = afterBackslash[propertyStart...]
-        let terminators: Set<Character> = [",", ")", " ", "\n", "\t"]
-        let endIndex = remainder.firstIndex(where: { terminators.contains($0) }) ?? remainder.endIndex
-        let name = String(remainder[..<endIndex])
+        // Take the identifier rather than scanning for terminators: `"\r\n"`
+        // is one `Character` that is not `"\n"`, so a terminator set misses
+        // CRLF line breaks. Backticks stay, matching the declared label.
+        let name = String(afterBackslash[propertyStart...].prefix {
+            $0.isLetter || $0.isNumber || $0 == "_" || $0 == "`"
+        })
         return name.isEmpty ? nil : name
     }
 
