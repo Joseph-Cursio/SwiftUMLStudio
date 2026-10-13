@@ -7,12 +7,37 @@ internal extension String {
 }
 
 internal extension String {
-    /// Escapes the XML special characters so the value is safe to embed in an SVG/XML text node.
+    /// Escapes the XML special characters, and replaces the characters XML forbids, so the value
+    /// is safe to embed in an SVG/XML text node.
+    ///
+    /// **Forbidden characters are replaced, not escaped.** XML 1.0's `Char` production admits
+    /// TAB, LF and CR but no other C0 control, and neither U+FFFE nor U+FFFF, and a character
+    /// reference to one (`&#x1;`) is rejected as well. So a C0 control becomes its Control
+    /// Pictures glyph (U+0007 → `␇`), which keeps the label showing what was there, and U+FFFE
+    /// and U+FFFF become U+FFFD. These used to pass through untouched, and a directory name
+    /// holding an ESC, or a control character in a comment inside an `if` condition, made the
+    /// whole SVG document malformed.
+    ///
+    /// **The walk is over Unicode scalars, not `Character`s.** The old chain of
+    /// `replacingOccurrences` calls matched whole grapheme clusters, so a `<` or `&` followed by a
+    /// combining mark (`<\u{301}`) did not match `"<"` and went out raw, which also broke the
+    /// document.
     var xmlEscaped: String {
-        replacingOccurrences(of: "&", with: "&amp;")
-            .replacingOccurrences(of: "<", with: "&lt;")
-            .replacingOccurrences(of: ">", with: "&gt;")
-            .replacingOccurrences(of: "\"", with: "&quot;")
+        var escaped = ""
+        escaped.reserveCapacity(utf8.count)
+        for scalar in unicodeScalars {
+            switch scalar {
+            case "&": escaped += "&amp;"
+            case "<": escaped += "&lt;"
+            case ">": escaped += "&gt;"
+            case "\"": escaped += "&quot;"
+            case "\t", "\n", "\r": escaped.unicodeScalars.append(scalar)
+            case "\u{00}"..."\u{1F}": escaped.unicodeScalars.append(Unicode.Scalar(0x2400 + scalar.value) ?? "\u{FFFD}")
+            case "\u{FFFE}", "\u{FFFF}": escaped.unicodeScalars.append("\u{FFFD}")
+            default: escaped.unicodeScalars.append(scalar)
+            }
+        }
+        return escaped
     }
 
     /// Replaces characters that conflict with nomnoml node syntax (`[`, `]`, `|`, `;`).

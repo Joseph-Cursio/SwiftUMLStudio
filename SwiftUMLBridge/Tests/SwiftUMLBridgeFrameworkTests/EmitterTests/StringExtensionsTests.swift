@@ -149,6 +149,63 @@ struct StringExtensionsTests {
         #expect("MyClass".isMatching(searchPattern: "My") == false)
     }
 
+    // MARK: - xmlEscaped
+
+    @Test("xmlEscaped escapes the four markup characters")
+    func xmlEscapedEscapesMarkup() {
+        #expect("a & b <c> \"d\"".xmlEscaped == "a &amp; b &lt;c&gt; &quot;d&quot;")
+    }
+
+    /// XML 1.0 forbids every C0 control but TAB, LF and CR, and rejects a character reference to
+    /// one too, so each is replaced by its Control Pictures glyph rather than escaped (#80).
+    @Test(
+        "xmlEscaped replaces a forbidden C0 control with its control picture",
+        arguments: (UInt32(0x00)...0x1F).filter { ![0x09, 0x0A, 0x0D].contains($0) }
+    )
+    func xmlEscapedReplacesForbiddenControl(value: UInt32) throws {
+        let control = try #require(Unicode.Scalar(value))
+        let picture = try #require(Unicode.Scalar(0x2400 + value))
+        let escaped = "a\(Character(control))b".xmlEscaped
+        #expect(Array(escaped.unicodeScalars) == ["a", picture, "b"])
+    }
+
+    @Test("xmlEscaped keeps tab, line feed and carriage return, which XML allows")
+    func xmlEscapedKeepsLegalWhitespace() {
+        #expect(Array("a\tb\nc\rd".xmlEscaped.unicodeScalars) == Array("a\tb\nc\rd".unicodeScalars))
+    }
+
+    @Test("xmlEscaped replaces U+FFFE and U+FFFF, which XML forbids, with U+FFFD")
+    func xmlEscapedReplacesForbiddenNoncharacters() {
+        #expect(Array("a\u{FFFE}b\u{FFFF}c".xmlEscaped.unicodeScalars) == ["a", "\u{FFFD}", "b", "\u{FFFD}", "c"])
+    }
+
+    @Test("xmlEscaped leaves the legal characters at the edges of the forbidden ranges alone", arguments: [
+        "\u{20}", "\u{7F}", "\u{85}", "\u{D7FF}", "\u{E000}", "\u{FFFD}", "\u{10000}", "\u{10FFFF}", "👨‍👩‍👧"
+    ])
+    func xmlEscapedKeepsLegalCharacters(text: String) {
+        #expect(Array(text.xmlEscaped.unicodeScalars) == Array(text.unicodeScalars))
+    }
+
+    /// `<` followed by a combining mark is a single `Character` that is not `"<"`, so the old
+    /// `Character`-based `replacingOccurrences` chain left the `<` raw (#80).
+    @Test("xmlEscaped escapes a markup character that a combining mark follows")
+    func xmlEscapedEscapesMarkupBeforeCombiningMark() {
+        let escaped = "<\u{301}&\u{301}>\u{301}\"\u{301}".xmlEscaped
+        let expected = "&lt;\u{301}&amp;\u{301}&gt;\u{301}&quot;\u{301}"
+        #expect(Array(escaped.unicodeScalars) == Array(expected.unicodeScalars))
+    }
+
+    /// Every Unicode scalar, in one text node, so no character can make the output malformed.
+    @Test("xmlEscaped text holding every Unicode scalar parses as XML")
+    func xmlEscapedTextOfEveryScalarIsWellFormed() {
+        var scalars = String.UnicodeScalarView()
+        for value in UInt32(0)...0x10FFFF {
+            if let scalar = Unicode.Scalar(value) { scalars.append(scalar) }
+        }
+        let document = "<text>\(String(scalars).xmlEscaped)</text>"
+        #expect(WellFormedXML.error(in: document) == nil)
+    }
+
     // MARK: - addOrSkipMemberAccessLevelAttribute
 
     @Test(

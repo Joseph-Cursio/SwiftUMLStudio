@@ -144,6 +144,31 @@ struct DependencyGraphGeneratorTests {
         #expect(WellFormedXML.error(in: script.text) == nil)
     }
 
+    /// The directory name becomes a node label. APFS accepts each of these controls in a name,
+    /// and XML forbids every one, as a character and as a character reference (#80).
+    @Test(
+        "modules-mode SVG stays well-formed when a directory name contains a control character",
+        arguments: ["\u{01}", "\u{07}", "\u{0B}", "\u{0C}", "\u{1B}"]
+    )
+    func modulesSVGWithControlCharacterDirectoryIsWellFormed(control: String) throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("svg-control-\(UUID().uuidString)")
+        let name = "Old\(control)Code"
+        let directory = root.appendingPathComponent(name)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        try "import Foundation\n".write(
+            to: directory.appendingPathComponent("A.swift"), atomically: true, encoding: .utf8
+        )
+
+        let script = generator.generateScript(
+            for: [root.path], mode: .modules, with: Configuration(format: .svg)
+        )
+
+        #expect(script.text.contains(">\(name.xmlEscaped)</text>"))
+        #expect(WellFormedXML.error(in: script.text) == nil)
+    }
+
     // MARK: - Format
 
     @Test("mermaid format produces graph TD header")
