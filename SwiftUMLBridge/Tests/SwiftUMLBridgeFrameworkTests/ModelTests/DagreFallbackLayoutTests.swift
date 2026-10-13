@@ -76,4 +76,72 @@ struct DagreFallbackLayoutTests {
         #expect(laid.nodes.map(\.width) == sizes.map(\.width))
         #expect(laid.nodes.map(\.height) == sizes.map(\.height))
     }
+
+    // MARK: - Edge Routes
+
+    /// Whether `point` lies on the border of `node`'s box, to within rounding.
+    private func isOnBorder(_ point: LayoutPoint, of node: LayoutNode) -> Bool {
+        let offsetX = abs(point.posX - node.posX)
+        let offsetY = abs(point.posY - node.posY)
+        let tolerance = 1e-9
+        let inside = offsetX <= node.width / 2 + tolerance && offsetY <= node.height / 2 + tolerance
+        let onSide = abs(offsetX - node.width / 2) <= tolerance || abs(offsetY - node.height / 2) <= tolerance
+        return inside && onSide
+    }
+
+    /// A 3 × 3 grid of boxes of different sizes. From the first node, the edges run to a row
+    /// neighbour, a column neighbour, a diagonal one, and a node two cells away; the last edge
+    /// runs back up and to the left.
+    @Test("each edge runs from its source's border to its target's border")
+    func edgesRunBorderToBorder() throws {
+        let sizes: [(width: Double, height: Double)] = [
+            (357.5, 50), (100, 214), (180, 90), (100, 50), (240, 120), (100, 50), (100, 50), (130, 70), (100, 50)
+        ]
+        let pairs = [(0, 1), (0, 3), (0, 4), (0, 2), (0, 8), (7, 5)]
+        let edges = pairs.map { LayoutEdge(sourceId: "N\($0.0)", targetId: "N\($0.1)", label: "uses") }
+        let laid = DagreLayoutEngine.fallbackLayout(sizedGraph(sizes, edges: edges))
+
+        for edge in laid.edges {
+            let source = try #require(laid.nodes.first { $0.id == edge.sourceId })
+            let target = try #require(laid.nodes.first { $0.id == edge.targetId })
+            try #require(edge.points.count == 3, "\(edge.sourceId) → \(edge.targetId)")
+            let (start, middle, end) = (edge.points[0], edge.points[1], edge.points[2])
+            #expect(isOnBorder(start, of: source), "\(edge.sourceId) → \(edge.targetId) start")
+            #expect(isOnBorder(end, of: target), "\(edge.sourceId) → \(edge.targetId) end")
+            // The arrow points from the source toward the target, and both renderers put the
+            // label at `points[count / 2]`, which is halfway along.
+            let towardTarget = (end.posX - start.posX) * (target.posX - source.posX)
+                + (end.posY - start.posY) * (target.posY - source.posY)
+            #expect(towardTarget > 0)
+            #expect(abs(middle.posX - (start.posX + end.posX) / 2) < 1e-9)
+            #expect(abs(middle.posY - (start.posY + end.posY) / 2) < 1e-9)
+        }
+    }
+
+    @Test("a self-loop and an edge to an unknown id get no route")
+    func unroutableEdges() {
+        let edges = [
+            LayoutEdge(sourceId: "N0", targetId: "N0"),
+            LayoutEdge(sourceId: "N0", targetId: "Missing"),
+            LayoutEdge(sourceId: "N0", targetId: "N1")
+        ]
+        let laid = DagreLayoutEngine.fallbackLayout(sizedGraph([(100, 50), (100, 50)], edges: edges))
+        #expect(laid.edges.map(\.points.count) == [0, 0, 3])
+    }
+
+    /// `SVGRenderer.renderEdge` draws nothing for an edge with fewer than two points, so the
+    /// fallback used to render as boxes with no relationships.
+    @Test("the SVG of a fallback layout draws its edges and their labels")
+    func svgDrawsFallbackEdges() {
+        let edges = [
+            LayoutEdge(sourceId: "N0", targetId: "N1", label: "owns", style: .composition),
+            LayoutEdge(sourceId: "N2", targetId: "N0", label: "extends", style: .inheritance)
+        ]
+        let laid = DagreLayoutEngine.fallbackLayout(sizedGraph([(100, 50), (100, 50), (100, 50)], edges: edges))
+        let svg = SVGRenderer.render(laid)
+        // Edge paths are the only elements drawn 1.2 px wide; the arrowhead markers are paths too.
+        #expect(svg.components(separatedBy: "stroke-width=\"1.2\"").count - 1 == 2)
+        #expect(svg.contains(">owns</text>"))
+        #expect(svg.contains(">extends</text>"))
+    }
 }

@@ -157,6 +157,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   Studio's native canvas. Every interpolated string now goes through
   `jsStringLiteral`, which JSON-encodes it and also escapes U+2028 and
   U+2029, so the literal evaluates back to exactly the name.
+- **The fallback layout no longer overlaps boxes or drops edges** (#61).
+  When dagre gives no result, `DagreLayoutEngine` lays the graph out on a
+  grid. Each cell was a fixed 250 × 200 px, whatever the node size, so a
+  label or member line of 31 or more characters made neighbours overlap
+  and pushed the outer columns off the canvas, and a node with 9 members
+  ran off the top or bottom. The fallback also gave no edge any points,
+  so both the SVG renderer and Studio's native canvas drew bare boxes
+  with no relationships. Each cell is now the largest node plus dagre's
+  60 px spacing, inside dagre's 20 px margin. Each edge is drawn as a
+  straight line from border to border with its label at the midpoint.
 - **A node whose name starts with `cluster:` is laid out as a node.**
   `DagreLayoutEngine` gave each module's cluster the dagre id
   `cluster:<module>` but used every node's own id unchanged, then read
