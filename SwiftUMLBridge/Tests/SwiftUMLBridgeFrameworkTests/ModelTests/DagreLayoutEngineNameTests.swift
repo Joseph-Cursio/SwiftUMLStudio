@@ -83,6 +83,36 @@ struct DagreLayoutEngineNameTests {
         #expect(cluster.height > 0)
     }
 
+    // MARK: - Module Names That Start With a Grapheme Extender
+
+    /// Each starts with a scalar that joins the preceding `:` of `cluster:`
+    /// into one `Character`: a combining acute, VS16, a ZWJ, a skin-tone
+    /// modifier, and a combining mark with nothing after it.
+    static let graphemeExtendingModuleNames = [
+        "\u{301}Core",
+        "\u{FE0F}Kit",
+        "\u{200D}Net",
+        "\u{1F3FB}Tools",
+        "\u{301}"
+    ]
+
+    @Test("a module whose name starts with a grapheme extender keeps its first scalar",
+          arguments: graphemeExtendingModuleNames)
+    func graphemeExtendingModuleName(module: String) throws {
+        let nodes = [
+            LayoutNode(id: "Client", label: "Client", module: module),
+            LayoutNode(id: "Session", label: "Session", module: module)
+        ]
+        let edges = [LayoutEdge(sourceId: "Client", targetId: "Session", style: .dependency)]
+        let result = DagreLayoutEngine.layout(LayoutGraph(nodes: nodes, edges: edges))
+        try expectDagreLayout(result, source: "Client", target: "Session")
+
+        let cluster = try #require(result.clusters.first)
+        #expect(result.clusters.count == 1)
+        #expect(Array(cluster.id.unicodeScalars) == Array(module.unicodeScalars))
+        #expect(cluster.label == module)
+    }
+
     // MARK: - Node IDs That Look Like Cluster IDs
 
     /// Whether `cluster`'s bounding box encloses the node with id `nodeId`.

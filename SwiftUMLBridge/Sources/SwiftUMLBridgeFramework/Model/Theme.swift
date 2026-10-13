@@ -30,7 +30,7 @@ public enum Theme: Codable, Sendable {
 private extension String {
     func processKebapCaseRegex(pattern: String) -> String? {
         let regex = try? NSRegularExpression(pattern: pattern, options: [])
-        let range = NSRange(location: 0, length: count)
+        let range = NSRange(startIndex..., in: self)
         return regex?.stringByReplacingMatches(in: self, options: [], range: range, withTemplate: "$1-$2")
     }
 }

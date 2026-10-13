@@ -273,9 +273,14 @@ public struct DagreLayoutEngine: Sendable {
 
     /// Converts the `clusters` JSON dictionary from a compound-graph layout
     /// into `LayoutCluster` values, sorted by module name for determinism.
+    ///
+    /// The prefix is stripped by scalar, as the script matched it by UTF-16
+    /// unit. By `Character` it is not always eight long: a module name that
+    /// starts with a combining mark, VS16, ZWJ or skin-tone modifier fuses
+    /// with the `:`, and that first scalar went too.
     private static func parseClusters(_ clustersDict: [String: [String: Any]]) -> [LayoutCluster] {
         clustersDict.sorted { $0.key < $1.key }.map { clusterId, box in
-            let module = String(clusterId.dropFirst(clusterIdPrefix.count))
+            let module = String(clusterId.unicodeScalars.dropFirst(clusterIdPrefix.unicodeScalars.count))
             var cluster = LayoutCluster(id: module, label: (box["label"] as? String) ?? module)
             cluster.posX = box["x"] as? Double ?? 0
             cluster.posY = box["y"] as? Double ?? 0
