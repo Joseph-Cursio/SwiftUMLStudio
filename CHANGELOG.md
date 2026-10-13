@@ -226,6 +226,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   already did for a directory with a symlinked parent. Globs anchored at
   such a directory resolve it too, which is why they use `realpath(3)`:
   `canonicalPathKey` leaves a final symlink unresolved.
+- **A module whose name starts with a combining mark keeps it in its
+  cluster id.** `DagreLayoutEngine` names each module's cluster
+  `cluster:<module>` and, reading the layout back, dropped the prefix's
+  eight `Character`s, though the script had matched it by UTF-16 unit. A
+  name that starts with a grapheme extender — a combining mark, VS16, a
+  ZWJ or a skin-tone modifier — joins the `:` into one `Character`, so
+  its first scalar went with the prefix: `\u{301}Core` came back as
+  `Core`, `🏻Tools` as `Tools`. The label was still right, but the SVG
+  renderer and Studio's native canvas color a module box from its id,
+  so the box took another name's hue. Such a name reaches the layout as
+  a SwiftPM target in package mode. The prefix is now dropped by scalar.
 
 ### Fixed — Studio
 
