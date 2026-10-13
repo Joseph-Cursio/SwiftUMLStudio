@@ -26,16 +26,22 @@ struct PlantUMLConsentTests {
         #expect(reopened.decision == decision)
     }
 
-    @Test("a later decision replaces an earlier one")
-    func laterDecisionReplacesEarlier() {
+    @Test("a later decision replaces an earlier one, in memory and in storage")
+    func laterDecisionReplacesEarlier() throws {
         let (consent, suiteName) = PlantUMLConsentTestSupport.makeConsent(.granted)
         defer { UserDefaults.standard.removePersistentDomain(forName: suiteName) }
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+
+        // A new store reads what is stored; a stale key left behind would win over the new one.
         consent.decline()
         #expect(consent.decision == .declined)
+        #expect(PlantUMLConsent(defaults: defaults).decision == .declined)
         consent.grant()
         #expect(consent.decision == .granted)
+        #expect(PlantUMLConsent(defaults: defaults).decision == .granted)
         consent.revoke()
         #expect(consent.decision == .undecided)
+        #expect(PlantUMLConsent(defaults: defaults).decision == .undecided)
     }
 
     @Test("a grant stored under the original key still counts")
@@ -49,11 +55,20 @@ struct PlantUMLConsentTests {
 
     @Test("recording a decision leaves the app's own defaults alone")
     func leavesStandardDefaultsAlone() {
-        let before = UserDefaults.standard.object(forKey: PlantUMLConsent.grantedKey) as? Bool
-        let (consent, suiteName) = PlantUMLConsentTestSupport.makeConsent(.granted)
+        func standardKeys() -> [Bool?] {
+            [PlantUMLConsent.grantedKey, PlantUMLConsent.declinedKey].map {
+                UserDefaults.standard.object(forKey: $0) as? Bool
+            }
+        }
+        let before = standardKeys()
+        let (consent, suiteName) = PlantUMLConsentTestSupport.makeConsent()
         defer { UserDefaults.standard.removePersistentDomain(forName: suiteName) }
-        consent.revoke()
+
+        // A grant and a decline leave different footprints, so a store that also wrote to
+        // .standard would change one of these whatever the developer's own decision is.
+        consent.grant()
+        #expect(standardKeys() == before)
         consent.decline()
-        #expect(UserDefaults.standard.object(forKey: PlantUMLConsent.grantedKey) as? Bool == before)
+        #expect(standardKeys() == before)
     }
 }
