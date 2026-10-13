@@ -6,9 +6,6 @@ struct ContentView: View {
     @Environment(SubscriptionManager.self) private var subscriptionManager
     @State private var viewModel = DiagramViewModel()
     @State private var showPaywall = false
-    /// Holds the format the user just selected that requires consent (always
-    /// `.plantuml` today) plus the previous format to revert to on cancel.
-    @State private var plantUMLConsentRequest: (previous: DiagramFormat, requested: DiagramFormat)?
     @AppStorage("appMode") private var appMode: AppMode = .explorer
 
     /// Rebuilds everything derived from the file selection.
@@ -77,6 +74,7 @@ struct ContentView: View {
             openPanel()
         }
         .task {
+            viewModel.applyLaunchFormatPreference(consent: .shared)
             viewModel.loadHistory()
             viewModel.loadSnapshots()
             loadTestFixtureIfNeeded()
@@ -86,16 +84,8 @@ struct ContentView: View {
             viewModel.selectFile(viewModel.selectedFileURL)
         }
         .onChange(of: viewModel.diagramMode) { handleDiagramModeChange() }
-        .onChange(of: viewModel.diagramFormat) { oldValue, newValue in
-            // PlantUML rendering goes through planttext.com (third-party HTTPS
-            // upload of the diagram source). Gate the first selection behind
-            // explicit consent; subsequent selections proceed normally.
-            if newValue == .plantuml && !PlantUMLConsent.shared.isGranted {
-                plantUMLConsentRequest = (previous: oldValue, requested: newValue)
-                return
-            }
-            viewModel.generate()
-        }
+        // Generating PlantUML is local; the upload waits for consent in PlantTextPreview.
+        .onChange(of: viewModel.diagramFormat) { viewModel.generate() }
         .onChange(of: viewModel.entryPoint) { viewModel.generate() }
         .onChange(of: viewModel.sequenceDepth) { viewModel.generate() }
         .onChange(of: viewModel.depsMode) { viewModel.generate() }
@@ -104,10 +94,6 @@ struct ContentView: View {
             PaywallView(subscriptionManager: subscriptionManager)
         }
         .modifier(NoticeAlerts(viewModel: viewModel))
-        .modifier(PlantUMLConsentAlert(
-            viewModel: viewModel,
-            request: $plantUMLConsentRequest
-        ))
     }
 
     // MARK: - Explorer Layout
@@ -271,53 +257,6 @@ private struct NoticeAlerts: ViewModifier {
             get: { viewModel[keyPath: keyPath] != nil },
             set: { if !$0 { viewModel[keyPath: keyPath] = nil } }
         )
-    }
-}
-
-/// Consent prompt shown the first time the user selects `.plantuml`. Continue
-/// grants persistent consent and proceeds with generation; Cancel reverts the
-/// format to whatever was active before the selection.
-private struct PlantUMLConsentAlert: ViewModifier {
-    let viewModel: DiagramViewModel
-    @Binding var request: (previous: DiagramFormat, requested: DiagramFormat)?
-
-    func body(content: Content) -> some View {
-        content.alert(
-            "Use PlantUML rendering?",
-            isPresented: Binding(
-                get: { request != nil },
-                set: { if !$0 { request = nil } }
-            )
-        ) {
-            Button("Continue") { grantConsent() }
-            Button("Cancel", role: .cancel) { declineConsent() }
-        } message: {
-            Text(
-                "PlantUML diagrams are rendered by planttext.com, a third-party "
-                + "service. Your diagram source will be sent over HTTPS to that "
-                + "service. Mermaid and Nomnoml render locally without any "
-                + "network use."
-            )
-        }
-    }
-
-    /// Persist the consent, generate with the format that prompted for it, and dismiss.
-    private func grantConsent() {
-        PlantUMLConsent.shared.grant()
-        viewModel.generate()
-        request = nil
-    }
-
-    /// Put the format back the way it was before the selection that raised this prompt.
-    ///
-    /// The restore is the part worth naming: dismissing without it leaves the picker showing
-    /// `.plantuml` while nothing was generated, so the UI claims a format the user declined.
-    /// `request.previous` exists for exactly this and nothing else reads it.
-    private func declineConsent() {
-        if let pending = request {
-            viewModel.diagramFormat = pending.previous
-        }
-        request = nil
     }
 }
 
