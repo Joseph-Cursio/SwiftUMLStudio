@@ -1,4 +1,5 @@
 import Foundation
+import JavaScriptCore
 import Testing
 @testable import SwiftUMLStudio
 
@@ -41,39 +42,27 @@ struct NomnomlHTMLBuilderTests {
         #expect(html.contains("</body>"))
     }
 
-    // MARK: - Base64 encoding
+    // MARK: - Source embedding
 
-    @Test("output contains base64-encoded diagram text")
-    func outputContainsBase64() {
-        let diagramText = "[<class> MyClass|+name: String|+greet()]"
+    @Test("the page hands nomnoml.draw the diagram text unchanged", arguments: [
+        "[<struct> Café|~naïve: Int]",
+        "[<class> 图表|+emoji: 🎉]",
+        "[<class> Foo]",
+        "",
+        "[Order]->[Customer]\n[Order]+->[LineItem]",
+        "[<class> He said \"hi\" \\ to 'me']",
+        "line\u{2028}separator\u{2029}paragraph",
+        "</script><script>alert('xss')</script>"
+    ])
+    func pageDrawsOriginalText(_ diagramText: String) throws {
         let html = NomnomlHTMLBuilder.nomnomlHTML(diagramText)
-        let expectedBase64 = Data(diagramText.utf8).base64EncodedString()
-        #expect(html.contains(expectedBase64))
+        #expect(try drawnSource(html) == diagramText)
     }
 
-    @Test("base64 decodes back to original diagram text")
-    func base64DecodesToOriginal() {
-        let diagramText = "[<struct> Point|xPos: Double;yPos: Double]"
-        let html = NomnomlHTMLBuilder.nomnomlHTML(diagramText)
-
-        // Extract the base64 string from atob("...")
-        let prefix = "atob(\""
-        let suffix = "\")"
-        guard let startRange = html.range(of: prefix),
-              let endRange = html.range(of: suffix, range: startRange.upperBound..<html.endIndex) else {
-            Issue.record("Could not find atob() call in HTML output")
-            return
-        }
-        let base64String = String(html[startRange.upperBound..<endRange.lowerBound])
-        let decoded = Data(base64Encoded: base64String).flatMap { String(data: $0, encoding: .utf8) }
-        #expect(decoded == diagramText)
-    }
-
-    @Test("empty diagram text produces valid base64")
-    func emptyDiagramTextProducesValidBase64() {
-        let html = NomnomlHTMLBuilder.nomnomlHTML("")
-        let expectedBase64 = Data("".utf8).base64EncodedString()
-        #expect(html.contains("atob(\"\(expectedBase64)\")"))
+    @Test("literal escapes <, U+2028 and U+2029")
+    func literalEscapesScriptHazards() {
+        let literal = NomnomlHTMLBuilder.scriptStringLiteral("a<b\u{2028}c\u{2029}")
+        #expect(literal == #""a\u003cb\u2028c\u2029""#)
     }
 
     // MARK: - Script tag sources
@@ -94,23 +83,17 @@ struct NomnomlHTMLBuilderTests {
 
     // MARK: - Special characters in diagram text
 
-    @Test("diagram text with HTML special chars is safely encoded via base64")
-    func htmlSpecialCharsAreSafe() {
-        let diagramText = "<script>alert('xss')</script>"
+    @Test("diagram text cannot close or derail the page's script element", arguments: [
+        "</script><script>alert('xss')</script>",
+        "<!--<script>",
+        // `<` plus a combining mark is one Character, so a Character-level
+        // replace would leave this `<` raw.
+        "[A]<\u{0301}/script>"
+    ])
+    func scriptHazardsAreEscaped(_ diagramText: String) throws {
         let html = NomnomlHTMLBuilder.nomnomlHTML(diagramText)
-        // The raw script tag should NOT appear — it's base64-encoded
-        #expect(html.contains("<script>alert") == false)
-        // But the base64-encoded version should be present
-        let expectedBase64 = Data(diagramText.utf8).base64EncodedString()
-        #expect(html.contains(expectedBase64))
-    }
-
-    @Test("diagram text with quotes is safely encoded via base64")
-    func quotesAreSafe() {
-        let diagramText = "[<class> He said \"hello\"]"
-        let html = NomnomlHTMLBuilder.nomnomlHTML(diagramText)
-        let expectedBase64 = Data(diagramText.utf8).base64EncodedString()
-        #expect(html.contains(expectedBase64))
+        let script = try inlineScript(html)
+        #expect(script.unicodeScalars.contains("<") == false)
     }
 
     // MARK: - Dark-mode variants
@@ -133,6 +116,36 @@ struct NomnomlHTMLBuilderTests {
         let defaulted = NomnomlHTMLBuilder.nomnomlHTML("[<class> Foo]")
         let explicit = NomnomlHTMLBuilder.nomnomlHTML("[<class> Foo]", dark: false)
         #expect(defaulted == explicit)
+    }
+
+    // MARK: - Helpers
+
+    /// The body of the page's inline `<script>`, ending where the HTML
+    /// parser would end it: at the first `</script>`.
+    private func inlineScript(_ html: String) throws -> String {
+        let open = try #require(html.range(of: "<script>"))
+        let close = try #require(html.range(of: "</script>", range: open.upperBound..<html.endIndex))
+        return String(html[open.upperBound..<close.lowerBound])
+    }
+
+    /// Runs the page's inline script in JavaScriptCore with `document` and
+    /// `nomnoml` stubbed and returns the string it hands to `nomnoml.draw`.
+    /// JSContext has no `atob` or `TextDecoder`, so this holds the page to
+    /// carrying the source in a form plain JavaScript evaluates.
+    private func drawnSource(_ html: String) throws -> String? {
+        let context = try #require(JSContext())
+        context.evaluateScript("""
+            var drawn = null;
+            var document = { getElementById: function () { return {}; } };
+            var nomnoml = { draw: function (canvas, source) { drawn = source; } };
+            """)
+        context.evaluateScript(try inlineScript(html))
+        if let exception = context.exception {
+            Issue.record("Page script threw: \(exception)")
+            return nil
+        }
+        let drawn = try #require(context.objectForKeyedSubscript("drawn"))
+        return drawn.isString ? drawn.toString() : nil
     }
 }
 
