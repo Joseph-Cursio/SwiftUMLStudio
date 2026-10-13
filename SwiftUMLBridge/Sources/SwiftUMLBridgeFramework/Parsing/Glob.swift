@@ -65,8 +65,30 @@ internal func expandPath(_ path: String, in directory: String) -> URL {
     return URL(fileURLWithPath: directory).appendingPathComponent(path)
 }
 
+/// `path` as directory enumeration spells it. `FileManager` reports a walked
+/// directory's entries under the directory's canonical path, with every
+/// symlink in it resolved: a walk started at `/tmp/x` yields `/private/tmp/x/…`.
+/// `canonicalPathKey` gives that same form; `standardizingPath` and
+/// `resolvingSymlinksInPath()` do not, because both strip `/private` again.
+/// A path that does not exist is returned unchanged.
+internal func canonicalPath(_ path: String) -> String {
+    let url = URL(fileURLWithPath: path)
+    return (try? url.resourceValues(forKeys: [.canonicalPathKey]).canonicalPath) ?? path
+}
+
+/// `url`'s path in the form directory enumeration reports it: the parent goes
+/// through `canonicalPath`, and the file keeps its own name, so a file that is
+/// itself a symlink matches by that name, as it does when enumerated.
+internal func enumeratedPath(of url: URL) -> String {
+    let parent = canonicalPath(url.deletingLastPathComponent().path)
+    return URL(fileURLWithPath: parent).appendingPathComponent(url.lastPathComponent).path
+}
+
 /// Expand one or more comma-delimited file paths using glob syntax
 internal func expandGlobs(_ paths: String, in directory: String) -> [Glob] {
+    // Anchor the globs where enumeration will report the files. Anchored at a
+    // spelling through a symlink, such as `/tmp/x`, they matched nothing.
+    let directory = canonicalPath(directory)
     guard pathContainsGlobSyntax(paths) else {
         return parseCommaDelimitedList(paths).map {
             .path(expandPath($0, in: directory).path)

@@ -35,16 +35,26 @@ public struct FileCollector: Sendable {
             BridgeLogger.shared.info("paths will be ignored in favor of configuration  \(fileOptions.description)")
         }
 
+        // The globs are anchored where enumeration reports files, so test each
+        // file in that form too: an explicit file argument keeps the spelling
+        // it was given, which may run through a symlink.
+        let matchPaths = fileOptions?.someProvided == true
+            ? Dictionary(allFiles.map { ($0, enumeratedPath(of: $0)) }, uniquingKeysWith: { first, _ in first })
+            : [:]
+        func isMatched(_ url: URL, by glob: Glob) -> Bool {
+            glob.matches(matchPaths[url] ?? url.path)
+        }
+
         excluded.forEach { glob in
-            filesExcluded = allFiles.filter { glob.matches($0.path) == true }
-            let notExcluded = allFiles.filter { glob.matches($0.path) == false }
+            filesExcluded = allFiles.filter { isMatched($0, by: glob) }
+            let notExcluded = allFiles.filter { !isMatched($0, by: glob) }
             filesNotExcluded.append(contentsOf: notExcluded)
         }
 
         if let include = fileOptions?.include, !include.isEmpty {
             included = expandGlobs(include.joined(separator: ","), in: directory)
             included.forEach { glob in
-                files.append(contentsOf: filesNotExcluded.filter { glob.matches($0.path) == true })
+                files.append(contentsOf: filesNotExcluded.filter { isMatched($0, by: glob) })
             }
         } else {
             files = allFiles
