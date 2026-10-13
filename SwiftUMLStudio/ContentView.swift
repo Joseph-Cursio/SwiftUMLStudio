@@ -90,7 +90,7 @@ struct ContentView: View {
             // PlantUML rendering goes through planttext.com (third-party HTTPS
             // upload of the diagram source). Gate the first selection behind
             // explicit consent; subsequent selections proceed normally.
-            if newValue == .plantuml && !PlantUMLConsent.hasConsented {
+            if newValue == .plantuml && !PlantUMLConsent.shared.isGranted {
                 plantUMLConsentRequest = (previous: oldValue, requested: newValue)
                 return
             }
@@ -303,7 +303,7 @@ private struct PlantUMLConsentAlert: ViewModifier {
 
     /// Persist the consent, generate with the format that prompted for it, and dismiss.
     private func grantConsent() {
-        PlantUMLConsent.grant()
+        PlantUMLConsent.shared.grant()
         viewModel.generate()
         request = nil
     }
