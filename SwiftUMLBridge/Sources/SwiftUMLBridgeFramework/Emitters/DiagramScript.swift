@@ -59,10 +59,7 @@ public struct DiagramScript: @unchecked Sendable {
         }
 
         // Exactly what the loop below will draw; the context adds the names their edges use.
-        context.reserveIdentifiers(drawing: adjustedItems.filter { item in
-            guard let kind = item.kind, ElementKind.processable.contains(kind) else { return false }
-            return item.skip(element: item, basedOn: context.configuration) == false
-        })
+        context.reserveIdentifiers(drawing: adjustedItems.filter { $0.isDrawn(in: context.configuration) })
 
         let newLine = "\n"
         var mainContent = newLine
@@ -144,8 +141,7 @@ public struct DiagramScript: @unchecked Sendable {
     }
 
     func processStructureItem(item: SyntaxStructure, index _: Int) -> String? {
-        guard let elementKind = item.kind else { return nil }
-        guard ElementKind.processable.contains(elementKind) else { return nil }
+        guard item.isDrawn(in: context.configuration) else { return nil }
         switch format {
         case .plantuml:
             return item.plantuml(context: context) ?? nil

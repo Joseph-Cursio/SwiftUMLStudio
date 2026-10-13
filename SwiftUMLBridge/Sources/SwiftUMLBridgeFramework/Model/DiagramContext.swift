@@ -22,8 +22,9 @@ class DiagramContext {
     /// alias `uniqName` has issued. A suffixed alias must avoid all of them, or Mermaid and
     /// PlantUML draw two elements as one.
     ///
-    /// Kept apart from `uniqElementNames` on purpose. `addLinking` looks names up there by raw
-    /// name, and a type literally named `Foo0` must still count as a first declaration.
+    /// Kept apart from `uniqElementNames` and `uniqElementAndTypes` on purpose: `uniqName` decides
+    /// a first declaration by `uniqElementNames`, and `addLinking` reads `uniqElementAndTypes` by
+    /// raw name, so a type literally named `Foo0` must still count as a first declaration.
     private(set) var takenIdentifiers: Set<String> = []
     private(set) var connections: [String] = []
     private(set) var extnConnections: [String] = []
@@ -123,6 +124,12 @@ class DiagramContext {
         format == .plantuml || format == .nomnoml || format == .svg
     }
 
+    /// Whether this format declares `item` under its alias. Mermaid and Nomnoml write a macro
+    /// only as a comment, so there a macro's name is no id and must not shift one.
+    private func declaresIdentifier(of item: SyntaxStructure) -> Bool {
+        item.kind != .macro || format == .plantuml
+    }
+
     /// Reserve every id the diagram will use, before the first alias is issued: the names of the
     /// elements it draws, and the names its edges give elements it does not draw — a supertype,
     /// a conformance or raw type, and a hidden parent of a drawn nested type. Mermaid and
@@ -136,7 +143,7 @@ class DiagramContext {
     func reserveIdentifiers(drawing items: [SyntaxStructure]) {
         let drawn = Set(items)
         for item in items {
-            if let fullName = item.fullName {
+            if declaresIdentifier(of: item), let fullName = item.fullName {
                 takenIdentifiers.insert(fullName)
             }
             takenIdentifiers.formUnion(item.linkParents().compactMap(linkTarget(for:)))
@@ -188,7 +195,9 @@ class DiagramContext {
                 uniqElementAndTypes[linkTypeKey] = linkTypeGeneric
             }
         }
-        takenIdentifiers.insert(newName)
+        if declaresIdentifier(of: item) {
+            takenIdentifiers.insert(newName)
+        }
         uniqueNameForElement[item] = newName
         return newName
     }

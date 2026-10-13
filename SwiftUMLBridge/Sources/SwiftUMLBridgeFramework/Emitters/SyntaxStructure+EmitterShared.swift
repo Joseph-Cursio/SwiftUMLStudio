@@ -5,6 +5,13 @@ import Foundation
 /// building; the skip/generics/linking flow and the member-eligibility filter
 /// live here so they stay in sync across formats.
 extension SyntaxStructure {
+    /// Whether a class diagram draws this element: a processable kind the configuration does not
+    /// hide. `DiagramScript` reserves ids for exactly these elements, then emits them.
+    func isDrawn(in configuration: Configuration) -> Bool {
+        guard let kind, ElementKind.processable.contains(kind) else { return false }
+        return skip(element: self, basedOn: configuration) == false
+    }
+
     /// Run the common emit flow — kind guard, exclusion `skip`, optional generics,
     /// and inheritance linking — delegating the format-specific body to `textBuilder`.
     func renderDiagramText(
