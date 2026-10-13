@@ -305,8 +305,10 @@ The `--format` flag selects the diagram language. It overrides the `format` key 
 |---|---|---|
 | `plantuml` | PlantUML class diagram (default) | [planttext.com](https://www.planttext.com) |
 | `mermaid` | Mermaid.js class diagram | [mermaid.live](https://mermaid.live) |
+| `nomnoml` | Nomnoml class diagram | [nomnoml.com](https://nomnoml.com) |
+| `svg` | Standalone SVG document, laid out by SwiftUMLBridge itself | Written to a temporary `diagram.svg` and opened with your default app for `.svg` files |
 
-> The `DiagramFormat` enum also has `.nomnoml` and `.svg` cases. Those are exposed in the SwiftUML Studio app (Nomnoml renders locally inside the WebView; `.svg` produces a layout consumed by the native Canvas renderer) — the CLI itself only emits `plantuml` and `mermaid` text.
+> Every subcommand accepts all four values, but not every diagram type has its own Nomnoml or SVG emitter. `classdiagram` and `deps` emit real Nomnoml; `classdiagram`, `sequence`, `activity`, `deps`, and `component` emit real SVG. The rest fall back to Mermaid text, except `component --format nomnoml`, which falls back to PlantUML. See [Formats by Subcommand](reference.md#formats-by-subcommand) for the full table.
 
 ```bash
 # PlantUML (default — equivalent to --format plantuml)
@@ -318,6 +320,9 @@ swiftumlbridge classdiagram Sources/ --format mermaid
 # Mermaid, raw markup to stdout
 swiftumlbridge classdiagram Sources/ --format mermaid --output consoleOnly
 
+# SVG, saved to a file
+swiftumlbridge classdiagram Sources/ --format svg --output consoleOnly > classes.svg
+
 # Persist the format preference in the config file
 echo "format: mermaid" >> .swiftumlbridge.yml
 ```
@@ -328,9 +333,9 @@ The `--output` flag controls where the diagram goes, regardless of format:
 
 | Value | Behavior |
 |---|---|
-| `browser` | Opens the diagram editor in your default browser (default) |
-| `browserImageOnly` | For PlantUML: opens a direct PNG render. For Mermaid: same as `browser`. |
-| `consoleOnly` | Prints the raw markup to stdout |
+| `browser` | Opens the diagram editor in your default browser (default). SVG is written to a temporary `diagram.svg` and opened instead. |
+| `browserImageOnly` | For PlantUML: opens a direct PNG render. For every other format: same as `browser`. |
+| `consoleOnly` | Prints the raw markup, or the SVG document, to stdout |
 
 ```bash
 # Interactive browser editor (default)
@@ -592,7 +597,7 @@ In PlantUML output, cyclic nodes are listed in a `note` block at the bottom of t
 
 ### Format and Output
 
-The `--format` and `--output` flags work identically to the other subcommands.
+The `--format` and `--output` flags work as they do for `classdiagram`. Dependency graphs have their own Nomnoml and SVG emitters, so all four formats produce real output in both `--types` and `--modules` mode.
 
 ```bash
 # Mermaid format, opened in browser
@@ -603,6 +608,9 @@ swiftumlbridge deps Sources/ --output consoleOnly > deps.puml
 
 # Mermaid module graph, raw markup to stdout
 swiftumlbridge deps Sources/ --modules --format mermaid --output consoleOnly > deps.mmd
+
+# Module graph as an SVG file
+swiftumlbridge deps Sources/ --modules --format svg --output consoleOnly > deps.svg
 
 # Custom config file
 swiftumlbridge deps Sources/ --config ./configs/diagram.yml
@@ -631,7 +639,7 @@ The type and method names are case-sensitive. If no method matches, the resultin
 
 ### Format and Output
 
-The `--format` and `--output` flags behave identically to the other subcommands:
+The `--format` and `--output` flags behave as they do for `classdiagram`, with one exception: activity diagrams have an SVG emitter but no Nomnoml one, so `--format nomnoml` falls back to Mermaid text.
 
 ```bash
 # PlantUML (default), opened in browser
@@ -683,7 +691,7 @@ The diagram's nodes are the enum cases; the edges are the transitions found in `
 
 ### Format and Output
 
-The `--format`, `--output`, and `--config` flags behave identically to the other subcommands:
+The `--format`, `--output`, and `--config` flags behave as they do for `classdiagram`, except that state diagrams have no Nomnoml or SVG emitter: `--format nomnoml` and `--format svg` both fall back to Mermaid `stateDiagram-v2` text.
 
 ```bash
 # Mermaid, stdout
@@ -732,7 +740,7 @@ If no entities are discovered across any of the inputs, the command exits with a
 
 ### Output
 
-The Mermaid emitter produces an `erDiagram` block with crow's-foot connectors derived from the cardinality of each relationship endpoint. The PlantUML emitter produces `entity` blocks with primary-key separators and `<<UK>>` / `<<transient>>` stereotypes. See the [Reference Guide](reference.md#erscript) for sample output.
+The Mermaid emitter produces an `erDiagram` block with crow's-foot connectors derived from the cardinality of each relationship endpoint. The PlantUML emitter produces `entity` blocks with primary-key separators and `<<UK>>` / `<<transient>>` stereotypes. ER diagrams have no Nomnoml or SVG emitter, so `--format nomnoml` and `--format svg` both fall back to the Mermaid `erDiagram` text. See the [Reference Guide](reference.md#erscript) for sample output.
 
 ---
 
@@ -754,6 +762,8 @@ swiftumlbridge component --package <path> [options]
 |---|---|
 | `plantuml` (default) | Standard `component` syntax with `<<library>>` / `<<executable>>` / `<<test>>` stereotypes |
 | `mermaid` | `flowchart TD` with one `subgraph` per component (Mermaid has no dedicated component-diagram dialect) |
+| `nomnoml` | Falls back to the PlantUML output (Nomnoml has no component dialect either) |
+| `svg` | Standalone SVG document with each component's provided interfaces drawn inside it |
 
 ### Test Target Filtering
 
@@ -877,11 +887,11 @@ format: mermaid
 
 ### Browser (interactive)
 
-The default mode. For PlantUML, the markup is encoded and opened at [planttext.com](https://www.planttext.com). For Mermaid, the script is base64-encoded and opened at [mermaid.live](https://mermaid.live). Both editors let you view and export the diagram.
+The default mode. For PlantUML, the markup is encoded and opened at [planttext.com](https://www.planttext.com). For Mermaid, the script is base64-encoded and opened at [mermaid.live](https://mermaid.live). Both editors let you view and export the diagram. Nomnoml opens at [nomnoml.com](https://nomnoml.com). SVG is written to `diagram.svg` in the temporary directory, replacing any earlier one, and opened with your default app for `.svg` files.
 
 ### Browser (image only)
 
-`--output browserImageOnly` opens a direct PNG render from planttext.com for PlantUML diagrams. For Mermaid, this behaves identically to `browser`.
+`--output browserImageOnly` opens a direct PNG render from planttext.com for PlantUML diagrams. For every other format, this behaves identically to `browser`.
 
 ### Console
 
@@ -906,6 +916,9 @@ swiftumlbridge deps Sources/ --output consoleOnly > deps.puml
 
 # Save Mermaid module dependency graph
 swiftumlbridge deps Sources/ --modules --format mermaid --output consoleOnly > deps.mmd
+
+# Save an SVG class diagram
+swiftumlbridge classdiagram Sources/ --format svg --output consoleOnly > class-diagram.svg
 
 # Render PlantUML locally if you have PlantUML installed
 swiftumlbridge classdiagram Sources/ --output consoleOnly | plantuml -pipe > diagram.png
@@ -976,6 +989,8 @@ A few things render differently between PlantUML and Mermaid:
 **Sequence diagram: variable-receiver calls are unresolved.** `dep.doWork()` where `dep` is a local variable or parameter cannot be statically resolved. These calls appear as notes (`Unresolved: doWork()`) and are not expanded further. Only `self.x()`, `TypeName.x()`, and bare `x()` calls are resolved.
 
 **Sequence diagram: entry point must exist.** If no function matches `TypeName.methodName` exactly in the parsed sources, the diagram is empty.
+
+**`--format nomnoml` sends Mermaid to nomnoml.com for some diagram types.** `sequence`, `activity`, `state`, and `er` have no Nomnoml emitter and fall back to Mermaid text, but browser output still opens that text at nomnoml.com, which cannot render it. Use `--format mermaid` for these subcommands. (`--format svg` on `state` and `er` falls back to Mermaid too, but opens at mermaid.live as expected.)
 
 ---
 
