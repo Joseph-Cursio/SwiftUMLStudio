@@ -3,8 +3,9 @@ import Foundation
 /// Lays out and renders activity diagrams as SVG without dagre.
 ///
 /// Uses a simple longest-path layering: each node gets a row equal to 1 + max row of any
-/// non-back-edge predecessor. Within each row, nodes are spread horizontally in creation
-/// order. Back-edges (loop → loopStart) are rendered as dashed curves going upward.
+/// non-back-edge predecessor, where back-edges are those a DFS from the start node finds
+/// closing a cycle. Within each row, nodes are spread horizontally in creation order.
+/// Back-edges (loop → loopStart) are rendered as dashed curves going upward.
 public struct ActivitySVGRenderer: Sendable {
 
     // MARK: - Layout Constants
@@ -123,28 +124,23 @@ public struct ActivitySVGRenderer: Sendable {
             for node in graph.nodes { rows[node.id] = 0 }
             return rows
         }
-        rows[start.id] = 0
 
-        let iterationCap = graph.nodes.count * max(1, graph.edges.count) + 10
-        var iterations = 0
-        var changed = true
-        while changed && iterations < iterationCap {
-            changed = false
-            iterations += 1
-            for edge in graph.edges {
-                guard edge.toId != edge.fromId else { continue }
-                guard let fromRow = rows[edge.fromId] else { continue }
-                if let toRow = rows[edge.toId], toRow <= fromRow { continue }
-                let newRow = fromRow + 1
-                if let existing = rows[edge.toId] {
-                    if newRow > existing {
-                        rows[edge.toId] = newRow
-                        changed = true
-                    }
-                } else {
-                    rows[edge.toId] = newRow
-                    changed = true
-                }
+        // Kahn's algorithm over the acyclic forward edges, so a node is placed only after
+        // every predecessor has its final row — a join always lands below its longest branch.
+        var successors: [Int: [Int]] = [:]
+        var inDegree: [Int: Int] = [:]
+        for edge in forwardEdges(from: start.id, in: graph.edges) {
+            successors[edge.fromId, default: []].append(edge.toId)
+            inDegree[edge.toId, default: 0] += 1
+        }
+        rows[start.id] = 0
+        var ready = [start.id]
+        while let nodeId = ready.popLast() {
+            let nextRow = (rows[nodeId] ?? 0) + 1
+            for target in successors[nodeId] ?? [] {
+                rows[target] = max(rows[target] ?? 0, nextRow)
+                inDegree[target, default: 0] -= 1
+                if inDegree[target] == 0 { ready.append(target) }
             }
         }
 
@@ -152,6 +148,38 @@ public struct ActivitySVGRenderer: Sendable {
             rows[node.id] = 0
         }
         return rows
+    }
+
+    /// The edges reachable from `startId` that are not back-edges, found by an iterative DFS.
+    /// An edge whose target is still on the DFS stack (self-loops included) closes a cycle and
+    /// is dropped, so what remains is acyclic. Edges among nodes `startId` never reaches are
+    /// dropped too — the builder can leave a dead merge or loop wired into reachable nodes.
+    static func forwardEdges(from startId: Int, in edges: [ActivityEdge]) -> [ActivityEdge] {
+        var outgoing: [Int: [ActivityEdge]] = [:]
+        for edge in edges {
+            outgoing[edge.fromId, default: []].append(edge)
+        }
+        var visited: Set<Int> = [startId]
+        var onStack: Set<Int> = [startId]
+        var stack: [(nodeId: Int, nextEdge: Int)] = [(startId, 0)]
+        var forward: [ActivityEdge] = []
+        while let top = stack.last {
+            let candidates = outgoing[top.nodeId] ?? []
+            guard top.nextEdge < candidates.count else {
+                stack.removeLast()
+                onStack.remove(top.nodeId)
+                continue
+            }
+            stack[stack.count - 1].nextEdge += 1
+            let edge = candidates[top.nextEdge]
+            if onStack.contains(edge.toId) { continue }
+            forward.append(edge)
+            if visited.insert(edge.toId).inserted {
+                onStack.insert(edge.toId)
+                stack.append((edge.toId, 0))
+            }
+        }
+        return forward
     }
 
     static func computeColumns(graph: ActivityGraph, rows: [Int: Int]) -> [Int: Int] {
