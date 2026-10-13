@@ -54,6 +54,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed — Bridge
 
+- **A module or type name with a backslash or line break is laid out by
+  dagre again** (#81). `DagreLayoutEngine` pastes node ids, module names
+  and cluster ids between `"` in the script it runs on JavaScriptCore,
+  and escaped only `"`. A deps `--modules` node is a directory name, and
+  macOS allows `\` and newlines in those. `Old\Code` evaluated to
+  `OldCode`, so dagre's result no longer matched the node, which stayed
+  at (0, 0) with its edges unrouted. `Trail\` escaped the closing quote,
+  and a raw LF or CR ended the literal; either way the script failed to
+  parse and the whole graph dropped to the grid fallback. This reached
+  `swiftumlbridge deps --modules --format svg` and the modules graph on
+  Studio's native canvas. Every interpolated string now goes through
+  `jsStringLiteral`, which JSON-encodes it and also escapes U+2028 and
+  U+2029, so the literal evaluates back to exactly the name.
 - **Two names that sanitize alike are no longer drawn as one node.**
   `DepsScript.mermaidId` and `ComponentScript.safeAlias` rewrite several
   characters to `_`, so `Outer.Inner` and `Outer_Inner` both became the
