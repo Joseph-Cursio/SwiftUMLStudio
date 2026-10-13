@@ -308,7 +308,7 @@ The `--format` flag selects the diagram language. It overrides the `format` key 
 | `nomnoml` | Nomnoml class diagram | [nomnoml.com](https://nomnoml.com) |
 | `svg` | Standalone SVG document, laid out by SwiftUMLBridge itself | Written to a temporary `diagram.svg` and opened with your default app for `.svg` files |
 
-> Every subcommand accepts all four values, but not every diagram type has its own Nomnoml or SVG emitter. `classdiagram` and `deps` emit real Nomnoml; `classdiagram`, `sequence`, `activity`, `deps`, and `component` emit real SVG. The rest fall back to Mermaid text, except `component --format nomnoml`, which falls back to PlantUML. See [Formats by Subcommand](reference.md#formats-by-subcommand) for the full table.
+> Every subcommand accepts all four values, but not every diagram type has its own Nomnoml or SVG emitter. `classdiagram` and `deps` emit real Nomnoml; `classdiagram`, `sequence`, `activity`, `deps`, and `component` emit real SVG. The rest fall back to Mermaid text. See [Formats by Subcommand](reference.md#formats-by-subcommand) for the full table.
 
 ```bash
 # PlantUML (default — equivalent to --format plantuml)
@@ -762,7 +762,7 @@ swiftumlbridge component --package <path> [options]
 |---|---|
 | `plantuml` (default) | Standard `component` syntax with `<<library>>` / `<<executable>>` / `<<test>>` stereotypes |
 | `mermaid` | `flowchart TD` with one `subgraph` per component (Mermaid has no dedicated component-diagram dialect) |
-| `nomnoml` | Falls back to the PlantUML output (Nomnoml has no component dialect either) |
+| `nomnoml` | Falls back to the Mermaid `flowchart TD` output (Nomnoml has no component dialect either) |
 | `svg` | Standalone SVG document with each component's provided interfaces drawn inside it |
 
 ### Test Target Filtering

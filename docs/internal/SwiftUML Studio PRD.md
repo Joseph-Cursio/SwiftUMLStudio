@@ -206,7 +206,7 @@ This ensures minimal duplication and consistent behavior across diagram types.
 |---|---|---|---|---|---|---|---|
 | PlantUML | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
 | Mermaid.js | Yes | Yes | Yes | Yes | Yes | Yes | Yes¹ |
-| Nomnoml | Yes | → Mermaid | → Mermaid | → Mermaid | → Mermaid | Yes | → PlantUML |
+| Nomnoml | Yes | → Mermaid | → Mermaid | → Mermaid | → Mermaid | Yes | → Mermaid¹ |
 | Native SVG (Studio) | Yes | Yes | Yes | → Mermaid | → Mermaid | Yes | Yes |
 | GraphViz / DOT | — | — | — | — | — | Planned (v1.1+) | — |
 | Structurizr DSL | Partial (v2) | — | — | — | — | — | — |
@@ -216,7 +216,8 @@ diagram type, so the emitter falls back to X and reports X as the format.
 **—** — not supported.
 
 ¹ Mermaid has no component dialect; `ComponentScript` emits a `flowchart TD`
-with `subgraph` clusters and reports `.mermaid`.
+with `subgraph` clusters and reports `.mermaid`. The Nomnoml fallback is that
+same flowchart.
 
 Two of the fallbacks are the honest gaps rather than language limitations: State
 and ER have no native SVG layout engine, so `.svg` piggybacks the Mermaid

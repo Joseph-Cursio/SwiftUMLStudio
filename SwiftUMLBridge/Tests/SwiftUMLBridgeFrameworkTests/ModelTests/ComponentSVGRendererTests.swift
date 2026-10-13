@@ -162,16 +162,21 @@ struct ComponentScriptSVGTests {
         #expect(script.componentLayout == nil)
     }
 
-    @Test("nomnoml configuration falls back to plantuml and leaves componentLayout nil")
-    func nomnomlFallsBackToPlantUML() {
+    @Test("nomnoml configuration falls back to mermaid and leaves componentLayout nil")
+    func nomnomlFallsBackToMermaid() {
         let model = ComponentModel(
             components: [Component(name: "Lib", kind: .library)]
         )
         var configuration = Configuration.default
         configuration.format = .nomnoml
         let script = ComponentScript(model: model, configuration: configuration)
-        // Nomnoml has no component-diagram dialect — fall back to PlantUML.
-        #expect(script.format == .plantuml)
+        // Nomnoml has no component-diagram dialect — fall back to Mermaid, like the
+        // sequence/activity/state/ER emitters, so presenters render it locally.
+        var mermaidConfiguration = Configuration.default
+        mermaidConfiguration.format = .mermaid
+        let mermaidScript = ComponentScript(model: model, configuration: mermaidConfiguration)
+        #expect(script.format == .mermaid)
+        #expect(script.text == mermaidScript.text)
         #expect(script.componentLayout == nil)
     }
 }
