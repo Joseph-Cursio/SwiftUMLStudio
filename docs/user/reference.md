@@ -130,8 +130,7 @@ With `--output browser` (the default) or `browserImageOnly`, where the diagram g
 |---|---|
 | SVG document | Written to `diagram.svg` in the temporary directory, replacing any earlier one, and opened with the app macOS has registered for `.svg` files |
 | Nomnoml (`classdiagram`, `deps`) | Opened at nomnoml.com |
-| Mermaid fallback from `--format svg` (`state`, `er`) | Opened at mermaid.live, as with `--format mermaid` |
-| Mermaid fallback from `--format nomnoml` (`sequence`, `activity`, `state`, `er`) | Opened at nomnoml.com, which cannot render Mermaid. Use `--format mermaid` for these subcommands instead. |
+| Mermaid fallback from `--format nomnoml` (`sequence`, `activity`, `state`, `er`) or `--format svg` (`state`, `er`) | Opened at mermaid.live, as with `--format mermaid` |
 | PlantUML fallback (`component --format nomnoml`) | Opened at planttext.com, as with `--format plantuml` |
 
 ---
@@ -1617,7 +1616,7 @@ Holds a rendered sequence diagram. Produced by `SequenceDiagramGenerator`. Confo
 
 ```swift
 var text: String          // The sequence diagram markup
-var format: DiagramFormat // .plantuml or .mermaid
+var format: DiagramFormat // .plantuml, .mermaid or .svg; .nomnoml falls back to .mermaid
 func encodeText() -> String  // PlantUML URL encoding
 
 // Returned when the entry point doesn't match any source, or when traversal yields nothing
@@ -1724,8 +1723,8 @@ public init(model: ERModel, configuration: Configuration)
 |---|---|
 | `.plantuml` | PlantUML `entity` blocks with primary-key separators and `<<UK>>`/`<<transient>>` stereotypes |
 | `.mermaid` | Mermaid `erDiagram` with crow's-foot connectors derived from `ERCardinality` |
-| `.nomnoml` | Falls through to the Mermaid text (Nomnoml has no ER dialect) |
-| `.svg` | Falls through to the Mermaid text (no native ER layout) |
+| `.nomnoml` | Falls through to the Mermaid text and reports `.mermaid` (Nomnoml has no ER dialect) |
+| `.svg` | Falls through to the Mermaid text and reports `.mermaid` (no native ER layout) |
 
 **PlantUML output sample:**
 

@@ -990,8 +990,6 @@ A few things render differently between PlantUML and Mermaid:
 
 **Sequence diagram: entry point must exist.** If no function matches `TypeName.methodName` exactly in the parsed sources, the diagram is empty.
 
-**`--format nomnoml` sends Mermaid to nomnoml.com for some diagram types.** `sequence`, `activity`, `state`, and `er` have no Nomnoml emitter and fall back to Mermaid text, but browser output still opens that text at nomnoml.com, which cannot render it. Use `--format mermaid` for these subcommands. (`--format svg` on `state` and `er` falls back to Mermaid too, but opens at mermaid.live as expected.)
-
 ---
 
 ## Getting Help

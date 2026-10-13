@@ -145,6 +145,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   them. The output is otherwise unchanged. A diagram saved to Studio's
   history before the fix keeps its old text until it is regenerated. New
   tests parse the output as XML as well as checking substrings.
+- **`--format nomnoml` on `sequence`, `activity`, `state` and `er` opens
+  at mermaid.live instead of nomnoml.com** (#85). These four have no
+  Nomnoml emitter and fall back to Mermaid text, but their scripts still
+  reported `.nomnoml`. `BrowserPresenter` picks its site from that, so
+  browser output handed Mermaid source to nomnoml.com, which drew it as
+  literal text or failed to parse it. Studio chose the same way: its
+  preview fed the text to `nomnoml.js`, and **Export markup…** saved it
+  as `.nomnoml`. The fallbacks now report `.mermaid`, as the
+  `--format svg` fallback in `state` and `er` already did, so the CLI
+  opens mermaid.live and Studio previews and exports the text as
+  Mermaid. A diagram reopened from Studio's history still takes the
+  format picker's value rather than the script's, so it is still sent
+  to `nomnoml.js`.
+- **`--format` help no longer lists only `plantuml` and `mermaid`**
+  (#82). The hand-written "Options: plantuml, mermaid" sat beside
+  ArgumentParser's own "(values: plantuml, mermaid, nomnoml, svg)",
+  which it derives from `DiagramFormat`. Only the generated list is
+  left, so the two cannot disagree again.
 
 ### Documentation
 
