@@ -275,7 +275,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   parent and its own name. Entries are matched by where the files are,
   so one naming a symlinked directory acts on the directory it leads to,
   and on a case-insensitive volume those leading directories match in
-  any case.
+  any case. `matchGlobs` lists a directory that is itself a symlink
+  through the link, rather than finding nothing there.
 - **A CRLF line break after an `@Relationship` inverse no longer draws
   the relationship twice.** `ERModelExtractor` read the property name in
   `inverse: \Book.author` up to the first `,`, `)`, space, tab or `"\n"`.

@@ -181,6 +181,8 @@ func matchGlobs(_ globs: [Glob], in directory: String) -> [URL] {
             }
         }
     }
-    enumerate(URL(fileURLWithPath: directory))
+    // Listing a symlink to a directory yields nothing, so list where it leads.
+    // A symlinked parent needs no help: its listing is reported resolved.
+    enumerate(URL(fileURLWithPath: canonicalPath(directory)))
     return urls
 }

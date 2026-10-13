@@ -312,4 +312,13 @@ extension FileCollectorSymlinkTests {
         let files = FileCollector().getFiles(for: ["."], in: project, honoring: options)
         #expect(names(files) == ["MockA.swift"])
     }
+
+    @Test("matchGlobs finds files when its directory is itself a symlink")
+    func matchGlobsInLinkedDirectory() throws {
+        let fixture = try Fixture()
+        defer { fixture.remove() }
+        let directory = fixture.linkedProject.path
+        let results = matchGlobs(expandGlobs("**/Mock*.swift", in: directory), in: directory)
+        #expect(names(results) == ["MockA.swift"])
+    }
 }
