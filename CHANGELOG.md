@@ -241,6 +241,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   to what the user chose and the script to the format of its text.
   Entries saved before the fix carry no script format and reopen as
   before; regenerating one and saving it again records it.
+- **The Nomnoml preview shows non-ASCII names as written.**
+  `NomnomlHTMLBuilder` base64-encoded the diagram's UTF-8 bytes and the
+  page decoded them with `atob`, which returns one Latin-1 character per
+  byte and leaves the UTF-8 undecoded. Every accented letter, CJK name or
+  emoji reached nomnoml.js as mojibake: `struct Café { var naïve: Int }`
+  drew as `CafÃ©` and `naÃ¯ve`. The page now carries the source as a
+  JavaScript string literal, which needs no decoding. It is JSON-encoded
+  with `<`, U+2028 and U+2029 escaped, so `</script>` in a diagram cannot
+  end the script element. The tests now run the page's own script in
+  JavaScriptCore and check what reaches `nomnoml.draw`; the old test
+  decoded the base64 in Swift as UTF-8, which the page never did. The
+  Mermaid preview was not affected.
 
 ### Documentation
 
