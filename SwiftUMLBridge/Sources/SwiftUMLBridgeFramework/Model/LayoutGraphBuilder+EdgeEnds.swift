@@ -126,10 +126,14 @@ extension LayoutGraphBuilder {
         private var lookup = TypeLookup()
         private var idForDeclaration: [ObjectIdentifier: String] = [:]
         private var hiddenDeclarations: Set<ObjectIdentifier> = []
+        /// `standIn` and `fallback` for each name, worked out once: searching per edge end made a
+        /// diagram of many files that each hide a same-named type cubic in their number.
+        private var extensionEnds = ExtensionEnds()
 
         mutating func record(_ nodeId: String, for entry: DiagramItem) {
             lookup.record(Declared(entry.item, kind: entry.kind, nodeId: nodeId), named: entry.name)
             idForDeclaration[ObjectIdentifier(entry.item)] = nodeId
+            extensionEnds = ExtensionEnds()
         }
 
         /// Records a type the diagram hides. A hidden extension is simply gone: only a type can
@@ -138,6 +142,7 @@ extension LayoutGraphBuilder {
             guard entry.kind != .extension else { return }
             lookup.record(Declared(entry.item, kind: entry.kind, nodeId: nil), named: entry.name)
             hiddenDeclarations.insert(ObjectIdentifier(entry.item))
+            extensionEnds = ExtensionEnds()
         }
 
         func id(of end: EdgeEnd) -> String? {
@@ -175,10 +180,7 @@ extension LayoutGraphBuilder {
         /// finds it, or `nil` to drop the edge. The access-level filter passes extensions, so an
         /// extension can be drawn while its type is hidden.
         private func standIn(for declaration: ObjectIdentifier, named name: String) -> String? {
-            lookup.declarations(named: name).first { candidate in
-                candidate.isExtension && candidate.nodeId != nil
-                    && lookup.type(named: name, from: candidate.scope)?.declaration == declaration
-            }?.nodeId
+            extensionEnds.ends(named: name, in: lookup).standIns[declaration]
         }
 
         /// The end for a name no visible type takes, so a type outside the diagram, such as
@@ -187,10 +189,37 @@ extension LayoutGraphBuilder {
         /// none. An extension of a type the reference cannot see, a hidden `fileprivate` one,
         /// say, extends something else and never stands in.
         private func fallback(named name: String) -> String? {
-            lookup.declarations(named: name).first { candidate in
-                candidate.isExtension && candidate.nodeId != nil
-                    && lookup.type(named: name, from: candidate.scope) == nil
-            }?.nodeId
+            extensionEnds.ends(named: name, in: lookup).fallback
+        }
+    }
+
+    /// Where the drawn extensions of one name end edges: for each type their own lookups find,
+    /// the first such extension (`EdgeEndIds.standIn`), and the first that finds none
+    /// (`EdgeEndIds.fallback`), each the node id of a drawn extension.
+    struct NameEnds {
+        var standIns: [ObjectIdentifier: String] = [:]
+        var fallback: String?
+    }
+
+    /// `NameEnds` for each name, filled the first time an edge end asks for it. A class, so
+    /// `EdgeEndIds.id(of:)` can fill it without being mutating; `EdgeEndIds` starts a new one
+    /// whenever it records a declaration, so no entry outlives what it was worked out from.
+    final class ExtensionEnds {
+        private var endsForName: [String: NameEnds] = [:]
+
+        func ends(named name: String, in lookup: TypeLookup) -> NameEnds {
+            if let known = endsForName[name] { return known }
+            var ends = NameEnds()
+            for candidate in lookup.declarations(named: name) where candidate.isExtension {
+                guard let nodeId = candidate.nodeId else { continue }
+                if let type = lookup.type(named: name, from: candidate.scope) {
+                    if ends.standIns[type.declaration] == nil { ends.standIns[type.declaration] = nodeId }
+                } else if ends.fallback == nil {
+                    ends.fallback = nodeId
+                }
+            }
+            endsForName[name] = ends
+            return ends
         }
     }
 

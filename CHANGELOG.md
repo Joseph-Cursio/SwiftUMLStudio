@@ -96,6 +96,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed — Bridge
 
+- **A type nested in a hidden type no longer hangs off a drawn element of
+  the same name in PlantUML and Nomnoml** (#117). When the diagram does
+  not draw a nested type's parent, the edge named that parent by its
+  qualified name (#67), which for a top-level type is its short name, and
+  so can be the id of a drawn, unrelated element. With `fileprivate struct
+  Foo { struct Inner {} }` in one file and `extension Foo { func bar() {}
+  }`, or a `private struct Foo`, in another, the diagram drew `Foo +--
+  Foo.Inner` onto that other element. With extensions hidden, a type
+  nested in an extension hung off the first type of the extended name, not
+  the one the extension sees. The edge now ends where SVG ends it: on a
+  drawn extension that stands in for the hidden type, or on the type a
+  hidden extension extends. Otherwise it still names the parent by its
+  qualified name, unless a drawn element already has that id; then, as in
+  SVG, it is not drawn.
 - **SVG class diagrams draw only the types the other formats draw** (#74).
   `LayoutGraphBuilder` kept every declaration of a drawable kind, so
   `showExtensions: none` (`--hide-extensions`), `elements.exclude` and
@@ -111,9 +125,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   type takes no name written in another file, nor one below `package` a
   name written in another module. A type is as visible as the most
   restrictive of itself, the types and the extension enclosing it, and
-  the type that extension extends. (The text formats link by bare name,
-  so there such an edge still lands on whichever declaration holds that
-  name.)
+  the type that extension extends. (The text formats link a supertype or
+  conformance by bare name, so there such an edge still lands on
+  whichever declaration holds that name; a nested type's edge follows
+  SVG, see above.)
 - **`relationships.realize.exclude` and `relationships.dependency.exclude`
   now hide edges** (#113). Both were decoded but never read, so the
   reference's own `realize.exclude: [Codable, Sendable]` hid nothing.
@@ -195,7 +210,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   extends a type outside the diagram and keeps its own box, which later
   such extensions merge into. A type nested in a merged extension now
   hangs off that type in every format, while keeping the extension's
-  access. When that type is hidden, the edge names it as #67's fix does.
+  access. When that type is hidden, the edge ends as for any parent the
+  diagram does not draw (see above).
 - **SVG class diagrams with merged extensions list each merged member once
   and draw a type nested in an extension once** (#73). For `.svg`,
   `DiagramScript` prepared the parsed items twice: once for text
