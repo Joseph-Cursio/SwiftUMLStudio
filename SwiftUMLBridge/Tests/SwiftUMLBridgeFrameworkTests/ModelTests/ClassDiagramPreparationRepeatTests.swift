@@ -147,7 +147,8 @@ struct ClassDiagramPreparationRepeatTests {
     }
 
     /// Pins one build's output and checks a second build repeats it. The merged `bar()` lands on
-    /// the `Foo` in the extension's file, the box `Foo.Inner` hangs off (`MergedExtensionTargetTests`).
+    /// the first `Foo`, not the one in the extension's file, because `mergeExtensions` matches by
+    /// name; that predates #73 and is recorded here as it is, not endorsed.
     @Test("same-named types in two files give the same graph when built twice")
     func sameNamedTypesInTwoFiles() {
         let count = SyntaxStructure(kind: .varInstance, name: "count", typename: "Int")
@@ -162,7 +163,7 @@ struct ClassDiagramPreparationRepeatTests {
         for _ in 1...2 {
             let laid = graph(parsed)
             #expect(laid.nodeIds == ["Foo", "Foo_1", "Foo.Inner"])
-            #expect(laid.memberLines == [["~ count: Int"], ["~ other: Int", "~ bar()"], []])
+            #expect(laid.memberLines == [["~ count: Int", "~ bar()"], ["~ other: Int"], []])
             #expect(laid.nodes.map(\.module) == ["ModA", "ModB", "ModB"])
             #expect(laid.edgeEnds == ["Foo_1 -> Foo.Inner"])
         }

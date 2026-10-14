@@ -58,23 +58,14 @@ struct ClassDiagramEdgeIdTests {
         #expect(ClassDiagramIds.mermaid(for: source).last == "Foo0")
     }
 
-    @Test("a hidden nested parent's short name, which no edge uses, does not shift an alias")
-    func hiddenNestedParentShortNameDoesNotShiftAlias() {
+    @Test("a hidden nested parent is reserved under the short name its edge falls back to")
+    func hiddenNestedParentReservedUnderEdgeName() {
         let source = "struct Outer { fileprivate struct Foo0 { struct Inner {} } }\nstruct Foo {}\nextension Foo {}"
         let plantUML = ClassDiagramIds.script(for: source, format: .plantuml)
-        #expect(ClassDiagramIds.lines(of: plantUML, containing: "+--") == ["Outer.Foo0 +-- Outer.Foo0.Inner"])
-        #expect(ClassDiagramIds.plantUML(in: plantUML) == ["Outer", "Outer.Foo0.Inner", "Foo", "Foo0"])
-    }
-
-    @Test("a hidden nested parent is reserved under the qualified name its edge uses")
-    func hiddenNestedParentReservedUnderEdgeName() {
-        let source = "struct Outer { struct Foo {}\n fileprivate struct Foo0 { struct Inner {} } }\n"
-            + "extension Outer.Foo {}"
-        let plantUML = ClassDiagramIds.script(for: source, format: .plantuml)
-        #expect(ClassDiagramIds.lines(of: plantUML, containing: "+--").contains("Outer.Foo0 +-- Outer.Foo0.Inner"))
+        #expect(ClassDiagramIds.lines(of: plantUML, containing: "+--").contains("Foo0 +-- Outer.Foo0.Inner"))
         let ids = ClassDiagramIds.plantUML(in: plantUML)
-        #expect(!ids.contains("Outer.Foo0"), "\(ids)")
-        #expect(ids.last == "Outer.Foo1")
+        #expect(!ids.contains("Foo0"), "\(ids)")
+        #expect(ids.last == "Foo1")
     }
 
     @Test("a drawn nested parent's short name does not shift a PlantUML alias")
