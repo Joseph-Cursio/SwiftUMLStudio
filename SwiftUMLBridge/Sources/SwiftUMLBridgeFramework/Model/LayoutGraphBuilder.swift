@@ -38,15 +38,7 @@ struct LayoutGraphBuilder {
     }
 
     /// Where a declaration lives, for picking among types that share a name.
-    private struct Scope {
-        let filePath: String?
-        let module: String?
-
-        init(of item: SyntaxStructure) {
-            filePath = item.sourceLocation?.filePath
-            module = item.module
-        }
-    }
+    private typealias Scope = DeclarationScope
 
     /// One end of a `PendingEdge`, known by node id or — until every node exists — by what owns it.
     private enum EdgeEnd {
@@ -92,21 +84,13 @@ struct LayoutGraphBuilder {
             }
         }
 
-        /// The type a name means where it is written, close to how Swift looks it up: one
-        /// declared in the same file, then in the same module, then the first in the diagram;
+        /// The type a name means where it is written (`DeclarationScope.nearest(among:scope:)`);
         /// `nil` when the diagram draws no type of that name, only extensions or nothing. A name
         /// is never matched against node ids: an undeclared `Foo_1` must not land on the node
         /// issued `Foo_1` as the second declaration of `Foo`.
         private func typeId(forName name: String, from scope: Scope) -> String? {
             let types = (declaredForName[name] ?? []).filter { !$0.isExtension }
-            guard let first = types.first else { return nil }
-            if let filePath = scope.filePath, let local = types.first(where: { $0.scope.filePath == filePath }) {
-                return local.nodeId
-            }
-            if let module = scope.module, let sibling = types.first(where: { $0.scope.module == module }) {
-                return sibling.nodeId
-            }
-            return first.nodeId
+            return scope.nearest(among: types, scope: \.scope)?.nodeId
         }
     }
 

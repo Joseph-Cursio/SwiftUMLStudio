@@ -27,34 +27,44 @@ extension Array where Element == SyntaxStructure {
     /// merges extensions with their parent types
     ///
     /// Appends each extension's members into its type's `substructure` and sets their
-    /// `memberSuffix`, editing the structures in place. Diagram code calls it only through
-    /// `preparedForClassDiagram(with:)`, which hands it a private copy.
+    /// `memberSuffix`, editing the structures in place. A type nested in the extension is
+    /// re-parented to that type, so its edge leaves the box that shows the extension's members.
+    /// Diagram code calls it only through `preparedForClassDiagram(with:)`, which hands it a
+    /// private copy.
     /// - Parameter mergedMemberIndicator: string appended as suffix to a member that originates from an extension
     /// - Returns: new array with at most 1 extension per type
     func mergeExtensions(mergedMemberIndicator: String? = "<&bolt>") -> [SyntaxStructure] {
         var processedItems = self
 
         for structure in self where structure.kind == .extension {
-            guard let parentIndex = processedItems.firstIndex(where: { $0.fullName == structure.fullName }) else {
-                continue
-            }
-            let parent = processedItems[parentIndex]
-            guard structure != parent else { continue }
+            guard let parent = processedItems.mergeTarget(for: structure), structure != parent else { continue }
             processedItems.removeAll(where: { $0 == structure })
             guard let members = structure.substructure else { continue }
             if let memberSuffix = mergedMemberIndicator, parent.kind != .extension {
-                for index in members.indices {
-                    guard members[index].name != nil else { continue }
-                    members[index].memberSuffix = memberSuffix
+                for member in members where member.name != nil {
+                    member.memberSuffix = memberSuffix
                 }
+            }
+            for member in members where member.parent == structure {
+                member.parent = parent
             }
             if parent.substructure == nil {
                 parent.substructure = []
             }
             parent.substructure?.append(contentsOf: members)
-            processedItems[parentIndex] = parent
         }
         return processedItems
+    }
+
+    /// The item `anExtension` merges into: of the types with its name, the one nearest to it as
+    /// `DeclarationScope` ranks them — the rule `LayoutGraphBuilder` resolves edges by. With no
+    /// such type, the first item of that name, so a type the sources only extend gets one box,
+    /// its first extension's.
+    private func mergeTarget(for anExtension: SyntaxStructure) -> SyntaxStructure? {
+        let sameNamed = filter { $0.fullName == anExtension.fullName }
+        let types = sameNamed.filter { $0.kind != .extension }
+        return DeclarationScope(of: anExtension).nearest(among: types, scope: DeclarationScope.init(of:))
+            ?? sameNamed.first
     }
 
     /// Flattens nested types into the list, setting each one's `parent` in place. Diagram code
