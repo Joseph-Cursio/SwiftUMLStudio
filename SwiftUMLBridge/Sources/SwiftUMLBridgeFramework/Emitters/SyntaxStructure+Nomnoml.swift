@@ -54,7 +54,8 @@ extension SyntaxStructure {
     ) -> String {
         let alias = context.uniqName(item: self, relationship: relationship)
         let typeName = displayName ?? name ?? "unknown"
-        let genericsStr = generics.map { " \($0)" } ?? ""
+        // A bracket in the header, as in `class D: Base<[Int]>`'s `<[Int]>`, would end the node.
+        let genericsStr = generics.map { " \($0.nomnomlEscaped)" } ?? ""
 
         let macroAnnotations = attributeNames.isEmpty ? "" : " <<\(attributeNames.joined(separator: ", "))>>"
         let moduleAnnotation = module.map { " <<\($0)>>" } ?? ""

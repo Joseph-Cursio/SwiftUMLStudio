@@ -13,7 +13,7 @@ struct SyntaxStructureCloneTests {
     static let storedProperties = [
         "accessibility", "attribute", "attributes", "elements", "inheritedTypes", "kind", "name",
         "runtimename", "substructure", "typename", "memberSuffix", "parent", "sourceLocation", "module",
-        "mergedInto"
+        "mergedInto", "boundGenericArguments"
     ]
 
     /// A structure with every stored property set.
@@ -35,6 +35,7 @@ struct SyntaxStructureCloneTests {
         item.sourceLocation = SourceLocation(filePath: "A.swift", line: 3, column: 5)
         item.module = "Core"
         item.mergedInto = parent
+        item.boundGenericArguments = "Int"
         return item
     }
 

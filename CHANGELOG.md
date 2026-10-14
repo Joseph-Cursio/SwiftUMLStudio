@@ -96,6 +96,53 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed — Bridge
 
+- **An extension written with generic arguments or sugar is an extension
+  of the type it names** (#66). `extension Foo<Int>` (SE-0361),
+  `extension [Int]`, `extension [String: Int]` and `extension Int?` were
+  named after their whole text, which class diagrams used as the
+  element's id. Mermaid then rejected the whole diagram, in the CLI and in
+  Studio's preview; PlantUML read `as Foo<Int>` as a second `Foo`; no
+  `ext` edge was drawn; `--merge-extensions` left the extension apart; a
+  type nested in it kept the brackets even with extensions hidden; and
+  `extension Foo<Swift.Int>` was labelled `Int>`. They are now named
+  `Foo`, `Array`, `Dictionary` and `Optional` (`Outer.Inner` for
+  `Outer<Int>.Inner<String>`, `InlineArray` for `[3 of Int]`), so every
+  format draws, aliases (`Foo0`), links, merges and excludes them exactly
+  as `extension Foo where T == Int`.
+  - While `elements.showGenerics` is on, the arguments they bind stay
+    visible: PlantUML `as Foo0<Int>`, Mermaid `Foo&lt;Int&gt;` (rendered
+    `Foo<Int>`), Nomnoml `Foo <Int>`, and the SVG and Studio canvas label
+    `Foo<Int>`. Sugar reads as the type it stands for (`Array<Int>`). A
+    merged box holding differently bound extensions shows none. In
+    PlantUML's generic part, which ends at the first `>`, a function
+    type's arrow reads `→` (`Array<() → Void>`); a supertype's arguments
+    get the same, so `class D: Base<() -> Void>` no longer breaks the
+    diagram.
+  - Sequence, activity and state diagrams name the type the same way: a
+    method of `extension Foo<Int>` is entered as `Foo.run`, not
+    `Foo<Int>.run`. A Mermaid sequence diagram with such a participant now
+    parses, `Foo<Swift.Int>`'s methods can be entered, and a state machine
+    driven from such an extension is found. A call on the type as the
+    extension writes it, `Foo<Int>.make()`, `Outer<Int>.Inner.make()`,
+    `Int?.make()` or `[Int].make()`, is followed into the extension, and a
+    call on an instance of a nested type, `Foo.Bar().run()`, resolves to
+    `Foo.Bar` rather than `Foo.Bar()`.
+  - `elements.exclude`, `relationships.dependency.exclude` and
+    `deps --exclude` match these extensions by the base name: `Foo` now
+    also hides `extension Foo<Int>`, and a pattern written `Foo<Int>` no
+    longer matches. `deps --types` draws their conformances from `Foo` or
+    `Array`, and `TypeInfo.name` reports the base name.
+  - Each such extension that is not the first element of its base name
+    now takes a numbered alias (`Foo0`), so later numbered aliases in the
+    same diagram move up by one per such extension.
+  - Nomnoml now gets the `ext` edge, whose ` : ext` label nomnoml cannot
+    parse yet (#69), as with every other extension edge.
+  - Studio history entries keep the script and entry point they were saved
+    with: regenerate an old Mermaid diagram, and pick an entry point saved
+    as `Foo<Int>.run` again.
+- **Nomnoml escapes brackets in a node's generic part.** `class D:
+  Base<[Int]>` gave `[<class> D <[Int]>]`, which nomnoml rejects; it is
+  now `[<class> D <(Int)>]`, escaped as members already are.
 - **A type nested in a hidden type no longer hangs off a drawn element of
   the same name in PlantUML and Nomnoml** (#117). When the diagram does
   not draw a nested type's parent, the edge named that parent by its

@@ -86,9 +86,14 @@ final class CallGraphExtractor: TypeStackVisitor {
                 isAsync: isAsync, isUnresolved: false
             )
         }
+        // A type written as the receiver, or as what makes it, is named as an extension of it is
+        // listed: `Foo<Int>.make()`, `Outer<Int>.Inner.make()`, `[Int].make()` and `Foo<Int>().run()`
+        // call into `Foo`, `Outer.Inner`, `Array` and `Foo` (#66).
+        let called = base.as(FunctionCallExprSyntax.self)?.calledExpression
         let baseText: String
-        if let funcCall = base.as(FunctionCallExprSyntax.self),
-           let declRef = funcCall.calledExpression.as(DeclReferenceExprSyntax.self) {
+        if let typeName = (called ?? base).typeReferenceName {
+            baseText = typeName
+        } else if let declRef = called?.as(DeclReferenceExprSyntax.self) {
             baseText = declRef.baseName.text
         } else {
             baseText = base.description.trimmingCharacters(in: .whitespacesAndNewlines)

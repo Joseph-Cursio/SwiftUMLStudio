@@ -76,7 +76,9 @@ extension SyntaxStructure {
         context: DiagramContext
     ) -> String {
         let alias = context.uniqName(item: self, relationship: relationship)
-        let genericsStr = generics ?? ""
+        // PlantUML's generic part ends at the first `>`, so the one in a function type's `->`
+        // (`extension [() -> Void]`) would leave the rest of the header unreadable.
+        let genericsStr = generics?.replacingOccurrences(of: "->", with: "→") ?? ""
         let body = members(context: context)
         let macroAnnotation = attributeNames.map { " <<\($0)>>" }.joined()
         let moduleAnnotation = module.map { " <<\($0)>>" } ?? ""
@@ -205,7 +207,12 @@ extension SyntaxStructure {
         element.isExcluded(byPatterns: excludeElements)
     }
 
+    /// The `<…>` clause the emitters write after an element's name: an extension's bound
+    /// arguments (`<Int>` for `extension Foo<Int>`), else a type's own parameters (`<T>`), or, for
+    /// an element with no members, its first supertype's arguments (`<[Int]>` for
+    /// `class D: Base<[Int]> {}`).
     func genericsStatement() -> String? {
+        if let boundGenericArguments { return "<\(boundGenericArguments)>" }
         guard let substructure = substructure else {
             guard let parent = inheritedTypes?.first else { return nil }
             return parent.name?.getAngleBracketsWithContent()

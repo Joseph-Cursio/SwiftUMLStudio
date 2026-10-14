@@ -94,8 +94,8 @@ final class ActivityEntryFunctionFinder: SyntaxVisitor {
     }
 
     override func visit(_ node: ExtensionDeclSyntax) -> SyntaxVisitorContinueKind {
-        let typeName = node.extendedType.description.trimmingCharacters(in: .whitespacesAndNewlines)
-        typeStack.append(typeName)
+        // Named as `TypeStackVisitor` names it, so every listed entry point is found here (#66).
+        typeStack.append(node.extendedType.extendedTypeName ?? node.extendedType.trimmedDescription)
         return .visitChildren
     }
     override func visitPost(_ node: ExtensionDeclSyntax) {
