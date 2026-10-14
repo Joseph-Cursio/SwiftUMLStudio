@@ -202,8 +202,9 @@ extension FileCollectorSymlinkTests {
     func absoluteLiteralEntries() throws {
         let fixture = try Fixture()
         defer { fixture.remove() }
-        // `alias` → `real` is no `/private` prefix, so the substring match a
-        // literal entry falls back on cannot paper over the other spelling.
+        // `alias` → `real` is no `/private` prefix, and a literal entry matches
+        // only the path it names and what lies inside it, so it must be resolved
+        // to the real path to match at all.
         let directory = try resolvedProject(fixture)
         let sub = fixture.aliasedProject.appendingPathComponent("Sub")
         var include = FileOptions()

@@ -115,11 +115,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   A brace entry now means exactly the list of its expansions, each a whole
   glob. Groups can nest, and spaces around an option are dropped. A plain
   option is a plain entry: `Sources/{App,Core}` now works as
-  `Sources/App,Sources/Core` does, and so also matches `Sources/AppKit/…`.
-  The glob reference says so, notes that braces expand only in
-  `files.include` and `files.exclude`, and corrects the description of a
-  plain string: in those fields it matches the path it names and every
-  path beginning with it, not a substring anywhere.
+  `Sources/App,Sources/Core` does. The glob reference says so, notes that
+  braces expand only in `files.include` and `files.exclude`, and corrects
+  the description of a plain string, which matches the path it names
+  and what lies inside it, not a substring anywhere.
+- **A plain `files.include` or `files.exclude` entry stops at a path
+  component** (#111). It matched every path that merely began with the
+  same text: `--exclude Sources/App` also dropped `Sources/AppKit/…` and
+  `Sources/AppDelegate.swift`, and `--exclude Generated` dropped
+  `GeneratedExtra/`. `Glob.matches` tested `path.contains`, a substring
+  match left from before entries and enumerated files were spelled
+  alike; it now takes the named path and what lies inside it.
 - **SVG class diagrams with merged extensions list each merged member once
   and draw a type nested in an extension once** (#73). For `.svg`,
   `DiagramScript` prepared the parsed items twice: once for text

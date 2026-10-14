@@ -213,10 +213,25 @@ struct GlobTests {
         #expect(glob.matches("/path/to/file.swift"))
     }
 
-    @Test("Glob.path matches substring of path")
-    func globPathMatchesSubstring() {
-        let glob = Glob.path("to/file.swift")
-        #expect(glob.matches("/path/to/file.swift"))
+    @Test("Glob.path matches what lies inside the path it names", arguments: [
+        "/p/Sources/App/A.swift", "/p/Sources/App/Sub/B.swift", "/p/Sources/App/\u{301}x.swift"
+    ])
+    func globPathMatchesInside(path: String) {
+        #expect(Glob.path("/p/Sources/App").matches(path))
+        #expect(Glob.path("/p/Sources/App/").matches(path))
+    }
+
+    /// It used to test `path.contains(globPath)`, which took every path holding it (#111).
+    @Test("Glob.path does not match a sibling, a parent, or the same names elsewhere", arguments: [
+        "/p/Sources/AppKit/K.swift", "/p/Sources/AppDelegate.swift", "/p/Sources", "/q/p/Sources/App/A.swift"
+    ])
+    func globPathStopsAtComponentBoundary(path: String) {
+        #expect(Glob.path("/p/Sources/App").matches(path) == false)
+    }
+
+    @Test("Glob.path for the root matches every absolute path")
+    func globPathRoot() {
+        #expect(Glob.path("/").matches("/p/Sources/App/A.swift"))
     }
 
     @Test("Glob.path does not match unrelated path")
