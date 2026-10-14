@@ -101,6 +101,33 @@ struct RelationshipExcludeTests {
         #expect(edges(composed, configuration(realize: ["Codable"])) == ["Shape <|.. Comp : conforms to"])
     }
 
+    // MARK: - Extension Edges
+
+    @Test("dependency.exclude hides an extension edge and moves no id", arguments: [DiagramFormat.plantuml, .mermaid])
+    func dependencyExcludeKeepsIds(format: DiagramFormat) {
+        let source = "struct Point {}\nextension Point {}\nstruct Pair {}\nextension Pair {}"
+        let hidden = script(source, configuration(dependency: ["Poi*"], format: format))
+        let shown = script(source, configuration(format: format))
+        let ids = format == .mermaid ? ClassDiagramIds.mermaid(in:) : ClassDiagramIds.plantUML(in:)
+        #expect(ClassDiagramIds.lines(of: hidden, containing: " <.. ") == ["Pair <.. Pair1 : ext"])
+        #expect(ids(hidden) == ids(shown))
+        #expect(ids(hidden) == ["Point", "Pair", "Point0", "Pair1"])
+    }
+
+    @Test("dependency.exclude leaves an extension's own conformance")
+    func dependencyExcludeKeepsConformance() {
+        let lines = edges("struct Point {}\nextension Point: Hashable {}", configuration(dependency: ["Point"]))
+        #expect(lines == ["Hashable <|-- Point : inherits"])
+    }
+
+    @Test("dependency.exclude changes nothing when extensions are merged or hidden", arguments: [
+        ExtensionVisualization.merged, .none
+    ])
+    func dependencyExcludeIdleWithoutExtensionBoxes(extensions: ExtensionVisualization) {
+        let excluded = edges(Self.model, configuration(dependency: ["Point"], extensions: extensions))
+        #expect(excluded == edges(Self.model, configuration(extensions: extensions)))
+    }
+
     @Test("an inheritance.exclude config draws what it drew before")
     func inheritanceExcludeUnchanged() {
         #expect(edges(Self.model, configuration(inheritance: ["Shape", "Codable"])) == [

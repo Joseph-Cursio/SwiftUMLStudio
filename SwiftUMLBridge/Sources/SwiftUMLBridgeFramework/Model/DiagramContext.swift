@@ -97,6 +97,12 @@ class DiagramContext {
         element.isExcluded(byPatterns: excludeElements)
     }
 
+    /// Whether the edge from extension `item` to the type it extends is drawn: not when the
+    /// extended type's name, which is the extension's own, matches `relationships.dependency.exclude`.
+    private func drawsExtensionEdge(for item: SyntaxStructure) -> Bool {
+        item.isExcluded(byPatterns: configuration.relationships.dependency?.exclude) == false
+    }
+
     func relationshipLabel(for name: String) -> String? {
         if name == "inherits" {
             return configuration.relationships.inheritance?.label
@@ -170,7 +176,9 @@ class DiagramContext {
             } while takenIdentifiers.contains(newName)
             let hasMatchingParent = uniqueNameForElement.keys
                 .first(where: { $0.name == name && $0.kind != .extension }) != nil
-            if item.kind == ElementKind.extension, hasMatchingParent {
+            // `dependency.exclude` hides only this edge (#113): the extension keeps its box, its
+            // alias and its own conformances, so no id moves.
+            if item.kind == ElementKind.extension, hasMatchingParent, drawsExtensionEdge(for: item) {
                 var connect: String
                 if format == .nomnoml || format == .svg {
                     connect = "[\(newName)] \(linkTypeDependency) [\(name)]"
