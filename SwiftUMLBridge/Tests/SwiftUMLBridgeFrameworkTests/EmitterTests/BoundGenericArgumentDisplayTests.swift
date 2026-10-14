@@ -41,6 +41,21 @@ struct BoundGenericArgumentDisplayTests {
         #expect(svgLabels(Self.bound) == ["Foo=Foo", "Foo_1=Foo<Int>"])
     }
 
+    /// Real extensions have members or conformances; neither may take the arguments' place.
+    @Test("an extension with members or a conformance shows them too")
+    func extensionWithMembersOrConformance() {
+        let source = "protocol P {}\nstruct Foo<T> {}\nextension Foo<Int> { func f() {} }\nextension Foo<String>: P {}"
+        let plantUML = ClassDiagramIds.script(for: source, format: .plantuml)
+        #expect(plantUML.contains("class \"Foo\" as Foo0<Int> << (X, orchid) extension >> {"), "\(plantUML)")
+        #expect(plantUML.contains("class \"Foo\" as Foo1<String> << (X, orchid) extension >> {"), "\(plantUML)")
+        let mermaid = ClassDiagramIds.script(for: source, format: .mermaid)
+        #expect(mermaid.contains("class Foo0[\"Foo&lt;Int&gt;\"] {"), "\(mermaid)")
+        #expect(mermaid.contains("class Foo1[\"Foo&lt;String&gt;\"] {"), "\(mermaid)")
+        let nomnoml = ClassDiagramIds.script(for: source, format: .nomnoml)
+        #expect(nomnoml.contains("[<extension> Foo <Int>|~f()]"), "\(nomnoml)")
+        #expect(nomnoml.contains("[<extension> Foo <String>]"), "\(nomnoml)")
+    }
+
     @Test("sugar shows as the type it stands for", arguments: [
         ("extension [Int] {}", "as Array<Int> ", "[\"Array&lt;Int&gt;\"]", "[<extension> Array <Int>]"),
         ("extension Int? {}", "as Optional<Int> ", "[\"Optional&lt;Int&gt;\"]", "[<extension> Optional <Int>]"),
@@ -77,6 +92,7 @@ struct BoundGenericArgumentDisplayTests {
 
     @Test("a merged box shows them only while every extension in it binds the same ones", arguments: [
         ("extension Array<Int> { func one() {} }\nextension Array<String> { func two() {} }", ["Array=Array"]),
+        ("extension Array<Int> { func one() {} }\nextension Array<String> {}", ["Array=Array"]),
         ("extension Array<Int> { func one() {} }\nextension Array<Int> { func two() {} }", ["Array=Array<Int>"]),
         ("extension Array<Int> { func one() {} }\nextension Array { func two() {} }", ["Array=Array"]),
         ("struct Foo<T> {}\nextension Foo<Int> { func one() {} }", ["Foo=Foo"])

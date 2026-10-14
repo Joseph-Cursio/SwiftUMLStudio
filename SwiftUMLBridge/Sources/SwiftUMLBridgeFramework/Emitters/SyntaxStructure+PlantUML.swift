@@ -208,7 +208,9 @@ extension SyntaxStructure {
     }
 
     /// The `<…>` clause the emitters write after an element's name: an extension's bound
-    /// arguments (`<Int>` for `extension Foo<Int>`), else a type's own parameters (`<T>`).
+    /// arguments (`<Int>` for `extension Foo<Int>`), else a type's own parameters (`<T>`), or, for
+    /// an element with no members, its first supertype's arguments (`<[Int]>` for
+    /// `class D: Base<[Int]> {}`).
     func genericsStatement() -> String? {
         if let boundGenericArguments { return "<\(boundGenericArguments)>" }
         guard let substructure = substructure else {
