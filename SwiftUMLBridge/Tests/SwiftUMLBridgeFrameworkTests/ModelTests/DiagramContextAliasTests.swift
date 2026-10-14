@@ -70,6 +70,21 @@ struct DiagramContextAliasTests {
         #expect(ctx.takenIdentifiers == ["C", "Base0"])
     }
 
+    /// `realize.exclude` is pooled with `inheritance.exclude` at the same gate, so an edge it
+    /// hides leaves its target free too (#113).
+    @Test("a realize-excluded edge's target is left free as well")
+    func realizeExcludedTargetIsNotReserved() {
+        let config = Configuration(relationships: RelationshipOptions(realize: Relationship(exclude: ["Hidden0"])))
+        let ctx = DiagramContext(configuration: config)
+        let child = SyntaxStructure(
+            inheritedTypes: [SyntaxStructure(name: "Base0"), SyntaxStructure(name: "Hidden0")],
+            kind: .struct,
+            name: "C"
+        )
+        ctx.reserveIdentifiers(drawing: [child])
+        #expect(ctx.takenIdentifiers == ["C", "Base0"])
+    }
+
     @Test("each part of a composition is reserved")
     func compositionPartsAreReserved() {
         let ctx = DiagramContext()

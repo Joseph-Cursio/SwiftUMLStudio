@@ -53,11 +53,13 @@ class DiagramContext {
     var index = 0
 
     /// The id `addLinking` writes for `parent`'s end of an edge, or `nil` when
-    /// `relationships.inheritance.exclude` suppresses the edge.
+    /// `relationships.inheritance.exclude` or `relationships.realize.exclude` suppresses the
+    /// edge. Both drawing and `reserveIdentifiers(drawing:)` go through here, so an excluded
+    /// target is neither drawn nor reserved.
     func linkTarget(for parent: SyntaxStructure) -> String? {
         guard skipLinking(
             element: parent,
-            basedOn: configuration.relationships.inheritance?.exclude
+            basedOn: configuration.relationships.supertypeExcludePatterns
         ) == false else { return nil }
         let linkTo = parent.name?.removeAngleBracketsWithContent() ?? "___"
         return linkTo.starts(with: "@") ? "\"\(linkTo)\"" : linkTo

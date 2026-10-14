@@ -12,12 +12,26 @@ public struct RelationshipOptions: Codable, Sendable {
         self.dependency = dependency
     }
 
-    /// The subclass-to-superclass inheritance edge, or `nil` to omit it.
+    /// The subclass-to-superclass inheritance edge. `nil` draws these edges with no label or
+    /// style; it does not hide them.
     public var inheritance: Relationship? = Relationship(label: "inherits")
-    /// The type-to-protocol conformance ("realize") edge, or `nil` to omit it.
+    /// The type-to-protocol conformance ("realize") edge. `nil` draws these edges with no label
+    /// or style; it does not hide them.
     public var realize: Relationship? = Relationship(label: "conforms to")
-    /// The extension-to-base-type dependency edge, or `nil` to omit it.
+    /// The extension-to-base-type dependency edge. `nil` draws these edges with no style, and
+    /// labelled `ext`; it does not hide them.
     public var dependency: Relationship? = Relationship(label: "ext")
+}
+
+extension RelationshipOptions {
+    /// The patterns that hide an edge from a type to one of its supertypes: `inheritance` and
+    /// `realize` excludes together. Which of the two an edge is drawn as depends on whether the
+    /// diagram declares the parent: an undeclared protocol such as `Codable` is drawn as
+    /// inheritance. So either list hides every edge to a name it matches, and the documented
+    /// `realize.exclude: [Codable, Sendable]` works (#113).
+    var supertypeExcludePatterns: [String] {
+        (inheritance?.exclude ?? []) + (realize?.exclude ?? [])
+    }
 }
 
 /// Relationship metadata on if/how to visualize them in a class diagram
@@ -32,6 +46,9 @@ public struct Relationship: Codable, Sendable {
     public var label: String?
     /// The line and arrowhead style for the edge, or `nil` for the format default.
     public var style: RelationshipStyle?
-    /// Name patterns whose edges of this kind are suppressed.
+    /// Glob patterns for names whose edges are hidden. For `inheritance` and `realize` they
+    /// match the supertype's name as written, generic arguments included, and the two lists
+    /// are pooled (`supertypeExcludePatterns`). For `dependency` they match the extended
+    /// type's name, and hide only the edge from an extension to that type.
     public var exclude: [String]?
 }
