@@ -27,7 +27,7 @@ extension RelationshipOptions {
     /// The patterns that hide an edge from a type to one of its supertypes: `inheritance` and
     /// `realize` excludes together. Which of the two an edge is drawn as depends on whether the
     /// diagram declares the parent: an undeclared protocol such as `Codable` is drawn as
-    /// inheritance. So either list hides every edge to a name it matches, and the documented
+    /// inheritance. So either list hides every supertype edge to a name it matches, and the documented
     /// `realize.exclude: [Codable, Sendable]` works (#113).
     var supertypeExcludePatterns: [String] {
         (inheritance?.exclude ?? []) + (realize?.exclude ?? [])

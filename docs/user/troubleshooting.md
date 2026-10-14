@@ -167,7 +167,7 @@ In order of impact:
 2. `--hide-extensions` or `--merge-extensions` (classdiagram) — strip or fold extensions.
 3. `.swiftumlbridge.yml` filters — `elements.exclude` for type patterns, `files.exclude` for paths.
 4. `--exclude` flags — same as #3 but ad-hoc.
-5. Configure `relationships.inheritance.exclude` to drop noisy protocols like `Codable` / `Hashable`.
+5. Configure `relationships.inheritance.exclude` or `relationships.realize.exclude` (the two are pooled) to drop noisy protocols like `Codable` / `Hashable`.
 
 ### Mermaid component diagram looks like a flowchart, not UML components
 
