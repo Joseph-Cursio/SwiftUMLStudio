@@ -110,13 +110,12 @@ internal func enumeratedPath(ofEntry path: String) -> String {
 /// a symlink below it. The `pattern` is the rest, as `expandPath` spells it.
 /// Only the entry is searched for glob syntax: a relative entry's search
 /// directory is a literal path however it is named, so it is always anchor.
-/// A `{…}` group is glob syntax too, though by now it is a `<<<n>>>` token. An
-/// entry with no glob syntax is all anchor, by `enumeratedPath(ofEntry:)`.
+/// Its `{…}` groups are already expanded, by `expandingBraces(in:)`. An entry
+/// with no glob syntax is all anchor, by `enumeratedPath(ofEntry:)`.
 internal func splitGlobEntry(_ entry: String, in directory: String) -> (anchor: String, pattern: String) {
     let path = expandPath(entry, in: directory).path
     let components = entry.components(separatedBy: "/")
-    guard let patternStart = components.firstIndex(where: { pathContainsGlobSyntax($0) || $0.contains("<<<") })
-    else {
+    guard let patternStart = components.firstIndex(where: pathContainsGlobSyntax) else {
         return (enumeratedPath(ofEntry: path), "")
     }
     let leading = components[..<patternStart].joined(separator: "/")
@@ -128,21 +127,64 @@ internal func splitGlobEntry(_ entry: String, in directory: String) -> (anchor: 
     return (canonicalPath(anchor), String(path.dropFirst(prefix.count).drop { $0 == "/" }))
 }
 
-/// The anchored regex for an entry split by `splitGlobEntry`, with each
-/// `<<<n>>>` token in `pattern` replaced by its alternation from `tokens`. The
-/// anchor is a literal path, so it is escaped whole: read as glob syntax, a
-/// directory named `Proj [old]` became a character class that never matched
-/// it, and a `*` or `?` in a directory name matched its siblings as well.
-internal func globRegexPattern(anchor: String, pattern: String, tokens: [String: String] = [:]) -> String {
+/// The anchored regex for an entry split by `splitGlobEntry`. The anchor is a
+/// literal path, so it is escaped whole: read as glob syntax, a directory named
+/// `Proj [old]` became a character class that never matched it, and a `*` or
+/// `?` in a directory name matched its siblings as well.
+internal func globRegexPattern(anchor: String, pattern: String) -> String {
     guard !pattern.isEmpty else {
         return "^\(NSRegularExpression.escapedPattern(for: anchor))$"
     }
-    var patternRegex = String(pattern.globPatternToRegex().dropFirst())
-    for (token, replacement) in tokens {
-        patternRegex = patternRegex.replacingOccurrences(of: token, with: replacement)
-    }
+    let patternRegex = String(pattern.globPatternToRegex().dropFirst())
     let directory = anchor.hasSuffix("/") ? anchor : anchor + "/"
     return "^" + NSRegularExpression.escapedPattern(for: directory) + patternRegex
+}
+
+/// Marks a group's place while `expandingBraces(in:)` collects the groups. No
+/// path can hold a NUL, so no entry can spell a mark itself.
+private let braceMark: Character = "\u{0}"
+
+/// `paths`, a comma-delimited list of entries, with every `{…}` group expanded:
+/// an entry becomes one entry per option, so `Sources/{App,Core}/*.swift` is
+/// `Sources/App/*.swift,Sources/Core/*.swift`. An entry with several groups
+/// becomes every combination, and a group can nest in an option. Unlike a
+/// shell, a group needs no comma: `{a}` is `a`. Spaces around an option are
+/// dropped, as around a list entry. A `{` or `}` that closes no group is left
+/// as written.
+///
+/// Expanding the text, rather than turning a group into a regex alternation,
+/// makes a brace entry mean exactly the list of its expansions (#58). Each
+/// expansion is then a whole glob: an option's `*`, `?`, `^` or `$` means
+/// what it means outside braces, a `**` at the end of an option still takes
+/// the `/` after the group, and a directory an option names is anchored, so
+/// a symlink to one is resolved like any other.
+internal func expandingBraces(in paths: String) -> String {
+    // Not a path either, but a list holding a NUL is left as written, so no mark is ambiguous.
+    guard !paths.contains(braceMark) else { return paths }
+    var text = paths
+    var groups: [[String]] = []
+    // Innermost groups first, so an outer group's options can hold inner ones. An option only
+    // ever holds marks of groups collected before its own, so expanding a mark always ends.
+    while let range = text.range(of: "\\{[^{}]+\\}", options: .regularExpression) {
+        groups.append(text[range].dropFirst().dropLast().components(separatedBy: ",").map {
+            $0.trimmingCharacters(in: .whitespacesAndNewlines)
+        })
+        text.replaceSubrange(range, with: "\(braceMark)\(groups.count - 1)\(braceMark)")
+    }
+    guard !groups.isEmpty else { return paths }
+
+    func expansions(of entry: String) -> [String] {
+        guard let open = entry.firstIndex(of: braceMark),
+              let close = entry[entry.index(after: open)...].firstIndex(of: braceMark),
+              let index = Int(entry[entry.index(after: open)..<close]) else {
+            return [entry]
+        }
+        return groups[index].flatMap { option in
+            expansions(of: entry.replacingCharacters(in: open...close, with: option))
+        }
+    }
+    // The groups' own commas are inside marks now, so the rest separate entries.
+    return text.components(separatedBy: ",").flatMap(expansions).joined(separator: ",")
 }
 
 /// Expand one or more comma-delimited file paths using glob syntax
@@ -150,28 +192,21 @@ internal func expandGlobs(_ paths: String, in directory: String) -> [Glob] {
     // Each entry is anchored where enumeration will report its files, by
     // `enumeratedPath(ofEntry:)` or `splitGlobEntry(_:in:)`, which resolve
     // the search directory along with the rest of the entry's directories.
+    // Whether the list is read as globs is decided on the list as written: a
+    // `{…}` group counts even when its options hold no glob syntax, so a
+    // brace-free entry beside it means what it meant before groups expanded.
     guard pathContainsGlobSyntax(paths) else {
         return parseCommaDelimitedList(paths).map {
             .path(enumeratedPath(ofEntry: expandPath($0, in: directory).path))
         }
     }
-    var paths = paths
-    var tokens = [String: String]()
-    while let range = paths.range(of: "\\{[^}]+\\}", options: .regularExpression) {
-        let options = paths[range].dropFirst().dropLast()
-            .replacingOccurrences(of: "[.+(){\\\\|]", with: "\\\\$0", options: .regularExpression)
-            .components(separatedBy: ",")
-        let token = "<<<\(tokens.count)>>>"
-        tokens[token] = "(\(options.joined(separator: "|")))"
-        paths.replaceSubrange(range, with: token)
-    }
-    return parseCommaDelimitedList(paths).map { entry -> Glob in
+    return parseCommaDelimitedList(expandingBraces(in: paths)).map { entry -> Glob in
         let path = expandPath(entry, in: directory).path
         if FileManager.default.fileExists(atPath: path) {
             return .path(enumeratedPath(ofEntry: path))
         }
         let (anchor, pattern) = splitGlobEntry(entry, in: directory)
-        let regex = globRegexPattern(anchor: anchor, pattern: pattern, tokens: tokens)
+        let regex = globRegexPattern(anchor: anchor, pattern: pattern)
         do {
             return try .regex(NSRegularExpression(pattern: regex, options: []))
         } catch {

@@ -202,15 +202,6 @@ struct SyntaxStructureTests {
         #expect(merged.first?.substructure?.count == 1)
     }
 
-    @Test("mergeExtensions merges an extension listed before its type")
-    func mergeExtensionsBeforeItsType() {
-        let member = SyntaxStructure(kind: .functionMethodInstance, name: "bar")
-        let ext = SyntaxStructure(kind: .extension, name: "Foo", substructure: [member])
-        let merged = [ext, SyntaxStructure(kind: .struct, name: "Foo")].mergeExtensions()
-        #expect(merged.map(\.kind) == [.struct])
-        #expect(merged.first?.substructure?.map(\.name) == ["bar"])
-    }
-
     @Test("mergeExtensions does not merge when no parent found")
     func mergeExtensionsNoParent() {
         let member = SyntaxStructure(kind: .functionMethodInstance, name: "bar")

@@ -118,10 +118,17 @@ struct GlobTests {
         #expect(globs.isEmpty == false)
     }
 
-    @Test("expandGlobs handles brace expansion")
-    func expandGlobsBraceExpansion() {
-        let globs = expandGlobs("{Mock0,Mock1}File.swift", in: projectMockURL.path)
-        #expect(globs.isEmpty == false)
+    /// A brace entry used to come back as one glob whatever happened to it, even a `.path` that
+    /// matched nothing when its regex did not compile, so a non-empty result proved nothing (#58).
+    /// It now means exactly the list of its expansions.
+    @Test("expandGlobs expands a brace entry into its options", arguments: [
+        ("{Mock0,Mock1}File.swift", "Mock0File.swift,Mock1File.swift"),
+        ("{*Kit,?ar}.swift", "*Kit.swift,?ar.swift")
+    ])
+    func expandGlobsBraceExpansion(braced: String, listed: String) {
+        let globs = expandGlobs(braced, in: projectMockURL.path)
+        #expect(globs.count == 2)
+        #expect(globs.map(\.description) == expandGlobs(listed, in: projectMockURL.path).map(\.description))
     }
 
     @Test("expandGlobs with comma-delimited paths produces multiple globs")
@@ -160,13 +167,6 @@ struct GlobTests {
         #expect(split.pattern == "*.swift")
     }
 
-    @Test("splitGlobEntry starts the pattern at a brace token")
-    func splitAtBraceToken() {
-        let split = splitGlobEntry("Sources/<<<0>>>/*.swift", in: "/d")
-        #expect(split.anchor == "/d/Sources")
-        #expect(split.pattern == "<<<0>>>/*.swift")
-    }
-
     @Test("splitGlobEntry drops a trailing slash, as expandPath does")
     func splitTrailingSlash() {
         let split = splitGlobEntry("Sources/**/", in: "/d")
@@ -203,12 +203,6 @@ struct GlobTests {
     @Test("globRegexPattern matches an anchor with no pattern exactly")
     func regexAnchorOnly() {
         #expect(globRegexPattern(anchor: "/d*/Foo.swift", pattern: "") == "^\\/d\\*\\/Foo\\.swift$")
-    }
-
-    @Test("globRegexPattern replaces brace tokens in the pattern")
-    func regexBraceTokens() {
-        let regex = globRegexPattern(anchor: "/d", pattern: "<<<0>>>.swift", tokens: ["<<<0>>>": "(A|B)"])
-        #expect(regex == "^\\/d\\/(A|B)\\.swift$")
     }
 
     // MARK: - Glob.matches
