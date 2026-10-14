@@ -68,12 +68,49 @@ struct NestedEdgeStandInTests {
         #expect(edges(items, .svg) == ["Foo -> Foo.Inner"])
     }
 
-    /// B's extension takes the id `Foo` as the first declaration of the name; A's is `Foo0`.
-    @Test("the stand-in is the extension that sees the hidden type, not the first of its name")
-    func standInIsNotTheFirstOfItsName() {
-        let items = [hiddenFoo(), fooExtension(in: "B.swift"), fooExtension(in: "A.swift")]
-        #expect(edges(items, .plantuml) == ["Foo0 +-- Foo.Inner"])
-        #expect(edges(items, .svg) == ["Foo_1 -> Foo.Inner"])
+    /// The first extension listed takes the id `Foo` (SVG `Foo`), the second `Foo0` (`Foo_1`); the
+    /// stand-in is A's in either order, never B's, which extends another `Foo`.
+    @Test("the stand-in is the extension that sees the hidden type, whichever comes first", arguments: [
+        (["B.swift", "A.swift"], "Foo0", "Foo_1"),
+        (["A.swift", "B.swift"], "Foo", "Foo")
+    ])
+    func standInIsTheExtensionThatSeesIt(files: [String], plantUMLId: String, svgId: String) {
+        let items = [hiddenFoo()] + files.map(fooExtension(in:))
+        #expect(edges(items, .plantuml) == ["\(plantUMLId) +-- Foo.Inner"])
+        #expect(edges(items, .svg) == ["\(svgId) -> Foo.Inner"])
+    }
+
+    /// The stand-in is found by the hidden type's qualified name, `Outer.Foo`, not its short name.
+    @Test("an extension stands in for a hidden nested type")
+    func standInForHiddenNestedType() {
+        let hiddenNested = declared(.struct, "Foo", in: "A.swift", access: .fileprivate,
+                                    members: [declared(.struct, "Inner", in: "A.swift")])
+        let items = [
+            declared(.struct, "Outer", in: "A.swift", members: [hiddenNested]),
+            declared(.extension, "Outer.Foo", in: "A.swift",
+                     members: [SyntaxStructure(kind: .functionMethodInstance, name: "bar")])
+        ]
+        #expect(edges(items, .plantuml) == ["Outer.Foo +-- Outer.Foo.Inner"])
+        #expect(edges(items, .svg) == ["Outer.Foo -> Outer.Foo.Inner"])
+    }
+
+    /// Two `Foo`s in one file, as `#if os(macOS) struct Foo {} #else fileprivate struct Foo { … }
+    /// #endif` writes them: the hidden one is told apart by identity, not looked up by name.
+    @Test("a hidden type's nested type does not hang off a drawn type of its name in the same file")
+    func sameFileTypeIsNoParent() {
+        let items = [declared(.struct, "Foo", in: "A.swift"), hiddenFoo()]
+        #expect(edges(items, .plantuml).isEmpty)
+        #expect(edges(items, .nomnoml).isEmpty)
+        #expect(edges(items, .svg).isEmpty)
+    }
+
+    /// Nomnoml writes a macro only as a comment, so its name is no id there; PlantUML declares it
+    /// as a note.
+    @Test("a macro's name keeps the hidden type's name free only where it is no id")
+    func macroNameIsAnIdOnlyInPlantUML() {
+        let items = [hiddenFoo(), declared(.macro, "Foo", in: "B.swift")]
+        #expect(edges(items, .plantuml).isEmpty)
+        #expect(edges(items, .nomnoml) == ["[Foo] +- [Foo.Inner]"])
     }
 
     @Test("a hidden type's nested type does not hang off a drawn type of its name")
