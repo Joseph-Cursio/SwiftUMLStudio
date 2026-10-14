@@ -165,6 +165,33 @@ struct LayoutGraphBuilderTests {
         #expect(depEdges.isEmpty == false)
     }
 
+    // MARK: - Class Diagram: Relationship Excludes
+
+    /// SVG ignored every relationship exclude (#113). An extension's conformance edge is
+    /// a supertype edge too, so the pooled lists hide it as well.
+    @Test("supertype excludes hide SVG edges, through either list", arguments: [false, true])
+    func classDiagramSupertypeExcludes(viaRealize: Bool) {
+        let items = [
+            SyntaxStructure(kind: .protocol, name: "Shape"),
+            SyntaxStructure(kind: .class, name: "Base"),
+            SyntaxStructure(
+                inheritedTypes: [SyntaxStructure(name: "Base"), SyntaxStructure(name: "Shape")],
+                kind: .class, name: "Circle"
+            ),
+            SyntaxStructure(inheritedTypes: [SyntaxStructure(name: "Shape")], kind: .extension, name: "Base")
+        ]
+        let excluded = Relationship(exclude: ["Shape"])
+        let relationships = viaRealize
+            ? RelationshipOptions(realize: excluded)
+            : RelationshipOptions(inheritance: excluded)
+        let shown = LayoutGraphBuilder.buildClassDiagram(from: items, configuration: .default)
+        let hidden = LayoutGraphBuilder.buildClassDiagram(
+            from: items, configuration: Configuration(relationships: relationships)
+        )
+        #expect(shown.edges.map(\.targetId).sorted() == ["Base", "Shape", "Shape"])
+        #expect(hidden.edges.map(\.targetId) == ["Base"])
+    }
+
     // MARK: - Class Diagram: Members
 
     @Test("extracts instance methods into compartments")

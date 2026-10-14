@@ -626,12 +626,19 @@ theme: minty
   # See the Themes section for available values.
 
 # ─── relationships ─────────────────────────────────────────────────────────
+# A relationships block replaces the built-in inheritance and realize labels:
+# restate `label` for each you want labelled. The extension edge stays
+# labelled `ext` unless dependency.label sets another.
 relationships:
   inheritance:
     # Solid arrow (<|--) for class inheritance (e.g., class Dog: Animal)
     label: "inherits from"    # Text label on the arrow. Type: String?  Default: nil
     exclude:
-      # Parent names to suppress. Accepts glob patterns.
+      # Supertype names whose edges are hidden. Accepts glob patterns, matched
+      # against the name as written: `Container*` for `Container<Int>`.
+      # Pooled with realize.exclude: a name in either list hides every
+      # inheritance or conformance edge to that class or protocol, whichever
+      # arrow it is drawn with. Extension edges are dependency.exclude's.
       # Type: [String]  Default: []
       - "NSObject"
     style:
@@ -641,9 +648,12 @@ relationships:
       textColor: DarkGray
 
   realize:
-    # Dashed arrow (<|..) for protocol conformance (e.g., struct Foo: Bar)
+    # Dashed arrow (<|..) for conformance to a protocol the diagram declares.
+    # A conformance to one it does not declare, such as Codable, is labelled
+    # and styled as inheritance.
     label: "conforms to"
     exclude:
+      # Pooled with inheritance.exclude (see above).
       - "Codable"
       - "Sendable"
     style:
@@ -652,8 +662,13 @@ relationships:
       textColor: RoyalBlue
 
   dependency:
-    # Dotted arrow (<..) for extension dependency connections
+    # Dotted arrow (<..) from an extension's box to the type it extends
     label: "extends"
+    exclude:
+      # Extended-type names whose extension edge is hidden. The extension's
+      # box and its own conformances stay. No effect when extensions are
+      # merged or hidden.
+      - "Generated*"
     style:
       lineStyle: dotted
       lineColor: DarkGreen
@@ -973,11 +988,13 @@ Arrow notation used in generated class diagrams. Both PlantUML and Mermaid use t
 
 | Arrow | Syntax | Meaning |
 |---|---|---|
-| Inheritance | `Child <\|-- Parent` | `class Dog: Animal` |
-| Realization (conformance) | `Type <\|.. Protocol` | `struct Foo: Equatable` |
-| Extension dependency | `Extension <.. Type` | Extension on a named type |
+| Inheritance | `Parent <\|-- Child` | `class Dog: Animal` |
+| Realization (conformance) | `Protocol <\|.. Type` | `protocol Pet {}` and `struct Dog: Pet` |
+| Extension dependency | `Type <.. Extension` | Extension on a named type |
 | Composition (nested) | `Outer +-- Inner` | Nested type declaration **(PlantUML only)** |
 | Generic link | `A -- B` | Generic relationship |
+
+A conformance is labelled and styled as realization only when the diagram declares the protocol. A conformance to one it does not declare, such as `Codable`, is labelled and styled as inheritance: `struct User: Codable` gives `Codable <|-- User : inherits`. SVG class diagrams honour `relationships.inheritance.exclude` and `relationships.realize.exclude`, but not relationship labels, styles or `dependency.exclude`.
 
 For sequence diagram arrows, see [Sequence Diagrams](#sequence-diagrams).
 
@@ -1157,6 +1174,12 @@ relationships:
     exclude:
       - "Codable"                   # exact match
       - "NS*"                       # wildcard match
+  realize:
+    exclude:
+      - "Sendable"                  # pooled with inheritance.exclude
+  dependency:
+    exclude:
+      - "Generated*"                # extension edges to these types
 ```
 
 **`elements.exclude` patterns match against type names (not file paths).** `files.include` and `files.exclude` patterns match against file paths: a relative pattern is taken from the working directory, whose own path is matched as written even when it contains `*`, `?` or `[`; an absolute or `~` one as written. Symlinks, `.` and `..` in a pattern's directories, up to its first wildcard, are resolved before matching.

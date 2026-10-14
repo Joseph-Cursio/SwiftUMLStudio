@@ -96,6 +96,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed — Bridge
 
+- **`relationships.realize.exclude` and `relationships.dependency.exclude`
+  now hide edges** (#113). Both were decoded but never read, so the
+  reference's own `realize.exclude: [Codable, Sendable]` hid nothing.
+  - `realize.exclude` is pooled with `inheritance.exclude`: a name in
+    either list hides every inheritance or conformance edge to that class
+    or protocol. A conformance to a protocol the diagram does not declare,
+    such as `Codable`, is labelled and styled as inheritance, and
+    `inheritance.exclude` has always reached conformances, so a list for
+    conformances alone could not have hidden it. A config that uses only
+    `inheritance.exclude` draws exactly what it drew before in PlantUML,
+    Mermaid and Nomnoml.
+  - `dependency.exclude` matches the extended type's name and hides only
+    the `<..` edge from an extension's box to that type. The box, its
+    alias and its own conformances stay.
+  - SVG class diagrams now honour `inheritance.exclude` and
+    `realize.exclude`; they read no relationship setting before.
+
+  The reference's arrow table had its arrows reversed, and both it and
+  the user guide's illustrated conformance with `Equatable` or `Codable`,
+  which are labelled as inheritance; both are corrected. The reference
+  now says that a `relationships:` block replaces the inheritance and
+  realize labels.
 - **A `{…}` group in `files.include` or `files.exclude` now stands for one
   entry per option** (#58). Each group became a regex alternation instead.
   Its options were escaped with an old copy of the escape class, then

@@ -951,9 +951,11 @@ Arrows between elements represent Swift relationships. The same arrow notation i
 | Arrow | Meaning | Example |
 |---|---|---|
 | `<\|--` (solid) | Inheritance | `class Dog: Animal` |
-| `<\|..` (dashed) | Protocol conformance | `struct User: Codable` |
+| `<\|..` (dashed) | Protocol conformance | `protocol Pet {}` and `struct Dog: Pet` |
 | `<..` (dotted) | Extension dependency | `extension String: ...` |
 | `+--` (composition) | Nested type **(PlantUML only)** | `struct Outer { struct Inner {} }` |
+
+A conformance to a protocol the diagram does not declare, such as `Codable`, is labelled and styled as inheritance: `struct User: Codable` gives `Codable <|-- User : inherits`.
 
 ### Access Level Indicators
 

@@ -119,7 +119,9 @@ internal extension String {
     /// a filter the caller wrote to NARROW a set into one that admitted every candidate, with no
     /// diagnostic. Failing open is the wrong direction for a filter: the caller asked for less.
     ///
-    /// Reachable only from tests today, which is why this could be corrected without a migration.
+    /// It backs `elements.exclude`, the relationship excludes and `deps --exclude`, and already
+    /// did when this was corrected (8fc0cde): a malformed pattern in any of them used to match
+    /// every name, and now matches none.
     func isMatching(searchPattern: String) -> Bool {
         let pattern = searchPattern.globPatternToRegex()
         guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else { return false }

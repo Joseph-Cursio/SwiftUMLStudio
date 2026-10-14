@@ -25,7 +25,9 @@ struct LayoutGraphBuilder {
             let nodeId = nodeIds.issue(for: entry.name)
             nodes.append(buildNode(from: entry.item, nodeId: nodeId, kind: entry.kind, configuration: configuration))
             endIds.record(nodeId, for: entry)
-            edges.append(contentsOf: buildEdges(from: entry.item, nodeId: nodeId, kind: entry.kind))
+            edges.append(contentsOf: buildEdges(
+                from: entry.item, nodeId: nodeId, kind: entry.kind, relationships: configuration.relationships
+            ))
         }
 
         return LayoutGraph(nodes: nodes, edges: edges.compactMap { $0.resolved(through: endIds) })
@@ -170,10 +172,15 @@ struct LayoutGraphBuilder {
         )
     }
 
-    private static func buildEdges(from item: SyntaxStructure, nodeId: String, kind: ElementKind) -> [PendingEdge] {
+    private static func buildEdges(
+        from item: SyntaxStructure, nodeId: String, kind: ElementKind, relationships: RelationshipOptions
+    ) -> [PendingEdge] {
         var edges: [PendingEdge] = []
         if let inheritedTypes = item.inheritedTypes {
-            for parent in inheritedTypes {
+            // The text formats' gate, `DiagramContext.linkTarget(for:)`, matches the same names.
+            // SVG read no relationship setting at all (#113, #74).
+            let excluded = relationships.supertypeExcludePatterns
+            for parent in inheritedTypes where parent.isExcluded(byPatterns: excluded) == false {
                 guard let parentName = parent.name?.removeAngleBracketsWithContent() else { continue }
                 let edgeStyle = edgeStyleForInheritance(parentName: parentName, itemKind: kind)
                 let target = EdgeEnd.named(parentName, from: Scope(of: item))

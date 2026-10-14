@@ -53,11 +53,13 @@ class DiagramContext {
     var index = 0
 
     /// The id `addLinking` writes for `parent`'s end of an edge, or `nil` when
-    /// `relationships.inheritance.exclude` suppresses the edge.
+    /// `relationships.inheritance.exclude` or `relationships.realize.exclude` suppresses the
+    /// edge. Both drawing and `reserveIdentifiers(drawing:)` go through here, so an excluded
+    /// target is neither drawn nor reserved.
     func linkTarget(for parent: SyntaxStructure) -> String? {
         guard skipLinking(
             element: parent,
-            basedOn: configuration.relationships.inheritance?.exclude
+            basedOn: configuration.relationships.supertypeExcludePatterns
         ) == false else { return nil }
         let linkTo = parent.name?.removeAngleBracketsWithContent() ?? "___"
         return linkTo.starts(with: "@") ? "\"\(linkTo)\"" : linkTo
@@ -93,6 +95,12 @@ class DiagramContext {
 
     func skipLinking(element: SyntaxStructure, basedOn excludeElements: [String]?) -> Bool {
         element.isExcluded(byPatterns: excludeElements)
+    }
+
+    /// Whether the edge from extension `item` to the type it extends is drawn: not when the
+    /// extended type's name, which is the extension's own, matches `relationships.dependency.exclude`.
+    private func drawsExtensionEdge(for item: SyntaxStructure) -> Bool {
+        item.isExcluded(byPatterns: configuration.relationships.dependency?.exclude) == false
     }
 
     func relationshipLabel(for name: String) -> String? {
@@ -168,7 +176,9 @@ class DiagramContext {
             } while takenIdentifiers.contains(newName)
             let hasMatchingParent = uniqueNameForElement.keys
                 .first(where: { $0.name == name && $0.kind != .extension }) != nil
-            if item.kind == ElementKind.extension, hasMatchingParent {
+            // `dependency.exclude` hides only this edge (#113): the extension keeps its box, its
+            // alias and its own conformances, so no id moves.
+            if item.kind == ElementKind.extension, hasMatchingParent, drawsExtensionEdge(for: item) {
                 var connect: String
                 if format == .nomnoml || format == .svg {
                     connect = "[\(newName)] \(linkTypeDependency) [\(name)]"
