@@ -105,9 +105,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   PlantUML and Mermaid ones hide. SVG now keeps what the text formats
   keep, filtered after extensions merge, so a hidden type takes its
   merged extensions with it. A hidden type still decides which type its
-  name means: an edge to it ends on its own drawn extension, as in the
-  text formats, or is dropped, and never moves to a same-named type in
-  another file or module.
+  name means where Swift can see it: an edge to it ends on a drawn
+  extension of that very type, or is dropped, and never moves to a
+  same-named type in another file or module. A `fileprivate` type takes
+  no name written in another file, nor an `internal` one a name written
+  in another module. (The text formats link by bare name, so there such
+  an edge still lands on whichever declaration holds that name.)
 - **`relationships.realize.exclude` and `relationships.dependency.exclude`
   now hide edges** (#113). Both were decoded but never read, so the
   reference's own `realize.exclude: [Codable, Sendable]` hid nothing.

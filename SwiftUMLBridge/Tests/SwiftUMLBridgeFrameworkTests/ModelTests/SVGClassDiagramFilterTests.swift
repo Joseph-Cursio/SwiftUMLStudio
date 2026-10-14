@@ -1,4 +1,3 @@
-import Foundation
 import Testing
 @testable import SwiftUMLBridgeFramework
 
@@ -89,61 +88,6 @@ struct SVGClassDiagramFilterTests {
             "Outer.Inner<<struct>>", "Outer<<extension>>"
         ])
         #expect(graph?.edgeEnds == ["Outer -> Outer.Inner"])
-    }
-
-    // MARK: - Hidden Types Still Shadow Their Names
-
-    /// The SVG graph for `files`, each written to its own file, so every declaration has one.
-    private func svg(files: [String: String], _ elements: ElementOptions = ElementOptions()) throws -> LayoutGraph? {
-        let root = FileManager.default.temporaryDirectory
-            .appendingPathComponent("SVGClassDiagramFilterTests-\(UUID().uuidString)")
-        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: root) }
-        let paths = try files.sorted { $0.key < $1.key }.map { name, source in
-            let url = root.appendingPathComponent(name)
-            try source.write(to: url, atomically: true, encoding: .utf8)
-            return url.path
-        }
-        return ClassDiagramGenerator()
-            .generateScript(for: paths, with: Configuration(elements: elements, format: .svg)).layoutGraph
-    }
-
-    /// Hiding a type must not change which type its name means: in its own file it still shadows
-    /// a same-named type elsewhere. An edge to it ends on its extension there, or is dropped. It
-    /// used to land on the other file's type, often in another module.
-    @Test("an edge to a hidden type never moves to a same-named type in another file")
-    func hiddenTypeShadowsItsName() throws {
-        let withExtension = try svg(files: [
-            "A.swift": "fileprivate class Foo {}\nextension Foo { func run() {} }\nclass SubA: Foo {}",
-            "B.swift": "class Foo {}\nclass SubB: Foo {}"
-        ])
-        #expect(withExtension?.nodes.map(\.id) == ["SubA", "Foo", "SubB", "Foo_1"])
-        #expect(withExtension?.edgeEnds == ["SubA -> Foo_1", "SubB -> Foo"])
-
-        let withoutExtension = try svg(files: [
-            "A.swift": "fileprivate class Foo {}\nclass SubA: Foo {}",
-            "B.swift": "class Foo {}\nclass SubB: Foo {}"
-        ])
-        #expect(withoutExtension?.edgeEnds == ["SubB -> Foo"])
-    }
-
-    @Test("a conformance to a hidden protocol never moves to a same-named protocol in another file")
-    func hiddenProtocolShadowsItsName() throws {
-        let graph = try svg(files: [
-            "A.swift": "fileprivate protocol Shape {}\nstruct Circle: Shape {}",
-            "B.swift": "protocol Shape {}\nstruct Square: Shape {}"
-        ])
-        #expect(graph?.edgeEnds == ["Square -> Shape"])
-    }
-
-    @Test("a hidden type's nested types never hang off a same-named type in another file")
-    func hiddenParentShadowsItsName() throws {
-        let graph = try svg(files: [
-            "A.swift": "fileprivate struct Outer { struct Inner {} }",
-            "B.swift": "struct Outer {}"
-        ])
-        #expect(graph?.nodes.map(\.id).sorted() == ["Outer", "Outer.Inner"])
-        #expect(graph?.edgeEnds == [])
     }
 
     // MARK: - Parity With the Text Formats

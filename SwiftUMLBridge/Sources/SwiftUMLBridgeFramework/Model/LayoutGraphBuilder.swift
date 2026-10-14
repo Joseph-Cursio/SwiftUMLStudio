@@ -236,6 +236,19 @@ extension LayoutGraphBuilder {
         let declaration: ObjectIdentifier
         let isExtension: Bool
         let scope: Scope
+        /// The most restrictive access level of the declaration and the types enclosing it.
+        let access: ElementAccessibility
+
+        /// Whether a name written in `lookup` can mean this declaration, as Swift's access
+        /// control allows: a `private` or `fileprivate` type only in its own file, and a type
+        /// below `package` only in its own module. Where a file or module is unknown, it is
+        /// taken to be the same.
+        func isVisible(from lookup: Scope) -> Bool {
+            if lookup.filePath == scope.filePath { return true }
+            if access == .private || access == .fileprivate { return false }
+            if let module = lookup.module, let own = scope.module, module != own { return access >= .package }
+            return true
+        }
     }
 
     /// The node ids an `EdgeEnd` can resolve to, gathered while the nodes are built.
@@ -258,9 +271,14 @@ extension LayoutGraphBuilder {
         }
 
         private mutating func append(_ entry: DiagramItem, nodeId: String?) {
+            // An extension's own modifier sets its members' default access, not a cap on them.
+            let enclosing = sequence(first: entry.item, next: \.parent).filter { $0.kind != .extension }
+            let access = enclosing.map { level in
+                level.accessibility.flatMap { $0 == .other ? nil : $0 } ?? .internal
+            }.min() ?? .internal
             declaredForName[entry.name, default: []].append(Declared(
                 nodeId: nodeId, declaration: ObjectIdentifier(entry.item),
-                isExtension: entry.kind == .extension, scope: Scope(of: entry.item)
+                isExtension: entry.kind == .extension, scope: Scope(of: entry.item), access: access
             ))
         }
 
@@ -280,7 +298,8 @@ extension LayoutGraphBuilder {
                 guard let type = typeDeclaration(forName: name, from: scope) else {
                     return idForDeclaration[declaration] ?? firstDrawn(named: name)
                 }
-                return node(for: type, named: name) ?? idForDeclaration[declaration]
+                // For a hidden type, this very extension is its stand-in: its own lookup found it.
+                return type.nodeId ?? idForDeclaration[declaration] ?? standIn(for: type.declaration, named: name)
             }
         }
 
@@ -290,8 +309,8 @@ extension LayoutGraphBuilder {
         }
 
         /// A drawn extension of the hidden type `declaration`, one whose own lookup of `name`
-        /// finds it, or `nil` to drop the edge. The access-level filter passes extensions, so the
-        /// text formats draw that extension where the type would be.
+        /// finds it, or `nil` to drop the edge. The access-level filter passes extensions, so an
+        /// extension can be drawn while its type is hidden.
         private func standIn(for declaration: ObjectIdentifier, named name: String) -> String? {
             declaredForName[name]?.first { candidate in
                 candidate.isExtension && candidate.nodeId != nil
@@ -304,13 +323,13 @@ extension LayoutGraphBuilder {
             declaredForName[name]?.first { $0.nodeId != nil }?.nodeId
         }
 
-        /// The type a name means where it is written, close to how Swift looks it up: one
-        /// declared in the same file, then in the same module, then the first in the diagram,
-        /// drawn or hidden; `nil` when the diagram has no type of that name, only extensions or
+        /// The type a name means where it is written, close to how Swift looks it up: among the
+        /// types visible there, drawn or hidden, one declared in the same file, then in the same
+        /// module, then the first in the diagram; `nil` when there is none, only extensions or
         /// nothing. A name is never matched against node ids: an undeclared `Foo_1` must not
         /// land on the node issued `Foo_1` as the second declaration of `Foo`.
         private func typeDeclaration(forName name: String, from scope: Scope) -> Declared? {
-            let types = (declaredForName[name] ?? []).filter { !$0.isExtension }
+            let types = (declaredForName[name] ?? []).filter { !$0.isExtension && $0.isVisible(from: scope) }
             guard let first = types.first else { return nil }
             if let filePath = scope.filePath, let local = types.first(where: { $0.scope.filePath == filePath }) {
                 return local
