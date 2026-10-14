@@ -147,9 +147,9 @@ class DiagramContext {
                 takenIdentifiers.insert(fullName)
             }
             takenIdentifiers.formUnion(item.linkParents().compactMap(linkTarget(for:)))
-            // `collectNestedTypeConnections` falls back to the raw name of a parent it did not draw.
+            // `collectNestedTypeConnections` falls back to the qualified name of a parent it did not draw.
             if drawsNestedTypeConnections, let parent = item.parent, !drawn.contains(parent),
-               let parentName = parent.name {
+               let parentName = parent.fullName {
                 takenIdentifiers.insert(parentName)
             }
         }
@@ -202,12 +202,16 @@ class DiagramContext {
         return newName
     }
 
+    /// Draws an edge from each drawn nested type to its parent's alias or, for a parent the diagram
+    /// does not draw, its qualified name. Its short name could be the id of a drawn, unrelated type
+    /// (#67). An extension is only declared at file scope, so an undrawn extension parent's
+    /// qualified name is the full name of the type it extends.
     func collectNestedTypeConnections(items: [SyntaxStructure]) {
         guard drawsNestedTypeConnections else { return }
         for item in items where item.parent != nil {
             guard let name = uniqueNameForElement[item],
                   let parent = item.parent,
-                  let parentName = uniqueNameForElement[parent] ?? parent.name
+                  let parentName = uniqueNameForElement[parent] ?? parent.fullName
             else {
                 continue
             }

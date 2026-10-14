@@ -96,6 +96,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed — Bridge
 
+- **A type nested in a hidden type no longer hangs off an unrelated type
+  with the hidden type's short name** (#67). In PlantUML and Nomnoml,
+  the edge from a drawn nested type to a parent the diagram does not draw
+  named that parent by its short name. With `struct Outer { fileprivate
+  struct Foo { struct Inner {} } }` and a top-level `struct Foo {}`, the
+  diagram drew `Foo +-- Outer.Foo.Inner`, nesting `Inner` in the wrong
+  `Foo`. A public-only diagram (`havingAccessLevel: [public]`) did the
+  same for every internal container of a drawn public nested type. The
+  edge now names a hidden parent by its qualified name (`Outer.Foo +--
+  Outer.Foo.Inner`), and alias reservation (#54) reserves that name
+  instead of the short one. Edges to a merged-away or hidden extension
+  are unchanged, because an extension's name is already the extended
+  type's full name. Mermaid draws no nested-type edges and SVG names
+  parents by their full name, so neither changes.
 - **A merged extension's members go into the same-named type its nested
   types hang off** (#107). With two types of one name, `mergeExtensions` took
   the first, ignoring the extension's file and module. The SVG edge from
@@ -106,10 +120,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   format the `Foo` that received the members changed from run to run.
   Merging now picks its type by the rule edges use, through a shared
   `DeclarationScope`. A type nested in a merged extension now belongs to
-  that type, so PlantUML and Nomnoml nest it under the same box. One
-  side effect: when that type is hidden and is itself nested (an
-  extension of a `fileprivate` nested type), the nested edge falls back
-  to the type's short name (#67).
+  that type, so PlantUML and Nomnoml nest it under the same box. When
+  that type is hidden, the edge names it as #67's fix does.
 - **SVG class diagrams with merged extensions list each merged member once
   and draw a type nested in an extension once** (#73). For `.svg`,
   `DiagramScript` prepared the parsed items twice: once for text
