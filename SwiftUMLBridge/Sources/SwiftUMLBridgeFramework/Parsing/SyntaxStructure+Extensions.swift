@@ -35,9 +35,13 @@ extension Array where Element == SyntaxStructure {
     /// - Returns: new array with at most 1 extension per type
     func mergeExtensions(mergedMemberIndicator: String? = "<&bolt>") -> [SyntaxStructure] {
         var processedItems = self
+        // Built before any merge, from the declarations as the sources wrote them.
+        let lookup = LayoutGraphBuilder.TypeLookup(of: self)
 
         for structure in self where structure.kind == .extension {
-            guard let parent = processedItems.mergeTarget(for: structure), structure != parent else { continue }
+            guard let parent = processedItems.mergeTarget(for: structure, lookup: lookup), structure != parent else {
+                continue
+            }
             processedItems.removeAll(where: { $0 == structure })
             guard let members = structure.substructure else { continue }
             if let memberSuffix = mergedMemberIndicator, parent.kind != .extension {
@@ -56,15 +60,21 @@ extension Array where Element == SyntaxStructure {
         return processedItems
     }
 
-    /// The item `anExtension` merges into: of the types with its name, the one nearest to it as
-    /// `DeclarationScope` ranks them — the rule `LayoutGraphBuilder` resolves edges by. With no
-    /// such type, the first item of that name, so a type the sources only extend gets one box,
-    /// its first extension's.
-    private func mergeTarget(for anExtension: SyntaxStructure) -> SyntaxStructure? {
-        let sameNamed = filter { $0.fullName == anExtension.fullName }
-        let types = sameNamed.filter { $0.kind != .extension }
-        return DeclarationScope(of: anExtension).nearest(among: types, scope: DeclarationScope.init(of:))
-            ?? sameNamed.first
+    /// The item `anExtension` merges into: the type its name means where it is written, by the
+    /// lookup `LayoutGraphBuilder` resolves edges by — the nearest type Swift's access control
+    /// lets it see. With no such type it extends one outside the diagram, and merges into the
+    /// first extension that sees none either, so that type gets one box, its first extension's.
+    private func mergeTarget(
+        for anExtension: SyntaxStructure, lookup: LayoutGraphBuilder.TypeLookup
+    ) -> SyntaxStructure? {
+        guard let name = anExtension.fullName else { return nil }
+        if let type = lookup.type(named: name, from: DeclarationScope(of: anExtension)) {
+            return first { ObjectIdentifier($0) == type.declaration }
+        }
+        return first { item in
+            item.kind == .extension && item.fullName == name
+                && lookup.type(named: name, from: DeclarationScope(of: item)) == nil
+        }
     }
 
     /// Flattens nested types into the list, setting each one's `parent` in place. Diagram code
