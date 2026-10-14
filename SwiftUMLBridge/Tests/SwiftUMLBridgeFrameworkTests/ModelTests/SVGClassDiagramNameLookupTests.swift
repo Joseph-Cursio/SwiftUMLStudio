@@ -31,6 +31,23 @@ struct SVGClassDiagramNameLookupTests {
         ClassDiagramGenerator().generateScript(for: source, with: Configuration(format: .svg)).layoutGraph
     }
 
+    /// A hand-built declaration in `<module>.swift`, in `module`.
+    private func declared(
+        _ kind: ElementKind, _ name: String, _ module: String, access: ElementAccessibility? = nil,
+        inheriting parents: [String] = [], members: [SyntaxStructure]? = nil
+    ) -> SyntaxStructure {
+        let runMethod = SyntaxStructure(kind: .functionMethodInstance, name: "run")
+        let item = SyntaxStructure(
+            accessibility: access,
+            inheritedTypes: parents.isEmpty ? nil : parents.map { SyntaxStructure(name: $0) },
+            kind: kind, name: name,
+            substructure: members ?? (kind == .extension ? [runMethod] : nil)
+        )
+        item.sourceLocation = SourceLocation(filePath: "\(module).swift", line: 1, column: 1)
+        item.module = module
+        return item
+    }
+
     // MARK: - A Hidden Type Shadows Its Name in Its Own File
 
     @Test("an edge to a hidden type never moves to a same-named type in another file")
@@ -127,18 +144,6 @@ struct SVGClassDiagramNameLookupTests {
     /// `Foo` in App means Kit's public `Foo`: Core's is internal to Core, and hidden here.
     @Test("a hidden internal type in another module captures no name")
     func hiddenInternalTypeStaysInItsModule() {
-        func declared(_ kind: ElementKind, _ name: String, _ module: String, access: ElementAccessibility? = nil,
-                      inheriting parents: [String] = []) -> SyntaxStructure {
-            let item = SyntaxStructure(
-                accessibility: access,
-                inheritedTypes: parents.isEmpty ? nil : parents.map { SyntaxStructure(name: $0) },
-                kind: kind, name: name,
-                substructure: kind == .extension ? [SyntaxStructure(kind: .functionMethodInstance, name: "run")] : nil
-            )
-            item.sourceLocation = SourceLocation(filePath: "\(module).swift", line: 1, column: 1)
-            item.module = module
-            return item
-        }
         let items = [
             declared(.class, "Foo", "Core", access: .internal),
             declared(.extension, "Foo", "Core"),
@@ -149,5 +154,86 @@ struct SVGClassDiagramNameLookupTests {
         let graph = LayoutGraphBuilder.buildClassDiagram(from: items, configuration: config)
         #expect(graph.nodes.map { "\($0.id)@\($0.module ?? "")" } == ["Foo@Kit", "SubC@App", "Foo_1@Core"])
         #expect(graph.edgeEnds == ["SubC -> Foo"])
+    }
+
+    @Test("a package type is visible from another module of the package")
+    func packageTypeCrossesModules() {
+        let items = [
+            declared(.class, "Foo", "Core", access: .internal),
+            declared(.class, "Foo", "Kit", access: .package),
+            declared(.class, "SubC", "App", access: .public, inheriting: ["Foo"])
+        ]
+        let graph = LayoutGraphBuilder.buildClassDiagram(from: items, configuration: Configuration(format: .svg))
+        #expect(graph.nodes.map { "\($0.id)@\($0.module ?? "")" } == ["Foo@Core", "Foo_1@Kit", "SubC@App"])
+        #expect(graph.edgeEnds == ["SubC -> Foo_1"])
+    }
+
+    // MARK: - Drawn File-Scoped Types
+
+    /// The default configuration draws `private` types; one in another file still takes no name.
+    @Test("a drawn private type takes no name written in another file", arguments: [
+        ("private class Foo {}", ElementOptions()),
+        ("fileprivate class Foo {}",
+         ElementOptions(havingAccessLevel: [.open, .public, .package, .internal, .private, .fileprivate]))
+    ])
+    func drawnPrivateTypeStaysInItsFile(fileA: String, elements: ElementOptions) throws {
+        let files = ["A.swift": fileA, "B.swift": "class Foo {}", "C.swift": "class SubC: Foo {}"]
+        let graph = try svg(files: files, elements)
+        #expect(graph?.nodes.map(\.id) == ["Foo", "Foo_1", "SubC"])
+        #expect(graph?.edgeEnds == ["SubC -> Foo_1"])
+    }
+
+    @Test("a name no visible type takes is dropped, not handed to a hidden type's extension")
+    func invisibleTypesLeaveNoFallback() throws {
+        let graph = try svg(files: [
+            "A.swift": "fileprivate class Operation {}\nextension Operation { func run() {} }",
+            "C.swift": "class MyOp: Operation {}"
+        ])
+        #expect(graph?.edgeEnds == [])
+    }
+
+    // MARK: - Access of Enclosing Declarations
+
+    /// A type nested in a `fileprivate` type is no more visible than it, however deep.
+    @Test("a nested type takes the access of every type enclosing it", arguments: [
+        ("fileprivate struct Outer { class Inner {} }", "struct Outer { class Inner {} }", "Outer.Inner"),
+        ("fileprivate struct Outer { struct Mid { class Inner {} } }", "struct Outer { struct Mid { class Inner {} } }",
+         "Outer.Mid.Inner")
+    ])
+    func nestedTypeTakesEnclosingAccess(fileA: String, fileB: String, name: String) throws {
+        let graph = try svg(files: ["A.swift": fileA, "B.swift": fileB, "C.swift": "class Sub: \(name) {}"])
+        let edge = try #require(graph?.edgeEnds.first { $0.hasPrefix("Sub -> ") })
+        #expect(edge == "Sub -> \(name)_1")
+    }
+
+    /// `private extension` caps what it holds, and so does the extended type's own access.
+    @Test("a type nested in an extension takes the access of the extension and the extended type", arguments: [
+        "public struct Foo {}\nprivate extension Foo { class X {} }",
+        "fileprivate struct Foo {}\nextension Foo { class X {} }"
+    ])
+    func extensionNestedTypeTakesExtensionAccess(fileA: String) throws {
+        let publicOnly = ElementOptions(havingAccessLevel: [.open, .public])
+        let graph = try svg(files: [
+            "A.swift": fileA,
+            "B.swift": "public struct Foo { open class X {} }",
+            "C.swift": "public class SubC: Foo.X {}"
+        ], publicOnly)
+        let visibleX = try #require(graph?.nodes.first { $0.label == "X" && $0.stereotype == "class" })
+        #expect(graph?.edgeEnds.contains("SubC -> \(visibleX.id)") == true)
+    }
+
+    /// `public extension` makes what it holds public by default, so another module can see it.
+    @Test("a type nested in a public extension is visible from another module")
+    func publicExtensionRaisesItsMembers() {
+        let nested = SyntaxStructure(accessibility: .internal, kind: .class, name: "X")
+        nested.sourceLocation = SourceLocation(filePath: "Core.swift", line: 2, column: 1)
+        nested.module = "Core"
+        let items = [
+            declared(.struct, "Foo", "Core", access: .public),
+            declared(.extension, "Foo", "Core", access: .public, members: [nested]),
+            declared(.class, "Sub", "App", access: .public, inheriting: ["Foo.X"])
+        ]
+        let graph = LayoutGraphBuilder.buildClassDiagram(from: items, configuration: Configuration(format: .svg))
+        #expect(graph.edgeEnds.contains("Sub -> Foo.X"))
     }
 }

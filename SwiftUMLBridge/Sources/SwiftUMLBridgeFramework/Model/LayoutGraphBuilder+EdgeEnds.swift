@@ -35,18 +35,35 @@ extension LayoutGraphBuilder {
         let declaration: ObjectIdentifier
         let isExtension: Bool
         let scope: Scope
-        /// The most restrictive access level of the declaration and the types enclosing it.
-        let access: ElementAccessibility
+        /// The most restrictive access level of the declaration and the declarations enclosing
+        /// it, with an enclosing extension's modifier applied. `EdgeEndIds.access(of:)` also caps
+        /// it by the type that extension extends.
+        let ownAccess: ElementAccessibility
+        /// The type the enclosing extension extends, as written there, when there is one.
+        let extended: (name: String, scope: Scope)?
 
-        /// Whether a name written in `lookup` can mean this declaration, as Swift's access
-        /// control allows: a `private` or `fileprivate` type only in its own file, and a type
-        /// below `package` only in its own module. Where a file or module is unknown, it is
-        /// taken to be the same.
-        func isVisible(from lookup: Scope) -> Bool {
-            if lookup.filePath == scope.filePath { return true }
-            if access == .private || access == .fileprivate { return false }
-            if let module = lookup.module, let own = scope.module, module != own { return access >= .package }
-            return true
+        init(_ entry: DiagramItem, nodeId: String?) {
+            self.nodeId = nodeId
+            declaration = ObjectIdentifier(entry.item)
+            isExtension = entry.kind == .extension
+            scope = Scope(of: entry.item)
+            // Extensions are top level, so a chain holds at most one, last.
+            let chain = Array(sequence(first: entry.item, next: \.parent))
+            let declared = chain.prefix { $0.kind != .extension }
+            var levels = declared.map { $0.accessibility.flatMap { $0 == .other ? nil : $0 } ?? .internal }
+            if let enclosing = chain.first(where: { $0.kind == .extension }), !levels.isEmpty,
+               let modifier = enclosing.accessibility {
+                // `private extension` and `fileprivate extension` cap what they hold; `public` and
+                // `package` ones set their members' default, which the parser reports as internal.
+                if modifier == .private || modifier == .fileprivate {
+                    levels.append(modifier)
+                } else if modifier >= .package, levels[levels.count - 1] == .internal {
+                    levels[levels.count - 1] = min(modifier, .public)
+                }
+            }
+            ownAccess = levels.min() ?? .internal
+            extended = chain.first { $0.kind == .extension && $0 !== entry.item }
+                .flatMap { enclosing in enclosing.name.map { ($0, Scope(of: enclosing)) } }
         }
     }
 
@@ -57,7 +74,7 @@ extension LayoutGraphBuilder {
         private var hiddenDeclarations: Set<ObjectIdentifier> = []
 
         mutating func record(_ nodeId: String, for entry: DiagramItem) {
-            append(entry, nodeId: nodeId)
+            declaredForName[entry.name, default: []].append(Declared(entry, nodeId: nodeId))
             idForDeclaration[ObjectIdentifier(entry.item)] = nodeId
         }
 
@@ -65,20 +82,8 @@ extension LayoutGraphBuilder {
         /// be what a name means.
         mutating func recordHidden(_ entry: DiagramItem) {
             guard entry.kind != .extension else { return }
-            append(entry, nodeId: nil)
+            declaredForName[entry.name, default: []].append(Declared(entry, nodeId: nil))
             hiddenDeclarations.insert(ObjectIdentifier(entry.item))
-        }
-
-        private mutating func append(_ entry: DiagramItem, nodeId: String?) {
-            // An extension's own modifier sets its members' default access, not a cap on them.
-            let enclosing = sequence(first: entry.item, next: \.parent).filter { $0.kind != .extension }
-            let access = enclosing.map { level in
-                level.accessibility.flatMap { $0 == .other ? nil : $0 } ?? .internal
-            }.min() ?? .internal
-            declaredForName[entry.name, default: []].append(Declared(
-                nodeId: nodeId, declaration: ObjectIdentifier(entry.item),
-                isExtension: entry.kind == .extension, scope: Scope(of: entry.item), access: access
-            ))
         }
 
         func id(of end: EdgeEnd) -> String? {
@@ -86,16 +91,17 @@ extension LayoutGraphBuilder {
             case .node(let nodeId):
                 return nodeId
             case .named(let name, let scope):
-                guard let type = typeDeclaration(forName: name, from: scope) else { return firstDrawn(named: name) }
+                guard let type = typeDeclaration(forName: name, from: scope) else { return fallback(named: name) }
                 return node(for: type, named: name)
             case .declaration(let declaration, let name, let scope):
                 if let nodeId = idForDeclaration[declaration] { return nodeId }
                 if hiddenDeclarations.contains(declaration) { return standIn(for: declaration, named: name) }
-                guard let type = typeDeclaration(forName: name, from: scope) else { return firstDrawn(named: name) }
+                guard let type = typeDeclaration(forName: name, from: scope) else { return fallback(named: name) }
                 return node(for: type, named: name)
             case .extended(let declaration, let name, let scope):
+                // With no type of that name visible there, the extension stands for itself.
                 guard let type = typeDeclaration(forName: name, from: scope) else {
-                    return idForDeclaration[declaration] ?? firstDrawn(named: name)
+                    return idForDeclaration[declaration] ?? fallback(named: name)
                 }
                 // For a hidden type, this very extension is its stand-in: its own lookup found it.
                 return type.nodeId ?? idForDeclaration[declaration] ?? standIn(for: type.declaration, named: name)
@@ -117,9 +123,14 @@ extension LayoutGraphBuilder {
             }?.nodeId
         }
 
-        /// The first drawn declaration of `name`, for a name no type in the diagram takes.
-        private func firstDrawn(named name: String) -> String? {
-            declaredForName[name]?.first { $0.nodeId != nil }?.nodeId
+        /// The end for a name no type visible from the reference takes: the first drawn extension
+        /// of a name that no type in the diagram declares at all, such as `extension String`, or
+        /// `nil` when types of the name exist but none is visible there, as the name then means
+        /// a type outside the diagram.
+        private func fallback(named name: String) -> String? {
+            let declared = declaredForName[name] ?? []
+            guard !declared.contains(where: { !$0.isExtension }) else { return nil }
+            return declared.first { $0.nodeId != nil }?.nodeId
         }
 
         /// The type a name means where it is written, close to how Swift looks it up: among the
@@ -127,8 +138,10 @@ extension LayoutGraphBuilder {
         /// module, then the first in the diagram; `nil` when there is none, only extensions or
         /// nothing. A name is never matched against node ids: an undeclared `Foo_1` must not
         /// land on the node issued `Foo_1` as the second declaration of `Foo`.
-        private func typeDeclaration(forName name: String, from scope: Scope) -> Declared? {
-            let types = (declaredForName[name] ?? []).filter { !$0.isExtension && $0.isVisible(from: scope) }
+        private func typeDeclaration(forName name: String, from scope: Scope, depth: Int = 0) -> Declared? {
+            let types = (declaredForName[name] ?? []).filter {
+                !$0.isExtension && isVisible($0, from: scope, depth: depth)
+            }
             guard let first = types.first else { return nil }
             if let filePath = scope.filePath, let local = types.first(where: { $0.scope.filePath == filePath }) {
                 return local
@@ -137,6 +150,31 @@ extension LayoutGraphBuilder {
                 return sibling
             }
             return first
+        }
+
+        /// Whether a name written in `lookup` can mean `declared`, as Swift's access control
+        /// allows: a `private` or `fileprivate` type only in its own file, and a type below
+        /// `package` only in its own module. A file or module that is unknown on either side is
+        /// taken to be the same; parsed sources always carry a file path.
+        private func isVisible(_ declared: Declared, from lookup: Scope, depth: Int) -> Bool {
+            if lookup.filePath == nil || declared.scope.filePath == nil || lookup.filePath == declared.scope.filePath {
+                return true
+            }
+            let access = access(of: declared, depth: depth)
+            if access == .private || access == .fileprivate { return false }
+            if let module = lookup.module, let own = declared.scope.module, module != own { return access >= .package }
+            return true
+        }
+
+        /// `declared`'s access, capped by the access of the type its enclosing extension extends,
+        /// as that extension's own lookup finds it. Each step resolves a shorter name, so this
+        /// ends; the depth guard is a backstop.
+        private func access(of declared: Declared, depth: Int) -> ElementAccessibility {
+            guard let extended = declared.extended, depth < 8,
+                  let type = typeDeclaration(forName: extended.name, from: extended.scope, depth: depth + 1) else {
+                return declared.ownAccess
+            }
+            return min(declared.ownAccess, access(of: type, depth: depth + 1))
         }
     }
 

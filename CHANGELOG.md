@@ -107,10 +107,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   merged extensions with it. A hidden type still decides which type its
   name means where Swift can see it: an edge to it ends on a drawn
   extension of that very type, or is dropped, and never moves to a
-  same-named type in another file or module. A `fileprivate` type takes
-  no name written in another file, nor an `internal` one a name written
-  in another module. (The text formats link by bare name, so there such
-  an edge still lands on whichever declaration holds that name.)
+  same-named type in another file or module. A `private` or `fileprivate`
+  type takes no name written in another file, nor one below `package` a
+  name written in another module. A type is as visible as the most
+  restrictive of itself, the types and the extension enclosing it, and
+  the type that extension extends. (The text formats link by bare name,
+  so there such an edge still lands on whichever declaration holds that
+  name.)
 - **`relationships.realize.exclude` and `relationships.dependency.exclude`
   now hide edges** (#113). Both were decoded but never read, so the
   reference's own `realize.exclude: [Codable, Sendable]` hid nothing.
