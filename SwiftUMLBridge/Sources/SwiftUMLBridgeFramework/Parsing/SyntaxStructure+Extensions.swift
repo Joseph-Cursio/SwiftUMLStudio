@@ -27,34 +27,53 @@ extension Array where Element == SyntaxStructure {
     /// merges extensions with their parent types
     ///
     /// Appends each extension's members into its type's `substructure` and sets their
-    /// `memberSuffix`, editing the structures in place. Diagram code calls it only through
-    /// `preparedForClassDiagram(with:)`, which hands it a private copy.
+    /// `memberSuffix`, editing the structures in place. The extension records that type in
+    /// `mergedInto`, so a type nested in it is drawn hanging off the box that shows its members,
+    /// while its `parent` stays the extension that declares it, for its scope and access (#74).
+    /// Diagram code calls it only through `preparedForClassDiagram(with:)`, which hands it a
+    /// private copy.
     /// - Parameter mergedMemberIndicator: string appended as suffix to a member that originates from an extension
     /// - Returns: new array with at most 1 extension per type
     func mergeExtensions(mergedMemberIndicator: String? = "<&bolt>") -> [SyntaxStructure] {
         var processedItems = self
+        // Built before any merge, from the declarations as the sources wrote them.
+        let lookup = LayoutGraphBuilder.TypeLookup(of: self)
 
         for structure in self where structure.kind == .extension {
-            guard let parentIndex = processedItems.firstIndex(where: { $0.fullName == structure.fullName }) else {
+            guard let parent = processedItems.mergeTarget(for: structure, lookup: lookup), structure != parent else {
                 continue
             }
-            let parent = processedItems[parentIndex]
-            guard structure != parent else { continue }
             processedItems.removeAll(where: { $0 == structure })
+            structure.mergedInto = parent
             guard let members = structure.substructure else { continue }
             if let memberSuffix = mergedMemberIndicator, parent.kind != .extension {
-                for index in members.indices {
-                    guard members[index].name != nil else { continue }
-                    members[index].memberSuffix = memberSuffix
+                for member in members where member.name != nil {
+                    member.memberSuffix = memberSuffix
                 }
             }
             if parent.substructure == nil {
                 parent.substructure = []
             }
             parent.substructure?.append(contentsOf: members)
-            processedItems[parentIndex] = parent
         }
         return processedItems
+    }
+
+    /// The item `anExtension` merges into: the type its name means where it is written, by the
+    /// lookup `LayoutGraphBuilder` resolves edges by — the nearest type Swift's access control
+    /// lets it see. With no such type it extends one outside the diagram, and merges into the
+    /// first extension that sees none either, so that type gets one box, its first extension's.
+    private func mergeTarget(
+        for anExtension: SyntaxStructure, lookup: LayoutGraphBuilder.TypeLookup
+    ) -> SyntaxStructure? {
+        guard let name = anExtension.fullName else { return nil }
+        if let type = lookup.type(named: name, from: DeclarationScope(of: anExtension)) {
+            return first { ObjectIdentifier($0) == type.declaration }
+        }
+        return first { item in
+            item.kind == .extension && item.fullName == name
+                && lookup.type(named: name, from: DeclarationScope(of: item)) == nil
+        }
     }
 
     /// Flattens nested types into the list, setting each one's `parent` in place. Diagram code
@@ -94,6 +113,12 @@ extension SyntaxStructure {
 }
 
 extension SyntaxStructure {
+    /// The item a nested type is drawn hanging off: its `parent`, or for one nested in an
+    /// extension that `mergeExtensions` merged away, the item that extension merged into (#107).
+    var nestingParent: SyntaxStructure? {
+        parent.map { $0.mergedInto ?? $0 }
+    }
+
     var fullName: String? {
         var qualifiedName = name
         var aParent: SyntaxStructure?

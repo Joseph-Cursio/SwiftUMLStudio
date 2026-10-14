@@ -81,7 +81,7 @@ struct LayoutGraphBuilder {
                 edges.append(PendingEdge(source: .node(nodeId), target: target, style: edgeStyle))
             }
         }
-        if let parent = item.parent, let parentName = parent.fullName ?? parent.name {
+        if let parent = item.nestingParent, let parentName = parent.fullName ?? parent.name {
             // A nested type hangs off the declaration that contains it, so the second of two
             // same-named types keeps its own children; one nested in an extension hangs off the
             // type the extension extends, as seen from the extension's file — or off the

@@ -12,7 +12,8 @@ struct SyntaxStructureCloneTests {
     /// decide whether `init(copying:)` must copy it, then add it here and to `populated(parent:)`.
     static let storedProperties = [
         "accessibility", "attribute", "attributes", "elements", "inheritedTypes", "kind", "name",
-        "runtimename", "substructure", "typename", "memberSuffix", "parent", "sourceLocation", "module"
+        "runtimename", "substructure", "typename", "memberSuffix", "parent", "sourceLocation", "module",
+        "mergedInto"
     ]
 
     /// A structure with every stored property set.
@@ -33,6 +34,7 @@ struct SyntaxStructureCloneTests {
         item.parent = parent
         item.sourceLocation = SourceLocation(filePath: "A.swift", line: 3, column: 5)
         item.module = "Core"
+        item.mergedInto = parent
         return item
     }
 
