@@ -97,7 +97,9 @@ class DiagramContext {
     }
 
     /// A Nomnoml edge, `[start] arrow label [end]`. nomnoml reads a label only beside the arrow;
-    /// after the end, where Mermaid and PlantUML take it, it fails the whole diagram (#69).
+    /// after the end, where Mermaid and PlantUML take it, it fails the whole diagram (#69). Each
+    /// end is written as the id `SyntaxStructure.nomnoml(context:)` declares under, so it names
+    /// that node.
     ///
     /// The label runs to the next `[`, so brackets become parentheses. nomnoml drops a line that
     /// starts with `//` and reads one that starts with `#` as a directive before it parses the
@@ -106,7 +108,7 @@ class DiagramContext {
         let text = label?.split(whereSeparator: \.isNewline).joined(separator: " ")
             .replacingOccurrences(of: "[", with: "(").replacingOccurrences(of: "]", with: ")")
         let labelText = text.flatMap { $0.isEmpty ? nil : " \($0)" } ?? ""
-        return "[\(start)] \(arrow)\(labelText) [\(end)]"
+        return "[\(start.nomnomlIdentifier)] \(arrow)\(labelText) [\(end.nomnomlIdentifier)]"
     }
 
     func skipLinking(element: SyntaxStructure, basedOn excludeElements: [String]?) -> Bool {

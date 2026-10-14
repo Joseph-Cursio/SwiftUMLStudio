@@ -45,7 +45,12 @@ extension SyntaxStructure {
         }
     }
 
-    /// Build a nomnoml node declaration: [<stereotype> Name|properties|methods]
+    /// Build a nomnoml node declaration: `[<stereotype id=alias> header|properties|methods]`.
+    ///
+    /// nomnoml names a node by its `id=`, or else by its header's first line, and every edge names
+    /// a node by its alias. The header can't be the name: it carries the generics, attributes and
+    /// module, and a type shares it with its extensions and with same-named nested types. Without
+    /// the id, edges ended on empty boxes of their own and same-named declarations merged (#69).
     private func nomnomlNode(
         relationship: String,
         stereotype: String,
@@ -53,7 +58,7 @@ extension SyntaxStructure {
         context: DiagramContext
     ) -> String {
         let alias = context.uniqName(item: self, relationship: relationship)
-        let typeName = displayName ?? name ?? "unknown"
+        let typeName = (displayName ?? name ?? "unknown").nomnomlEscaped
         // A bracket in the header, as in `class D: Base<[Int]>`'s `<[Int]>`, would end the node.
         let genericsStr = generics.map { " \($0.nomnomlEscaped)" } ?? ""
 
@@ -63,9 +68,8 @@ extension SyntaxStructure {
 
         let (properties, methods) = nomnomlMembers(context: context)
 
-        // nomnoml uses alias for connections, but display name for rendering
-        // Format: [<stereotype> alias_DisplayName|properties|methods]
-        var sections = "<\(stereotype)> \(headerText)"
+        let identifier = alias.isEmpty ? "" : " id=\(alias.nomnomlIdentifier)"
+        var sections = "<\(stereotype)\(identifier)> \(headerText)"
         if !properties.isEmpty {
             sections += "|\(properties.joined(separator: ";"))"
         }
@@ -73,7 +77,6 @@ extension SyntaxStructure {
             sections += "|\(methods.joined(separator: ";"))"
         }
 
-        // Store mapping from alias to display for connections
         return "[\(sections)]"
     }
 

@@ -47,7 +47,42 @@ internal extension String {
             .replacingOccurrences(of: "|", with: "/")
             .replacingOccurrences(of: ";", with: ",")
     }
+
+    /// This string as a nomnoml node id, which a class diagram writes both as a declaration's
+    /// `id=` and as an edge end `[…]` (#69). An ordinary Swift name comes back unchanged.
+    ///
+    /// nomnoml ends an `id=` value at a space or `>`, ends an edge end at `[`, `]`, `|`, `;` or a
+    /// line break, takes `\` as an escape, trims an edge end, and reads one that starts with `<`
+    /// as a classifier.
+    ///
+    /// - Whitespace around the name is dropped, as nomnoml drops it from an edge end.
+    /// - A space inside it becomes a no-break space, which nomnoml keeps there and draws as a
+    ///   space. An attributed supertype, `"@unchecked Sendable"`, has no declaration, so its box
+    ///   shows the id.
+    /// - Each other such character, which only a raw identifier holds, becomes `%` and its UTF-8
+    ///   bytes in hex, as in a URL: `` `a|b` `` is `` `a%7Cb` ``.
+    /// - `%` and the no-break space are encoded too, so two names that differ by more than the
+    ///   whitespace around them never share an id.
+    var nomnomlIdentifier: String {
+        var identifier = ""
+        identifier.reserveCapacity(utf8.count)
+        for scalar in trimmingCharacters(in: .whitespaces).unicodeScalars {
+            if scalar == " " {
+                identifier.unicodeScalars.append("\u{00A0}")
+            } else if nomnomlIdentifierReserved.contains(scalar) {
+                identifier += String(scalar).utf8.map { String(format: "%%%02X", $0) }.joined()
+            } else {
+                identifier.unicodeScalars.append(scalar)
+            }
+        }
+        return identifier
+    }
 }
+
+/// The characters `String.nomnomlIdentifier` encodes.
+private let nomnomlIdentifierReserved = CharacterSet(charactersIn: "<>[]|;\\%")
+    .union(.whitespacesAndNewlines)
+    .union(.controlCharacters)
 
 internal extension String {
     func removeAngleBracketsWithContent() -> String {
