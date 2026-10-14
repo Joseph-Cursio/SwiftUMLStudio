@@ -209,6 +209,8 @@ struct SVGClassDiagramNameLookupTests {
     /// `private extension` caps what it holds, and so does the extended type's own access.
     @Test("a type nested in an extension takes the access of the extension and the extended type", arguments: [
         "public struct Foo {}\nprivate extension Foo { class X {} }",
+        "public struct Foo {}\nfileprivate extension Foo { class X {} }",
+        "public struct Foo {}\npublic extension Foo { fileprivate class X {} }",
         "fileprivate struct Foo {}\nextension Foo { class X {} }"
     ])
     func extensionNestedTypeTakesExtensionAccess(fileA: String) throws {
@@ -235,5 +237,66 @@ struct SVGClassDiagramNameLookupTests {
         ]
         let graph = LayoutGraphBuilder.buildClassDiagram(from: items, configuration: Configuration(format: .svg))
         #expect(graph.edgeEnds.contains("Sub -> Foo.X"))
+    }
+
+    /// So do `package extension`, and a member nested deeper in it, which keeps its own level.
+    @Test("a package extension sets its members' default, deeper members keep their own", arguments: [
+        (ElementAccessibility.package, ElementAccessibility?.none, "Foo.X"),
+        (ElementAccessibility.public, ElementAccessibility.public, "Foo.X.Y")
+    ])
+    func extensionDefaultReachesItsDirectMembers(
+        modifier: ElementAccessibility, deeper: ElementAccessibility?, name: String
+    ) {
+        let member = SyntaxStructure(accessibility: .internal, kind: .class, name: "X")
+        member.sourceLocation = SourceLocation(filePath: "Core.swift", line: 2, column: 1)
+        member.module = "Core"
+        if let deeper {
+            let nested = SyntaxStructure(accessibility: deeper, kind: .class, name: "Y")
+            nested.sourceLocation = SourceLocation(filePath: "Core.swift", line: 3, column: 1)
+            nested.module = "Core"
+            member.substructure = [nested]
+        }
+        let items = [
+            declared(.struct, "Foo", "Core", access: .public),
+            declared(.extension, "Foo", "Core", access: modifier, members: [member]),
+            declared(.class, "Sub", "App", access: .public, inheriting: [name])
+        ]
+        let graph = LayoutGraphBuilder.buildClassDiagram(from: items, configuration: Configuration(format: .svg))
+        #expect(graph.edgeEnds.contains("Sub -> \(name)"))
+    }
+
+    /// `extension Outer.Inner` holds `X`; `Inner` is nested in an extension of a `fileprivate`
+    /// `Outer`, so X is file-scoped through two extensions.
+    @Test("the extended type's access caps through extensions of extensions")
+    func extendedTypeCapRecurses() throws {
+        let graph = try svg(files: [
+            "A.swift": "fileprivate struct Outer {}\nextension Outer { struct Inner {} }\n"
+                + "extension Outer.Inner { class X {} }",
+            "B.swift": "struct Outer { struct Inner { class X {} } }",
+            "C.swift": "class Sub: Outer.Inner.X {}"
+        ])
+        let visibleX = try #require(graph?.nodes.first {
+            $0.label == "X" && $0.sourceLocation?.filePath.hasSuffix("/B.swift") == true
+        })
+        #expect(graph?.edgeEnds.filter { $0.hasPrefix("Sub -> ") } == ["Sub -> \(visibleX.id)"])
+    }
+
+    // MARK: - Names of Types Outside the Diagram
+
+    /// `Operation` in B.swift is a type outside the diagram, as A's is `fileprivate`; B's own
+    /// extension extends that same type and stands in for it, wherever the extension is.
+    @Test("an edge to a type outside the diagram ends on an extension of that same type", arguments: [
+        ("fileprivate class Operation {}", "B.swift"),
+        ("private class Operation {}", "B.swift"),
+        ("fileprivate class Operation {}", "C.swift")
+    ])
+    func outsideTypeEndsOnItsExtension(fileA: String, extensionFile: String) throws {
+        var files = ["A.swift": fileA, "B.swift": "class MyOp: Operation {}"]
+        files[extensionFile, default: ""] += "\nextension Operation { func run() {} }"
+        let graph = try svg(files: files)
+        let standIn = try #require(graph?.nodes.first {
+            $0.stereotype == "extension" && $0.sourceLocation?.filePath.hasSuffix("/\(extensionFile)") == true
+        })
+        #expect(graph?.edgeEnds.contains("MyOp -> \(standIn.id)") == true)
     }
 }

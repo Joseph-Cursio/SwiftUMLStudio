@@ -91,17 +91,21 @@ extension LayoutGraphBuilder {
             case .node(let nodeId):
                 return nodeId
             case .named(let name, let scope):
-                guard let type = typeDeclaration(forName: name, from: scope) else { return fallback(named: name) }
+                guard let type = typeDeclaration(forName: name, from: scope) else {
+                    return fallback(named: name, from: scope)
+                }
                 return node(for: type, named: name)
             case .declaration(let declaration, let name, let scope):
                 if let nodeId = idForDeclaration[declaration] { return nodeId }
                 if hiddenDeclarations.contains(declaration) { return standIn(for: declaration, named: name) }
-                guard let type = typeDeclaration(forName: name, from: scope) else { return fallback(named: name) }
+                guard let type = typeDeclaration(forName: name, from: scope) else {
+                    return fallback(named: name, from: scope)
+                }
                 return node(for: type, named: name)
             case .extended(let declaration, let name, let scope):
                 // With no type of that name visible there, the extension stands for itself.
                 guard let type = typeDeclaration(forName: name, from: scope) else {
-                    return idForDeclaration[declaration] ?? fallback(named: name)
+                    return idForDeclaration[declaration] ?? fallback(named: name, from: scope)
                 }
                 // For a hidden type, this very extension is its stand-in: its own lookup found it.
                 return type.nodeId ?? idForDeclaration[declaration] ?? standIn(for: type.declaration, named: name)
@@ -123,14 +127,24 @@ extension LayoutGraphBuilder {
             }?.nodeId
         }
 
-        /// The end for a name no type visible from the reference takes: the first drawn extension
-        /// of a name that no type in the diagram declares at all, such as `extension String`, or
-        /// `nil` when types of the name exist but none is visible there, as the name then means
-        /// a type outside the diagram.
-        private func fallback(named name: String) -> String? {
-            let declared = declaredForName[name] ?? []
-            guard !declared.contains(where: { !$0.isExtension }) else { return nil }
-            return declared.first { $0.nodeId != nil }?.nodeId
+        /// The end for a name no type visible from `scope` takes, so a type outside the diagram,
+        /// such as `String`: a drawn extension of that same outside type, one whose own lookup
+        /// finds no visible type of the name either, preferring one in the same file, then the
+        /// same module; `nil` when there is none. An extension of a type the reference cannot
+        /// see, a hidden `fileprivate` one, say, extends something else and never stands in.
+        private func fallback(named name: String, from scope: Scope) -> String? {
+            let extensions = (declaredForName[name] ?? []).filter { candidate in
+                candidate.isExtension && candidate.nodeId != nil
+                    && typeDeclaration(forName: name, from: candidate.scope) == nil
+            }
+            guard let first = extensions.first else { return nil }
+            if let filePath = scope.filePath, let local = extensions.first(where: { $0.scope.filePath == filePath }) {
+                return local.nodeId
+            }
+            if let module = scope.module, let sibling = extensions.first(where: { $0.scope.module == module }) {
+                return sibling.nodeId
+            }
+            return first.nodeId
         }
 
         /// The type a name means where it is written, close to how Swift looks it up: among the
