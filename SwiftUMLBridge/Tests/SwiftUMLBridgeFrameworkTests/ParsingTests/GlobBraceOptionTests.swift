@@ -90,11 +90,12 @@ struct GlobBraceOptionTests {
         BraceCase(pattern: "{Mock{,Network},Stub}.swift", expected: ["Mock.swift", "MockNetwork.swift", "Stub.swift"]),
         // Spaces around an option are dropped, wherever the group sits in the entry.
         BraceCase(pattern: "Sub/{Foo, BarKit }.swift", expected: ["Sub/BarKit.swift", "Sub/Foo.swift"]),
-        // Controls. A plain option is a plain entry, a substring match as `Foo.swift` alone is.
+        // Controls. A plain option is a plain entry, as `Foo.swift` alone is: that file and
+        // anything inside it, so not `Foo.swift.orig`.
         BraceCase(pattern: "Foo*.swift", expected: [
             "Foo.a.swift", "Foo.swift", "FooKit.swift", "FooTests.swift", "FooXa.swift"
         ]),
-        BraceCase(pattern: "{Foo,Bar}.swift", expected: ["Bar.swift", "Foo.swift", "Foo.swift.orig"])
+        BraceCase(pattern: "{Foo,Bar}.swift", expected: ["Bar.swift", "Foo.swift"])
     ]
 
     @Test("a brace option selects what the same glob selects outside braces", arguments: braceCases)
@@ -125,8 +126,8 @@ struct GlobBraceOptionTests {
     }
 
     /// A group makes the list a glob list even when its options hold no glob syntax, as it did
-    /// before groups expanded, so `Fo` beside it still names exactly `Fo`. Read as a plain list,
-    /// it would select every path beginning with `Fo`.
+    /// before groups expanded, so `Fo` beside it still names exactly `Fo`, and none of the files
+    /// whose names merely begin with it.
     @Test("a brace-free entry means the same beside a group of plain options")
     func braceFreeEntryBesidePlainGroup() throws {
         let fixture = try Fixture()

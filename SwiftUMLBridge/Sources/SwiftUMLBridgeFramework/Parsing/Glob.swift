@@ -20,7 +20,13 @@ internal enum Glob: CustomStringConvertible {
     internal func matches(_ path: String) -> Bool {
         switch self {
         case let .path(globPath):
-            return globPath == path || path.contains(globPath)
+            // The path itself or anything inside it (#111). This used to be
+            // `path.contains(globPath)`, a substring match: `Sources/App` also took
+            // `Sources/AppKit/…` and `Sources/AppDelegate.swift`, and any deeper path that
+            // repeated it. By scalar, as a name starting with a combining mark joins the `/`
+            // before it into one `Character`.
+            let directory = globPath.hasSuffix("/") ? globPath : globPath + "/"
+            return globPath == path || path.unicodeScalars.starts(with: directory.unicodeScalars)
         case let .regex(regex):
             let range = NSRange(location: 0, length: path.utf16.count)
             return regex.firstMatch(in: path, options: [], range: range) != nil
