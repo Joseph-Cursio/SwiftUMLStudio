@@ -27,8 +27,9 @@ extension Array where Element == SyntaxStructure {
     /// merges extensions with their parent types
     ///
     /// Appends each extension's members into its type's `substructure` and sets their
-    /// `memberSuffix`, editing the structures in place. A type nested in the extension is
-    /// re-parented to that type, so its edge leaves the box that shows the extension's members.
+    /// `memberSuffix`, editing the structures in place. The extension records that type in
+    /// `mergedInto`, so a type nested in it is drawn hanging off the box that shows its members,
+    /// while its `parent` stays the extension that declares it, for its scope and access (#74).
     /// Diagram code calls it only through `preparedForClassDiagram(with:)`, which hands it a
     /// private copy.
     /// - Parameter mergedMemberIndicator: string appended as suffix to a member that originates from an extension
@@ -43,14 +44,12 @@ extension Array where Element == SyntaxStructure {
                 continue
             }
             processedItems.removeAll(where: { $0 == structure })
+            structure.mergedInto = parent
             guard let members = structure.substructure else { continue }
             if let memberSuffix = mergedMemberIndicator, parent.kind != .extension {
                 for member in members where member.name != nil {
                     member.memberSuffix = memberSuffix
                 }
-            }
-            for member in members where member.parent == structure {
-                member.parent = parent
             }
             if parent.substructure == nil {
                 parent.substructure = []
@@ -114,6 +113,12 @@ extension SyntaxStructure {
 }
 
 extension SyntaxStructure {
+    /// The item a nested type is drawn hanging off: its `parent`, or for one nested in an
+    /// extension that `mergeExtensions` merged away, the item that extension merged into (#107).
+    var nestingParent: SyntaxStructure? {
+        parent.map { $0.mergedInto ?? $0 }
+    }
+
     var fullName: String? {
         var qualifiedName = name
         var aParent: SyntaxStructure?

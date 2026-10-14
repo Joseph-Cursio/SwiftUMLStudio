@@ -190,12 +190,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   format the `Foo` that received the members changed from run to run.
   Merging now picks its type by the lookup edges use: the nearest
   same-named type that Swift's access control lets the extension see
-  (#116), so never a `private` or `fileprivate` type in another file or
+  (#74), so never a `private` or `fileprivate` type in another file or
   an internal one in another module. An extension that can see none
   extends a type outside the diagram and keeps its own box, which later
   such extensions merge into. A type nested in a merged extension now
-  belongs to that type, so PlantUML and Nomnoml nest it under the same
-  box. When that type is hidden, the edge names it as #67's fix does.
+  hangs off that type in every format, while keeping the extension's
+  access. When that type is hidden, the edge names it as #67's fix does.
 - **SVG class diagrams with merged extensions list each merged member once
   and draw a type nested in an extension once** (#73). For `.svg`,
   `DiagramScript` prepared the parsed items twice: once for text

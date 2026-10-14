@@ -70,6 +70,11 @@ internal class SyntaxStructure: NSObject, Codable, @unchecked Sendable {
     /// knows the source file's owning target; nil otherwise.
     internal var module: String?
 
+    /// Set by `mergeExtensions` on an extension it merges away: the item that now shows its
+    /// members. A type nested in that extension keeps the extension as its `parent`, which its
+    /// name, scope and access come from, and is drawn hanging off this item (`nestingParent`).
+    internal var mergedInto: SyntaxStructure?
+
     private enum CodingKeys: String, CodingKey {
         case accessibility = "key.accessibility"
         case attribute = "key.attribute"
@@ -127,6 +132,7 @@ internal class SyntaxStructure: NSObject, Codable, @unchecked Sendable {
         let clonedRoots = roots.map(clone)
         for pair in pairs {
             pair.clone.parent = pair.original.parent.map { copies[ObjectIdentifier($0)] ?? $0 }
+            pair.clone.mergedInto = pair.original.mergedInto.map { copies[ObjectIdentifier($0)] ?? $0 }
         }
         return clonedRoots
     }

@@ -3,7 +3,7 @@ import Testing
 @testable import SwiftUMLBridgeFramework
 
 /// Under `showExtensions: .merged`, an extension merges into the type its name means where it is
-/// written, by the lookup SVG edges use (#116): only a type Swift's access control lets it see.
+/// written, by the lookup SVG edges use (#74): only a type Swift's access control lets it see.
 /// Merging ranked every same-named type, so an extension could merge into a `private` type in
 /// another file, a box other than the one its nested type hangs off when extensions are drawn
 /// apart (#107), or into a hidden `fileprivate` one, which took its members out of the diagram.
@@ -104,6 +104,24 @@ struct MergedExtensionVisibilityTests {
         ]
         #expect(graph(items, .merged).memberLines == [["~ count: Int"], ["~ bar()"]])
         #expect(graph(items, .all).memberLines == [["~ count: Int"], ["~ bar()"]])
+    }
+
+    /// `public extension Foo { struct Inner {} }` makes Inner public, so ModB can extend it. The
+    /// lookup is built before any merge, from the declarations as written, so merging the public
+    /// extension into `Foo` first cannot hide Inner from ModB.
+    @Test("an extension of a type nested in a public extension merges into it from another module")
+    func extensionOfTypeNestedInPublicExtension() {
+        let method = SyntaxStructure(kind: .functionMethodInstance, name: "y")
+        let inner = declared(.struct, "Inner", in: "A.swift", module: "ModA")
+        let items = [
+            declared(.struct, "Foo", in: "A.swift", module: "ModA", access: .public),
+            declared(.extension, "Foo", in: "A.swift", module: "ModA", access: .public, members: [inner]),
+            declared(.extension, "Foo.Inner", in: "B.swift", module: "ModB", members: [method])
+        ]
+        let laid = graph(items, .merged)
+        #expect(laid.nodeIds == ["Foo", "Foo.Inner"])
+        #expect(laid.memberLines == [[], ["~ y()"]])
+        #expect(laid.edgeEnds == ["Foo -> Foo.Inner"])
     }
 
     @Test("extensions of a type no extension can see share the first one's box")

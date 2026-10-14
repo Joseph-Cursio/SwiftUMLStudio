@@ -156,7 +156,7 @@ class DiagramContext {
             }
             takenIdentifiers.formUnion(item.linkParents().compactMap(linkTarget(for:)))
             // `collectNestedTypeConnections` falls back to the qualified name of a parent it did not draw.
-            if drawsNestedTypeConnections, let parent = item.parent, !drawn.contains(parent),
+            if drawsNestedTypeConnections, let parent = item.nestingParent, !drawn.contains(parent),
                let parentName = parent.fullName {
                 takenIdentifiers.insert(parentName)
             }
@@ -220,7 +220,7 @@ class DiagramContext {
         guard drawsNestedTypeConnections else { return }
         for item in items where item.parent != nil {
             guard let name = uniqueNameForElement[item],
-                  let parent = item.parent,
+                  let parent = item.nestingParent,
                   let parentName = uniqueNameForElement[parent] ?? parent.fullName
             else {
                 continue

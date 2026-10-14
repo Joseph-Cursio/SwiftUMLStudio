@@ -207,14 +207,15 @@ struct SVGClassDiagramNameLookupTests {
     }
 
     /// `private extension` caps what it holds, and so does the extended type's own access.
+    /// Also when the extension is merged away: its nested type keeps it as `parent` (#107).
     @Test("a type nested in an extension takes the access of the extension and the extended type", arguments: [
         "public struct Foo {}\nprivate extension Foo { class X {} }",
         "public struct Foo {}\nfileprivate extension Foo { class X {} }",
         "public struct Foo {}\npublic extension Foo { fileprivate class X {} }",
         "fileprivate struct Foo {}\nextension Foo { class X {} }"
-    ])
-    func extensionNestedTypeTakesExtensionAccess(fileA: String) throws {
-        let publicOnly = ElementOptions(havingAccessLevel: [.open, .public])
+    ], [ExtensionVisualization.all, .merged])
+    func extensionNestedTypeTakesExtensionAccess(fileA: String, extensions: ExtensionVisualization) throws {
+        let publicOnly = ElementOptions(havingAccessLevel: [.open, .public], showExtensions: extensions)
         let graph = try svg(files: [
             "A.swift": fileA,
             "B.swift": "public struct Foo { open class X {} }",
@@ -224,9 +225,11 @@ struct SVGClassDiagramNameLookupTests {
         #expect(graph?.edgeEnds.contains("SubC -> \(visibleX.id)") == true)
     }
 
-    /// `public extension` makes what it holds public by default, so another module can see it.
-    @Test("a type nested in a public extension is visible from another module")
-    func publicExtensionRaisesItsMembers() {
+    /// `public extension` makes what it holds public by default, so another module can see it,
+    /// also once the extension is merged away.
+    @Test("a type nested in a public extension is visible from another module",
+          arguments: [ExtensionVisualization.all, .merged])
+    func publicExtensionRaisesItsMembers(extensions: ExtensionVisualization) {
         let nested = SyntaxStructure(accessibility: .internal, kind: .class, name: "X")
         nested.sourceLocation = SourceLocation(filePath: "Core.swift", line: 2, column: 1)
         nested.module = "Core"
@@ -235,7 +238,8 @@ struct SVGClassDiagramNameLookupTests {
             declared(.extension, "Foo", "Core", access: .public, members: [nested]),
             declared(.class, "Sub", "App", access: .public, inheriting: ["Foo.X"])
         ]
-        let graph = LayoutGraphBuilder.buildClassDiagram(from: items, configuration: Configuration(format: .svg))
+        let configuration = Configuration(elements: ElementOptions(showExtensions: extensions), format: .svg)
+        let graph = LayoutGraphBuilder.buildClassDiagram(from: items, configuration: configuration)
         #expect(graph.edgeEnds.contains("Sub -> Foo.X"))
     }
 

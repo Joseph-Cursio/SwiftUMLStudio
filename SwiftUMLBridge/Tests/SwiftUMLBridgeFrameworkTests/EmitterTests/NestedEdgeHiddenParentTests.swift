@@ -55,8 +55,8 @@ struct NestedEdgeHiddenParentTests {
         }
     }
 
-    /// Merging re-parents a type nested in an extension to the type it merged into (#107), so a
-    /// hidden nested type's extension took the short-name fallback too.
+    /// A type nested in a merged extension hangs off the type it merged into (#107), so a hidden
+    /// nested type's extension took the short-name fallback too.
     @Test("a type nested in a merged extension of a hidden nested type hangs off its qualified name")
     func mergedExtensionOfHiddenNestedType() {
         let source = "struct A { fileprivate struct B {} }\nextension A.B { struct Inner {} }\nstruct B {}"

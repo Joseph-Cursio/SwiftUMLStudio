@@ -24,19 +24,18 @@ struct MergedExtensionTargetTests {
         return item
     }
 
-    /// `struct Foo { var count: Int }` in A.swift (ModA) and `struct Foo { var other: Int }` in
-    /// B.swift (ModB), both at `access`, then `extension Foo { func bar() {}; struct Inner {} }`
-    /// in `file`.
-    private func twoFoos(
-        extensionIn file: String, module: String?, access: ElementAccessibility? = nil
-    ) -> [SyntaxStructure] {
+    /// `public struct Foo { var count: Int }` in A.swift (ModA) and `public struct Foo { var
+    /// other: Int }` in B.swift (ModB), then `extension Foo { func bar() {}; struct Inner {} }` in
+    /// `file`. Both are `public`, so an extension in any module can see both and the ranking, not
+    /// the visibility filter (#74), decides which it merges into.
+    private func twoFoos(extensionIn file: String, module: String?) -> [SyntaxStructure] {
         let count = SyntaxStructure(kind: .varInstance, name: "count", typename: "Int")
         let other = SyntaxStructure(kind: .varInstance, name: "other", typename: "Int")
         let bar = SyntaxStructure(kind: .functionMethodInstance, name: "bar")
         let inner = declared(.struct, "Inner", in: file, module: module)
         return [
-            declared(.struct, "Foo", in: "A.swift", module: "ModA", access: access, members: [count]),
-            declared(.struct, "Foo", in: "B.swift", module: "ModB", access: access, members: [other]),
+            declared(.struct, "Foo", in: "A.swift", module: "ModA", access: .public, members: [count]),
+            declared(.struct, "Foo", in: "B.swift", module: "ModB", access: .public, members: [other]),
             declared(.extension, "Foo", in: file, module: module, members: [bar, inner])
         ]
     }
@@ -83,6 +82,21 @@ struct MergedExtensionTargetTests {
         #expect(laid.edgeEnds == ["Foo_1 -> Foo.Inner"])
     }
 
+    /// Sources of several targets diagrammed by path, without `--package`, carry no module, so
+    /// only the file tells the two `Foo`s apart.
+    @Test("without modules, it merges into the same-named type in its own file")
+    func mergesIntoSameFileTypeWithoutModules() {
+        let count = SyntaxStructure(kind: .varInstance, name: "count", typename: "Int")
+        let other = SyntaxStructure(kind: .varInstance, name: "other", typename: "Int")
+        let bar = SyntaxStructure(kind: .functionMethodInstance, name: "bar")
+        let laid = graph([
+            declared(.struct, "Foo", in: "A.swift", access: .public, members: [count]),
+            declared(.struct, "Foo", in: "B.swift", access: .public, members: [other]),
+            declared(.extension, "Foo", in: "B.swift", members: [bar])
+        ])
+        #expect(laid.memberLines == [["~ count: Int"], ["~ other: Int", "~ bar()"]])
+    }
+
     @Test("with no same-file type, it merges into the same-named type in its module")
     func mergesIntoSameModuleType() {
         let laid = graph(twoFoos(extensionIn: "B+Bar.swift", module: "ModB"))
@@ -90,10 +104,9 @@ struct MergedExtensionTargetTests {
         #expect(laid.edgeEnds == ["Foo_1 -> Foo.Inner"])
     }
 
-    /// Another module's type is visible only from `package` up (#116), so both are `public` here.
     @Test("with no same-file or same-module type, it merges into the first")
     func mergesIntoFirstType() {
-        let laid = graph(twoFoos(extensionIn: "C.swift", module: "ModC", access: .public))
+        let laid = graph(twoFoos(extensionIn: "C.swift", module: "ModC"))
         #expect(laid.memberLines == [["~ count: Int", "~ bar()"], ["~ other: Int"], []])
         #expect(laid.edgeEnds == ["Foo -> Foo.Inner"])
     }
