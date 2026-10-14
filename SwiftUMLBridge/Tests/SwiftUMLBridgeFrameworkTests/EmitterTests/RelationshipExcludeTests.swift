@@ -94,6 +94,18 @@ struct RelationshipExcludeTests {
         ])
     }
 
+    /// A `relationships:` block without an `inheritance:` key decodes it as `nil`; `realize.exclude`
+    /// must still apply.
+    @Test("realize.exclude applies when inheritance is not configured")
+    func realizeExcludeWithoutInheritance() {
+        let config = Configuration(relationships: RelationshipOptions(
+            inheritance: nil, realize: Relationship(exclude: ["Codable", "Sendable"])
+        ))
+        let text = script(Self.model, config)
+        #expect(!text.contains("Codable") && !text.contains("Sendable"))
+        #expect(text.contains("Base <|-- Circle"))
+    }
+
     @Test("realize.exclude reaches macro conformances and each part of a composition")
     func realizeReachesSyntheticAndSplitParents() {
         #expect(edges("@Observable class Store {}", configuration(realize: ["Observable"])).isEmpty)
@@ -118,6 +130,22 @@ struct RelationshipExcludeTests {
     func dependencyExcludeKeepsConformance() {
         let lines = edges("struct Point {}\nextension Point: Hashable {}", configuration(dependency: ["Point"]))
         #expect(lines == ["Hashable <|-- Point : inherits"])
+    }
+
+    /// Each list keeps to its own edges: a supertype list never hides an extension edge, and
+    /// `dependency.exclude` never hides a supertype or conformance edge to the same name.
+    @Test("a supertype list leaves extension edges", arguments: [false, true])
+    func supertypeListLeavesExtensionEdge(viaRealize: Bool) {
+        let config = viaRealize ? configuration(realize: ["Point"]) : configuration(inheritance: ["Point"])
+        #expect(edges(Self.model, config) == edges(Self.model, configuration()))
+        #expect(edges(Self.model, config).contains("Point <.. Point0 : ext"))
+    }
+
+    @Test("dependency.exclude leaves conformances to the extended protocol")
+    func dependencyExcludeLeavesSupertypeEdges() {
+        let source = "protocol Shape {}\nstruct Circle: Shape {}\nextension Shape {}"
+        #expect(edges(source, configuration(dependency: ["Shape"])) == ["Shape <|.. Circle : conforms to"])
+        #expect(edges(source, configuration()) == ["Shape <|.. Circle : conforms to", "Shape <.. Shape0 : ext"])
     }
 
     @Test("dependency.exclude changes nothing when extensions are merged or hidden", arguments: [
