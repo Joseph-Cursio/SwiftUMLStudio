@@ -96,6 +96,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed — Bridge
 
+- **A merged extension's members go into the same-named type its nested
+  types hang off** (#107). With two types of one name, `mergeExtensions` took
+  the first, ignoring the extension's file and module. The SVG edge from
+  a type nested in that extension already preferred the type in the
+  same file, then the same module (#55). So `--merge-extensions --format
+  svg` could draw `bar()` on one `Foo` and `Foo.Inner` hanging off the
+  other. Under `--package`, file order is hash order (#70), so in every
+  format the `Foo` that received the members changed from run to run.
+  Merging now picks its type by the rule edges use, through a shared
+  `DeclarationScope`. A type nested in a merged extension now belongs to
+  that type, so PlantUML and Nomnoml nest it under the same box. One
+  side effect: when that type is hidden and is itself nested (an
+  extension of a `fileprivate` nested type), the nested edge falls back
+  to the type's short name (#67).
 - **SVG class diagrams with merged extensions list each merged member once
   and draw a type nested in an extension once** (#73). For `.svg`,
   `DiagramScript` prepared the parsed items twice: once for text
