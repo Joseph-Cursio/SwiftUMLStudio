@@ -570,7 +570,9 @@ elements:
     # Type: Bool  Default: true
 
   showGenerics: true
-    # When true, generic type parameters (<T>, <Key, Value>) appear on type nodes.
+    # When true, generic type parameters (<T>, <Key, Value>) appear on type nodes,
+    # and an extension of a bound generic type shows the arguments it binds:
+    # extension Foo<Int> reads Foo<Int>, extension [Int] reads Array<Int>.
     # Type: Bool  Default: true
 
   showExtensions: merged
@@ -589,7 +591,9 @@ elements:
 
   exclude:
     # Glob patterns matched against type names (not file paths).
-    # Matched types are excluded from the diagram.
+    # Matched types are excluded from the diagram. An extension is matched by
+    # the type it extends, without generic arguments or sugar: "Foo" also
+    # excludes extension Foo<Int>, and "Array" extension [Int].
     # Type: [String]  Default: []
     - "UIViewController"
     - "NS*"
@@ -665,7 +669,8 @@ relationships:
     # Dotted arrow (<..) from an extension's box to the type it extends
     label: "extends"
     exclude:
-      # Extended-type names whose extension edge is hidden. The extension's
+      # Extended-type names whose extension edge is hidden, written without
+      # generic arguments ("Foo" for extension Foo<Int>). The extension's
       # box and its own conformances stay. No effect when extensions are
       # merged or hidden.
       - "Generated*"

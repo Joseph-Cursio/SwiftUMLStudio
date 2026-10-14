@@ -380,6 +380,8 @@ swiftumlbridge classdiagram Sources/ --hide-extensions
 
 These flags override the `elements.showExtensions` setting in the configuration file.
 
+An extension written with generic arguments or sugar is an extension of the type it names. `extension Foo<Int>` is drawn, linked to `Foo`, merged into `Foo` and excluded with `Foo` exactly as `extension Foo where T == Int` is; `extension [Int]`, `extension [String: Int]` and `extension Int?` are extensions of `Array`, `Dictionary` and `Optional`. While `elements.showGenerics` is on, the extension's box also shows the arguments it binds (`Foo<Int>`, `Array<Int>`).
+
 ### Module-Aware Mode (`--package`)
 
 When you point `classdiagram` at a Swift Package via `--package`, the CLI runs `swift package describe --type json` to discover the package's targets and tags every parsed type with its owning module. PlantUML, Mermaid, and Nomnoml output render the module as an additional stereotype on the type node (e.g. `<<class>> <<Networking>>`), making cross-target architecture visible at a glance. With `--format svg`, the layout engine instead clusters each target's types together and draws a tinted, labelled grouping box around them — the same module-grouped layout the Studio app's native canvas uses.
@@ -422,6 +424,8 @@ swiftumlbridge sequence Sources/ Tests/ --entry DataPipeline.run
 ```
 
 The type and method names are case-sensitive and must exactly match the Swift source code. If no functions match, `SequenceScript.empty` is returned and the diagram is blank.
+
+A method declared in an extension of a bound generic type is entered under the type it extends, without the arguments: `Foo.run` for `extension Foo<Int> { func run() }`, `Array.run` for `extension [Int]`.
 
 ### Controlling Traversal Depth
 
