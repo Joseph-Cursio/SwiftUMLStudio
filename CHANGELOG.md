@@ -96,32 +96,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed — Bridge
 
-- **A type nested in a hidden type no longer hangs off an unrelated type
-  with the hidden type's short name** (#67). In PlantUML and Nomnoml,
-  the edge from a drawn nested type to a parent the diagram does not draw
-  named that parent by its short name. With `struct Outer { fileprivate
-  struct Foo { struct Inner {} } }` and a top-level `struct Foo {}`, the
-  diagram drew `Foo +-- Outer.Foo.Inner`, nesting `Inner` in the wrong
-  `Foo`. A public-only diagram (`havingAccessLevel: [public]`) did the
-  same for every internal container of a drawn public nested type. The
-  edge now names a hidden parent by its qualified name (`Outer.Foo +--
-  Outer.Foo.Inner`), and alias reservation (#54) reserves that name
-  instead of the short one. Edges to a merged-away or hidden extension
-  are unchanged, because an extension's name is already the extended
-  type's full name. Mermaid draws no nested-type edges and SVG names
-  parents by their full name, so neither changes.
-- **A merged extension's members go into the same-named type its nested
-  types hang off** (#107). With two types of one name, `mergeExtensions` took
-  the first, ignoring the extension's file and module. The SVG edge from
-  a type nested in that extension already preferred the type in the
-  same file, then the same module (#55). So `--merge-extensions --format
-  svg` could draw `bar()` on one `Foo` and `Foo.Inner` hanging off the
-  other. Under `--package`, file order is hash order (#70), so in every
-  format the `Foo` that received the members changed from run to run.
-  Merging now picks its type by the rule edges use, through a shared
-  `DeclarationScope`. A type nested in a merged extension now belongs to
-  that type, so PlantUML and Nomnoml nest it under the same box. When
-  that type is hidden, the edge names it as #67's fix does.
+- **A `{…}` group in `files.include` or `files.exclude` now stands for one
+  entry per option** (#58). Each group became a regex alternation instead.
+  Its options were escaped with an old copy of the escape class, then
+  spliced in without the glob translation.
+  - A `*` or `?` after a character acted as a regex quantifier, so
+    `{Foo*,Bar}.swift` missed `FooKit.swift`.
+  - `^` and `$` became anchors, so `{a^b,c}.swift` never selected
+    `a^b.swift`.
+  - An option that started with `*` or `?`, or held `**` anywhere, made
+    the regex invalid. The whole entry then matched nothing, logging only
+    to the system log. So `--exclude '**/{Mock*,*Kit}.swift'` and
+    `{Sources/**,Tests/**}` excluded no file.
+  - A group of plain directory names, such as `Sources/{App,Core}`,
+    matched no file inside them.
+  - An option naming a symlinked or absolute directory was not resolved.
+
+  A brace entry now means exactly the list of its expansions, each a whole
+  glob. Groups can nest, and spaces around an option are dropped. A plain
+  option is a plain entry: `Sources/{App,Core}` now works as
+  `Sources/App,Sources/Core` does, and so also matches `Sources/AppKit/…`.
+  The glob reference says so, notes that braces expand only in
+  `files.include` and `files.exclude`, and corrects the description of a
+  plain string: in those fields it matches the path it names and every
+  path beginning with it, not a substring anywhere.
 - **SVG class diagrams with merged extensions list each merged member once
   and draw a type nested in an extension once** (#73). For `.svg`,
   `DiagramScript` prepared the parsed items twice: once for text

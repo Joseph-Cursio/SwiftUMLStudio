@@ -1129,8 +1129,8 @@ Used in `files.include`, `files.exclude`, `elements.exclude`, and `relationships
 | `*` | Any sequence of characters (not path separators in single `*`) |
 | `**` | Any sequence including path separators (recursive) |
 | `?` | Any single character |
-| `{a,b}` | Either `a` or `b` (brace expansion) |
-| Plain string | Substring match anywhere in the path |
+| `{a,b}` | Either `a` or `b` (brace expansion): the entry stands for one entry per option, so `Sources/{App,Core}/*.swift` means `Sources/App/*.swift` and `Sources/Core/*.swift`. Options can hold wildcards and further groups. In `files.include` and `files.exclude` only: elsewhere `{` and `}` match themselves |
+| Plain string | In `files.include` and `files.exclude`: the path it names, taken from the working directory, and every path that begins with it, so `Sources/App` also matches `Sources/AppKit/…`. Write `Sources/App/**`, or `Sources/{App,Core}/**`, to name only those directories. Elsewhere: exactly that name |
 
 **Examples:**
 
@@ -1143,6 +1143,7 @@ files:
   exclude:
     - "**/Generated/**"             # any Generated/ directory at any depth
     - "Tests/**/Mock*.swift"        # files starting with Mock in any Tests/ subdir
+    - "**/{Mock*,*Stub}.swift"      # files starting with Mock or ending in Stub, anywhere
     - "**/__Snapshots__/**"         # snapshot test directories
 
 elements:
