@@ -86,18 +86,17 @@ final class CallGraphExtractor: TypeStackVisitor {
                 isAsync: isAsync, isUnresolved: false
             )
         }
-        // `Foo<Int>.make()` and `Foo<Int>().run()` call into `Foo`, the name an extension of
-        // `Foo<Int>` is listed under (#66).
-        var receiver = ExprSyntax(base)
-        if let funcCall = receiver.as(FunctionCallExprSyntax.self) { receiver = funcCall.calledExpression }
-        if let specialized = receiver.as(GenericSpecializationExprSyntax.self) { receiver = specialized.expression }
+        // A type written as the receiver, or as what makes it, is named as an extension of it is
+        // listed: `Foo<Int>.make()`, `Outer<Int>.Inner.make()`, `[Int].make()` and `Foo<Int>().run()`
+        // call into `Foo`, `Outer.Inner`, `Array` and `Foo` (#66).
+        let called = base.as(FunctionCallExprSyntax.self)?.calledExpression
         let baseText: String
-        if let declRef = receiver.as(DeclReferenceExprSyntax.self) {
+        if let typeName = (called ?? base).typeReferenceName {
+            baseText = typeName
+        } else if let declRef = called?.as(DeclReferenceExprSyntax.self) {
             baseText = declRef.baseName.text
-        } else if base.is(FunctionCallExprSyntax.self) {
-            baseText = base.description.trimmingCharacters(in: .whitespacesAndNewlines)
         } else {
-            baseText = receiver.trimmedDescription
+            baseText = base.description.trimmingCharacters(in: .whitespacesAndNewlines)
         }
         let resolvedType: String? = baseText == "self" ? callerType
             : baseText.first?.isUppercase == true ? baseText : nil

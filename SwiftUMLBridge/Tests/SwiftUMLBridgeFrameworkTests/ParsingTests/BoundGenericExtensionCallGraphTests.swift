@@ -76,29 +76,60 @@ struct BoundGenericExtensionCallGraphTests {
         #expect(participants.allSatisfy { $0.sourceLocation != nil }, "\(participants.map(\.name))")
     }
 
-    @Test("a call on a specialised type is followed into its extension")
-    func specialisedReceiverIsFollowed() {
+    /// An extension, written with generic arguments or sugar, beside a call into it written on the
+    /// type the same way, and the name the call graph lists the extension's methods under.
+    struct Receiver: Sendable, CustomTestStringConvertible {
+        let declarations: String
+        let extended: String
+        let listed: String
+
+        var call: String { extended + ".make()" }
+        var testDescription: String { call }
+    }
+
+    static let receivers = [
+        Receiver(declarations: "struct Foo<T> {}", extended: "Foo<Int>", listed: "Foo"),
+        Receiver(declarations: "struct Foo<T> { struct Nested {} }", extended: "Foo<Int>.Nested", listed: "Foo.Nested"),
+        Receiver(
+            declarations: "struct Outer<A> { struct Inner<B> {} }", extended: "Outer<Int>.Inner<String>",
+            listed: "Outer.Inner"
+        ),
+        Receiver(declarations: "", extended: "Int?", listed: "Optional"),
+        Receiver(declarations: "", extended: "[Int]", listed: "Array"),
+        Receiver(declarations: "", extended: "[String: Int]", listed: "Dictionary")
+    ]
+
+    @Test("a call on a type written with generic arguments or sugar is followed into its extension",
+          arguments: receivers)
+    func specialisedReceiverIsFollowed(receiver: Receiver) {
         let source = """
-        struct Bar { static func go() { Foo<Int>.make() } }
-        struct Foo<T> {}
-        extension Foo<Int> { static func make() { Baz.hit() } }
+        struct Bar { static func go() { \(receiver.call) } }
+        \(receiver.declarations)
+        extension \(receiver.extended) { static func make() { Baz.hit() } }
         struct Baz { static func hit() {} }
         """
         let edges = CallGraph(edges: CallGraphExtractor.extract(from: source).edges)
             .traverse(from: "Bar", entryMethod: "go", maxDepth: 3)
         let described = edges.map { "\($0.callerType).\($0.callerMethod)->\($0.calleeType ?? "?").\($0.calleeMethod)" }
-        #expect(described == ["Bar.go->Foo.make", "Foo.make->Baz.hit"])
+        #expect(described == ["Bar.go->\(receiver.listed).make", "\(receiver.listed).make->Baz.hit"])
     }
 
-    @Test("a specialised receiver resolves to its base type; other receivers are unchanged", arguments: [
+    @Test("a type written as the receiver resolves to its base name; other receivers are unchanged", arguments: [
         ("Foo<Int>.make()", "Foo"),
         ("Foo<Int>().run()", "Foo"),
+        ("Foo<Int>?.make()", "Optional"),
         ("Swift.Array<Int>.helper()", "Swift.Array"),
         ("Foo.make()", "Foo"),
         ("Foo().run()", "Foo"),
-        ("Foo.Bar.make()", "Foo.Bar")
-    ])
-    func specialisedReceiver(call: String, calleeType: String) {
+        ("Foo.Bar.make()", "Foo.Bar"),
+        ("Foo.Bar().run()", "Foo.Bar"),
+        ("Foo.shared.run()", "Foo.shared"),
+        ("self.helper()", "Caller"),
+        ("foo?.bar()", nil),
+        ("[foo].first()", nil),
+        ("[1].map()", nil)
+    ] as [(String, String?)])
+    func specialisedReceiver(call: String, calleeType: String?) {
         // The member call is the first edge; `Foo()` adds one of its own for the initialiser.
         let edges = CallGraphExtractor.extract(from: "struct Caller { func go() { \(call) } }").edges
         #expect(edges.first?.calleeType == calleeType)

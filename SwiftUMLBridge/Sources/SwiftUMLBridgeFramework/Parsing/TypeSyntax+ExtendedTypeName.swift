@@ -45,6 +45,42 @@ extension TypeSyntax {
     }
 }
 
+extension ExprSyntax {
+    /// The name `extendedTypeName` gives the type this expression writes, when it writes one as a
+    /// call receiver can: `Foo<Int>` → `Foo`, `Outer<Int>.Inner<String>` → `Outer.Inner`,
+    /// `Swift.Array<Int>` → `Swift.Array`, `[Int]` → `Array`, `[String: Int]` → `Dictionary`,
+    /// `Int?` → `Optional`. So `Foo<Int>.make()` calls into the name an extension of `Foo<Int>` is
+    /// listed under (#66). `nil` for anything else, a lowercase name included: that is a value.
+    var typeReferenceName: String? {
+        switch self.as(ExprSyntaxEnum.self) {
+        case .declReferenceExpr(let reference):
+            let name = reference.baseName.text
+            return name.first?.isUppercase == true ? name : nil
+        case .memberAccessExpr(let member):
+            let name = member.declName.baseName.text
+            guard name.first?.isUppercase == true, let base = member.base?.typeReferenceName else { return nil }
+            return base + "." + name
+        case .genericSpecializationExpr(let specialized):
+            return specialized.expression.typeReferenceName
+        case .typeExpr(let type):
+            return type.type.extendedTypeName
+        case .optionalChainingExpr(let optional):
+            return optional.expression.typeReferenceName == nil ? nil : "Optional"
+        case .arrayExpr(let array):
+            guard array.elements.count == 1, array.elements.first?.expression.typeReferenceName != nil else {
+                return nil
+            }
+            return "Array"
+        case .dictionaryExpr(let dictionary):
+            guard case .elements(let elements) = dictionary.content, elements.count == 1, let only = elements.first,
+                  only.key.typeReferenceName != nil, only.value.typeReferenceName != nil else { return nil }
+            return "Dictionary"
+        default:
+            return nil
+        }
+    }
+}
+
 private extension TupleTypeSyntax {
     /// The type inside `(T)`, which is `T` itself; `nil` for a real tuple, which no extension
     /// can extend.
