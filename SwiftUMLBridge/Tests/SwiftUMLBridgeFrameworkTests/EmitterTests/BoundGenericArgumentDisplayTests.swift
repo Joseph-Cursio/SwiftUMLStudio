@@ -56,6 +56,17 @@ struct BoundGenericArgumentDisplayTests {
         #expect(ClassDiagramIds.script(for: source, format: .nomnoml).contains(nomnoml))
     }
 
+    /// PlantUML's generic part ends at the first `>`; Mermaid and Nomnoml take `->` as it is.
+    @Test("a function type's arrow does not end PlantUML's generic part")
+    func functionTypeArgument() {
+        let source = "extension [() -> Void] {}\nextension [String: (Int) -> Void] {}"
+        let plantUML = ClassDiagramIds.script(for: source, format: .plantuml)
+        #expect(plantUML.contains("class \"Array\" as Array<() → Void> << (X, orchid) extension >> {"), "\(plantUML)")
+        #expect(plantUML.contains("as Dictionary<String, (Int) → Void> <<"), "\(plantUML)")
+        let mermaid = ClassDiagramIds.script(for: source, format: .mermaid)
+        #expect(mermaid.contains("class Array[\"Array&lt;() -&gt; Void&gt;\"]"), "\(mermaid)")
+    }
+
     @Test("with showGenerics off, no format shows them", arguments: [DiagramFormat.plantuml, .mermaid, .nomnoml])
     func showGenericsHidesThem(format: DiagramFormat) {
         let elements = ElementOptions(showGenerics: false)

@@ -76,7 +76,9 @@ extension SyntaxStructure {
         context: DiagramContext
     ) -> String {
         let alias = context.uniqName(item: self, relationship: relationship)
-        let genericsStr = generics ?? ""
+        // PlantUML's generic part ends at the first `>`, so the one in a function type's `->`
+        // (`extension [() -> Void]`) would leave the rest of the header unreadable.
+        let genericsStr = generics?.replacingOccurrences(of: "->", with: "→") ?? ""
         let body = members(context: context)
         let macroAnnotation = attributeNames.map { " <<\($0)>>" }.joined()
         let moduleAnnotation = module.map { " <<\($0)>>" } ?? ""
