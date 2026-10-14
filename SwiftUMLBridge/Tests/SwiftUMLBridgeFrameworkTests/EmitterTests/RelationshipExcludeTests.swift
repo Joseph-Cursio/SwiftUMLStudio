@@ -41,7 +41,7 @@ struct RelationshipExcludeTests {
     /// The relationship lines of a PlantUML, Mermaid or Nomnoml class diagram, in order.
     private func edges(_ source: String, _ configuration: Configuration) -> [String] {
         let arrows = configuration.format == .nomnoml
-            ? ["] -:> [", "] --:> [", "] --> ["]
+            ? ["] -:> ", "] --:> ", "] --> "]
             : [" <|-- ", " <|.. ", " <.. "]
         return script(source, configuration).split(separator: "\n").map(String.init)
             .filter { line in arrows.contains { line.contains($0) } }
@@ -64,10 +64,10 @@ struct RelationshipExcludeTests {
     func documentedRealizeExampleNomnoml() {
         let config = configuration(realize: ["Codable", "Sendable"], format: .nomnoml)
         #expect(edges(Self.model, config) == [
-            "[Circle] -:> [Base] : inherits",
-            "[Circle] --:> [Shape] : conforms to",
-            "[Point] --:> [Shape] : conforms to",
-            "[Point0] --> [Point] : ext"
+            "[Circle] -:> inherits [Base]",
+            "[Circle] --:> conforms to [Shape]",
+            "[Point] --:> conforms to [Shape]",
+            "[Point0] --> ext [Point]"
         ])
     }
 
