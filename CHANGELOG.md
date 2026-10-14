@@ -96,6 +96,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed — Bridge
 
+- **SVG class diagrams draw only the types the other formats draw** (#74).
+  `LayoutGraphBuilder` kept every declaration of a drawable kind, so
+  `showExtensions: none` (`--hide-extensions`), `elements.exclude` and
+  `elements.havingAccessLevel` hid nothing in SVG. The default access
+  levels leave out `fileprivate`, so even an unconfigured SVG diagram, in
+  the CLI or on Studio's native canvas, drew `fileprivate` types that the
+  PlantUML and Mermaid ones hide. SVG now keeps what the text formats
+  keep, filtered after extensions merge, so a hidden type takes its
+  merged extensions with it. An edge to a hidden type is dropped, as an
+  edge to any type the SVG diagram does not declare is; the text formats
+  still write it.
 - **`relationships.realize.exclude` and `relationships.dependency.exclude`
   now hide edges** (#113). Both were decoded but never read, so the
   reference's own `realize.exclude: [Codable, Sendable]` hid nothing.
