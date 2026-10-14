@@ -96,6 +96,33 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed — Bridge
 
+- **Nomnoml class diagrams parse again, and every edge ends on the box it
+  names** (#69). Two defects broke Nomnoml class diagrams in the CLI's
+  `--format nomnoml`, in Studio's preview and in exported source:
+  - Every inheritance, conformance and extension edge ended in
+    ` : label`, which is Mermaid and PlantUML syntax. nomnoml reads a
+    label only beside the arrow, so it rejected the whole diagram. With
+    the default labels, any diagram with one of these edges drew nothing.
+    The label now goes by the arrow, as in `[Circle] -:> inherits
+    [Base]`. In a configured label, brackets become parentheses, since a
+    `[` would end it, and line breaks become spaces, since nomnoml reads
+    a line that starts with `//` or `#` as a comment or a directive.
+  - nomnoml names a node by its `id=`, or else by its title. The emitter
+    wrote no id, but every edge named a node by its alias. So these got
+    an empty box of their own on each edge, while their real box got
+    none: a nested type, every extension after the first of its name,
+    and any type whose header carries generics, attributes or a
+    `--package` module. Declarations that share a title (`String` and its
+    extensions, `A.Inner` and `B.Inner`) merged into one box, which kept
+    only one set of members. Each declaration now carries its alias as
+    its id, as in `[<extension id=Foo0> Foo|~bar()]`.
+  - In an id, a space becomes a no-break space, so the box nomnoml draws
+    for an undeclared supertype such as `@unchecked Sendable` shows a
+    plain space. The other characters nomnoml takes as syntax appear only
+    in raw identifiers. They are percent-encoded: `` `a|b` `` becomes
+    `` `a%7Cb` ``.
+  - Tests now parse the generated text with the bundled `nomnoml.js`,
+    through JavaScriptCore.
 - **An extension written with generic arguments or sugar is an extension
   of the type it names** (#66). `extension Foo<Int>` (SE-0361),
   `extension [Int]`, `extension [String: Int]` and `extension Int?` were
@@ -135,14 +162,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   - Each such extension that is not the first element of its base name
     now takes a numbered alias (`Foo0`), so later numbered aliases in the
     same diagram move up by one per such extension.
-  - Nomnoml now gets the `ext` edge, whose ` : ext` label nomnoml cannot
-    parse yet (#69), as with every other extension edge.
+  - Nomnoml now gets the `ext` edge, as for every other extension.
   - Studio history entries keep the script and entry point they were saved
     with: regenerate an old Mermaid diagram, and pick an entry point saved
     as `Foo<Int>.run` again.
-- **Nomnoml escapes brackets in a node's generic part.** `class D:
+- **Nomnoml escapes brackets in a node's header.** `class D:
   Base<[Int]>` gave `[<class> D <[Int]>]`, which nomnoml rejects; it is
-  now `[<class> D <(Int)>]`, escaped as members already are.
+  now `[<class id=D> D <(Int)>]`, escaped as members already are. An
+  attribute's arguments (`@Wrap<[Int]> struct Model {}`) and a raw
+  identifier's name are escaped the same way.
 - **A type nested in a hidden type no longer hangs off a drawn element of
   the same name in PlantUML and Nomnoml** (#117). When the diagram does
   not draw a nested type's parent, the edge named that parent by its
