@@ -11,8 +11,11 @@ struct LayoutGraphBuilder {
         from items: [SyntaxStructure],
         configuration: Configuration
     ) -> LayoutGraph {
+        // The types the text formats draw, by the same `isDrawn(in:)` filter `DiagramScript` uses,
+        // after extensions merge. Only the kind was checked here, so `showExtensions: .none`,
+        // `elements.exclude` and `elements.havingAccessLevel` hid nothing in SVG (#74).
         let drawn = items.preparedForClassDiagram(with: configuration).compactMap { item -> DrawnItem? in
-            guard let kind = item.kind, ElementKind.processable.contains(kind) else { return nil }
+            guard let kind = item.kind, item.isDrawn(in: configuration) else { return nil }
             guard let name = item.fullName ?? item.name else { return nil }
             return DrawnItem(item: item, kind: kind, name: name)
         }
