@@ -219,6 +219,9 @@ final class SyntaxStructureBuilder: SyntaxVisitor {
             // `Foo<Int>` is `Foo` constrained (SE-0361): named as `extension Foo where T == Int` is (#66).
             name: node.extendedType.extendedTypeName ?? node.extendedType.trimmedDescription
         )
+        if node.extendedType.extendedTypeName != nil {
+            structure.boundGenericArguments = node.extendedType.boundGenericArguments
+        }
         stampLocation(on: structure, at: node.extendedType.positionAfterSkippingLeadingTrivia)
         pushType(structure)
         return .visitChildren

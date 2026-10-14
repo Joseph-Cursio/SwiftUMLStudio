@@ -75,6 +75,12 @@ internal class SyntaxStructure: NSObject, Codable, @unchecked Sendable {
     /// name, scope and access come from, and is drawn hanging off this item (`nestingParent`).
     internal var mergedInto: SyntaxStructure?
 
+    /// The generic arguments an extension's extended type binds on its last component, as
+    /// written: `Int` for `extension Foo<Int>`, `String, Int` for `extension [String: Int]`.
+    /// `name` holds the type without them (`Foo`, `Dictionary`), so the extension is drawn,
+    /// linked, merged and excluded as one of that type; emitters only show these beside it (#66).
+    internal var boundGenericArguments: String?
+
     private enum CodingKeys: String, CodingKey {
         case accessibility = "key.accessibility"
         case attribute = "key.attribute"
@@ -105,6 +111,7 @@ internal class SyntaxStructure: NSObject, Codable, @unchecked Sendable {
         memberSuffix = original.memberSuffix
         sourceLocation = original.sourceLocation
         module = original.module
+        boundGenericArguments = original.boundGenericArguments
         super.init()
     }
 

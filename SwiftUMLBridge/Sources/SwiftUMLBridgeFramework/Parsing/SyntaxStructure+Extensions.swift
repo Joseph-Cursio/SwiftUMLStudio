@@ -45,6 +45,10 @@ extension Array where Element == SyntaxStructure {
             }
             processedItems.removeAll(where: { $0 == structure })
             structure.mergedInto = parent
+            // A box holding `extension Foo<Int>` and `extension Foo<String>` is no longer either.
+            if parent.boundGenericArguments != structure.boundGenericArguments {
+                parent.boundGenericArguments = nil
+            }
             guard let members = structure.substructure else { continue }
             if let memberSuffix = mergedMemberIndicator, parent.kind != .extension {
                 for member in members where member.name != nil {

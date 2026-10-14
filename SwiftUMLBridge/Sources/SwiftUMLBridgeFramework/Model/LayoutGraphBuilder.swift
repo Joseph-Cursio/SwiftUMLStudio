@@ -56,9 +56,11 @@ struct LayoutGraphBuilder {
         if !properties.isEmpty { compartments.append(NodeCompartment(title: nil, items: properties)) }
         if !methods.isEmpty { compartments.append(NodeCompartment(title: nil, items: methods)) }
 
+        // An extension's bound arguments tell `extension Foo<Int>` from `extension Foo<String>` (#66).
+        let boundClause = configuration.elements.showGenerics ? item.boundGenericArguments.map { "<\($0)>" } : nil
         return LayoutNode(
             id: nodeId,
-            label: item.displayName ?? item.name ?? nodeId,
+            label: (item.displayName ?? item.name ?? nodeId) + (boundClause ?? ""),
             stereotype: stereotypeName(for: kind),
             compartments: compartments,
             sourceLocation: item.sourceLocation,

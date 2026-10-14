@@ -205,7 +205,10 @@ extension SyntaxStructure {
         element.isExcluded(byPatterns: excludeElements)
     }
 
+    /// The `<…>` clause the emitters write after an element's name: an extension's bound
+    /// arguments (`<Int>` for `extension Foo<Int>`), else a type's own parameters (`<T>`).
     func genericsStatement() -> String? {
+        if let boundGenericArguments { return "<\(boundGenericArguments)>" }
         guard let substructure = substructure else {
             guard let parent = inheritedTypes?.first else { return nil }
             return parent.name?.getAngleBracketsWithContent()

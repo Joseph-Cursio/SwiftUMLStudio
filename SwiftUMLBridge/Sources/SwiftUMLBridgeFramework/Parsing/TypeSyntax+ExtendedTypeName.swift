@@ -21,12 +21,48 @@ extension TypeSyntax {
         case .dictionaryType: return "Dictionary"
         case .inlineArrayType: return "InlineArray"
         case .optionalType, .implicitlyUnwrappedOptionalType: return "Optional"
-        case .tupleType(let tuple):
-            // `(T)` is `T` itself; a real tuple cannot be extended.
-            guard tuple.elements.count == 1, let only = tuple.elements.first, only.firstName == nil,
-                  only.secondName == nil, only.ellipsis == nil else { return nil }
-            return only.type.extendedTypeName
+        case .tupleType(let tuple): return tuple.parenthesizedType?.extendedTypeName
         default: return nil
         }
+    }
+
+    /// The generic arguments this type binds on the type `extendedTypeName` names, as written
+    /// and joined with `", "`, for display beside that name: `Foo<Int>` → `Int`,
+    /// `Outer<Int>.Inner<String>` → `String` (only the last component's), `[Int]` and `Int?` →
+    /// `Int`, `[String: Int]` → `String, Int`, `[3 of Int]` → `3, Int`. `nil` when it binds none.
+    var boundGenericArguments: String? {
+        switch self.as(TypeSyntaxEnum.self) {
+        case .identifierType(let identifier): return identifier.genericArgumentClause?.argumentText
+        case .memberType(let member): return member.genericArgumentClause?.argumentText
+        case .arrayType(let array): return [array.element].argumentText
+        case .dictionaryType(let dictionary): return [dictionary.key, dictionary.value].argumentText
+        case .inlineArrayType(let inline): return [inline.count.argument, inline.element.argument].argumentText
+        case .optionalType(let optional): return [optional.wrappedType].argumentText
+        case .implicitlyUnwrappedOptionalType(let unwrapped): return [unwrapped.wrappedType].argumentText
+        case .tupleType(let tuple): return tuple.parenthesizedType?.boundGenericArguments
+        default: return nil
+        }
+    }
+}
+
+private extension TupleTypeSyntax {
+    /// The type inside `(T)`, which is `T` itself; `nil` for a real tuple, which no extension
+    /// can extend.
+    var parenthesizedType: TypeSyntax? {
+        guard elements.count == 1, let only = elements.first, only.firstName == nil,
+              only.secondName == nil, only.ellipsis == nil else { return nil }
+        return only.type
+    }
+}
+
+private extension GenericArgumentClauseSyntax {
+    var argumentText: String? { arguments.map(\.argument).argumentText }
+}
+
+private extension Sequence where Element: SyntaxProtocol {
+    /// The elements' text joined with `", "`, or `nil` when there is none.
+    var argumentText: String? {
+        let parts = map(\.trimmedDescription).filter { !$0.isEmpty }
+        return parts.isEmpty ? nil : parts.joined(separator: ", ")
     }
 }

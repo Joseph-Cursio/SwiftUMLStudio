@@ -56,7 +56,11 @@ extension SyntaxStructure {
         context: DiagramContext
     ) -> String {
         let alias = context.uniqName(item: self, relationship: relationship)
-        let genericsStr = generics.map { " \($0)" } ?? ""
+        // Mermaid reads `<…>` after a stereotype as a member and drops a raw `<Int>` from a label,
+        // so an extension's bound arguments go into its label as entities: `Foo&lt;Int&gt;` (#66).
+        let boundClause = boundGenericArguments == nil ? nil : generics
+        let genericsStr = boundClause == nil ? generics.map { " \($0)" } ?? "" : ""
+        let label = (displayName ?? name ?? "unknown") + (boundClause?.xmlEscaped ?? "")
         let membersText = mermaidMembers(context: context)
         let macroAnnotation = attributeNames.map { "\n    <<\($0)>>" }.joined()
         let moduleAnnotation = module.map { "\n    <<\($0)>>" } ?? ""
@@ -64,7 +68,7 @@ extension SyntaxStructure {
         if !membersText.isEmpty {
             body += membersText
         }
-        return "class \(alias)[\"\(displayName ?? name ?? "unknown")\"] {\n\(body)\n}"
+        return "class \(alias)[\"\(label)\"] {\n\(body)\n}"
     }
 
     private func mermaidMembers(context: DiagramContext) -> String {

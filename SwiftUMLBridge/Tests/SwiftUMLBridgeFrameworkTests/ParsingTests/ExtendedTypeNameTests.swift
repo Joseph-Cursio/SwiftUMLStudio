@@ -58,4 +58,26 @@ struct ExtendedTypeNameTests {
     func nonNominal(spelling: String) throws {
         #expect(try extendedType(spelling).extendedTypeName == nil)
     }
+
+    @Test("the generic arguments bound on the named type, as written", arguments: [
+        ("Foo", nil),
+        ("Foo<Int>", "Int"),
+        ("Foo<Int,>", "Int"),
+        ("Foo<Int, String>", "Int, String"),
+        ("Foo<Swift.Int>", "Swift.Int"),
+        ("Foo<() -> Void>", "() -> Void"),
+        ("Outer<Int>.Inner", nil),
+        ("Outer<Int>.Inner<String>", "String"),
+        ("[Int]", "Int"),
+        ("[[Int]]", "[Int]"),
+        ("[String: Int]", "String, Int"),
+        ("[3 of Int]", "3, Int"),
+        ("Int?", "Int"),
+        ("Int??", "Int?"),
+        ("Int!", "Int"),
+        ("(Foo<Int>)", "Int")
+    ] as [(String, String?)])
+    func boundArguments(spelling: String, expected: String?) throws {
+        #expect(try extendedType(spelling).boundGenericArguments == expected)
+    }
 }
