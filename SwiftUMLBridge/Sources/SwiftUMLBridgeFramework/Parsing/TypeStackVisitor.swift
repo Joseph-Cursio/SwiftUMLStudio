@@ -42,7 +42,9 @@ class TypeStackVisitor: SyntaxVisitor {
     override func visitPost(_ node: ProtocolDeclSyntax) { typeStack.removeLast() }
 
     override func visit(_ node: ExtensionDeclSyntax) -> SyntaxVisitorContinueKind {
-        typeStack.append(node.extendedType.description.trimmingCharacters(in: .whitespacesAndNewlines))
+        // Named as `SyntaxStructureBuilder` names the extension, so a sequence participant finds
+        // its source location under it, and `Foo<Int>` and `[Int]` read `Foo` and `Array` (#66).
+        typeStack.append(node.extendedType.extendedTypeName ?? node.extendedType.trimmedDescription)
         return .visitChildren
     }
     override func visitPost(_ node: ExtensionDeclSyntax) { typeStack.removeLast() }

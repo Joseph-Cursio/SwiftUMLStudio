@@ -86,12 +86,18 @@ final class CallGraphExtractor: TypeStackVisitor {
                 isAsync: isAsync, isUnresolved: false
             )
         }
+        // `Foo<Int>.make()` and `Foo<Int>().run()` call into `Foo`, the name an extension of
+        // `Foo<Int>` is listed under (#66).
+        var receiver = ExprSyntax(base)
+        if let funcCall = receiver.as(FunctionCallExprSyntax.self) { receiver = funcCall.calledExpression }
+        if let specialized = receiver.as(GenericSpecializationExprSyntax.self) { receiver = specialized.expression }
         let baseText: String
-        if let funcCall = base.as(FunctionCallExprSyntax.self),
-           let declRef = funcCall.calledExpression.as(DeclReferenceExprSyntax.self) {
+        if let declRef = receiver.as(DeclReferenceExprSyntax.self) {
             baseText = declRef.baseName.text
-        } else {
+        } else if base.is(FunctionCallExprSyntax.self) {
             baseText = base.description.trimmingCharacters(in: .whitespacesAndNewlines)
+        } else {
+            baseText = receiver.trimmedDescription
         }
         let resolvedType: String? = baseText == "self" ? callerType
             : baseText.first?.isUppercase == true ? baseText : nil

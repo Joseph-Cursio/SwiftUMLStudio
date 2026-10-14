@@ -216,7 +216,8 @@ final class SyntaxStructureBuilder: SyntaxVisitor {
             accessibility: extractAccessibility(from: node.modifiers),
             inheritedTypes: extractInheritedTypes(from: node.inheritanceClause),
             kind: .extension,
-            name: node.extendedType.trimmedDescription
+            // `Foo<Int>` is `Foo` constrained (SE-0361): named as `extension Foo where T == Int` is (#66).
+            name: node.extendedType.extendedTypeName ?? node.extendedType.trimmedDescription
         )
         stampLocation(on: structure, at: node.extendedType.positionAfterSkippingLeadingTrivia)
         pushType(structure)
