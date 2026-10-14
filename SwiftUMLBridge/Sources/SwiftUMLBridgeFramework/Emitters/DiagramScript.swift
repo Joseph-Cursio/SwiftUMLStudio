@@ -51,7 +51,9 @@ public struct DiagramScript: @unchecked Sendable {
         let adjustedItems = items.preparedForClassDiagram(with: context.configuration)
 
         // Exactly what the loop below will draw; the context adds the names their edges use.
-        context.reserveIdentifiers(drawing: adjustedItems.filter { $0.isDrawn(in: context.configuration) })
+        context.reserveIdentifiers(
+            drawing: adjustedItems.filter { $0.isDrawn(in: context.configuration) }, among: adjustedItems
+        )
 
         let newLine = "\n"
         var mainContent = newLine

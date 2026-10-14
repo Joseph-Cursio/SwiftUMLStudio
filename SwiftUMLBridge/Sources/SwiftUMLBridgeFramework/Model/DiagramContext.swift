@@ -26,6 +26,9 @@ class DiagramContext {
     /// a first declaration by `uniqElementNames`, and `addLinking` reads `uniqElementAndTypes` by
     /// raw name, so a type literally named `Foo0` must still count as a first declaration.
     private(set) var takenIdentifiers: Set<String> = []
+    /// Where the edge of each drawn nested type ends when the diagram does not draw its parent,
+    /// found by `reserveIdentifiers(drawing:among:)`; a nested type missing here gets no edge.
+    private var hiddenParentEnds: [ObjectIdentifier: HiddenParentEnd] = [:]
     private(set) var connections: [String] = []
     private(set) var extnConnections: [String] = []
 
@@ -146,18 +149,22 @@ class DiagramContext {
     /// so a suffix must not take a name declared only later either: `struct Foo {}`,
     /// `extension Foo {}`, `extension Foo0 {}` would otherwise declare `Foo0` twice.
     ///
-    /// `items` must be exactly the elements the diagram draws. A hidden element's name that
-    /// nothing in the diagram uses must not shift an alias.
-    func reserveIdentifiers(drawing items: [SyntaxStructure]) {
-        let drawn = Set(items)
+    /// `items` must be exactly the elements the diagram draws, and `prepared` every item it was
+    /// built from, drawn or not (`items` when nil): a hidden parent's edge end is found among
+    /// them (`HiddenParentEnd`). A hidden element's name that nothing in the diagram uses must not
+    /// shift an alias.
+    func reserveIdentifiers(drawing items: [SyntaxStructure], among prepared: [SyntaxStructure]? = nil) {
+        if drawsNestedTypeConnections {
+            hiddenParentEnds = HiddenParentEnd.ends(
+                of: items, among: prepared ?? items, declaringIdentifier: declaresIdentifier(of:)
+            )
+        }
         for item in items {
             if declaresIdentifier(of: item), let fullName = item.fullName {
                 takenIdentifiers.insert(fullName)
             }
             takenIdentifiers.formUnion(item.linkParents().compactMap(linkTarget(for:)))
-            // `collectNestedTypeConnections` falls back to the qualified name of a parent it did not draw.
-            if drawsNestedTypeConnections, let parent = item.nestingParent, !drawn.contains(parent),
-               let parentName = parent.fullName {
+            if case .undeclared(let parentName)? = hiddenParentEnds[ObjectIdentifier(item)] {
                 takenIdentifiers.insert(parentName)
             }
         }
@@ -212,16 +219,16 @@ class DiagramContext {
         return newName
     }
 
-    /// Draws an edge from each drawn nested type to its parent's alias or, for a parent the diagram
-    /// does not draw, its qualified name. Its short name could be the id of a drawn, unrelated type
-    /// (#67). An extension is only declared at file scope, so an undrawn extension parent's
-    /// qualified name is the full name of the type it extends.
+    /// Draws an edge from each drawn nested type to its parent's alias. For a parent the diagram
+    /// does not draw, the edge ends where `reserveIdentifiers(drawing:among:)` found SVG ends it,
+    /// on a drawn stand-in or on the parent's qualified name, never on its short name, which
+    /// could be the id of a drawn, unrelated type (#67), nor on an id a drawn element declares.
     func collectNestedTypeConnections(items: [SyntaxStructure]) {
         guard drawsNestedTypeConnections else { return }
         for item in items where item.parent != nil {
             guard let name = uniqueNameForElement[item],
                   let parent = item.nestingParent,
-                  let parentName = uniqueNameForElement[parent] ?? parent.fullName
+                  let parentName = uniqueNameForElement[parent] ?? hiddenParentName(of: item)
             else {
                 continue
             }
@@ -230,6 +237,16 @@ class DiagramContext {
             } else {
                 connections.append("\(parentName) +-- \(name)")
             }
+        }
+    }
+
+    /// The id the edge of `item` ends on when the diagram does not draw its parent, or nil when
+    /// it has no edge.
+    private func hiddenParentName(of item: SyntaxStructure) -> String? {
+        switch hiddenParentEnds[ObjectIdentifier(item)] {
+        case .element(let element)?: return uniqueNameForElement[element]
+        case .undeclared(let name)?: return name
+        case nil: return nil
         }
     }
 }
