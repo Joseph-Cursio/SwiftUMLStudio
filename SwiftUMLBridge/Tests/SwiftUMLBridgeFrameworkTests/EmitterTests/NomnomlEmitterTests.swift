@@ -237,4 +237,11 @@ struct NomnomlEmitterTests {
         #expect(script.text.contains("visible"))
         #expect(script.text.contains("hidden") == false)
     }
+
+    /// nomnoml 1.7.0 rejects `[<class> D <[Int]>]` (`expected "label" but got ">"`).
+    @Test("a bracket in a node's generic part is escaped as members are")
+    func genericPartBracketsAreEscaped() {
+        let script = generator.generateScript(for: "class Base<T> {}\nclass D: Base<[Int]> {}", with: nomnomlConfig)
+        #expect(script.text.contains("[<class> D <(Int)>]"), "\(script.text)")
+    }
 }
