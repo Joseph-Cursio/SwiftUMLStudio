@@ -11,20 +11,24 @@ struct LayoutGraphBuilder {
         from items: [SyntaxStructure],
         configuration: Configuration
     ) -> LayoutGraph {
-        // The types the text formats draw, by the same `isDrawn(in:)` filter `DiagramScript` uses,
-        // after extensions merge. Only the kind was checked here, so `showExtensions: .none`,
-        // `elements.exclude` and `elements.havingAccessLevel` hid nothing in SVG (#74).
-        let drawn = items.preparedForClassDiagram(with: configuration).compactMap { item -> DrawnItem? in
-            guard let kind = item.kind, item.isDrawn(in: configuration) else { return nil }
+        let entries = items.preparedForClassDiagram(with: configuration).compactMap { item -> DiagramItem? in
+            guard let kind = item.kind, ElementKind.processable.contains(kind) else { return nil }
             guard let name = item.fullName ?? item.name else { return nil }
-            return DrawnItem(item: item, kind: kind, name: name)
+            return DiagramItem(item: item, kind: kind, name: name, isDrawn: item.isDrawn(in: configuration))
         }
         var nodes: [LayoutNode] = []
         var edges: [PendingEdge] = []
-        var nodeIds = NodeIdAllocator(reserving: drawn.map(\.name))
+        var nodeIds = NodeIdAllocator(reserving: entries.filter(\.isDrawn).map(\.name))
         var endIds = EdgeEndIds()
 
-        for entry in drawn {
+        for entry in entries {
+            // Draw the types the text formats draw, by the same `isDrawn(in:)` filter, after
+            // extensions merge (#74). A hidden type gets no node, but it still decides which type
+            // its name means, so an edge to it never moves to a same-named type elsewhere.
+            guard entry.isDrawn else {
+                endIds.recordHidden(entry)
+                continue
+            }
             let nodeId = nodeIds.issue(for: entry.name)
             nodes.append(buildNode(from: entry.item, nodeId: nodeId, kind: entry.kind, configuration: configuration))
             endIds.record(nodeId, for: entry)
@@ -36,10 +40,12 @@ struct LayoutGraphBuilder {
         return LayoutGraph(nodes: nodes, edges: edges.compactMap { $0.resolved(through: endIds) })
     }
 
-    private struct DrawnItem {
+    private struct DiagramItem {
         let item: SyntaxStructure
         let kind: ElementKind
         let name: String
+        /// Whether the diagram draws it: `SyntaxStructure.isDrawn(in:)`.
+        let isDrawn: Bool
     }
 
     private static func buildNode(
@@ -223,9 +229,11 @@ extension LayoutGraphBuilder {
         case extended(ObjectIdentifier, name: String, scope: Scope)
     }
 
-    /// A drawn declaration, as `EdgeEndIds` needs it to choose among same-named types.
+    /// A declaration, as `EdgeEndIds` needs it to choose among same-named types.
     private struct Declared {
-        let nodeId: String
+        /// `nil` for a type the diagram hides: it has no node, but still takes its name's lookup.
+        let nodeId: String?
+        let declaration: ObjectIdentifier
         let isExtension: Bool
         let scope: Scope
     }
@@ -234,42 +242,83 @@ extension LayoutGraphBuilder {
     private struct EdgeEndIds {
         private var declaredForName: [String: [Declared]] = [:]
         private var idForDeclaration: [ObjectIdentifier: String] = [:]
+        private var hiddenDeclarations: Set<ObjectIdentifier> = []
 
-        mutating func record(_ nodeId: String, for entry: DrawnItem) {
-            let declared = Declared(nodeId: nodeId, isExtension: entry.kind == .extension, scope: Scope(of: entry.item))
-            declaredForName[entry.name, default: []].append(declared)
+        mutating func record(_ nodeId: String, for entry: DiagramItem) {
+            append(entry, nodeId: nodeId)
             idForDeclaration[ObjectIdentifier(entry.item)] = nodeId
+        }
+
+        /// Records a type the diagram hides. A hidden extension is simply gone: only a type can
+        /// be what a name means.
+        mutating func recordHidden(_ entry: DiagramItem) {
+            guard entry.kind != .extension else { return }
+            append(entry, nodeId: nil)
+            hiddenDeclarations.insert(ObjectIdentifier(entry.item))
+        }
+
+        private mutating func append(_ entry: DiagramItem, nodeId: String?) {
+            declaredForName[entry.name, default: []].append(Declared(
+                nodeId: nodeId, declaration: ObjectIdentifier(entry.item),
+                isExtension: entry.kind == .extension, scope: Scope(of: entry.item)
+            ))
         }
 
         func id(of end: EdgeEnd) -> String? {
             switch end {
-            case .node(let nodeId): return nodeId
+            case .node(let nodeId):
+                return nodeId
             case .named(let name, let scope):
-                return typeId(forName: name, from: scope) ?? declaredForName[name]?.first?.nodeId
+                guard let type = typeDeclaration(forName: name, from: scope) else { return firstDrawn(named: name) }
+                return node(for: type, named: name)
             case .declaration(let declaration, let name, let scope):
-                return idForDeclaration[declaration]
-                    ?? typeId(forName: name, from: scope) ?? declaredForName[name]?.first?.nodeId
+                if let nodeId = idForDeclaration[declaration] { return nodeId }
+                if hiddenDeclarations.contains(declaration) { return standIn(for: declaration, named: name) }
+                guard let type = typeDeclaration(forName: name, from: scope) else { return firstDrawn(named: name) }
+                return node(for: type, named: name)
             case .extended(let declaration, let name, let scope):
-                return typeId(forName: name, from: scope)
-                    ?? idForDeclaration[declaration] ?? declaredForName[name]?.first?.nodeId
+                guard let type = typeDeclaration(forName: name, from: scope) else {
+                    return idForDeclaration[declaration] ?? firstDrawn(named: name)
+                }
+                return node(for: type, named: name) ?? idForDeclaration[declaration]
             }
         }
 
+        /// The node an edge to `type` ends on: its own, or for a hidden type its stand-in.
+        private func node(for type: Declared, named name: String) -> String? {
+            type.nodeId ?? standIn(for: type.declaration, named: name)
+        }
+
+        /// A drawn extension of the hidden type `declaration`, one whose own lookup of `name`
+        /// finds it, or `nil` to drop the edge. The access-level filter passes extensions, so the
+        /// text formats draw that extension where the type would be.
+        private func standIn(for declaration: ObjectIdentifier, named name: String) -> String? {
+            declaredForName[name]?.first { candidate in
+                candidate.isExtension && candidate.nodeId != nil
+                    && typeDeclaration(forName: name, from: candidate.scope)?.declaration == declaration
+            }?.nodeId
+        }
+
+        /// The first drawn declaration of `name`, for a name no type in the diagram takes.
+        private func firstDrawn(named name: String) -> String? {
+            declaredForName[name]?.first { $0.nodeId != nil }?.nodeId
+        }
+
         /// The type a name means where it is written, close to how Swift looks it up: one
-        /// declared in the same file, then in the same module, then the first in the diagram;
-        /// `nil` when the diagram draws no type of that name, only extensions or nothing. A name
-        /// is never matched against node ids: an undeclared `Foo_1` must not land on the node
-        /// issued `Foo_1` as the second declaration of `Foo`.
-        private func typeId(forName name: String, from scope: Scope) -> String? {
+        /// declared in the same file, then in the same module, then the first in the diagram,
+        /// drawn or hidden; `nil` when the diagram has no type of that name, only extensions or
+        /// nothing. A name is never matched against node ids: an undeclared `Foo_1` must not
+        /// land on the node issued `Foo_1` as the second declaration of `Foo`.
+        private func typeDeclaration(forName name: String, from scope: Scope) -> Declared? {
             let types = (declaredForName[name] ?? []).filter { !$0.isExtension }
             guard let first = types.first else { return nil }
             if let filePath = scope.filePath, let local = types.first(where: { $0.scope.filePath == filePath }) {
-                return local.nodeId
+                return local
             }
             if let module = scope.module, let sibling = types.first(where: { $0.scope.module == module }) {
-                return sibling.nodeId
+                return sibling
             }
-            return first.nodeId
+            return first
         }
     }
 

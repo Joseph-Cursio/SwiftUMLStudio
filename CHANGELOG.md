@@ -104,9 +104,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   the CLI or on Studio's native canvas, drew `fileprivate` types that the
   PlantUML and Mermaid ones hide. SVG now keeps what the text formats
   keep, filtered after extensions merge, so a hidden type takes its
-  merged extensions with it. An edge to a hidden type is dropped, as an
-  edge to any type the SVG diagram does not declare is; the text formats
-  still write it.
+  merged extensions with it. A hidden type still decides which type its
+  name means: an edge to it ends on its own drawn extension, as in the
+  text formats, or is dropped, and never moves to a same-named type in
+  another file or module.
 - **`relationships.realize.exclude` and `relationships.dependency.exclude`
   now hide edges** (#113). Both were decoded but never read, so the
   reference's own `realize.exclude: [Codable, Sendable]` hid nothing.
