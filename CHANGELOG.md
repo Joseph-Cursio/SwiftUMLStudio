@@ -104,9 +104,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   the CLI or on Studio's native canvas, drew `fileprivate` types that the
   PlantUML and Mermaid ones hide. SVG now keeps what the text formats
   keep, filtered after extensions merge, so a hidden type takes its
-  merged extensions with it. An edge to a hidden type is dropped, as an
-  edge to any type the SVG diagram does not declare is; the text formats
-  still write it.
+  merged extensions with it. A hidden type still decides which type its
+  name means where Swift can see it: an edge to it ends on a drawn
+  extension of that very type, or is dropped, and never moves to a
+  same-named type in another file or module. A `private` or `fileprivate`
+  type takes no name written in another file, nor one below `package` a
+  name written in another module. A type is as visible as the most
+  restrictive of itself, the types and the extension enclosing it, and
+  the type that extension extends. (The text formats link by bare name,
+  so there such an edge still lands on whichever declaration holds that
+  name.)
 - **`relationships.realize.exclude` and `relationships.dependency.exclude`
   now hide edges** (#113). Both were decoded but never read, so the
   reference's own `realize.exclude: [Codable, Sendable]` hid nothing.

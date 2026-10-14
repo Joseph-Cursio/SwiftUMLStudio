@@ -11,20 +11,24 @@ struct LayoutGraphBuilder {
         from items: [SyntaxStructure],
         configuration: Configuration
     ) -> LayoutGraph {
-        // The types the text formats draw, by the same `isDrawn(in:)` filter `DiagramScript` uses,
-        // after extensions merge. Only the kind was checked here, so `showExtensions: .none`,
-        // `elements.exclude` and `elements.havingAccessLevel` hid nothing in SVG (#74).
-        let drawn = items.preparedForClassDiagram(with: configuration).compactMap { item -> DrawnItem? in
-            guard let kind = item.kind, item.isDrawn(in: configuration) else { return nil }
+        let entries = items.preparedForClassDiagram(with: configuration).compactMap { item -> DiagramItem? in
+            guard let kind = item.kind, ElementKind.processable.contains(kind) else { return nil }
             guard let name = item.fullName ?? item.name else { return nil }
-            return DrawnItem(item: item, kind: kind, name: name)
+            return DiagramItem(item: item, kind: kind, name: name, isDrawn: item.isDrawn(in: configuration))
         }
         var nodes: [LayoutNode] = []
         var edges: [PendingEdge] = []
-        var nodeIds = NodeIdAllocator(reserving: drawn.map(\.name))
+        var nodeIds = NodeIdAllocator(reserving: entries.filter(\.isDrawn).map(\.name))
         var endIds = EdgeEndIds()
 
-        for entry in drawn {
+        for entry in entries {
+            // Draw the types the text formats draw, by the same `isDrawn(in:)` filter, after
+            // extensions merge (#74). A hidden type gets no node, but it still decides which type
+            // its name means, so an edge to it never moves to a same-named type elsewhere.
+            guard entry.isDrawn else {
+                endIds.recordHidden(entry)
+                continue
+            }
             let nodeId = nodeIds.issue(for: entry.name)
             nodes.append(buildNode(from: entry.item, nodeId: nodeId, kind: entry.kind, configuration: configuration))
             endIds.record(nodeId, for: entry)
@@ -36,125 +40,12 @@ struct LayoutGraphBuilder {
         return LayoutGraph(nodes: nodes, edges: edges.compactMap { $0.resolved(through: endIds) })
     }
 
-    private struct DrawnItem {
+    struct DiagramItem {
         let item: SyntaxStructure
         let kind: ElementKind
         let name: String
-    }
-
-    /// Where a declaration lives, for picking among types that share a name.
-    private struct Scope {
-        let filePath: String?
-        let module: String?
-
-        init(of item: SyntaxStructure) {
-            filePath = item.sourceLocation?.filePath
-            module = item.module
-        }
-    }
-
-    /// One end of a `PendingEdge`, known by node id or — until every node exists — by what owns it.
-    private enum EdgeEnd {
-        case node(String)
-        /// A type named `name`, as seen from a declaration in `scope`.
-        case named(String, from: Scope)
-        /// A particular declaration, or its name as seen from its own scope when it is not drawn.
-        case declaration(ObjectIdentifier, name: String, scope: Scope)
-        /// The type an extension extends, as seen from the extension's scope; the extension
-        /// itself when the diagram draws no such type.
-        case extended(ObjectIdentifier, name: String, scope: Scope)
-    }
-
-    /// A drawn declaration, as `EdgeEndIds` needs it to choose among same-named types.
-    private struct Declared {
-        let nodeId: String
-        let isExtension: Bool
-        let scope: Scope
-    }
-
-    /// The node ids an `EdgeEnd` can resolve to, gathered while the nodes are built.
-    private struct EdgeEndIds {
-        private var declaredForName: [String: [Declared]] = [:]
-        private var idForDeclaration: [ObjectIdentifier: String] = [:]
-
-        mutating func record(_ nodeId: String, for entry: DrawnItem) {
-            let declared = Declared(nodeId: nodeId, isExtension: entry.kind == .extension, scope: Scope(of: entry.item))
-            declaredForName[entry.name, default: []].append(declared)
-            idForDeclaration[ObjectIdentifier(entry.item)] = nodeId
-        }
-
-        func id(of end: EdgeEnd) -> String? {
-            switch end {
-            case .node(let nodeId): return nodeId
-            case .named(let name, let scope):
-                return typeId(forName: name, from: scope) ?? declaredForName[name]?.first?.nodeId
-            case .declaration(let declaration, let name, let scope):
-                return idForDeclaration[declaration]
-                    ?? typeId(forName: name, from: scope) ?? declaredForName[name]?.first?.nodeId
-            case .extended(let declaration, let name, let scope):
-                return typeId(forName: name, from: scope)
-                    ?? idForDeclaration[declaration] ?? declaredForName[name]?.first?.nodeId
-            }
-        }
-
-        /// The type a name means where it is written, close to how Swift looks it up: one
-        /// declared in the same file, then in the same module, then the first in the diagram;
-        /// `nil` when the diagram draws no type of that name, only extensions or nothing. A name
-        /// is never matched against node ids: an undeclared `Foo_1` must not land on the node
-        /// issued `Foo_1` as the second declaration of `Foo`.
-        private func typeId(forName name: String, from scope: Scope) -> String? {
-            let types = (declaredForName[name] ?? []).filter { !$0.isExtension }
-            guard let first = types.first else { return nil }
-            if let filePath = scope.filePath, let local = types.first(where: { $0.scope.filePath == filePath }) {
-                return local.nodeId
-            }
-            if let module = scope.module, let sibling = types.first(where: { $0.scope.module == module }) {
-                return sibling.nodeId
-            }
-            return first.nodeId
-        }
-    }
-
-    /// An edge whose ends are resolved to node ids once every node exists.
-    private struct PendingEdge {
-        let source: EdgeEnd
-        let target: EdgeEnd
-        let style: EdgeStyle
-
-        /// The edge between the nodes its ends name, or `nil` when an end names an element the
-        /// diagram does not draw.
-        func resolved(through endIds: EdgeEndIds) -> LayoutEdge? {
-            guard let sourceId = endIds.id(of: source), let targetId = endIds.id(of: target) else { return nil }
-            return LayoutEdge(sourceId: sourceId, targetId: targetId, style: style)
-        }
-    }
-
-    /// Hands out node ids that are distinct within one diagram. The dagre layout keys nodes by
-    /// id, so two nodes sharing one are placed, sized and drawn as one.
-    ///
-    /// Every drawn element's name is reserved up front, so the first declaration of a name keeps
-    /// it and a later one's `_n` suffix never takes a name declared further on.
-    private struct NodeIdAllocator {
-        private var taken: Set<String>
-        private var issuedNames: Set<String> = []
-
-        init(reserving names: [String]) {
-            taken = Set(names)
-        }
-
-        mutating func issue(for name: String) -> String {
-            var nodeId = name
-            if issuedNames.contains(name) {
-                var counter = 1
-                repeat {
-                    nodeId = "\(name)_\(counter)"
-                    counter += 1
-                } while taken.contains(nodeId)
-            }
-            issuedNames.insert(name)
-            taken.insert(nodeId)
-            return nodeId
-        }
+        /// Whether the diagram draws it: `SyntaxStructure.isDrawn(in:)`.
+        let isDrawn: Bool
     }
 
     private static func buildNode(
