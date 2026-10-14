@@ -6,15 +6,7 @@ import Foundation
 /// stays a readable size.
 extension LayoutGraphBuilder {
     /// Where a declaration lives, for picking among types that share a name.
-    struct Scope {
-        let filePath: String?
-        let module: String?
-
-        init(of item: SyntaxStructure) {
-            filePath = item.sourceLocation?.filePath
-            module = item.module
-        }
-    }
+    typealias Scope = DeclarationScope
 
     /// One end of a `PendingEdge`, known by node id or — until every node exists — by what owns it.
     enum EdgeEnd {
@@ -139,23 +131,16 @@ extension LayoutGraphBuilder {
             }?.nodeId
         }
 
-        /// The type a name means where it is written, close to how Swift looks it up: among the
-        /// types visible there, drawn or hidden, one declared in the same file, then in the same
-        /// module, then the first in the diagram; `nil` when there is none, only extensions or
-        /// nothing. A name is never matched against node ids: an undeclared `Foo_1` must not
-        /// land on the node issued `Foo_1` as the second declaration of `Foo`.
+        /// The type a name means where it is written, close to how Swift looks it up: the nearest
+        /// (`DeclarationScope.nearest(among:scope:)`) of the types visible there, drawn or hidden;
+        /// `nil` when there is none, only extensions or nothing. A name is never matched against
+        /// node ids: an undeclared `Foo_1` must not land on the node issued `Foo_1` as the second
+        /// declaration of `Foo`.
         private func typeDeclaration(forName name: String, from scope: Scope, depth: Int = 0) -> Declared? {
             let types = (declaredForName[name] ?? []).filter {
                 !$0.isExtension && isVisible($0, from: scope, depth: depth)
             }
-            guard let first = types.first else { return nil }
-            if let filePath = scope.filePath, let local = types.first(where: { $0.scope.filePath == filePath }) {
-                return local
-            }
-            if let module = scope.module, let sibling = types.first(where: { $0.scope.module == module }) {
-                return sibling
-            }
-            return first
+            return scope.nearest(among: types, scope: \.scope)
         }
 
         /// Whether a name written in `lookup` can mean `declared`, as Swift's access control
