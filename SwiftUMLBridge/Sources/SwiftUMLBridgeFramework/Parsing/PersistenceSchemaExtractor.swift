@@ -48,21 +48,21 @@ public enum PersistenceSchemaExtractor {
         private(set) var relationships: [ERRelationship] = []
 
         override func visit(_ node: ClassDeclSyntax) -> SyntaxVisitorContinueKind {
-            handleType(name: node.name.text,
+            handleType(name: node.name.canonicalName,
                        inheritance: node.inheritanceClause,
                        members: node.memberBlock.members)
             return .skipChildren
         }
 
         override func visit(_ node: StructDeclSyntax) -> SyntaxVisitorContinueKind {
-            handleType(name: node.name.text,
+            handleType(name: node.name.canonicalName,
                        inheritance: node.inheritanceClause,
                        members: node.memberBlock.members)
             return .skipChildren
         }
 
         override func visit(_ node: ActorDeclSyntax) -> SyntaxVisitorContinueKind {
-            handleType(name: node.name.text,
+            handleType(name: node.name.canonicalName,
                        inheritance: node.inheritanceClause,
                        members: node.memberBlock.members)
             return .skipChildren
@@ -72,7 +72,7 @@ public enum PersistenceSchemaExtractor {
             // SQLite.swift schema containers are typically enums-as-namespaces.
             // GRDB never uses enums for record types, so we only check the
             // SQLite.swift path here.
-            extractSQLiteSwiftTables(name: node.name.text, members: node.memberBlock.members)
+            extractSQLiteSwiftTables(name: node.name.canonicalName, members: node.memberBlock.members)
             return .skipChildren
         }
 
@@ -168,7 +168,7 @@ public enum PersistenceSchemaExtractor {
         /// the generic argument list on the called expression.
         private func expressionGenericType(of call: FunctionCallExprSyntax) -> String? {
             if let generic = call.calledExpression.as(GenericSpecializationExprSyntax.self) {
-                return generic.genericArgumentClause.arguments.first?.argument.trimmedDescription
+                return generic.genericArgumentClause.arguments.first?.argument.canonicalDescription
             }
             return nil
         }
@@ -177,7 +177,7 @@ public enum PersistenceSchemaExtractor {
 
         func conformsToGRDBRecord(_ clause: InheritanceClauseSyntax) -> Bool {
             for inherited in clause.inheritedTypes {
-                let raw = inherited.type.trimmedDescription
+                let raw = inherited.type.canonicalDescription
                 // Strip generics + protocol composition (`A & B`)
                 let parts = raw
                     .components(separatedBy: "&")
@@ -197,10 +197,10 @@ public enum PersistenceSchemaExtractor {
         private func columns(from varDecl: VariableDeclSyntax) -> [ERAttribute] {
             var result: [ERAttribute] = []
             for binding in varDecl.bindings {
-                guard let name = binding.pattern.as(IdentifierPatternSyntax.self)?.identifier.text else {
+                guard let name = binding.pattern.as(IdentifierPatternSyntax.self)?.identifier.canonicalName else {
                     continue
                 }
-                let raw = binding.typeAnnotation?.type.trimmedDescription ?? "Any"
+                let raw = binding.typeAnnotation?.type.canonicalDescription ?? "Any"
                 let isOptional = raw.hasSuffix("?")
                 let trimmed = isOptional ? String(raw.dropLast()) : raw
                 let isPrimaryKey = name == "id"
@@ -224,7 +224,7 @@ public enum PersistenceSchemaExtractor {
         private func grdbRelationship(from varDecl: VariableDeclSyntax, ownerType: String) -> ERRelationship? {
             guard isStatic(varDecl.modifiers) else { return nil }
             guard let binding = varDecl.bindings.first,
-                  let label = binding.pattern.as(IdentifierPatternSyntax.self)?.identifier.text,
+                  let label = binding.pattern.as(IdentifierPatternSyntax.self)?.identifier.canonicalName,
                   let initializer = binding.initializer?.value.as(FunctionCallExprSyntax.self)
             else { return nil }
 
@@ -246,17 +246,17 @@ public enum PersistenceSchemaExtractor {
 
         private func associationFunctionName(in call: FunctionCallExprSyntax) -> String? {
             if let identifier = call.calledExpression.as(DeclReferenceExprSyntax.self) {
-                return identifier.baseName.text
+                return identifier.baseName.canonicalName
             }
             if let memberAccess = call.calledExpression.as(MemberAccessExprSyntax.self) {
-                return memberAccess.declName.baseName.text
+                return memberAccess.declName.baseName.canonicalName
             }
             // Generic specialization, e.g. `Expression<Int64>("id")`. The
             // .expression slot holds the bare DeclReference under the type
             // arguments — unwrap to get the function name.
             if let generic = call.calledExpression.as(GenericSpecializationExprSyntax.self),
                let baseRef = generic.expression.as(DeclReferenceExprSyntax.self) {
-                return baseRef.baseName.text
+                return baseRef.baseName.canonicalName
             }
             return nil
         }
@@ -267,7 +267,7 @@ public enum PersistenceSchemaExtractor {
                   memberAccess.declName.baseName.text == "self",
                   let baseRef = memberAccess.base?.as(DeclReferenceExprSyntax.self)
             else { return nil }
-            return baseRef.baseName.text
+            return baseRef.baseName.canonicalName
         }
 
         private func cardinality(for functionName: String) -> (from: ERCardinality, to: ERCardinality) {

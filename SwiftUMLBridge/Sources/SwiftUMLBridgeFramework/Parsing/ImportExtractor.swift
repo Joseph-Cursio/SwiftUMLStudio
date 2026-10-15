@@ -13,7 +13,7 @@ final class ImportExtractor: SyntaxVisitor {
     }
 
     override func visit(_ node: ImportDeclSyntax) -> SyntaxVisitorContinueKind {
-        let moduleName = node.path.map { $0.name.text }.joined(separator: ".")
+        let moduleName = node.path.map { $0.name.canonicalName }.joined(separator: ".")
         if !moduleName.isEmpty {
             edges.append(ImportEdge(sourceModule: sourceModule, importedModule: moduleName))
         }

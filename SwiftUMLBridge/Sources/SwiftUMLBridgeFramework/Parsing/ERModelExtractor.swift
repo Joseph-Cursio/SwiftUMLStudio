@@ -52,7 +52,7 @@ final class ERModelExtractor: SyntaxVisitor {
 
     override func visit(_ node: ClassDeclSyntax) -> SyntaxVisitorContinueKind {
         guard Self.hasModelAttribute(node.attributes) else { return .skipChildren }
-        currentEntityName = node.name.text
+        currentEntityName = node.name.canonicalName
         currentEntityProperties = []
         for member in node.memberBlock.members {
             if let varDecl = member.decl.as(VariableDeclSyntax.self) {
@@ -80,12 +80,11 @@ final class ERModelExtractor: SyntaxVisitor {
             guard let identifierPattern = binding.pattern.as(IdentifierPatternSyntax.self) else {
                 continue
             }
-            let propertyName = identifierPattern.identifier.text
+            let propertyName = identifierPattern.identifier.canonicalName
 
             let rawType: String
             if let annotation = binding.typeAnnotation {
-                rawType = annotation.type.description
-                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                rawType = annotation.type.canonicalTrimmedText
             } else if let inferred = Self.inferTypeFromInitializer(binding.initializer?.value) {
                 rawType = inferred
             } else {
@@ -114,8 +113,7 @@ final class ERModelExtractor: SyntaxVisitor {
     ) -> Bool {
         for attribute in attributes {
             guard let attribute = attribute.as(AttributeSyntax.self) else { continue }
-            if attribute.attributeName.description
-                .trimmingCharacters(in: .whitespacesAndNewlines) == name {
+            if attribute.attributeName.canonicalTrimmedText == name {
                 return true
             }
         }
@@ -130,8 +128,7 @@ final class ERModelExtractor: SyntaxVisitor {
     ) -> String {
         for attribute in attributes {
             guard let attribute = attribute.as(AttributeSyntax.self) else { continue }
-            guard attribute.attributeName.description
-                .trimmingCharacters(in: .whitespacesAndNewlines) == name else { continue }
+            guard attribute.attributeName.canonicalTrimmedText == name else { continue }
             return attribute.arguments?.description ?? ""
         }
         return ""
@@ -144,8 +141,7 @@ final class ERModelExtractor: SyntaxVisitor {
     ) -> ERRelationshipAttributeInfo? {
         for attribute in attributes {
             guard let attribute = attribute.as(AttributeSyntax.self) else { continue }
-            guard attribute.attributeName.description
-                .trimmingCharacters(in: .whitespacesAndNewlines) == "Relationship" else { continue }
+            guard attribute.attributeName.canonicalTrimmedText == "Relationship" else { continue }
             let argText = attribute.arguments?.description ?? ""
             return ERRelationshipAttributeInfo(
                 inverseProperty: extractInverseProperty(from: argText)
@@ -164,11 +160,13 @@ final class ERModelExtractor: SyntaxVisitor {
         let propertyStart = afterBackslash.index(after: dot)
         // Take the identifier rather than scanning for terminators: `"\r\n"`
         // is one `Character` that is not `"\n"`, so a terminator set misses
-        // CRLF line breaks. Backticks stay, matching the declared label.
+        // CRLF line breaks. The name is read as the declared label is, so
+        // `\Book.`author`` names `var author` and `\Book.`default`` keeps
+        // its backticks, as `var `default`` does (#123).
         let name = String(afterBackslash[propertyStart...].prefix {
             $0.isLetter || $0.isNumber || $0 == "_" || $0 == "`"
         })
-        return name.isEmpty ? nil : name
+        return name.isEmpty ? nil : name.canonicalIdentifier
     }
 
     /// Best-effort type inference from an initializer expression (e.g.
@@ -177,7 +175,7 @@ final class ERModelExtractor: SyntaxVisitor {
         guard let expr else { return nil }
         if let call = expr.as(FunctionCallExprSyntax.self),
            let callee = call.calledExpression.as(DeclReferenceExprSyntax.self) {
-            let name = callee.baseName.text
+            let name = callee.baseName.canonicalName
             if name.first?.isUppercase == true { return name }
         }
         return nil
@@ -328,5 +326,16 @@ final class ERModelExtractor: SyntaxVisitor {
         let extractor = ERModelExtractor(viewMode: .sourceAccurate)
         extractor.walk(sourceFile)
         return extractor.buildModel()
+    }
+}
+
+extension SyntaxProtocol {
+    /// `description` trimmed of whitespace, as the ER and state-machine extractors read a type or
+    /// an attribute name, with each identifier in it written as its `canonicalName`. Unlike
+    /// `canonicalDescription` it keeps a comment beside the node, as the text it replaces did, so
+    /// a needless escape is all that reads differently (#123).
+    var canonicalTrimmedText: String {
+        (leadingTrivia.description + canonicalDescription + trailingTrivia.description)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }
