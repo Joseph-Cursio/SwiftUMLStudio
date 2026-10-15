@@ -150,4 +150,91 @@ struct CommentBesideNameTests {
                 "Screen.self"])
         #expect(edges == control)
     }
+
+    // MARK: - Labels
+
+    @Test("a state guard ends before the comment after it")
+    func stateGuard() {
+        let source = """
+            enum Light { case red, green }
+            final class Lamp {
+                var state: Light = .red
+                var armed = true
+                func next() {
+                    switch state {
+                    case .red where armed /* only when armed */: state = .green
+                    case .red: break
+                    case .green: state = .red
+                    }
+                }
+            }
+            """
+        let machines = StateMachineExtractor.extract(from: source)
+        let control = StateMachineExtractor.extract(from: uncommented(source))
+        #expect(control.flatMap(\.transitions).compactMap(\.guardText) == ["armed"])
+        #expect(machines == control)
+    }
+
+    @Test("an unresolved call is named without the comment beside it")
+    func unresolvedCallee() {
+        let source = """
+            struct Screen {
+                var handlers: [() -> Void] = []
+                func start() {
+                    // fire the first handler
+                    handlers[0]()
+                    handlers[1] /* and the second */ ()
+                }
+            }
+            """
+        let edges = CallGraphExtractor.extract(from: source).edges
+        let control = CallGraphExtractor.extract(from: uncommented(source)).edges
+        #expect(control.map(\.calleeMethod) == ["handlers[0]", "handlers[1]"])
+        #expect(edges == control)
+    }
+
+    /// The comment lines above a statement are its leading trivia, and a comment after it on its
+    /// line is its trailing trivia. A comment between its tokens stays in the label (#80).
+    @Test("an activity label leaves out the comments beside its statement")
+    func activityLabels() throws {
+        let source = """
+            struct Job {
+                var ready = true
+                var items: [Int] = []
+                func run() async throws -> Int {
+                    defer { stop() } // always
+                    // load first
+                    load()
+                    let count = items.count // how many
+                    _ = items.first // unused
+                    await save() // persist
+                    async let total /* in the background */ = sum()
+                    for item /* each */ in items /* all of them */ {
+                        use(item)
+                        continue // next
+                    }
+                    while ready /* until done */ { stop() }
+                    repeat { stop() } while ready /* again */
+                    if ready /* only when ready */ { save() }
+                    switch count /* size */ {
+                    case 0 /* none */: stop()
+                    default: break
+                    }
+                    do { try risky() } catch JobError.bad /* known */ { stop() }
+                    guard ready /* still */ else { throw JobError.bad /* why */ }
+                    return count // done
+                }
+            }
+            """
+        let graph = try #require(ActivityFlowExtractor.extract(from: source, entryType: "Job", entryMethod: "run"))
+        let control = try #require(ActivityFlowExtractor.extract(
+            from: uncommented(source), entryType: "Job", entryMethod: "run"
+        ))
+        let labels = graph.nodes.map(\.label) + graph.edges.compactMap(\.label)
+        #expect(control.nodes.map(\.label).contains("load()"))
+        #expect(control.nodes.map(\.label).contains("return count"))
+        #expect(!labels.contains { $0.contains("//") || $0.contains("/*") }, "\(labels)")
+        #expect(graph.nodes == control.nodes)
+        #expect(graph.edges == control.edges)
+    }
 }

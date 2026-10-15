@@ -214,8 +214,7 @@ final class StateMachineExtractor: TypeStackVisitor {
                   let memberAccess = pattern.expression.as(MemberAccessExprSyntax.self),
                   memberAccess.base == nil else { continue }
             let caseName = memberAccess.declName.baseName.canonicalName
-            let guardText = item.whereClause?.condition.description
-                .trimmingCharacters(in: .whitespacesAndNewlines)
+            let guardText = item.whereClause?.condition.trimmedDescription
             return (caseName, guardText)
         }
         return (nil, nil)

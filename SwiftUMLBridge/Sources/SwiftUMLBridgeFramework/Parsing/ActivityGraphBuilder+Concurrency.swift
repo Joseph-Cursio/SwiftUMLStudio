@@ -17,7 +17,7 @@ extension ActivityGraphBuilder {
                 return result
             }
         }
-        let label = Self.compactText(node.description)
+        let label = Self.compactText(node.trimmedDescription)
         let identifier = makeNode(kind: .action, label: label, isAsync: true)
         return WalkResult(entry: identifier, exits: [identifier])
     }
@@ -28,7 +28,7 @@ extension ActivityGraphBuilder {
         let forkId = makeNode(kind: .fork, label: "")
         let joinId = makeNode(kind: .join, label: "")
         for binding in node.bindings {
-            let pattern = Self.compactText(binding.pattern.description)
+            let pattern = Self.compactText(binding.pattern.trimmedDescription)
             let actionId = makeNode(
                 kind: .action,
                 label: "async let \(pattern)",

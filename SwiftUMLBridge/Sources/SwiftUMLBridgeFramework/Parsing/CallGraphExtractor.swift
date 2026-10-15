@@ -65,7 +65,7 @@ final class CallGraphExtractor: TypeStackVisitor {
             )
         } else {
             // Closure or other complex expression — unresolved
-            let rawDesc = calledExpr.description.trimmingCharacters(in: .whitespacesAndNewlines)
+            let rawDesc = calledExpr.trimmedDescription
             return CallEdge(
                 callerType: callerType, callerMethod: callerMethod,
                 calleeType: nil, calleeMethod: rawDesc,

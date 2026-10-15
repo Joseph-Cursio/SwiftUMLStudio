@@ -69,7 +69,7 @@ extension ActivityGraphBuilder {
     // MARK: - Switch
 
     mutating func walkSwitchExpr(_ node: SwitchExprSyntax) -> WalkResult {
-        let subject = Self.compactText(node.subject.description)
+        let subject = Self.compactText(node.subject.trimmedDescription)
         let decisionId = makeNode(kind: .decision, label: "switch \(subject)")
         let mergeId = makeNode(kind: .merge, label: "")
 
@@ -85,8 +85,8 @@ extension ActivityGraphBuilder {
     // MARK: - Loops
 
     mutating func walkForStmt(_ node: ForStmtSyntax) -> WalkResult {
-        let pattern = Self.compactText(node.pattern.description)
-        let sequence = Self.compactText(node.sequence.description)
+        let pattern = Self.compactText(node.pattern.trimmedDescription)
+        let sequence = Self.compactText(node.sequence.trimmedDescription)
         let loopId = makeNode(kind: .loopStart, label: "for \(pattern) in \(sequence)")
 
         let bodyResult = walkBlock(node.body.statements)
@@ -116,7 +116,7 @@ extension ActivityGraphBuilder {
     }
 
     mutating func walkRepeatStmt(_ node: RepeatStmtSyntax) -> WalkResult {
-        let condition = Self.compactText(node.condition.description)
+        let condition = Self.compactText(node.condition.trimmedDescription)
         let loopId = makeNode(kind: .loopStart, label: "while \(condition)")
 
         let bodyResult = walkBlock(node.body.statements)
@@ -135,7 +135,7 @@ extension ActivityGraphBuilder {
     mutating func walkReturnStmt(_ node: ReturnStmtSyntax) -> WalkResult {
         let label: String
         if let expression = node.expression {
-            label = "return \(Self.compactText(expression.description))"
+            label = "return \(Self.compactText(expression.trimmedDescription))"
         } else {
             label = "return"
         }
@@ -145,7 +145,7 @@ extension ActivityGraphBuilder {
     }
 
     mutating func walkThrowStmt(_ node: ThrowStmtSyntax) -> WalkResult {
-        let label = "throw \(Self.compactText(node.expression.description))"
+        let label = "throw \(Self.compactText(node.expression.trimmedDescription))"
         let identifier = makeNode(kind: .action, label: label)
         addEdge(from: identifier, to: endNodeId)
         return WalkResult(entry: identifier, exits: [])
@@ -175,8 +175,7 @@ extension ActivityGraphBuilder {
         decisionId: Int,
         mergeId: Int
     ) {
-        let catchItemText = catchClause.catchItems.description
-            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let catchItemText = catchClause.catchItems.trimmedDescription
         let branchLabel = catchItemText.isEmpty
             ? "catch"
             : "catch \(Self.compactText(catchItemText))"
