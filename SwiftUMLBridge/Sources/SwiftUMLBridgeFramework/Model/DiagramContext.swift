@@ -71,9 +71,13 @@ class DiagramContext {
         return linkTo.starts(with: "@") ? "\"\(linkTo)\"" : linkTo
     }
 
+    /// Draws the edge from `item` to its supertype `parent`. It starts at the alias `uniqName`
+    /// gave `item`, so a second declaration of a name, such as an extension or the other branch
+    /// of an `#if`, draws its own supertypes from its own box, not from the first's (#68).
     func addLinking(item: SyntaxStructure, parent: SyntaxStructure) {
         guard let linkTo = linkTarget(for: parent) else { return }
         guard let fullName = item.fullName else { return }
+        let child = uniqueNameForElement[item] ?? fullName
         let namedConnection = (uniqElementAndTypes[linkTo] != nil)
             ? "\(uniqElementAndTypes[linkTo] ?? "--ERROR--")"
             : "inherits"
@@ -86,10 +90,10 @@ class DiagramContext {
         let arrow = uniqElementAndTypes[linkTypeKey] ?? "--ERROR--"
         let label = relationshipLabel(for: namedConnection)
         if format == .nomnoml || format == .svg {
-            connections.append(nomnomlEdge(from: fullName, arrow, to: linkTo, label: label))
+            connections.append(nomnomlEdge(from: child, arrow, to: linkTo, label: label))
             return
         }
-        var connect = "\(linkTo) \(arrow) \(fullName)"
+        var connect = "\(linkTo) \(arrow) \(child)"
         if format == .plantuml, let relStyle = relationshipStyle(for: namedConnection)?.plantuml {
             connect += " \(relStyle)"
         }

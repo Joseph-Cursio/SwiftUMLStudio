@@ -129,7 +129,7 @@ struct RelationshipExcludeTests {
     @Test("dependency.exclude leaves an extension's own conformance")
     func dependencyExcludeKeepsConformance() {
         let lines = edges("struct Point {}\nextension Point: Hashable {}", configuration(dependency: ["Point"]))
-        #expect(lines == ["Hashable <|-- Point : inherits"])
+        #expect(lines == ["Hashable <|-- Point0 : inherits"])
     }
 
     /// Each list keeps to its own edges: a supertype list never hides an extension edge, and
