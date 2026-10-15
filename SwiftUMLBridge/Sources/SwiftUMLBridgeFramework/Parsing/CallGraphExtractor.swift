@@ -20,7 +20,7 @@ final class CallGraphExtractor: TypeStackVisitor {
     // MARK: - Function declarations (push/pop methodStack)
 
     override func visit(_ node: FunctionDeclSyntax) -> SyntaxVisitorContinueKind {
-        let methodName = node.name.text
+        let methodName = node.name.canonicalName
         if let typeName = typeStack.last {
             methods.insert("\(typeName).\(methodName)")
         }
@@ -57,7 +57,7 @@ final class CallGraphExtractor: TypeStackVisitor {
                 callerMethod: callerMethod, isAsync: isAsync
             )
         } else if let declRef = calledExpr.as(DeclReferenceExprSyntax.self) {
-            let methodName = declRef.baseName.text
+            let methodName = declRef.baseName.canonicalName
             return CallEdge(
                 callerType: callerType, callerMethod: callerMethod,
                 calleeType: callerType, calleeMethod: methodName,
@@ -78,7 +78,7 @@ final class CallGraphExtractor: TypeStackVisitor {
         _ memberAccess: MemberAccessExprSyntax,
         callerType: String, callerMethod: String, isAsync: Bool
     ) -> CallEdge {
-        let methodName = memberAccess.declName.baseName.text
+        let methodName = memberAccess.declName.baseName.canonicalName
         guard let base = memberAccess.base else {
             return CallEdge(
                 callerType: callerType, callerMethod: callerMethod,
@@ -88,15 +88,16 @@ final class CallGraphExtractor: TypeStackVisitor {
         }
         // A type written as the receiver, or as what makes it, is named as an extension of it is
         // listed: `Foo<Int>.make()`, `Outer<Int>.Inner.make()`, `[Int].make()` and `Foo<Int>().run()`
-        // call into `Foo`, `Outer.Inner`, `Array` and `Foo` (#66).
+        // call into `Foo`, `Outer.Inner`, `Array` and `Foo` (#66). Each name in it reads as Swift
+        // reads it, so `` `Plain`.make() `` calls into `Plain` (#123).
         let called = base.as(FunctionCallExprSyntax.self)?.calledExpression
         let baseText: String
         if let typeName = (called ?? base).typeReferenceName {
             baseText = typeName
         } else if let declRef = called?.as(DeclReferenceExprSyntax.self) {
-            baseText = declRef.baseName.text
+            baseText = declRef.baseName.canonicalName
         } else {
-            baseText = base.description.trimmingCharacters(in: .whitespacesAndNewlines)
+            baseText = base.canonicalUntrimmedDescription.trimmingCharacters(in: .whitespacesAndNewlines)
         }
         let resolvedType: String? = baseText == "self" ? callerType
             : baseText.first?.isUppercase == true ? baseText : nil
@@ -134,5 +135,26 @@ final class CallGraphExtractor: TypeStackVisitor {
             }
         }
         return allMethods.sorted()
+    }
+
+    /// An entry point as it was typed in, such as the halves of the CLI's `--entry`, named as
+    /// `entryPoints(for:)` lists it: each name, and each component of a dotted type, as Swift
+    /// reads it. So `` `Plain`.helper `` is `Plain.helper`, which it calls (#123).
+    static func listedEntryPoint(type: String, method: String) -> (type: String, method: String) {
+        let components = type.split(separator: ".", omittingEmptySubsequences: false)
+        return (components.map { String($0).canonicalIdentifier }.joined(separator: "."), method.canonicalIdentifier)
+    }
+}
+
+private extension SyntaxProtocol {
+    /// `description`, with each identifier in it written as its `canonicalName`. Unlike
+    /// `canonicalDescription` it keeps the trivia at either end, comments included, which
+    /// `resolveMemberAccess` trims of whitespace only.
+    var canonicalUntrimmedDescription: String {
+        let text = description
+        guard text.contains("`") else { return text }
+        return tokens(viewMode: .sourceAccurate)
+            .map { $0.leadingTrivia.description + $0.canonicalName + $0.trailingTrivia.description }
+            .joined()
     }
 }

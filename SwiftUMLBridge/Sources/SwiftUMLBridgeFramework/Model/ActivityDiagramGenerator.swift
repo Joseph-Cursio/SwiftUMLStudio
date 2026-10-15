@@ -12,24 +12,26 @@ public struct ActivityDiagramGenerator: ActivityDiagramGenerating, Sendable {
     /// Generate an `ActivityScript` from Swift files at the given paths.
     ///
     /// Walks files in order; the first file that contains a matching entry point wins.
-    /// Returns an empty script when no file contains the entry point.
+    /// Returns an empty script when no file contains the entry point. A name in `entryType` or
+    /// `entryMethod` may be written with backticks: `` `Plain` `` is the listed `Plain`.
     public func generateScript(
         for paths: [String],
         entryType: String,
         entryMethod: String,
         with configuration: Configuration = .default
     ) -> ActivityScript {
+        let entry = CallGraphExtractor.listedEntryPoint(type: entryType, method: entryMethod)
         let files = FileCollector().getFiles(for: paths)
         for file in files {
             guard let source = try? String(contentsOf: file, encoding: .utf8) else { continue }
             if let graph = ActivityFlowExtractor.extract(
-                from: source, entryType: entryType, entryMethod: entryMethod
+                from: source, entryType: entry.type, entryMethod: entry.method
             ) {
                 return ActivityScript(graph: graph, configuration: configuration)
             }
         }
         return ActivityScript(
-            graph: ActivityGraph(entryType: entryType, entryMethod: entryMethod),
+            graph: ActivityGraph(entryType: entry.type, entryMethod: entry.method),
             configuration: configuration
         )
     }
