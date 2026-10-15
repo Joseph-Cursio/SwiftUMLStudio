@@ -129,7 +129,7 @@ final class ERModelExtractor: SyntaxVisitor {
         for attribute in attributes {
             guard let attribute = attribute.as(AttributeSyntax.self) else { continue }
             guard attribute.attributeName.canonicalTrimmedText == name else { continue }
-            return attribute.arguments?.description ?? ""
+            return attribute.arguments?.canonicalTrimmedText ?? ""
         }
         return ""
     }
@@ -142,7 +142,7 @@ final class ERModelExtractor: SyntaxVisitor {
         for attribute in attributes {
             guard let attribute = attribute.as(AttributeSyntax.self) else { continue }
             guard attribute.attributeName.canonicalTrimmedText == "Relationship" else { continue }
-            let argText = attribute.arguments?.description ?? ""
+            let argText = attribute.arguments?.canonicalTrimmedText ?? ""
             return ERRelationshipAttributeInfo(
                 inverseProperty: extractInverseProperty(from: argText)
             )

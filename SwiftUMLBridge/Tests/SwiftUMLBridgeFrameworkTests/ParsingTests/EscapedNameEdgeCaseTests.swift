@@ -73,4 +73,80 @@ struct EscapedNameEdgeCaseTests {
         }
         #expect(!deps.contains("Base"), "\(deps)")
     }
+
+    // MARK: - Receivers and member names
+
+    @Test("`self` and `Self` are self and Self as receivers")
+    func escapedSelf() throws {
+        let source = """
+            struct Caller {
+                func run() { `self`.helper(); `Self`.make() }
+                func helper() { deep() }
+                func deep() {}
+                static func make() {}
+            }
+            """
+        let control = try sequence(unescaped(source), "Caller", "run")
+        #expect(control.contains("Caller->>Caller: deep()"), "\(control)")
+        #expect(try sequence(source, "Caller", "run") == control)
+    }
+
+    @Test("a state machine switched over `self`.property is found as over self.property")
+    func escapedSelfStateMachine() {
+        let source = """
+            enum Light { case off, on }
+            final class Lamp {
+                var light: Light = .off
+                func toggle() {
+                    switch `self`.light {
+                    case .off: self.light = .on
+                    case .on: self.light = .off
+                    }
+                }
+            }
+            """
+        let control = StateMachineExtractor.extract(from: unescaped(source))
+        #expect(control.first?.confidence == .high)
+        #expect(StateMachineExtractor.extract(from: source) == control)
+    }
+
+    @Test("a task group named with backticks is labelled as the one without them")
+    func escapedTaskGroupLabel() throws {
+        let source = """
+            struct Grouped {
+                func run() async {
+                    await `withTaskGroup`(of: Void.self) { group in print("no tasks") }
+                }
+            }
+            """
+        let graph = try #require(ActivityFlowExtractor.extract(from: source, entryType: "Grouped", entryMethod: "run"))
+        let control = try #require(ActivityFlowExtractor.extract(
+            from: unescaped(source), entryType: "Grouped", entryMethod: "run"
+        ))
+        #expect(control.nodes.contains { $0.label == "withTaskGroup { … }" }, "\(control.nodes.map(\.label))")
+        #expect(graph.nodes == control.nodes)
+    }
+
+    // MARK: - Attribute arguments and records
+
+    @Test("an ER attribute's arguments read as Swift reads them")
+    func erAttributeArguments() {
+        let source = """
+            import SwiftData
+            @Model final class Account {
+                @Attribute(.`unique`) var code: String = ""
+                @Relationship(deleteRule: .cascade, `inverse`: \\Item.owner) var items: [Item] = []
+                init() {}
+            }
+            @Model final class Item {
+                var owner: Account?
+                init() {}
+            }
+            """
+        let model = ERModelExtractor.extract(from: source)
+        let control = ERModelExtractor.extract(from: unescaped(source))
+        #expect(control.entities.flatMap(\.attributes).contains { $0.name == "code" && $0.isUnique })
+        #expect(control.relationships.count == 1)
+        #expect(model == control)
+    }
 }

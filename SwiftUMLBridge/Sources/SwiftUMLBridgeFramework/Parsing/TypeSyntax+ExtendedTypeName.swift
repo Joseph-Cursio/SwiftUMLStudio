@@ -57,7 +57,7 @@ extension ExprSyntax {
     var typeReferenceName: String? {
         switch self.as(ExprSyntaxEnum.self) {
         case .declReferenceExpr(let reference):
-            let name = reference.baseName.canonicalName
+            let name = reference.baseName.expressionName
             return name.first?.isUppercase == true ? name : nil
         case .memberAccessExpr(let member):
             let name = member.declName.baseName.canonicalName

@@ -12,6 +12,13 @@ extension TokenSyntax {
         guard let name = identifier?.name, name != text, name.isUnescapable else { return text }
         return name
     }
+
+    /// `canonicalName`, but as an expression reads the name: there `` `self` `` and `` `Self` ``
+    /// are `self` and `Self`, whose backticks `canonicalName` keeps, as a declaration needs them.
+    var expressionName: String {
+        if let name = identifier?.name, name == "self" || name == "Self" { return name }
+        return canonicalName
+    }
 }
 
 extension SyntaxProtocol {

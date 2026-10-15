@@ -93,10 +93,10 @@ extension ActivityGraphBuilder {
 
     static func calledName(_ node: FunctionCallExprSyntax) -> String? {
         if let ref = node.calledExpression.as(DeclReferenceExprSyntax.self) {
-            return ref.baseName.text
+            return ref.baseName.canonicalName
         }
         if let member = node.calledExpression.as(MemberAccessExprSyntax.self) {
-            return member.declName.baseName.text
+            return member.declName.baseName.canonicalName
         }
         return nil
     }

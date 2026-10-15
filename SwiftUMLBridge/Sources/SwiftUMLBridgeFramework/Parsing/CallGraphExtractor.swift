@@ -99,9 +99,11 @@ final class CallGraphExtractor: TypeStackVisitor {
         } else {
             baseText = base.canonicalTrimmedText
         }
-        let resolvedType: String? = baseText == "self" ? callerType
+        // `` `self` `` is `self` as well, though `canonicalName` keeps its backticks.
+        let isSelf = baseText == "self" || base.as(DeclReferenceExprSyntax.self)?.baseName.expressionName == "self"
+        let resolvedType: String? = isSelf ? callerType
             : baseText.first?.isUppercase == true ? baseText : nil
-        let unresolved = resolvedType == nil && baseText != "self"
+        let unresolved = resolvedType == nil && !isSelf
         return CallEdge(
             callerType: callerType, callerMethod: callerMethod,
             calleeType: resolvedType, calleeMethod: methodName,
