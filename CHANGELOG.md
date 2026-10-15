@@ -96,6 +96,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed — Bridge
 
+- **An extension's `ext` edge ends on the type it extends** (#72).
+  PlantUML, Mermaid and Nomnoml class diagrams drew the edge only when a
+  drawn type's short name equalled the extension's full name. So
+  `extension Outer.Inner` was never linked to the nested `Outer.Inner`,
+  and no qualified extension of a nested type got its edge. With a nested
+  `Bar.Foo` drawn, a second top-level `extension Foo` was linked to the
+  first, as if one extension extended the other. The edge now ends on the
+  type the extension's name means where it is written, found by the
+  lookup that SVG's edges and `--merge-extensions` use (#107). With two
+  types of a name, that is the one in the extension's file or module. An
+  extension of a type the diagram hides gets no edge, rather than one to
+  a drawn type that only shares its name.
+- **`--merge-extensions` no longer slows down cubically with same-named
+  private types.** Deciding whether a type nested in a `private` or
+  `fileprivate` extension is visible from another file looked up the
+  type that extension extends before checking the nested type's own
+  access, which already hides it. With 300 files that each nest such a
+  type and extend it, a merged class diagram took 2.6 s; it takes 0.26 s
+  now.
 - **Nomnoml class diagrams parse again, and every edge ends on the box it
   names** (#69). Two defects broke Nomnoml class diagrams in the CLI's
   `--format nomnoml`, in Studio's preview and in exported source:

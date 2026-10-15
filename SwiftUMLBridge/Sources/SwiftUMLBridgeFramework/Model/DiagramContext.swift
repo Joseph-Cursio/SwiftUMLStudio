@@ -29,6 +29,9 @@ class DiagramContext {
     /// Where the edge of each drawn nested type ends when the diagram does not draw its parent,
     /// found by `reserveIdentifiers(drawing:among:)`; a nested type missing here gets no edge.
     private var hiddenParentEnds: [ObjectIdentifier: HiddenParentEnd] = [:]
+    /// The drawn type each drawn extension extends, where its `ext` edge ends, found by
+    /// `reserveIdentifiers(drawing:among:)`; an extension missing here gets no edge.
+    private var extendedTypes: [ObjectIdentifier: SyntaxStructure] = [:]
     private(set) var connections: [String] = []
     private(set) var extnConnections: [String] = []
 
@@ -165,14 +168,18 @@ class DiagramContext {
     /// `extension Foo {}`, `extension Foo0 {}` would otherwise declare `Foo0` twice.
     ///
     /// `items` must be exactly the elements the diagram draws, and `prepared` every item it was
-    /// built from, drawn or not (`items` when nil): a hidden parent's edge end is found among
-    /// them (`HiddenParentEnd`). A hidden element's name that nothing in the diagram uses must not
-    /// shift an alias.
+    /// built from, drawn or not (`items` when nil): the type an extension extends and a hidden
+    /// parent's edge end are found among them (`DrawnEdgeEnds`). A hidden element's name that
+    /// nothing in the diagram uses must not shift an alias.
     func reserveIdentifiers(drawing items: [SyntaxStructure], among prepared: [SyntaxStructure]? = nil) {
+        let edgeEnds = DrawnEdgeEnds(drawing: Set(items), among: prepared ?? items)
         if drawsNestedTypeConnections {
             hiddenParentEnds = HiddenParentEnd.ends(
-                of: items, among: prepared ?? items, declaringIdentifier: declaresIdentifier(of:)
+                of: items, through: edgeEnds, declaringIdentifier: declaresIdentifier(of:)
             )
+        }
+        for item in items where item.kind == .extension {
+            extendedTypes[ObjectIdentifier(item)] = edgeEnds.extendedType(of: item)
         }
         for item in items {
             if declaresIdentifier(of: item), let fullName = item.fullName {
@@ -196,22 +203,6 @@ class DiagramContext {
                 newName = name + "\(index)"
                 index += 1
             } while takenIdentifiers.contains(newName)
-            let hasMatchingParent = uniqueNameForElement.keys
-                .first(where: { $0.name == name && $0.kind != .extension }) != nil
-            // `dependency.exclude` hides only this edge (#113): the extension keeps its box, its
-            // alias and its own conformances, so no id moves.
-            if item.kind == ElementKind.extension, hasMatchingParent, drawsExtensionEdge(for: item) {
-                let label = configuration.relationships.dependency?.label ?? relationship
-                if format == .nomnoml || format == .svg {
-                    extnConnections.append(nomnomlEdge(from: newName, linkTypeDependency, to: name, label: label))
-                } else {
-                    var connect = "\(name) \(linkTypeDependency) \(newName)"
-                    if format == .plantuml, let relStyle = configuration.relationships.dependency?.style?.plantuml {
-                        connect += " \(relStyle)"
-                    }
-                    extnConnections.append(connect + " : \(label)")
-                }
-            }
         } else {
             uniqElementNames.append(name)
             uniqElementAndTypes[name] = relationship
@@ -226,11 +217,37 @@ class DiagramContext {
                 uniqElementAndTypes[linkTypeKey] = linkTypeGeneric
             }
         }
+        if item.kind == .extension {
+            addExtensionEdge(from: item, alias: newName, relationship: relationship)
+        }
         if declaresIdentifier(of: item) {
             takenIdentifiers.insert(newName)
         }
         uniqueNameForElement[item] = newName
         return newName
+    }
+
+    /// Draws the `ext` edge from extension `item`, declared as `alias`, to the type it extends:
+    /// the drawn type its name means where it is written, the box `--merge-extensions` would merge
+    /// it into (#107). Matching its name against the types drawn instead gave `extension
+    /// Outer.Inner` no edge, and gave a second `extension Foo` one to the first when a nested
+    /// `Bar.Foo` was drawn (#72). An extension of a hidden type, or of one outside the diagram,
+    /// gets no edge.
+    private func addExtensionEdge(from item: SyntaxStructure, alias: String, relationship: String) {
+        // `dependency.exclude` hides only this edge (#113): the extension keeps its box, its
+        // alias and its own conformances, so no id moves.
+        guard let type = extendedTypes[ObjectIdentifier(item)], let typeAlias = uniqueNameForElement[type],
+              drawsExtensionEdge(for: item) else { return }
+        let label = configuration.relationships.dependency?.label ?? relationship
+        if format == .nomnoml || format == .svg {
+            extnConnections.append(nomnomlEdge(from: alias, linkTypeDependency, to: typeAlias, label: label))
+            return
+        }
+        var connect = "\(typeAlias) \(linkTypeDependency) \(alias)"
+        if format == .plantuml, let relStyle = configuration.relationships.dependency?.style?.plantuml {
+            connect += " \(relStyle)"
+        }
+        extnConnections.append(connect + " : \(label)")
     }
 
     /// Draws an edge from each drawn nested type to its parent's alias. For a parent the diagram

@@ -70,10 +70,10 @@ struct DiagramContextTests {
         let ctx = DiagramContext()
         let parent = SyntaxStructure(kind: .class, name: "Foo")
         let ext_ = SyntaxStructure(kind: .extension, name: "Foo")
+        ctx.reserveIdentifiers(drawing: [parent, ext_])
         _ = ctx.uniqName(item: parent, relationship: "inherits")
         _ = ctx.uniqName(item: ext_, relationship: "ext")
-        #expect(ctx.extnConnections.isEmpty == false)
-        #expect(ctx.extnConnections.first?.contains("Foo") == true)
+        #expect(ctx.extnConnections == ["Foo <.. Foo0 : ext"])
     }
 
     // MARK: - relationshipLabel
@@ -249,6 +249,7 @@ struct DiagramContextTests {
         let ctx = DiagramContext(configuration: config)
         let parent = SyntaxStructure(kind: .class, name: "Foo")
         let ext = SyntaxStructure(kind: .extension, name: "Foo")
+        ctx.reserveIdentifiers(drawing: [parent, ext])
         _ = ctx.uniqName(item: parent, relationship: "inherits")
         _ = ctx.uniqName(item: ext, relationship: "ext")
         #expect(ctx.extnConnections.first?.contains("#line:") == true)

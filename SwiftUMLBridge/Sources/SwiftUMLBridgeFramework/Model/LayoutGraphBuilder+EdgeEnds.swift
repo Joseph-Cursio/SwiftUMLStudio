@@ -103,10 +103,12 @@ extension LayoutGraphBuilder {
             if lookup.filePath == nil || declared.scope.filePath == nil || lookup.filePath == declared.scope.filePath {
                 return true
             }
-            let access = access(of: declared, depth: depth)
-            if access == .private || access == .fileprivate { return false }
-            if let module = lookup.module, let own = declared.scope.module, module != own { return access >= .package }
-            return true
+            var required = ElementAccessibility.internal
+            if let module = lookup.module, let own = declared.scope.module, module != own { required = .package }
+            // `access(of:)` only lowers `ownAccess`, so a type its own access already hides needs no
+            // lookup of the type its extension extends. That lookup walks every declaration of the
+            // name, and doing it for each of many same-named private types was cubic in their number.
+            return declared.ownAccess >= required && access(of: declared, depth: depth) >= required
         }
 
         /// `declared`'s access, capped by the access of the type its enclosing extension extends,
