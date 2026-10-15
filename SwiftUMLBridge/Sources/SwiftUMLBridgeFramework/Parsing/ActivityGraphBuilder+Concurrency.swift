@@ -85,17 +85,18 @@ extension ActivityGraphBuilder {
 
     // MARK: - Static helpers
 
+    /// Names are matched as Swift reads them, so `` `withTaskGroup` `` is `withTaskGroup` (#123).
     static func isTaskGroupName(_ expr: ExprSyntax) -> Bool {
         guard let ref = expr.as(DeclReferenceExprSyntax.self) else { return false }
-        return taskGroupCallNames.contains(ref.baseName.text)
+        return taskGroupCallNames.contains(ref.baseName.canonicalName)
     }
 
     static func calledName(_ node: FunctionCallExprSyntax) -> String? {
         if let ref = node.calledExpression.as(DeclReferenceExprSyntax.self) {
-            return ref.baseName.text
+            return ref.baseName.canonicalName
         }
         if let member = node.calledExpression.as(MemberAccessExprSyntax.self) {
-            return member.declName.baseName.text
+            return member.declName.baseName.canonicalName
         }
         return nil
     }
@@ -132,7 +133,7 @@ extension ActivityGraphBuilder {
 
     static func isAddTaskCall(_ expr: ExprSyntax) -> Bool {
         guard let member = expr.as(MemberAccessExprSyntax.self) else { return false }
-        return addTaskCallNames.contains(member.declName.baseName.text)
+        return addTaskCallNames.contains(member.declName.baseName.canonicalName)
     }
 }
 

@@ -56,6 +56,21 @@ struct StateMachineGeneratorTests {
         #expect(script.text.isEmpty)
     }
 
+    /// `--state` is typed in, so it may escape a name the source spells plainly, or the reverse.
+    @Test("generateScript finds a candidate however its names are escaped", arguments: ["Lamp.Light", "`Lamp`.`Light`"])
+    func escapedIdentifierFindsCandidate(stateIdentifier: String) throws {
+        let source = trafficLightSource
+            .replacingOccurrences(of: "enum Light", with: "enum `Light`")
+            .replacingOccurrences(of: "class TrafficLight", with: "class `Lamp`")
+        let directory = try writeTemp(source)
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let generator = StateMachineGenerator()
+        #expect(generator.findCandidates(for: [directory.path]).map(\.identifier) == ["Lamp.Light"])
+        let script = generator.generateScript(for: [directory.path], stateIdentifier: stateIdentifier)
+        #expect(script.text.contains("@startuml"))
+    }
+
     @Test("generateScript emits PlantUML for matching identifier")
     func emitsPlantUMLForIdentifier() throws {
         let directory = try writeTemp(trafficLightSource)

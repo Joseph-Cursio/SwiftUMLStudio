@@ -324,7 +324,10 @@ extension DiagramViewModel {
         availableStateMachines = stateGenerator.findCandidates(for: selectedPaths)
         let identifiers = availableStateMachines.map(\.identifier)
         if !identifiers.contains(stateIdentifier) {
-            stateIdentifier = identifiers.first ?? ""
+            // A diagram saved before names were read as Swift reads them may spell one with
+            // backticks it doesn't need, as in `` `Lamp`.Light ``, which is now listed `Lamp.Light`.
+            let listed = StateMachineGenerator.listedIdentifier(stateIdentifier)
+            stateIdentifier = identifiers.contains(listed) ? listed : identifiers.first ?? ""
         }
     }
 }

@@ -61,7 +61,7 @@ final class StateMachineExtractor: TypeStackVisitor {
     // MARK: - Enum declarations (collect simple enums, then maintain the type stack)
 
     override func visit(_ node: EnumDeclSyntax) -> SyntaxVisitorContinueKind {
-        let enumName = node.name.text
+        let enumName = node.name.canonicalName
         var caseNames: [String] = []
         var rejected = false
 
@@ -72,7 +72,7 @@ final class StateMachineExtractor: TypeStackVisitor {
                     rejected = true
                     break
                 }
-                caseNames.append(element.name.text)
+                caseNames.append(element.name.canonicalName)
             }
             if rejected { break }
         }
@@ -95,11 +95,10 @@ final class StateMachineExtractor: TypeStackVisitor {
             guard let identifierPattern = binding.pattern.as(IdentifierPatternSyntax.self) else {
                 continue
             }
-            let propertyName = identifierPattern.identifier.text
+            let propertyName = identifierPattern.identifier.canonicalName
 
             if let annotation = binding.typeAnnotation {
-                let annotationText = annotation.type.description
-                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                let annotationText = annotation.type.canonicalTrimmedText
                 typeProperties[typeName, default: [:]][propertyName] = PropertyInfo(
                     typeName: annotationText, typeInferred: false
                 )
@@ -118,7 +117,7 @@ final class StateMachineExtractor: TypeStackVisitor {
         guard let expr else { return nil }
         if let memberAccess = expr.as(MemberAccessExprSyntax.self),
            let base = memberAccess.base?.as(DeclReferenceExprSyntax.self) {
-            let name = base.baseName.text
+            let name = base.baseName.canonicalName
             return name.first?.isUppercase == true ? name : nil
         }
         return nil
@@ -127,7 +126,7 @@ final class StateMachineExtractor: TypeStackVisitor {
     // MARK: - Function declarations
 
     override func visit(_ node: FunctionDeclSyntax) -> SyntaxVisitorContinueKind {
-        funcStack.append(node.name.text)
+        funcStack.append(node.name.canonicalName)
         return .visitChildren
     }
     override func visitPost(_ node: FunctionDeclSyntax) { funcStack.removeLast() }
@@ -187,13 +186,15 @@ final class StateMachineExtractor: TypeStackVisitor {
 
     /// Extract the property name from expressions of the form `self.prop` or `prop`.
     private static func propertyName(from expr: ExprSyntax) -> String? {
+        // `` `self` `` is `self` as well, though `canonicalName` keeps its backticks.
         if let memberAccess = expr.as(MemberAccessExprSyntax.self),
            let base = memberAccess.base,
-           base.description.trimmingCharacters(in: .whitespacesAndNewlines) == "self" {
-            return memberAccess.declName.baseName.text
+           base.description.trimmingCharacters(in: .whitespacesAndNewlines) == "self"
+            || base.as(DeclReferenceExprSyntax.self)?.baseName.expressionName == "self" {
+            return memberAccess.declName.baseName.canonicalName
         }
         if let declRef = expr.as(DeclReferenceExprSyntax.self) {
-            return declRef.baseName.text
+            return declRef.baseName.canonicalName
         }
         return nil
     }
@@ -202,7 +203,7 @@ final class StateMachineExtractor: TypeStackVisitor {
     private static func enumCaseFromMemberAccess(_ expr: ExprSyntax) -> String? {
         guard let memberAccess = expr.as(MemberAccessExprSyntax.self),
               memberAccess.base == nil else { return nil }
-        return memberAccess.declName.baseName.text
+        return memberAccess.declName.baseName.canonicalName
     }
 
     /// Extract the enum case label and optional `where`-clause guard from a `case .foo:` switch case.
@@ -213,7 +214,7 @@ final class StateMachineExtractor: TypeStackVisitor {
             guard let pattern = item.pattern.as(ExpressionPatternSyntax.self),
                   let memberAccess = pattern.expression.as(MemberAccessExprSyntax.self),
                   memberAccess.base == nil else { continue }
-            let caseName = memberAccess.declName.baseName.text
+            let caseName = memberAccess.declName.baseName.canonicalName
             let guardText = item.whereClause?.condition.description
                 .trimmingCharacters(in: .whitespacesAndNewlines)
             return (caseName, guardText)

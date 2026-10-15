@@ -63,6 +63,7 @@ extension SyntaxStructure {
     /// Whether this element's name matches any of the given exclude glob patterns.
     func isExcluded(byPatterns patterns: [String]?) -> Bool {
         guard let elementName = name, let patterns else { return false }
-        return patterns.contains { elementName.isMatching(searchPattern: $0) }
+        // Names are read as Swift reads them (#123), so a pattern is too: `` `Base` `` is `Base`.
+        return patterns.contains { elementName.isMatching(searchPattern: $0.canonicalDottedName) }
     }
 }

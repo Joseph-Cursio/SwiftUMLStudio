@@ -16,8 +16,9 @@ public struct SequenceDiagramGenerator: SequenceDiagramGenerating, Sendable {
     ///
     /// - Parameters:
     ///   - paths: Paths to Swift source files or directories.
-    ///   - entryType: The type containing the entry-point method.
-    ///   - entryMethod: The entry-point method name.
+    ///   - entryType: The type containing the entry-point method. A name in it may be written
+    ///     with backticks: `` `Plain` `` is the listed `Plain`.
+    ///   - entryMethod: The entry-point method name, read the same way.
     ///   - depth: Maximum call depth to traverse (default: 3).
     ///   - configuration: Diagram configuration (format, etc.)
     /// - Returns: A rendered `SequenceScript`, or `SequenceScript.empty` when nothing is found.
@@ -48,12 +49,13 @@ public struct SequenceDiagramGenerator: SequenceDiagramGenerating, Sendable {
             }
         }
 
+        let entry = CallGraphExtractor.listedEntryPoint(type: entryType, method: entryMethod)
         let callGraph = CallGraph(edges: allEdges)
-        let traversed = callGraph.traverse(from: entryType, entryMethod: entryMethod, maxDepth: depth)
+        let traversed = callGraph.traverse(from: entry.type, entryMethod: entry.method, maxDepth: depth)
         return SequenceScript(
             traversedEdges: traversed,
-            entryType: entryType,
-            entryMethod: entryMethod,
+            entryType: entry.type,
+            entryMethod: entry.method,
             configuration: configuration,
             typeLocations: typeLocations
         )

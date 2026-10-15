@@ -270,6 +270,7 @@ public struct DependencyGraphGenerator: DependencyGraphGenerating, Sendable {
 
     func shouldExclude(name: String, configuration: Configuration) -> Bool {
         guard let excludePatterns = configuration.elements.exclude else { return false }
-        return excludePatterns.contains(where: { name.isMatching(searchPattern: $0) })
+        // Names are read as Swift reads them (#123), so a pattern is too: `` `Base` `` is `Base`.
+        return excludePatterns.contains(where: { name.isMatching(searchPattern: $0.canonicalDottedName) })
     }
 }

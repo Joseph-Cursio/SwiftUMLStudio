@@ -96,6 +96,38 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed — Bridge
 
+- **A name written with backticks it doesn't need is the name without
+  them** (#123). In Swift, `` `Plain` `` and `Plain` are one identifier,
+  but every parser read a name exactly as it was written. So:
+  - `` extension `Plain` `` was never merged into `struct Plain` or linked
+    to it.
+  - `` class Sub: `Base` `` drew its edge to an undeclared `` `Base` ``, and
+    `` struct Conformer: `Proto` `` drew a conformance as inheritance. SVG
+    dropped both edges.
+  - In sequence and activity diagrams, a call written `` `Plain`.make() ``
+    was unresolved, and calls made from a method of `` extension `Plain` ``
+    were lost.
+  - An ER `` @Model final class `Pet` `` was not the end of a `[Pet]`
+    relationship.
+
+  Every name the parsers read is now read as Swift reads it: types,
+  extensions, supertypes, generic parameters, attributes, members, enum
+  cases, call receivers, ER entities and properties, state machines,
+  GRDB and SQLite.swift tables, and imports. In an expression,
+  `` `self` `` and `` `Self` `` are `self` and `Self`.
+  - A name that needs its backticks everywhere it is written keeps them,
+    so its ids are unchanged: a raw identifier (`` `Foo Bar` ``), a
+    keyword (`` `default` ``), and `Type` or `Protocol`, which a type
+    member must escape.
+  - `--entry`, `--state` and exclude patterns (`elements.exclude`, the
+    relationship excludes and `deps --exclude`) take either spelling.
+  - A label changes only where the source wrote needless backticks:
+    `` case `package` `` now lists as `package`.
+  - In Studio, a state diagram saved with such a name, as in
+    `` `Lamp`.Light ``, reopens on the same state machine.
+  - A call on `self` written after a comment line is followed in
+    sequence diagrams. The comment was read as part of the receiver, so
+    the call was left unresolved.
 - **An extension's `ext` edge ends on the type it extends** (#72).
   PlantUML, Mermaid and Nomnoml class diagrams drew the edge only when a
   drawn type's short name equalled the extension's full name. So

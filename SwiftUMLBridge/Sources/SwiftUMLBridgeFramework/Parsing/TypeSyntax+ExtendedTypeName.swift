@@ -4,7 +4,8 @@ extension TypeSyntax {
     /// The name an extension of this type is drawn under: the extended type's own name, or its
     /// dotted path, with every generic argument and all sugar removed. `Foo<Int>` → `Foo`,
     /// `Outer<Int>.Inner<String>` → `Outer.Inner`, `[Int]` → `Array`, `[String: Int]` →
-    /// `Dictionary`, `[3 of Int]` → `InlineArray`, `Int?` → `Optional`, `(Foo<Int>)` → `Foo`.
+    /// `Dictionary`, `[3 of Int]` → `InlineArray`, `Int?` → `Optional`, `(Foo<Int>)` → `Foo`. Each
+    /// name is its `canonicalName`: `` `Foo` `` → `Foo`, while `` `Foo Bar` `` keeps its backticks.
     ///
     /// So `extension Foo<Int>` is named exactly as `extension Foo where T == Int` is, the
     /// constraint it is shorthand for (SE-0361). `nil` for a type no extension can extend (a
@@ -13,10 +14,10 @@ extension TypeSyntax {
     var extendedTypeName: String? {
         switch self.as(TypeSyntaxEnum.self) {
         case .identifierType(let identifier):
-            return identifier.name.presence == .present ? identifier.name.text : nil
+            return identifier.name.presence == .present ? identifier.name.canonicalName : nil
         case .memberType(let member):
             guard member.name.presence == .present, let base = member.baseType.extendedTypeName else { return nil }
-            return base + "." + member.name.text
+            return base + "." + member.name.canonicalName
         case .arrayType: return "Array"
         case .dictionaryType: return "Dictionary"
         case .inlineArrayType: return "InlineArray"
@@ -26,10 +27,11 @@ extension TypeSyntax {
         }
     }
 
-    /// The generic arguments this type binds on the type `extendedTypeName` names, as written
-    /// and joined with `", "`, for display beside that name: `Foo<Int>` → `Int`,
-    /// `Outer<Int>.Inner<String>` → `String` (only the last component's), `[Int]` and `Int?` →
-    /// `Int`, `[String: Int]` → `String, Int`, `[3 of Int]` → `3, Int`. `nil` when it binds none.
+    /// The generic arguments this type binds on the type `extendedTypeName` names, as written but
+    /// with each name canonical, joined with `", "`, for display beside that name: `Foo<Int>` →
+    /// `Int`, `Outer<Int>.Inner<String>` → `String` (only the last component's), `[Int]` and
+    /// `Int?` → `Int`, `[String: Int]` → `String, Int`, `[3 of Int]` → `3, Int`. `nil` when it
+    /// binds none.
     var boundGenericArguments: String? {
         switch self.as(TypeSyntaxEnum.self) {
         case .identifierType(let identifier): return identifier.genericArgumentClause?.argumentText
@@ -50,14 +52,15 @@ extension ExprSyntax {
     /// call receiver can: `Foo<Int>` → `Foo`, `Outer<Int>.Inner<String>` → `Outer.Inner`,
     /// `Swift.Array<Int>` → `Swift.Array`, `[Int]` → `Array`, `[String: Int]` → `Dictionary`,
     /// `Int?` → `Optional`. So `Foo<Int>.make()` calls into the name an extension of `Foo<Int>` is
-    /// listed under (#66). `nil` for anything else, a lowercase name included: that is a value.
+    /// listed under (#66), and `` `Foo`.make() `` into `Foo` (#123). `nil` for anything else, a
+    /// lowercase name included: that is a value.
     var typeReferenceName: String? {
         switch self.as(ExprSyntaxEnum.self) {
         case .declReferenceExpr(let reference):
-            let name = reference.baseName.text
+            let name = reference.baseName.expressionName
             return name.first?.isUppercase == true ? name : nil
         case .memberAccessExpr(let member):
-            let name = member.declName.baseName.text
+            let name = member.declName.baseName.canonicalName
             guard name.first?.isUppercase == true, let base = member.base?.typeReferenceName else { return nil }
             return base + "." + name
         case .genericSpecializationExpr(let specialized):
@@ -96,9 +99,9 @@ private extension GenericArgumentClauseSyntax {
 }
 
 private extension Sequence where Element: SyntaxProtocol {
-    /// The elements' text joined with `", "`, or `nil` when there is none.
+    /// The elements' canonical text joined with `", "`, or `nil` when there is none.
     var argumentText: String? {
-        let parts = map(\.trimmedDescription).filter { !$0.isEmpty }
+        let parts = map(\.canonicalDescription).filter { !$0.isEmpty }
         return parts.isEmpty ? nil : parts.joined(separator: ", ")
     }
 }

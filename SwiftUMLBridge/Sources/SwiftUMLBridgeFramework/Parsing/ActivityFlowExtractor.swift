@@ -44,7 +44,8 @@ public enum ActivityFlowExtractor {
 // MARK: - Entry Function Finder
 
 /// Locates the `CodeBlockSyntax` body of a function whose enclosing type matches
-/// `entryType` and whose name matches `entryMethod`.
+/// `entryType` and whose name matches `entryMethod`. Both sides are names as Swift reads them,
+/// so `` func `helper`() `` in `` extension `Plain` `` is the listed `Plain.helper` (#123).
 final class ActivityEntryFunctionFinder: SyntaxVisitor {
     var entryType: String = ""
     var entryMethod: String = ""
@@ -54,7 +55,7 @@ final class ActivityEntryFunctionFinder: SyntaxVisitor {
     // MARK: Type declarations
 
     override func visit(_ node: ClassDeclSyntax) -> SyntaxVisitorContinueKind {
-        typeStack.append(node.name.text)
+        typeStack.append(node.name.canonicalName)
         return .visitChildren
     }
     override func visitPost(_ node: ClassDeclSyntax) {
@@ -62,7 +63,7 @@ final class ActivityEntryFunctionFinder: SyntaxVisitor {
     }
 
     override func visit(_ node: StructDeclSyntax) -> SyntaxVisitorContinueKind {
-        typeStack.append(node.name.text)
+        typeStack.append(node.name.canonicalName)
         return .visitChildren
     }
     override func visitPost(_ node: StructDeclSyntax) {
@@ -70,7 +71,7 @@ final class ActivityEntryFunctionFinder: SyntaxVisitor {
     }
 
     override func visit(_ node: EnumDeclSyntax) -> SyntaxVisitorContinueKind {
-        typeStack.append(node.name.text)
+        typeStack.append(node.name.canonicalName)
         return .visitChildren
     }
     override func visitPost(_ node: EnumDeclSyntax) {
@@ -78,7 +79,7 @@ final class ActivityEntryFunctionFinder: SyntaxVisitor {
     }
 
     override func visit(_ node: ActorDeclSyntax) -> SyntaxVisitorContinueKind {
-        typeStack.append(node.name.text)
+        typeStack.append(node.name.canonicalName)
         return .visitChildren
     }
     override func visitPost(_ node: ActorDeclSyntax) {
@@ -86,7 +87,7 @@ final class ActivityEntryFunctionFinder: SyntaxVisitor {
     }
 
     override func visit(_ node: ProtocolDeclSyntax) -> SyntaxVisitorContinueKind {
-        typeStack.append(node.name.text)
+        typeStack.append(node.name.canonicalName)
         return .visitChildren
     }
     override func visitPost(_ node: ProtocolDeclSyntax) {
@@ -95,7 +96,7 @@ final class ActivityEntryFunctionFinder: SyntaxVisitor {
 
     override func visit(_ node: ExtensionDeclSyntax) -> SyntaxVisitorContinueKind {
         // Named as `TypeStackVisitor` names it, so every listed entry point is found here (#66).
-        typeStack.append(node.extendedType.extendedTypeName ?? node.extendedType.trimmedDescription)
+        typeStack.append(node.extendedType.extendedTypeName ?? node.extendedType.canonicalDescription)
         return .visitChildren
     }
     override func visitPost(_ node: ExtensionDeclSyntax) {
@@ -107,7 +108,7 @@ final class ActivityEntryFunctionFinder: SyntaxVisitor {
     override func visit(_ node: FunctionDeclSyntax) -> SyntaxVisitorContinueKind {
         if foundBody == nil,
            typeStack.last == entryType,
-           node.name.text == entryMethod,
+           node.name.canonicalName == entryMethod,
            let body = node.body {
             foundBody = body
         }
