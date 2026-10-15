@@ -33,7 +33,7 @@ struct BoundGenericArgumentDisplayTests {
     @Test("Nomnoml writes them after the name, as a type's parameters")
     func nomnomlHeader() {
         let script = ClassDiagramIds.script(for: Self.bound, format: .nomnoml)
-        #expect(script.contains("[<extension> Foo <Int>]"), "\(script)")
+        #expect(script.contains("[<extension id=Foo0> Foo <Int>]"), "\(script)")
     }
 
     @Test("SVG and Studio's canvas label the node with them")
@@ -52,18 +52,21 @@ struct BoundGenericArgumentDisplayTests {
         #expect(mermaid.contains("class Foo0[\"Foo&lt;Int&gt;\"] {"), "\(mermaid)")
         #expect(mermaid.contains("class Foo1[\"Foo&lt;String&gt;\"] {"), "\(mermaid)")
         let nomnoml = ClassDiagramIds.script(for: source, format: .nomnoml)
-        #expect(nomnoml.contains("[<extension> Foo <Int>|~f()]"), "\(nomnoml)")
-        #expect(nomnoml.contains("[<extension> Foo <String>]"), "\(nomnoml)")
+        #expect(nomnoml.contains("[<extension id=Foo0> Foo <Int>|~f()]"), "\(nomnoml)")
+        #expect(nomnoml.contains("[<extension id=Foo1> Foo <String>]"), "\(nomnoml)")
     }
 
     @Test("sugar shows as the type it stands for", arguments: [
-        ("extension [Int] {}", "as Array<Int> ", "[\"Array&lt;Int&gt;\"]", "[<extension> Array <Int>]"),
-        ("extension Int? {}", "as Optional<Int> ", "[\"Optional&lt;Int&gt;\"]", "[<extension> Optional <Int>]"),
+        ("extension [Int] {}", "as Array<Int> ", "[\"Array&lt;Int&gt;\"]", "[<extension id=Array> Array <Int>]"),
+        (
+            "extension Int? {}", "as Optional<Int> ",
+            "[\"Optional&lt;Int&gt;\"]", "[<extension id=Optional> Optional <Int>]"
+        ),
         (
             "extension [String: Int] {}", "as Dictionary<String, Int> ",
-            "[\"Dictionary&lt;String, Int&gt;\"]", "[<extension> Dictionary <String, Int>]"
+            "[\"Dictionary&lt;String, Int&gt;\"]", "[<extension id=Dictionary> Dictionary <String, Int>]"
         ),
-        ("extension [[Int]] {}", "as Array<[Int]> ", "[\"Array&lt;[Int]&gt;\"]", "[<extension> Array <(Int)>]")
+        ("extension [[Int]] {}", "as Array<[Int]> ", "[\"Array&lt;[Int]&gt;\"]", "[<extension id=Array> Array <(Int)>]")
     ])
     func sugar(source: String, plantUML: String, mermaid: String, nomnoml: String) {
         #expect(ClassDiagramIds.script(for: source, format: .plantuml).contains(plantUML))

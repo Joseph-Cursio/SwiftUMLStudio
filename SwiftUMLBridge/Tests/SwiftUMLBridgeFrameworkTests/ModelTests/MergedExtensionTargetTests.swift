@@ -151,14 +151,13 @@ struct MergedExtensionTargetTests {
         #expect(byId["Foo0"] == ["~Int other", "~bar()"])
     }
 
-    /// Nomnoml names a node by its header, not its id (#69), so the two `Foo` boxes are told apart
-    /// here by their members. The nested type's edge names the id PlantUML gives the same box.
+    /// Read as nomnoml builds it: the two `Foo` boxes share a header, and each is its own node (#69).
     @Test("Nomnoml lists the merged member on the extension file's type")
-    func nomnomlUsesSameFileType() {
-        let script = text(twoFoos(extensionIn: "B.swift", module: "ModB"), .nomnoml)
-        let withBar = ClassDiagramIds.lines(of: script, containing: "bar()")
-        #expect(withBar == ["[<struct> Foo <<ModB>>|~other: Int|~bar()]"])
-        #expect(ClassDiagramIds.lines(of: script, containing: "+-") == ["[Foo0] +- [Foo.Inner]"])
+    func nomnomlUsesSameFileType() throws {
+        let graph = try NomnomlGraph(parsing: text(twoFoos(extensionIn: "B.swift", module: "ModB"), .nomnoml))
+        #expect(graph.node("Foo")?.compartments == [["Foo <<ModA>>"], ["~count: Int"]])
+        #expect(graph.node("Foo0")?.compartments == [["Foo <<ModB>>"], ["~other: Int"], ["~bar()"]])
+        #expect(graph.edges.map { [$0.start, $0.type, $0.end] } == [["Foo0", "+-", "Foo.Inner"]])
     }
 
     // MARK: - Nested Types

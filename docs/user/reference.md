@@ -996,8 +996,10 @@ Arrow notation used in generated class diagrams. Both PlantUML and Mermaid use t
 | Inheritance | `Parent <\|-- Child` | `class Dog: Animal` |
 | Realization (conformance) | `Protocol <\|.. Type` | `protocol Pet {}` and `struct Dog: Pet` |
 | Extension dependency | `Type <.. Extension` | Extension on a named type |
-| Composition (nested) | `Outer +-- Inner` | Nested type declaration **(PlantUML only)** |
+| Composition (nested) | `Outer +-- Inner` | Nested type declaration **(not drawn in Mermaid)** |
 | Generic link | `A -- B` | Generic relationship |
+
+Nomnoml writes the same edges child first, with its own arrows: `[Child] -:> [Parent]`, `[Type] --:> [Protocol]`, `[Extension] --> [Type]` and `[Outer] +- [Outer.Inner]`. An enum's or actor's supertypes use `-`, as in `[Suit] - [String]`. nomnoml reads a label only beside the arrow, so that is where it goes: `[Dog] -:> inherits [Animal]`. Each node is declared under the id its edges use, with the type's header as its title, as in `[<extension id=Dog0> Dog|~bark()]`.
 
 A conformance is labelled and styled as realization only when the diagram declares the protocol. A conformance to one it does not declare, such as `Codable`, is labelled and styled as inheritance: `struct User: Codable` gives `Codable <|-- User : inherits`. SVG class diagrams honour `relationships.inheritance.exclude` and `relationships.realize.exclude`, but not relationship labels, styles or `dependency.exclude`.
 

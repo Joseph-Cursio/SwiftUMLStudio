@@ -12,12 +12,12 @@ struct NomnomlEmitterTests {
     @Test(
         "type declarations produce their matching nomnoml stereotype",
         arguments: [
-            ("class Vehicle { var speed: Int = 0 }", "<class>", "Vehicle"),
-            ("struct Point { var xPos: Int = 0 }", "<struct>", "Point"),
-            ("enum Direction { case north, south }", "<enum>", "Direction"),
-            ("protocol Drawable { func draw() }", "<interface>", "Drawable"),
-            ("actor BankAccount { var balance: Int = 0 }", "<actor>", "BankAccount"),
-            ("struct Foo {} \nextension Foo { func bar() {} }", "<extension>", "Foo")
+            ("class Vehicle { var speed: Int = 0 }", "<class id=Vehicle>", "Vehicle"),
+            ("struct Point { var xPos: Int = 0 }", "<struct id=Point>", "Point"),
+            ("enum Direction { case north, south }", "<enum id=Direction>", "Direction"),
+            ("protocol Drawable { func draw() }", "<interface id=Drawable>", "Drawable"),
+            ("actor BankAccount { var balance: Int = 0 }", "<actor id=BankAccount>", "BankAccount"),
+            ("struct Foo {} \nextension Foo { func bar() {} }", "<extension id=Foo0>", "Foo")
         ]
     )
     func typeStereotype(source: String, stereotype: String, typeName: String) {
@@ -179,8 +179,7 @@ struct NomnomlEmitterTests {
     func emptyMembersNoSeparator() {
         let source = "struct Empty {}"
         let script = generator.generateScript(for: source, with: nomnomlConfig)
-        #expect(script.text.contains("<struct>"))
-        #expect(script.text.contains("Empty"))
+        #expect(script.text.contains("[<struct id=Empty> Empty]"))
     }
 
     // MARK: - Macro annotations
@@ -238,10 +237,17 @@ struct NomnomlEmitterTests {
         #expect(script.text.contains("hidden") == false)
     }
 
-    /// nomnoml 1.7.0 rejects `[<class> D <[Int]>]` (`expected "label" but got ">"`).
+    /// nomnoml 1.7.0 rejects `[<class id=D> D <[Int]>]` (`expected "label" but got ">"`).
     @Test("a bracket in a node's generic part is escaped as members are")
     func genericPartBracketsAreEscaped() {
         let script = generator.generateScript(for: "class Base<T> {}\nclass D: Base<[Int]> {}", with: nomnomlConfig)
-        #expect(script.text.contains("[<class> D <(Int)>]"), "\(script.text)")
+        #expect(script.text.contains("[<class id=D> D <(Int)>]"), "\(script.text)")
+    }
+
+    @Test("a bracket in an attribute's arguments is escaped as well")
+    func attributeBracketsAreEscaped() throws {
+        let script = generator.generateScript(for: "@Wrap<[Int]> struct Model {}", with: nomnomlConfig)
+        #expect(script.text.contains("[<struct id=Model> Model <<Wrap<(Int)>>>]"), "\(script.text)")
+        #expect(try NomnomlGraph(parsing: script.text).nodes.map(\.title) == ["Model <<Wrap<(Int)>>>"])
     }
 }

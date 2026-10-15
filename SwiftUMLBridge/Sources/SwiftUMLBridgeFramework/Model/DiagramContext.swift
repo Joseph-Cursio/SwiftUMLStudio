@@ -80,20 +80,35 @@ class DiagramContext {
             linkTypeKey = linkTo + "LinkType"
         }
 
-        var connect: String
         let arrow = uniqElementAndTypes[linkTypeKey] ?? "--ERROR--"
+        let label = relationshipLabel(for: namedConnection)
         if format == .nomnoml || format == .svg {
-            connect = "[\(fullName)] \(arrow) [\(linkTo)]"
-        } else {
-            connect = "\(linkTo) \(arrow) \(fullName)"
-            if format == .plantuml, let relStyle = relationshipStyle(for: namedConnection)?.plantuml {
-                connect += " \(relStyle)"
-            }
+            connections.append(nomnomlEdge(from: fullName, arrow, to: linkTo, label: label))
+            return
         }
-        if let relationshipLabel = relationshipLabel(for: namedConnection) {
-            connect += " : \(relationshipLabel)"
+        var connect = "\(linkTo) \(arrow) \(fullName)"
+        if format == .plantuml, let relStyle = relationshipStyle(for: namedConnection)?.plantuml {
+            connect += " \(relStyle)"
+        }
+        if let label {
+            connect += " : \(label)"
         }
         connections.append(connect)
+    }
+
+    /// A Nomnoml edge, `[start] arrow label [end]`. nomnoml reads a label only beside the arrow;
+    /// after the end, where Mermaid and PlantUML take it, it fails the whole diagram (#69). Each
+    /// end is written as the id `SyntaxStructure.nomnoml(context:)` declares under, so it names
+    /// that node.
+    ///
+    /// The label runs to the next `[`, so brackets become parentheses. nomnoml drops a line that
+    /// starts with `//` and reads one that starts with `#` as a directive before it parses the
+    /// rest, so a line break becomes a space.
+    private func nomnomlEdge(from start: String, _ arrow: String, to end: String, label: String? = nil) -> String {
+        let text = label?.split(whereSeparator: \.isNewline).joined(separator: " ")
+            .replacingOccurrences(of: "[", with: "(").replacingOccurrences(of: "]", with: ")")
+        let labelText = text.flatMap { $0.isEmpty ? nil : " \($0)" } ?? ""
+        return "[\(start.nomnomlIdentifier)] \(arrow)\(labelText) [\(end.nomnomlIdentifier)]"
     }
 
     func skipLinking(element: SyntaxStructure, basedOn excludeElements: [String]?) -> Bool {
@@ -186,17 +201,16 @@ class DiagramContext {
             // `dependency.exclude` hides only this edge (#113): the extension keeps its box, its
             // alias and its own conformances, so no id moves.
             if item.kind == ElementKind.extension, hasMatchingParent, drawsExtensionEdge(for: item) {
-                var connect: String
+                let label = configuration.relationships.dependency?.label ?? relationship
                 if format == .nomnoml || format == .svg {
-                    connect = "[\(newName)] \(linkTypeDependency) [\(name)]"
+                    extnConnections.append(nomnomlEdge(from: newName, linkTypeDependency, to: name, label: label))
                 } else {
-                    connect = "\(name) \(linkTypeDependency) \(newName)"
+                    var connect = "\(name) \(linkTypeDependency) \(newName)"
                     if format == .plantuml, let relStyle = configuration.relationships.dependency?.style?.plantuml {
                         connect += " \(relStyle)"
                     }
+                    extnConnections.append(connect + " : \(label)")
                 }
-                connect += " : \(configuration.relationships.dependency?.label ?? relationship)"
-                extnConnections.append(connect)
             }
         } else {
             uniqElementNames.append(name)
@@ -233,7 +247,7 @@ class DiagramContext {
                 continue
             }
             if format == .nomnoml || format == .svg {
-                connections.append("[\(parentName)] +- [\(name)]")
+                connections.append(nomnomlEdge(from: parentName, "+-", to: name))
             } else {
                 connections.append("\(parentName) +-- \(name)")
             }

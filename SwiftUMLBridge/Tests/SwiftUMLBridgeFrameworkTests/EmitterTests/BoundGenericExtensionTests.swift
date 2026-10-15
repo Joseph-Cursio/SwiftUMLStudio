@@ -143,7 +143,7 @@ struct BoundGenericExtensionTests {
         let svg = LayoutGraphBuilder.buildClassDiagram(from: items, configuration: Configuration(format: .svg))
         #expect(plantUML.contains("class \"Foo\" as Foo0<Swift.Int> << (X, orchid) extension >>"), "\(plantUML)")
         #expect(mermaid.contains("class Foo0[\"Foo&lt;Swift.Int&gt;\"] {"), "\(mermaid)")
-        #expect(nomnoml.contains("[<extension> Foo <Swift.Int>]"), "\(nomnoml)")
+        #expect(nomnoml.contains("[<extension id=Foo0> Foo <Swift.Int>]"), "\(nomnoml)")
         #expect(svg.nodes.map(\.label) == ["Foo", "Foo<Swift.Int>"])
     }
 
