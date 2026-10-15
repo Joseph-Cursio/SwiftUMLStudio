@@ -570,7 +570,7 @@ Each Swift type appears as a node. Arrows indicate relationships:
 |---|---|
 | Solid `<\|--` | Inheritance (`class Dog: Animal`) |
 | Dashed `<\|..` | Protocol conformance (`struct User: Codable`) |
-| Dotted `<..` | Extension dependency |
+| Dotted `<..` | Extension dependency, and each supertype an extension adds (`Codable <.. User0`) |
 | `+--` (PlantUML only) | Nested type |
 
 Stereotypes identify the Swift construct: `<<class>>`, `<<struct>>`, `<<protocol>>`, `<<enum>>`, `<<extension>>`.
