@@ -10,6 +10,9 @@ import SwiftSyntax
 /// SwiftSyntax nodes directly. Variable type names for bindings with no explicit
 /// annotation are resolved via `typenameMap`, which is pre-populated from a
 /// lightweight SourceKit pass in `SyntaxStructureProvider`.
+///
+/// Every name is read as Swift reads it (`canonicalName`, or `canonicalDescription`
+/// for a type), so `` `Plain` `` and `Plain` are one name wherever each is written (#123).
 final class SyntaxStructureBuilder: SyntaxVisitor {
 
     // MARK: - Output
@@ -114,7 +117,7 @@ final class SyntaxStructureBuilder: SyntaxVisitor {
         guard let clause else { return nil }
         var result: [SyntaxStructure] = []
         for inherited in clause.inheritedTypes {
-            let typeName = inherited.type.trimmedDescription
+            let typeName = inherited.type.canonicalDescription
             if typeName.contains("&") {
                 // Compound type (A & B) — split into individual entries
                 let parts = typeName.components(separatedBy: "&")
@@ -131,7 +134,7 @@ final class SyntaxStructureBuilder: SyntaxVisitor {
     private func extractAttributes(from attributes: AttributeListSyntax) -> [SyntaxStructure]? {
         let result = attributes.compactMap { element -> SyntaxStructure? in
             guard case .attribute(let attr) = element else { return nil }
-            let name = attr.attributeName.trimmedDescription
+            let name = attr.attributeName.canonicalDescription
             return SyntaxStructure(attribute: name)
         }
         return result.isEmpty ? nil : result
@@ -139,11 +142,11 @@ final class SyntaxStructureBuilder: SyntaxVisitor {
 
     private func extractGenericParams(from params: GenericParameterListSyntax) -> [SyntaxStructure] {
         params.map { param in
-            let constraint = param.inheritedType.map { SyntaxStructure(name: $0.trimmedDescription) }
+            let constraint = param.inheritedType.map { SyntaxStructure(name: $0.canonicalDescription) }
             return SyntaxStructure(
                 inheritedTypes: constraint.map { [$0] },
                 kind: .genericTypeParam,
-                name: param.name.text
+                name: param.name.canonicalName
             )
         }
     }
@@ -179,7 +182,7 @@ final class SyntaxStructureBuilder: SyntaxVisitor {
             attributes: extractAttributes(from: node.attributes),
             inheritedTypes: extractInheritedTypes(from: node.inheritanceClause),
             kind: kind,
-            name: node.name.text
+            name: node.name.canonicalName
         )
         stampLocation(on: structure, at: node.name.positionAfterSkippingLeadingTrivia)
         pushType(structure, genericParams: genericParams)
@@ -217,7 +220,7 @@ final class SyntaxStructureBuilder: SyntaxVisitor {
             inheritedTypes: extractInheritedTypes(from: node.inheritanceClause),
             kind: .extension,
             // `Foo<Int>` is `Foo` constrained (SE-0361): named as `extension Foo where T == Int` is (#66).
-            name: node.extendedType.extendedTypeName ?? node.extendedType.trimmedDescription
+            name: node.extendedType.extendedTypeName ?? node.extendedType.canonicalDescription
         )
         if node.extendedType.extendedTypeName != nil {
             structure.boundGenericArguments = node.extendedType.boundGenericArguments
@@ -237,10 +240,10 @@ final class SyntaxStructureBuilder: SyntaxVisitor {
         let kind: ElementKind = isStatic ? .varStatic : .varInstance
 
         for binding in node.bindings {
-            guard let name = binding.pattern.as(IdentifierPatternSyntax.self)?.identifier.text else {
+            guard let name = binding.pattern.as(IdentifierPatternSyntax.self)?.identifier.canonicalName else {
                 continue
             }
-            let explicitTypename = binding.typeAnnotation?.type.trimmedDescription
+            let explicitTypename = binding.typeAnnotation?.type.canonicalDescription
             let typename = explicitTypename ?? typenameMap[qualifiedVarName(name)]
             appendMember(SyntaxStructure(accessibility: accessibility, kind: kind, name: name, typename: typename))
         }
@@ -252,7 +255,7 @@ final class SyntaxStructureBuilder: SyntaxVisitor {
         appendMember(SyntaxStructure(
             accessibility: extractAccessibility(from: node.modifiers),
             kind: isStaticOrClass(node.modifiers) ? .functionMethodStatic : .functionMethodInstance,
-            name: node.name.text,
+            name: node.name.canonicalName,
             typename: effectSpecifierTypename(for: node.signature.effectSpecifiers)
         ))
         return .skipChildren
@@ -276,7 +279,7 @@ final class SyntaxStructureBuilder: SyntaxVisitor {
 
     override func visit(_ node: EnumCaseDeclSyntax) -> SyntaxVisitorContinueKind {
         guard !typeStack.isEmpty else { return .skipChildren }
-        let elements = node.elements.map { SyntaxStructure(kind: .enumelement, name: $0.name.text) }
+        let elements = node.elements.map { SyntaxStructure(kind: .enumelement, name: $0.name.canonicalName) }
         appendMember(SyntaxStructure(kind: .enumcase, substructure: elements.isEmpty ? nil : elements))
         return .skipChildren
     }

@@ -27,7 +27,10 @@ struct ExtendedTypeNameTests {
         ("Outer<Int>.Inner<String>", "Outer.Inner"),
         ("A.B.C", "A.B.C"),
         ("Outer . Inner", "Outer.Inner"),
-        ("`Foo`", "`Foo`")
+        ("`Foo`", "Foo"),
+        ("`Outer`.`Inner`", "Outer.Inner"),
+        ("`Foo Bar`", "`Foo Bar`"),
+        ("`class`", "`class`")
     ])
     func nominal(spelling: String, expected: String) throws {
         #expect(try extendedType(spelling).extendedTypeName == expected)
