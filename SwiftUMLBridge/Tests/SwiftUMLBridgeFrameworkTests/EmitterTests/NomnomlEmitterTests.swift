@@ -243,4 +243,11 @@ struct NomnomlEmitterTests {
         let script = generator.generateScript(for: "class Base<T> {}\nclass D: Base<[Int]> {}", with: nomnomlConfig)
         #expect(script.text.contains("[<class id=D> D <(Int)>]"), "\(script.text)")
     }
+
+    @Test("a bracket in an attribute's arguments is escaped as well")
+    func attributeBracketsAreEscaped() throws {
+        let script = generator.generateScript(for: "@Wrap<[Int]> struct Model {}", with: nomnomlConfig)
+        #expect(script.text.contains("[<struct id=Model> Model <<Wrap<(Int)>>>]"), "\(script.text)")
+        #expect(try NomnomlGraph(parsing: script.text).nodes.map(\.title) == ["Model <<Wrap<(Int)>>>"])
+    }
 }

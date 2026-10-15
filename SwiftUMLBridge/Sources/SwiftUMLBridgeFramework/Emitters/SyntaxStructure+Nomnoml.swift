@@ -58,13 +58,14 @@ extension SyntaxStructure {
         context: DiagramContext
     ) -> String {
         let alias = context.uniqName(item: self, relationship: relationship)
-        let typeName = (displayName ?? name ?? "unknown").nomnomlEscaped
-        // A bracket in the header, as in `class D: Base<[Int]>`'s `<[Int]>`, would end the node.
-        let genericsStr = generics.map { " \($0.nomnomlEscaped)" } ?? ""
+        let typeName = displayName ?? name ?? "unknown"
+        let genericsStr = generics.map { " \($0)" } ?? ""
 
         let macroAnnotations = attributeNames.isEmpty ? "" : " <<\(attributeNames.joined(separator: ", "))>>"
         let moduleAnnotation = module.map { " <<\($0)>>" } ?? ""
-        let headerText = "\(typeName)\(genericsStr)\(macroAnnotations)\(moduleAnnotation)"
+        // A bracket would end the node: in the generic part, `class D: Base<[Int]>`'s `<[Int]>`;
+        // in an attribute, `@Wrap<[Int]>`; in a raw identifier, `` `a[b]` ``.
+        let headerText = "\(typeName)\(genericsStr)\(macroAnnotations)\(moduleAnnotation)".nomnomlEscaped
 
         let (properties, methods) = nomnomlMembers(context: context)
 
