@@ -59,4 +59,18 @@ struct EscapedNameEdgeCaseTests {
         #expect(text.contains("~meta : Outer.Type"), "\(text)")
         #expect(text.contains("~nested : Outer.`Type`"), "\(text)")
     }
+
+    // MARK: - Typed-in patterns
+
+    @Test("an exclude pattern written with backticks matches the name it escapes", arguments: ["`Base`", "Base"])
+    func excludePattern(pattern: String) throws {
+        let source = "class `Base` {}\nfinal class Sub: Base {}"
+        let configuration = Configuration(elements: ElementOptions(exclude: [pattern]), format: .plantuml)
+        let classes = ClassDiagramGenerator().generateScript(for: source, with: configuration).text
+        #expect(!classes.contains("as Base "), "\(classes)")
+        let deps = try withSourceFile(source) { path in
+            DependencyGraphGenerator().generateScript(for: [path], mode: .types, with: configuration).text
+        }
+        #expect(!deps.contains("Base"), "\(deps)")
+    }
 }
