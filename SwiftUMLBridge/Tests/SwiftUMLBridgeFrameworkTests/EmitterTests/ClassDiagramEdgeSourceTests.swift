@@ -102,6 +102,48 @@ struct ClassDiagramEdgeSourceTests {
             == ["NSView <|-- PlatformView : inherits", "UIView <|-- PlatformView0 : inherits"])
     }
 
+    // MARK: - The declaration's own arrow
+
+    /// A repeat took its name's first declaration's arrow, so whether `Foo` was declared, and as
+    /// what, decided how `extension Foo: Codable` was drawn. An extension's supertypes are drawn
+    /// as dependencies, as SVG draws them.
+    @Test("an extension draws its supertypes with its own arrow, whatever it extends", arguments: [
+        "struct Foo {}", "class Foo {}", "enum Foo {}", "actor Foo {}", "protocol Foo {}"
+    ])
+    func extensionTakesItsOwnArrow(declaration: String) throws {
+        let source = "\(declaration)\nextension Foo: Codable {}"
+        for format in [DiagramFormat.mermaid, .plantuml] {
+            #expect(lines(source, format, containing: "Codable") == ["Codable <.. Foo0 : inherits"])
+        }
+        #expect(edges(try nomnoml(source)) == [["Foo0", "-->", "Codable"], ["Foo0", "-->", "Foo"]])
+        // The same arrow as an extension of a type the diagram does not declare.
+        #expect(lines("extension Foo: Codable {}", .mermaid, containing: "Codable") == ["Codable <.. Foo : inherits"])
+    }
+
+    @Test("a repeated type takes its own kind's arrow, not the first declaration's")
+    func repeatedTypeTakesItsOwnArrow() throws {
+        let source = "#if os(macOS)\nenum Mode: Int {}\n#else\nclass Mode: Base {}\n#endif"
+        for format in [DiagramFormat.mermaid, .plantuml] {
+            #expect(lines(source, format, containing: " : inherits")
+                == ["Int -- Mode : inherits", "Base <|-- Mode0 : inherits"])
+        }
+        #expect(edges(try nomnoml(source)) == [["Mode", "-", "Int"], ["Mode0", "-:>", "Base"]])
+    }
+
+    /// The arrows lived in `uniqElementAndTypes` under `<name>LinkType`, beside each name's
+    /// relationship. So a type named `PLinkType` overwrote protocol `P`'s arrow with its own
+    /// relationship, and `struct S: P` was drawn `P inherits S`. And a supertype named
+    /// `FooLinkType` read `Foo`'s arrow as its relationship, so its edge lost its label.
+    @Test("no type's name changes another type's edge", arguments: [DiagramFormat.mermaid, .plantuml])
+    func edgeIsNotKeyedByName(format: DiagramFormat) {
+        let conformance = "protocol P {}\nstruct PLinkType {}\nstruct S: P {}"
+        #expect(lines(conformance, format, containing: " : ") == ["P <|.. S : conforms to"])
+        let repeated = "class Foo {}\nstruct FooLinkType {}\nextension Foo: Bar {}"
+        #expect(lines(repeated, format, containing: "Bar") == ["Bar <.. Foo0 : inherits"])
+        let supertype = "class Foo {}\nclass Child: FooLinkType {}"
+        #expect(lines(supertype, format, containing: "FooLinkType") == ["FooLinkType <|-- Child : inherits"])
+    }
+
     // MARK: - Agreement with SVG
 
     /// Inputs whose every supertype is declared, since SVG drops an edge to a type it does not

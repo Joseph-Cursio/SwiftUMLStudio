@@ -38,7 +38,7 @@ struct DiagramContextAliasTests {
         ctx.reserveIdentifiers(drawing: [item])
         #expect(ctx.uniqName(item: item, relationship: "inherits") == "Foo0")
         #expect(ctx.uniqElementNames == ["Foo0"])
-        #expect(ctx.uniqElementAndTypes["Foo0LinkType"] == "<|--")
+        #expect(ctx.uniqElementAndTypes["Foo0"] == "inherits")
     }
 
     @Test("a suffixed alias is never reissued under another base name")
