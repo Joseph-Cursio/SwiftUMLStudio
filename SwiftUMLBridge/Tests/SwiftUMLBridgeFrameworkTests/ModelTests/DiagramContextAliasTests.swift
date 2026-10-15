@@ -14,7 +14,6 @@ struct DiagramContextAliasTests {
             ctx.uniqName(item: SyntaxStructure(kind: .extension, name: "Foo"), relationship: "ext")
         ]
         #expect(aliases == ["Foo0", "Foo", "Foo1"])
-        #expect(ctx.extnConnections == ["Foo <.. Foo1 : ext"])
     }
 
     @Test("a reserved name is skipped by a suffix issued before its own declaration")
@@ -28,6 +27,8 @@ struct DiagramContextAliasTests {
         ctx.reserveIdentifiers(drawing: items)
         let aliases = items.map { ctx.uniqName(item: $0, relationship: $0.kind == .extension ? "ext" : "inherits") }
         #expect(aliases == ["Foo", "Foo1", "Foo0"])
+        // The edge leaves from the alias issued, and `extension Foo0` extends no drawn type.
+        #expect(ctx.extnConnections == ["Foo <.. Foo1 : ext"])
     }
 
     @Test("a reserved name still counts as a first declaration")
