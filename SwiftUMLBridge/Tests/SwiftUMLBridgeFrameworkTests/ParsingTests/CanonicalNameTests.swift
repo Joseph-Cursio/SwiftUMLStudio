@@ -42,6 +42,7 @@ struct CanonicalNameTests {
         ("`Outer`.`Inner`?", "Outer.Inner?"),
         ("[`Foo Bar`]", "[`Foo Bar`]"),
         ("[String: Int]", "[String: Int]"),
+        ("any `P` & /* both */ `Q`", "any P & /* both */ Q"),
         ("Outer.`Type`", "Outer.`Type`")
     ])
     func typeDescription(spelling: String, expected: String) throws {

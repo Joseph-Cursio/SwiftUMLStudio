@@ -74,7 +74,13 @@ struct EscapedNameClassDiagramTests {
 
     // MARK: - The issue's witnesses
 
-    @Test("a name escaped on one side draws what it draws unescaped", arguments: witnesses, formats)
+    /// Each witness in each format, but the attribute only in the text formats: SVG draws no
+    /// attribute, so it would draw the same with or without the fix.
+    static let witnessFormats = witnesses.flatMap { witness in
+        formats.filter { witness != attribute || $0 != .svg }.map { (witness, $0) }
+    }
+
+    @Test("a name escaped on one side draws what it draws unescaped", arguments: witnessFormats)
     func sameAsUnescaped(source: String, format: DiagramFormat) {
         let unescaped = source.replacingOccurrences(of: "`", with: "")
         for extensions in [ExtensionVisualization.all, .merged] {

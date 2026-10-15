@@ -110,6 +110,50 @@ struct EscapedNameEdgeCaseTests {
         #expect(StateMachineExtractor.extract(from: source) == control)
     }
 
+    @Test("a method named with backticks after a dot, and a receiver's member, are followed")
+    func memberNamesAfterADot() throws {
+        let source = """
+            final class Tock {
+                static let shared = Tock()
+                func ring() {}
+            }
+            struct Tick {
+                func start() { self.`helper`(); `Tock`.`shared`.ring() }
+                func helper() { deep() }
+                func deep() {}
+            }
+            """
+        let control = try sequence(unescaped(source), "Tick", "start")
+        #expect(control.contains("helper()") && control.contains("ring()") && control.contains("deep()"))
+        #expect(try sequence(source, "Tick", "start") == control)
+    }
+
+    @Test("an actor, enum or protocol declared with backticks is an entry point under its name", arguments: [
+        ("Worker", "run"), ("Mode", "flip"), ("Doer", "act")
+    ])
+    func escapedEntryTypes(type: String, method: String) throws {
+        let source = """
+            actor `Worker` { func run() { helper() }; func helper() {} }
+            enum `Mode` { case on; func flip() { helper() }; func helper() {} }
+            protocol `Doer` {}
+            extension Doer { func act() { helper() }; func helper() {} }
+            """
+        let sequenceControl = try sequence(unescaped(source), type, method)
+        #expect(sequenceControl.contains("helper()"), "\(sequenceControl)")
+        #expect(try sequence(source, type, method) == sequenceControl)
+        let activityControl = try activity(unescaped(source), type, method)
+        #expect(activityControl.contains("helper()"), "\(activityControl)")
+        #expect(try activity(source, type, method) == activityControl)
+    }
+
+    @Test("a protocol declared with backticks lists its requirements under its name")
+    func escapedProtocolRequirements() {
+        let source = "protocol `Doer` { func act() }"
+        let control = CallGraphExtractor.extract(from: unescaped(source)).methods
+        #expect(control == ["Doer.act"])
+        #expect(CallGraphExtractor.extract(from: source).methods == control)
+    }
+
     @Test("a task group named with backticks is labelled as the one without them")
     func escapedTaskGroupLabel() throws {
         let source = """
@@ -148,5 +192,22 @@ struct EscapedNameEdgeCaseTests {
         #expect(control.entities.flatMap(\.attributes).contains { $0.name == "code" && $0.isUnique })
         #expect(control.relationships.count == 1)
         #expect(model == control)
+    }
+
+    @Test("a GRDB class record and its associations read as without backticks")
+    func grdbClassRecord() {
+        let source = """
+            final class `Team`: TableRecord {
+                var id: Int64?
+                static let `players` = hasMany(Player.self)
+            }
+            struct Player: FetchableRecord, TableRecord {
+                var id: Int64?
+                static let team = Self.`belongsTo`(Team.self)
+            }
+            """
+        let control = PersistenceSchemaExtractor.extract(from: unescaped(source))
+        #expect(control.relationships.count == 2)
+        #expect(PersistenceSchemaExtractor.extract(from: source) == control)
     }
 }
