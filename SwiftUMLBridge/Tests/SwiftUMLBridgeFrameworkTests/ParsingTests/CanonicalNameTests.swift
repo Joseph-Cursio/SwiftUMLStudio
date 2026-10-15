@@ -28,7 +28,10 @@ struct CanonicalNameTests {
         #expect(try structName(spelling).canonicalName == expected)
     }
 
-    @Test("a raw identifier and a keyword keep theirs", arguments: ["`Foo Bar`", "`default`", "`class`", "`self`"])
+    /// A type member named `Type` or `Protocol` must be escaped: after a `.`, the bare word is a metatype.
+    @Test("a raw identifier, a keyword, Type and Protocol keep theirs", arguments: [
+        "`Foo Bar`", "`default`", "`class`", "`self`", "`Type`", "`Protocol`"
+    ])
     func neededBackticks(spelling: String) throws {
         #expect(try structName(spelling).canonicalName == spelling)
     }
@@ -38,7 +41,8 @@ struct CanonicalNameTests {
         ("Dictionary<`Key`, [`Value`]>", "Dictionary<Key, [Value]>"),
         ("`Outer`.`Inner`?", "Outer.Inner?"),
         ("[`Foo Bar`]", "[`Foo Bar`]"),
-        ("[String: Int]", "[String: Int]")
+        ("[String: Int]", "[String: Int]"),
+        ("Outer.`Type`", "Outer.`Type`")
     ])
     func typeDescription(spelling: String, expected: String) throws {
         #expect(try annotation(spelling).canonicalDescription == expected)
@@ -65,7 +69,7 @@ struct CanonicalNameTests {
 
     @Test("a typed-in identifier reads as a parsed one does", arguments: [
         ("`Plain`", "Plain"), ("Plain", "Plain"), ("`Foo Bar`", "`Foo Bar`"), ("`default`", "`default`"),
-        ("``", "``"), ("`", "`"), ("`a`b`", "`a`b`")
+        ("`Type`", "`Type`"), ("``", "``"), ("`", "`"), ("`a`b`", "`a`b`")
     ])
     func typedInIdentifier(spelling: String, expected: String) {
         #expect(spelling.canonicalIdentifier == expected)

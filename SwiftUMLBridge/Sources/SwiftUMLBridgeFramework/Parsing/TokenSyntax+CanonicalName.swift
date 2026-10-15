@@ -6,10 +6,10 @@ extension TokenSyntax {
     /// that needs its backticks wherever it is written keeps them, so it still matches itself: a
     /// raw identifier (`` `Foo Bar` ``) or a keyword (`` `default` ``). Names read as written kept
     /// `` extension `Plain` `` apart from `struct Plain`, and a call to `` `Plain`.make() `` apart
-    /// from the method it calls (#123).
+    /// from the method it calls (#123). `` `Type` `` and `` `Protocol` `` keep theirs too: a type
+    /// member must be written so, and bare, after a `.`, either means a metatype.
     var canonicalName: String {
-        guard let name = identifier?.name, name != text,
-              name.isValidSwiftIdentifier(for: .variableName) else { return text }
+        guard let name = identifier?.name, name != text, name.isUnescapable else { return text }
         return name
     }
 }
@@ -43,7 +43,13 @@ extension String {
     var canonicalIdentifier: String {
         guard count > 2, hasPrefix("`"), hasSuffix("`") else { return self }
         let name = String(dropFirst().dropLast())
-        return !name.contains("`") && name.isValidSwiftIdentifier(for: .variableName) ? name : self
+        return !name.contains("`") && name.isUnescapable ? name : self
+    }
+
+    /// Whether this name reads the same without backticks wherever it is written: not a raw
+    /// identifier or a keyword, nor `Type` or `Protocol`, which a type member must escape.
+    fileprivate var isUnescapable: Bool {
+        self != "Type" && self != "Protocol" && isValidSwiftIdentifier(for: .variableName)
     }
 
     /// This dotted name, typed in as `--entry`'s type or `--state`'s `Host.Enum`, with each
