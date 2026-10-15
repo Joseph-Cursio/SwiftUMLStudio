@@ -20,7 +20,8 @@ extension SyntaxProtocol {
     var canonicalDescription: String {
         let text = trimmedDescription
         guard text.contains("`") else { return text }
-        return CanonicalNameRewriter(viewMode: .sourceAccurate).rewrite(self).trimmedDescription
+        // Detached, so the rewriter does not rebuild the whole tree above the node for each name.
+        return CanonicalNameRewriter(viewMode: .sourceAccurate).rewrite(self, detach: true).trimmedDescription
     }
 
     /// `description` trimmed of whitespace, with each identifier in it written as its
@@ -30,7 +31,7 @@ extension SyntaxProtocol {
     var canonicalTrimmedText: String {
         var text = description
         if text.contains("`") {
-            text = CanonicalNameRewriter(viewMode: .sourceAccurate).rewrite(self).description
+            text = CanonicalNameRewriter(viewMode: .sourceAccurate).rewrite(self, detach: true).description
         }
         return text.trimmingCharacters(in: .whitespacesAndNewlines)
     }
@@ -57,6 +58,6 @@ extension String {
 private final class CanonicalNameRewriter: SyntaxRewriter {
     override func visit(_ token: TokenSyntax) -> TokenSyntax {
         let name = token.canonicalName
-        return name == token.text ? token : token.with(\.tokenKind, .identifier(name))
+        return name == token.text ? token : token.detached.with(\.tokenKind, .identifier(name))
     }
 }
