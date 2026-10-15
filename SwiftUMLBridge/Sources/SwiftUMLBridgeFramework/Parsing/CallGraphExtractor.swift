@@ -97,7 +97,7 @@ final class CallGraphExtractor: TypeStackVisitor {
         } else if let declRef = called?.as(DeclReferenceExprSyntax.self) {
             baseText = declRef.baseName.canonicalName
         } else {
-            baseText = base.canonicalUntrimmedDescription.trimmingCharacters(in: .whitespacesAndNewlines)
+            baseText = base.canonicalTrimmedText
         }
         let resolvedType: String? = baseText == "self" ? callerType
             : baseText.first?.isUppercase == true ? baseText : nil
@@ -141,20 +141,6 @@ final class CallGraphExtractor: TypeStackVisitor {
     /// `entryPoints(for:)` lists it: each name, and each component of a dotted type, as Swift
     /// reads it. So `` `Plain`.helper `` is `Plain.helper`, which it calls (#123).
     static func listedEntryPoint(type: String, method: String) -> (type: String, method: String) {
-        let components = type.split(separator: ".", omittingEmptySubsequences: false)
-        return (components.map { String($0).canonicalIdentifier }.joined(separator: "."), method.canonicalIdentifier)
-    }
-}
-
-private extension SyntaxProtocol {
-    /// `description`, with each identifier in it written as its `canonicalName`. Unlike
-    /// `canonicalDescription` it keeps the trivia at either end, comments included, which
-    /// `resolveMemberAccess` trims of whitespace only.
-    var canonicalUntrimmedDescription: String {
-        let text = description
-        guard text.contains("`") else { return text }
-        return tokens(viewMode: .sourceAccurate)
-            .map { $0.leadingTrivia.description + $0.canonicalName + $0.trailingTrivia.description }
-            .joined()
+        (type.canonicalDottedName, method.canonicalIdentifier)
     }
 }

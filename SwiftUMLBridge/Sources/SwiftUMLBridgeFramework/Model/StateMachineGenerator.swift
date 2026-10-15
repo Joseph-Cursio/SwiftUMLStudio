@@ -62,7 +62,8 @@ public struct StateMachineGenerator: StateMachineGenerating, Sendable {
     ///
     /// - Parameters:
     ///   - paths: Source paths to scan.
-    ///   - stateIdentifier: `"HostType.EnumType"` identifier (see `StateMachineModel.identifier`).
+    ///   - stateIdentifier: `"HostType.EnumType"` identifier (see `StateMachineModel.identifier`),
+    ///     matched as Swift reads each name, so `` Lamp.`Light` `` finds `Lamp.Light` (#123).
     ///   - configuration: Diagram configuration (format, etc.).
     /// - Returns: A rendered `StateScript`, or `StateScript.empty` when no match.
     public func generateScript(
@@ -71,7 +72,8 @@ public struct StateMachineGenerator: StateMachineGenerating, Sendable {
         with configuration: Configuration = .default
     ) -> StateScript {
         let candidates = findCandidates(for: paths)
-        guard let model = candidates.first(where: { $0.identifier == stateIdentifier }) else {
+        let identifier = stateIdentifier.canonicalDottedName
+        guard let model = candidates.first(where: { $0.identifier == identifier }) else {
             return .empty
         }
         return StateScript(model: model, configuration: configuration)

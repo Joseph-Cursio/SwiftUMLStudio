@@ -44,6 +44,25 @@ struct CanonicalNameTests {
         #expect(try annotation(spelling).canonicalDescription == expected)
     }
 
+    /// The readers that trimmed `description` themselves kept a comment beside the node, and
+    /// still do: only the needless backticks change.
+    @Test("a node's trimmed text keeps its comment and writes its names canonically", arguments: [
+        ("[`Pet`] // pets", "[Pet] // pets"),
+        ("[Pet] // pets", "[Pet] // pets"),
+        ("[`Foo Bar`]", "[`Foo Bar`]")
+    ])
+    func trimmedText(spelling: String, expected: String) throws {
+        #expect(try annotation(spelling).canonicalTrimmedText == expected)
+    }
+
+    @Test("a typed-in dotted name reads each component as Swift does", arguments: [
+        ("`Lamp`.`Light`", "Lamp.Light"), ("Outer.`Inner`", "Outer.Inner"), ("`Foo Bar`.Light", "`Foo Bar`.Light"),
+        ("Lamp.Light", "Lamp.Light")
+    ])
+    func typedInDottedName(spelling: String, expected: String) {
+        #expect(spelling.canonicalDottedName == expected)
+    }
+
     @Test("a typed-in identifier reads as a parsed one does", arguments: [
         ("`Plain`", "Plain"), ("Plain", "Plain"), ("`Foo Bar`", "`Foo Bar`"), ("`default`", "`default`"),
         ("``", "``"), ("`", "`"), ("`a`b`", "`a`b`")

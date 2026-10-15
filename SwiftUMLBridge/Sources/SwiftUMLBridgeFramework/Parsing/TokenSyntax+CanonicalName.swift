@@ -22,6 +22,18 @@ extension SyntaxProtocol {
         guard text.contains("`") else { return text }
         return CanonicalNameRewriter(viewMode: .sourceAccurate).rewrite(self).trimmedDescription
     }
+
+    /// `description` trimmed of whitespace, with each identifier in it written as its
+    /// `canonicalName`. Unlike `canonicalDescription`, it keeps a comment beside the node, as the
+    /// readers that trimmed `description` themselves always have, so on source with no needless
+    /// backticks they read exactly what they read before.
+    var canonicalTrimmedText: String {
+        var text = description
+        if text.contains("`") {
+            text = CanonicalNameRewriter(viewMode: .sourceAccurate).rewrite(self).description
+        }
+        return text.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
 }
 
 extension String {
@@ -31,6 +43,13 @@ extension String {
         guard count > 2, hasPrefix("`"), hasSuffix("`") else { return self }
         let name = String(dropFirst().dropLast())
         return !name.contains("`") && name.isValidSwiftIdentifier(for: .variableName) ? name : self
+    }
+
+    /// This dotted name, typed in as `--entry`'s type or `--state`'s `Host.Enum`, with each
+    /// component as Swift reads it: `` `Outer`.Inner `` is `Outer.Inner`.
+    var canonicalDottedName: String {
+        split(separator: ".", omittingEmptySubsequences: false).map { String($0).canonicalIdentifier }
+            .joined(separator: ".")
     }
 }
 

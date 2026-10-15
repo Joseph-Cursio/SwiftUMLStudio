@@ -328,14 +328,3 @@ final class ERModelExtractor: SyntaxVisitor {
         return extractor.buildModel()
     }
 }
-
-extension SyntaxProtocol {
-    /// `description` trimmed of whitespace, as the ER and state-machine extractors read a type or
-    /// an attribute name, with each identifier in it written as its `canonicalName`. Unlike
-    /// `canonicalDescription` it keeps a comment beside the node, as the text it replaces did, so
-    /// a needless escape is all that reads differently (#123).
-    var canonicalTrimmedText: String {
-        (leadingTrivia.description + canonicalDescription + trailingTrivia.description)
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-}
