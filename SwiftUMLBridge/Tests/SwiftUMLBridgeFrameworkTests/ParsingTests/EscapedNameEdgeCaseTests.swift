@@ -91,6 +91,24 @@ struct EscapedNameEdgeCaseTests {
         #expect(try sequence(source, "Caller", "run") == control)
     }
 
+    /// `self` is now told from its token, not from its text, which carried the comment above the
+    /// call: such a call used to be unresolved.
+    @Test("a call on self written after a comment line is followed")
+    func selfCallAfterComment() throws {
+        let source = """
+            struct Caller {
+                func run() {
+                    // a note on the next call
+                    self.helper()
+                }
+                func helper() { deep() }
+                func deep() {}
+            }
+            """
+        let text = try sequence(source, "Caller", "run")
+        #expect(text.contains("Caller->>Caller: helper()") && text.contains("Caller->>Caller: deep()"), "\(text)")
+    }
+
     @Test("a state machine switched over `self`.property is found as over self.property")
     func escapedSelfStateMachine() {
         let source = """
