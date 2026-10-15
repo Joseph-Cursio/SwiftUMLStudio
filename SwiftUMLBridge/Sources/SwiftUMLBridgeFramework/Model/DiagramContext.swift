@@ -171,7 +171,8 @@ class DiagramContext {
     func reserveIdentifiers(drawing items: [SyntaxStructure], among prepared: [SyntaxStructure]? = nil) {
         if drawsNestedTypeConnections {
             hiddenParentEnds = HiddenParentEnd.ends(
-                of: items, among: prepared ?? items, declaringIdentifier: declaresIdentifier(of:)
+                of: items, through: DrawnEdgeEnds(drawing: Set(items), among: prepared ?? items),
+                declaringIdentifier: declaresIdentifier(of:)
             )
         }
         for item in items {
