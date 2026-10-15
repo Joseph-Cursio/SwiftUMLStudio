@@ -84,7 +84,7 @@ final class ERModelExtractor: SyntaxVisitor {
 
             let rawType: String
             if let annotation = binding.typeAnnotation {
-                rawType = annotation.type.canonicalTrimmedText
+                rawType = annotation.type.canonicalDescription
             } else if let inferred = Self.inferTypeFromInitializer(binding.initializer?.value) {
                 rawType = inferred
             } else {
@@ -113,7 +113,7 @@ final class ERModelExtractor: SyntaxVisitor {
     ) -> Bool {
         for attribute in attributes {
             guard let attribute = attribute.as(AttributeSyntax.self) else { continue }
-            if attribute.attributeName.canonicalTrimmedText == name {
+            if attribute.attributeName.canonicalDescription == name {
                 return true
             }
         }
@@ -128,8 +128,8 @@ final class ERModelExtractor: SyntaxVisitor {
     ) -> String {
         for attribute in attributes {
             guard let attribute = attribute.as(AttributeSyntax.self) else { continue }
-            guard attribute.attributeName.canonicalTrimmedText == name else { continue }
-            return attribute.arguments?.canonicalTrimmedText ?? ""
+            guard attribute.attributeName.canonicalDescription == name else { continue }
+            return attribute.arguments?.canonicalDescription ?? ""
         }
         return ""
     }
@@ -141,8 +141,8 @@ final class ERModelExtractor: SyntaxVisitor {
     ) -> ERRelationshipAttributeInfo? {
         for attribute in attributes {
             guard let attribute = attribute.as(AttributeSyntax.self) else { continue }
-            guard attribute.attributeName.canonicalTrimmedText == "Relationship" else { continue }
-            let argText = attribute.arguments?.canonicalTrimmedText ?? ""
+            guard attribute.attributeName.canonicalDescription == "Relationship" else { continue }
+            let argText = attribute.arguments?.canonicalDescription ?? ""
             return ERRelationshipAttributeInfo(
                 inverseProperty: extractInverseProperty(from: argText)
             )

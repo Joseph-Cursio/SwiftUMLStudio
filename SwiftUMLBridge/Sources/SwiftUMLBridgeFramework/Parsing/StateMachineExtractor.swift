@@ -98,7 +98,7 @@ final class StateMachineExtractor: TypeStackVisitor {
             let propertyName = identifierPattern.identifier.canonicalName
 
             if let annotation = binding.typeAnnotation {
-                let annotationText = annotation.type.canonicalTrimmedText
+                let annotationText = annotation.type.canonicalDescription
                 typeProperties[typeName, default: [:]][propertyName] = PropertyInfo(
                     typeName: annotationText, typeInferred: false
                 )
@@ -186,11 +186,10 @@ final class StateMachineExtractor: TypeStackVisitor {
 
     /// Extract the property name from expressions of the form `self.prop` or `prop`.
     private static func propertyName(from expr: ExprSyntax) -> String? {
-        // `` `self` `` is `self` as well, though `canonicalName` keeps its backticks.
+        // Told from the token, so `` `self` `` is `self` as well, though `canonicalName` keeps its
+        // backticks.
         if let memberAccess = expr.as(MemberAccessExprSyntax.self),
-           let base = memberAccess.base,
-           base.description.trimmingCharacters(in: .whitespacesAndNewlines) == "self"
-            || base.as(DeclReferenceExprSyntax.self)?.baseName.expressionName == "self" {
+           memberAccess.base?.as(DeclReferenceExprSyntax.self)?.baseName.expressionName == "self" {
             return memberAccess.declName.baseName.canonicalName
         }
         if let declRef = expr.as(DeclReferenceExprSyntax.self) {

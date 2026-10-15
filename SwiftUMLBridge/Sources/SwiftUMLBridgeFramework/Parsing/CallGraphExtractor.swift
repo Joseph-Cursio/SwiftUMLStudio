@@ -97,10 +97,12 @@ final class CallGraphExtractor: TypeStackVisitor {
         } else if let declRef = called?.as(DeclReferenceExprSyntax.self) {
             baseText = declRef.baseName.canonicalName
         } else {
-            baseText = base.canonicalTrimmedText
+            baseText = base.canonicalDescription
         }
-        // `` `self` `` is `self` as well, though `canonicalName` keeps its backticks.
-        let isSelf = baseText == "self" || base.as(DeclReferenceExprSyntax.self)?.baseName.expressionName == "self"
+        // `self.refresh()`, or `self().refresh()` through `callAsFunction`. Told from the token, so
+        // a comment beside it does not count and `` `self` `` is `self` as well, though
+        // `canonicalName` keeps its backticks.
+        let isSelf = (called ?? base).as(DeclReferenceExprSyntax.self)?.baseName.expressionName == "self"
         let resolvedType: String? = isSelf ? callerType
             : baseText.first?.isUppercase == true ? baseText : nil
         let unresolved = resolvedType == nil && !isSelf
