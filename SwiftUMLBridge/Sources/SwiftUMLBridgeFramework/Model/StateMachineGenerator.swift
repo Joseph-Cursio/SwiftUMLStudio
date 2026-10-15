@@ -72,10 +72,16 @@ public struct StateMachineGenerator: StateMachineGenerating, Sendable {
         with configuration: Configuration = .default
     ) -> StateScript {
         let candidates = findCandidates(for: paths)
-        let identifier = stateIdentifier.canonicalDottedName
+        let identifier = Self.listedIdentifier(stateIdentifier)
         guard let model = candidates.first(where: { $0.identifier == identifier }) else {
             return .empty
         }
         return StateScript(model: model, configuration: configuration)
+    }
+
+    /// `identifier`, a `"HostType.EnumType"` typed in or saved before names were read as Swift
+    /// reads them, spelt as `findCandidates(for:)` lists it: `` `Lamp`.Light `` is `Lamp.Light` (#123).
+    public static func listedIdentifier(_ identifier: String) -> String {
+        identifier.canonicalDottedName
     }
 }
