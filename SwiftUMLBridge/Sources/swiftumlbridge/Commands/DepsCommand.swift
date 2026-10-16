@@ -28,8 +28,10 @@ extension SwiftUMLBridgeCLI {
         @Option(help: """
             Path to a Package.swift directory. Activates module-aware mode: \
             in --modules each SPM target_dependencies pair becomes an edge \
-            (system frameworks excluded); in --types each inheritance / \
-            conformance edge is tagged with the owning SPM target. \
+            (system frameworks excluded); in --types each type is tagged \
+            with the SPM target that declares it, or, for a type the \
+            package only extends, the first target in path order that \
+            extends it. \
             Overrides any positional `paths` arguments.
             """)
         var package: String?
