@@ -35,10 +35,12 @@ public enum PersistenceSchemaExtractor {
     ]
 
     public static func extract(from source: String) -> ERModel {
-        let sourceFile = Parser.parse(source: source)
-        let visitor = Visitor(viewMode: .sourceAccurate)
-        visitor.walk(sourceFile)
-        return ERModel(entities: visitor.entities, relationships: visitor.relationships)
+        ParsingStack.run {
+            let sourceFile = Parser.parse(source: source)
+            let visitor = Visitor(viewMode: .sourceAccurate)
+            visitor.walk(sourceFile)
+            return ERModel(entities: visitor.entities, relationships: visitor.relationships)
+        }
     }
 
     // MARK: - SyntaxVisitor

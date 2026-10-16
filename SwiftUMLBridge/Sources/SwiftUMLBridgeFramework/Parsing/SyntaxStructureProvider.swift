@@ -40,29 +40,31 @@ internal extension SyntaxStructure {
         fileURL: URL?,
         module: String? = nil
     ) -> SyntaxStructure? {
-        // Step 1 — optional SourceKit pass for inferred variable typenames
-        let typenameMap = buildTypenameMap(from: source, sdkPath: sdkPath)
+        ParsingStack.run {
+            // Step 1 — optional SourceKit pass for inferred variable typenames
+            let typenameMap = buildTypenameMap(from: source, sdkPath: sdkPath)
 
-        // Step 2 — SwiftSyntax primary parse
-        let sourceFile = Parser.parse(source: source)
-        let filePath = fileURL?.path ?? ""
-        let converter = SourceLocationConverter(fileName: filePath, tree: sourceFile)
-        // A `SyntaxVisitor`, and SwiftSyntax's contract makes it single-use: construct, walk,
-        // read the result, discard. A fresh one is needed per parse, so there is no instance to
-        // inject and nothing a caller could hold. The six sibling walkers in this codebase that
-        // are declared `private` are exempt for exactly this reason; this one lives in its own
-        // file, one directory over from its only caller, so the access level cannot say it.
-        // swiftprojectlint:disable:next direct-instantiation
-        let builder = SyntaxStructureBuilder(
-            viewMode: .sourceAccurate,
-            typenameMap: typenameMap,
-            filePath: filePath,
-            locationConverter: converter,
-            module: module
-        )
-        builder.walk(sourceFile)
+            // Step 2 — SwiftSyntax primary parse
+            let sourceFile = Parser.parse(source: source)
+            let filePath = fileURL?.path ?? ""
+            let converter = SourceLocationConverter(fileName: filePath, tree: sourceFile)
+            // A `SyntaxVisitor`, and SwiftSyntax's contract makes it single-use: construct, walk,
+            // read the result, discard. A fresh one is needed per parse, so there is no instance to
+            // inject and nothing a caller could hold. The six sibling walkers in this codebase that
+            // are declared `private` are exempt for exactly this reason; this one lives in its own
+            // file, one directory over from its only caller, so the access level cannot say it.
+            // swiftprojectlint:disable:next direct-instantiation
+            let builder = SyntaxStructureBuilder(
+                viewMode: .sourceAccurate,
+                typenameMap: typenameMap,
+                filePath: filePath,
+                locationConverter: converter,
+                module: module
+            )
+            builder.walk(sourceFile)
 
-        return SyntaxStructure(substructure: builder.topLevelItems.isEmpty ? nil : builder.topLevelItems)
+            return SyntaxStructure(substructure: builder.topLevelItems.isEmpty ? nil : builder.topLevelItems)
+        }
     }
 
     // MARK: - SourceKit typename supplement

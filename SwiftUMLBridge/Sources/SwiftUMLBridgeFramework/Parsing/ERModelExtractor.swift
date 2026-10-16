@@ -321,9 +321,11 @@ final class ERModelExtractor: SyntaxVisitor {
     /// Parse `source` and extract an `ERModel` containing every `@Model` class
     /// discovered in the file.
     static func extract(from source: String) -> ERModel {
-        let sourceFile = Parser.parse(source: source)
-        let extractor = ERModelExtractor(viewMode: .sourceAccurate)
-        extractor.walk(sourceFile)
-        return extractor.buildModel()
+        ParsingStack.run {
+            let sourceFile = Parser.parse(source: source)
+            let extractor = ERModelExtractor(viewMode: .sourceAccurate)
+            extractor.walk(sourceFile)
+            return extractor.buildModel()
+        }
     }
 }

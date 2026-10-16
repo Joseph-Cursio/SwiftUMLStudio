@@ -22,22 +22,24 @@ public enum ActivityFlowExtractor {
         entryType: String,
         entryMethod: String
     ) -> ActivityGraph? {
-        let sourceFile = Parser.parse(source: source)
-        let finder = ActivityEntryFunctionFinder(viewMode: .sourceAccurate)
-        finder.entryType = entryType
-        finder.entryMethod = entryMethod
-        finder.walk(sourceFile)
-        guard let body = finder.foundBody else { return nil }
+        ParsingStack.run {
+            let sourceFile = Parser.parse(source: source)
+            let finder = ActivityEntryFunctionFinder(viewMode: .sourceAccurate)
+            finder.entryType = entryType
+            finder.entryMethod = entryMethod
+            finder.walk(sourceFile)
+            guard let body = finder.foundBody else { return nil }
 
-        // A single-use accumulator, not a dependency: `ActivityGraphBuilder` is a `struct` with
-        // `nodes`, `edges` and a node counter, `build` is `mutating`, and the value is read
-        // once and discarded. Two lines up, `ActivityEntryFunctionFinder` is the same shape and
-        // goes unreported only because "Finder" is not in the service-suffix list. There is no
-        // substitute a test would want: it would be handing in a different graph builder to
-        // check that this function builds a graph.
-        // swiftprojectlint:disable:next direct-instantiation
-        var builder = ActivityGraphBuilder()
-        return builder.build(body: body, entryType: entryType, entryMethod: entryMethod)
+            // A single-use accumulator, not a dependency: `ActivityGraphBuilder` is a `struct` with
+            // `nodes`, `edges` and a node counter, `build` is `mutating`, and the value is read
+            // once and discarded. Two lines up, `ActivityEntryFunctionFinder` is the same shape and
+            // goes unreported only because "Finder" is not in the service-suffix list. There is no
+            // substitute a test would want: it would be handing in a different graph builder to
+            // check that this function builds a graph.
+            // swiftprojectlint:disable:next direct-instantiation
+            var builder = ActivityGraphBuilder()
+            return builder.build(body: body, entryType: entryType, entryMethod: entryMethod)
+        }
     }
 }
 

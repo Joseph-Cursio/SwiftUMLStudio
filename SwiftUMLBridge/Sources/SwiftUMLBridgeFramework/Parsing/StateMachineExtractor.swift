@@ -305,9 +305,11 @@ final class StateMachineExtractor: TypeStackVisitor {
 
     /// Parse `source` and extract all candidate state machines.
     static func extract(from source: String) -> [StateMachineModel] {
-        let sourceFile = Parser.parse(source: source)
-        let extractor = StateMachineExtractor(viewMode: .sourceAccurate)
-        extractor.walk(sourceFile)
-        return extractor.buildCandidates()
+        ParsingStack.run {
+            let sourceFile = Parser.parse(source: source)
+            let extractor = StateMachineExtractor(viewMode: .sourceAccurate)
+            extractor.walk(sourceFile)
+            return extractor.buildCandidates()
+        }
     }
 }

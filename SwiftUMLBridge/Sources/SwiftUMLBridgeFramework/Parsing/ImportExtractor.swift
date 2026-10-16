@@ -24,9 +24,11 @@ final class ImportExtractor: SyntaxVisitor {
 
     /// Parse `source` and extract all import edges, using `sourceModule` as the module label.
     static func extract(from source: String, sourceModule: String) -> [ImportEdge] {
-        let sourceFile = Parser.parse(source: source)
-        let extractor = ImportExtractor(sourceModule: sourceModule)
-        extractor.walk(sourceFile)
-        return extractor.edges
+        ParsingStack.run {
+            let sourceFile = Parser.parse(source: source)
+            let extractor = ImportExtractor(sourceModule: sourceModule)
+            extractor.walk(sourceFile)
+            return extractor.edges
+        }
     }
 }
