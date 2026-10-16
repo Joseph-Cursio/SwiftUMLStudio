@@ -100,21 +100,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   parse recursed once per level of nesting in the source, on whatever
   thread called it. Swift concurrency runs the CLI's commands and Swift
   Testing's tests on cooperative threads with 512 KB stacks, so 18
-  nested calls (`f(f(…f(0)…))`) killed a debug build and 55 the release
-  build Homebrew installs. The process died with SIGBUS or SIGILL, with
-  no error and no diagram, in every subcommand that parses. Studio
-  generates on the same kind of thread.
-  - Each parse now runs on a thread with a 64 MB stack, so the CLI,
-    Studio and the framework's own callers are all covered.
+  nested calls (`f(f(…f(0)…))`) killed a debug build. A release build,
+  which the Homebrew formula builds, died at 55 where the SourceKit
+  typename supplement runs (`classdiagram` without `--sdk`, `deps
+  --types`, `sequence`, `component`) and at about 80 elsewhere. The
+  process died with SIGBUS or SIGILL, with no error and no diagram, in
+  every subcommand that parses. Studio generates on the same kind of
+  thread.
+  - Each parse now runs on a thread with a 64 MB stack, at the
+    caller's quality of service, so the CLI, Studio and the framework's
+    own callers are all covered.
   - The SourceKit typename supplement no longer writes SourceKit's
-    response as JSON and parses it back. That was the deepest recursion
-    of a parse, and it cost an encode and a decode for every file. The
-    types it reads are unchanged.
+    response as JSON and parses it back. In a release build that was the
+    recursion that overflowed first, and it cost an encode and a decode
+    for every file: `classdiagram` and `deps --types` now take about a
+    third less time on this repository's sources, and half on
+    swift-syntax's. The types it reads are unchanged.
   - A debug build (`swift run`, `swift test`, Studio's Debug
     configuration) now parses as deep as a release build, 256 levels.
     It used to stop at 20 and silently drop the rest of the file. Past
-    256 levels every build still drops the rest of the file, which both
-    user guides now list as a known limitation.
+    256 levels every build still drops the rest of the file, counting
+    each `(`, `[`, `{` and `#if`, which both user guides now list as a
+    known limitation.
 - **A comment beside a name is not part of it** (#128). The ER,
   state-machine and call-graph readers read a name with the comment
   after it on its line and the comment lines above it. So:

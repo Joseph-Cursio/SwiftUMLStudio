@@ -102,8 +102,9 @@ internal extension SyntaxStructure {
     ///
     /// It walks the response as SourceKitten returns it. It used to write `Structure.description`,
     /// pretty-printed JSON, and parse that back, which cost an encode and a decode for every file
-    /// and recursed twice more over the response's nesting, about 9.7 KB of stack a level in
-    /// Foundation's JSON writer: the deepest recursion of a parse (#71).
+    /// and recursed twice more over the response's nesting. Foundation's JSON writer took about
+    /// 9.7 KB of stack a nested call, more than SwiftParser in a release build, so in a release
+    /// build it was the recursion that overflowed first (#71).
     private static func collectTypenames(
         from dict: [String: SourceKitRepresentable],
         typeContext: [String],

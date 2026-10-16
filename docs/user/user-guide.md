@@ -1000,7 +1000,7 @@ A few things render differently between PlantUML and Mermaid:
 
 **Sequence diagram: entry point must exist.** If no function matches `TypeName.methodName` exactly in the parsed sources, the diagram is empty.
 
-**A file nested more than 256 levels deep is read only up to that point.** SwiftParser follows nesting 256 levels deep, then reads the rest of the file as unexpected text, so no declaration after that point appears in any diagram. The parse still completes, and what came before it is drawn.
+**A file nested more than 256 levels deep is read only up to that point.** SwiftParser follows nesting 256 levels deep, counting each `(`, `[`, `{` and `#if` it is inside, type and function bodies included. Past that it reads the rest of the file as unexpected text, so nothing after that point, whether declarations, calls or imports, appears in any diagram. The parse still completes, and what came before it is drawn.
 
 ---
 
