@@ -92,22 +92,20 @@ internal extension SyntaxStructure {
             return [:]
         }
 
-        guard let jsonData = structure.description.data(using: .utf8),
-              let root = try? JSONSerialization.jsonObject(with: jsonData) as? [String: Any] else {
-            BridgeLogger.shared.error("Failed to parse SourceKit JSON for typename supplement")
-            return [:]
-        }
-
         var map: [String: String] = [:]
-        collectTypenames(from: root, typeContext: [], into: &map)
+        collectTypenames(from: structure.dictionary, typeContext: [], into: &map)
         return map
     }
 
-    /// Recursively walks a SourceKit JSON dictionary and collects
-    /// `qualifiedName → typename` entries for variable declarations that have a
-    /// resolved type.
+    /// Recursively walks SourceKit's response and collects `qualifiedName → typename` entries for
+    /// variable declarations that have a resolved type.
+    ///
+    /// It walks the response as SourceKitten returns it. It used to write `Structure.description`,
+    /// pretty-printed JSON, and parse that back, which cost an encode and a decode for every file
+    /// and recursed twice more over the response's nesting, about 9.7 KB of stack a level in
+    /// Foundation's JSON writer: the deepest recursion of a parse (#71).
     private static func collectTypenames(
-        from dict: [String: Any],
+        from dict: [String: SourceKitRepresentable],
         typeContext: [String],
         into map: inout [String: String]
     ) {
@@ -140,10 +138,9 @@ internal extension SyntaxStructure {
         }
 
         for key in ["key.substructure", "key.elements"] {
-            if let children = dict[key] as? [[String: Any]] {
-                for child in children {
-                    collectTypenames(from: child, typeContext: nextContext, into: &map)
-                }
+            guard let children = dict[key] as? [SourceKitRepresentable] else { continue }
+            for case let child as [String: SourceKitRepresentable] in children {
+                collectTypenames(from: child, typeContext: nextContext, into: &map)
             }
         }
     }
