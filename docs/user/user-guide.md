@@ -961,6 +961,8 @@ Arrows between elements represent Swift relationships. The same arrow notation i
 
 A conformance to a protocol the diagram does not declare, such as `Codable`, is labelled and styled as inheritance: `struct User: Codable` gives `Codable <|-- User : inherits`.
 
+Each declaration draws its supertypes from its own box. An extension draws them with `<..`, whether or not the diagram declares the type it extends: `struct User {}` with `extension User: Codable {}` gives `Codable <.. User0 : inherits`, from the extension's box `User0`. A supertype the diagram declares as a protocol is drawn with `<|..` from any declaration.
+
 ### Access Level Indicators
 
 When `showMemberAccessLevelAttribute: true` is set, each member displays a prefix. The same symbols are used in both PlantUML and Mermaid.

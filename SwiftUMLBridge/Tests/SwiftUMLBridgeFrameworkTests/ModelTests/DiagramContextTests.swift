@@ -33,36 +33,47 @@ struct DiagramContextTests {
         #expect(result == "Foo0")
     }
 
-    @Test("uniqName sets inheritance link type")
+    /// The supertype edge `uniqName(item:relationship:)` then `addLinking` draws for `item`.
+    private func supertypeEdge(of item: SyntaxStructure, relationship: String) -> [String] {
+        let ctx = DiagramContext()
+        _ = ctx.uniqName(item: item, relationship: relationship)
+        ctx.addLinking(item: item, parent: SyntaxStructure(name: "Base"))
+        return ctx.connections
+    }
+
+    @Test("an element named with 'inherits' draws its supertypes with the inheritance arrow")
     func uniqNameInheritanceLinkType() {
-        let ctx = DiagramContext()
-        let item = SyntaxStructure(kind: .class, name: "Child")
-        _ = ctx.uniqName(item: item, relationship: "inherits")
-        #expect(ctx.uniqElementAndTypes["ChildLinkType"] == "<|--")
+        #expect(supertypeEdge(of: SyntaxStructure(kind: .class, name: "Child"), relationship: "inherits")
+            == ["Base <|-- Child : inherits"])
     }
 
-    @Test("uniqName sets conforms-to link type")
+    @Test("an element named with 'conforms to' draws its supertypes with the realization arrow")
     func uniqNameConformsToLinkType() {
-        let ctx = DiagramContext()
-        let item = SyntaxStructure(kind: .protocol, name: "MyProtocol")
-        _ = ctx.uniqName(item: item, relationship: "conforms to")
-        #expect(ctx.uniqElementAndTypes["MyProtocolLinkType"] == "<|..")
+        #expect(supertypeEdge(of: SyntaxStructure(kind: .protocol, name: "MyProtocol"), relationship: "conforms to")
+            == ["Base <|.. MyProtocol : inherits"])
     }
 
-    @Test("uniqName sets ext link type")
+    @Test("an element named with 'ext' draws its supertypes with the dependency arrow")
     func uniqNameExtLinkType() {
-        let ctx = DiagramContext()
-        let item = SyntaxStructure(kind: .extension, name: "MyExt")
-        _ = ctx.uniqName(item: item, relationship: "ext")
-        #expect(ctx.uniqElementAndTypes["MyExtLinkType"] == "<..")
+        #expect(supertypeEdge(of: SyntaxStructure(kind: .extension, name: "MyExt"), relationship: "ext")
+            == ["Base <.. MyExt : inherits"])
     }
 
-    @Test("uniqName sets generic link type for unknown relationship")
+    @Test("an element named with any other relationship draws its supertypes with the generic link")
     func uniqNameGenericLinkType() {
+        #expect(supertypeEdge(of: SyntaxStructure(kind: .actor, name: "Actor"), relationship: "actor")
+            == ["Base -- Actor : inherits"])
+    }
+
+    @Test("a repeat draws its supertypes with its own arrow, from its own alias")
+    func repeatTakesItsOwnArrow() {
         let ctx = DiagramContext()
-        let item = SyntaxStructure(kind: .actor, name: "Actor")
-        _ = ctx.uniqName(item: item, relationship: "actor")
-        #expect(ctx.uniqElementAndTypes["ActorLinkType"] == "--")
+        let type = SyntaxStructure(kind: .struct, name: "Foo")
+        let ext = SyntaxStructure(kind: .extension, name: "Foo")
+        _ = ctx.uniqName(item: type, relationship: "inherits")
+        _ = ctx.uniqName(item: ext, relationship: "ext")
+        ctx.addLinking(item: ext, parent: SyntaxStructure(name: "Codable"))
+        #expect(ctx.connections == ["Codable <.. Foo0 : inherits"])
     }
 
     @Test("uniqName extension with matching parent adds extnConnection")

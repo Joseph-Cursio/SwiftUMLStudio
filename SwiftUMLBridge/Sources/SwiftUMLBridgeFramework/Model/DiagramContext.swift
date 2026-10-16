@@ -14,6 +14,12 @@ class DiagramContext {
     var elements: ElementOptions { configuration.elements }
 
     var uniqueNameForElement: [SyntaxStructure: String] = [:]
+    /// The arrow for each element's supertype edges, from the relationship `uniqName` named it with,
+    /// kept per element rather than under `<name>LinkType` in `uniqElementAndTypes`, where a repeat
+    /// read its name's first declaration's arrow and a type named `PLinkType` overwrote protocol
+    /// `P`'s. `addLinking` draws an edge to a protocol the diagram declares with the realization
+    /// arrow instead.
+    private var linkTypeForElement: [SyntaxStructure: String] = [:]
 
     var uniqElementNames: [String] = []
     var uniqElementAndTypes: [String: String] = [:]
@@ -71,25 +77,27 @@ class DiagramContext {
         return linkTo.starts(with: "@") ? "\"\(linkTo)\"" : linkTo
     }
 
+    /// Draws the edge from `item` to its supertype `parent`. It starts at the alias `uniqName` gave
+    /// `item` and takes the arrow of `item`'s own kind, so a second declaration of a name, such as
+    /// an extension or the other branch of an `#if`, draws its supertypes from its own box with its
+    /// own arrow, not from the first's with the first's (#68). A supertype the diagram declares as
+    /// a protocol takes the realization arrow from any declaration.
     func addLinking(item: SyntaxStructure, parent: SyntaxStructure) {
         guard let linkTo = linkTarget(for: parent) else { return }
         guard let fullName = item.fullName else { return }
+        let child = uniqueNameForElement[item] ?? fullName
         let namedConnection = (uniqElementAndTypes[linkTo] != nil)
             ? "\(uniqElementAndTypes[linkTo] ?? "--ERROR--")"
             : "inherits"
-        var linkTypeKey = fullName + "LinkType"
-
-        if uniqElementAndTypes[linkTo] == "conforms to" {
-            linkTypeKey = linkTo + "LinkType"
-        }
-
-        let arrow = uniqElementAndTypes[linkTypeKey] ?? "--ERROR--"
+        let arrow = namedConnection == "conforms to"
+            ? linkTypeRealize
+            : linkTypeForElement[item] ?? "--ERROR--"
         let label = relationshipLabel(for: namedConnection)
         if format == .nomnoml || format == .svg {
-            connections.append(nomnomlEdge(from: fullName, arrow, to: linkTo, label: label))
+            connections.append(nomnomlEdge(from: child, arrow, to: linkTo, label: label))
             return
         }
-        var connect = "\(linkTo) \(arrow) \(fullName)"
+        var connect = "\(linkTo) \(arrow) \(child)"
         if format == .plantuml, let relStyle = relationshipStyle(for: namedConnection)?.plantuml {
             connect += " \(relStyle)"
         }
@@ -195,7 +203,6 @@ class DiagramContext {
     func uniqName(item: SyntaxStructure, relationship: String) -> String {
         guard let name = item.fullName else { return "" }
         var newName = name
-        let linkTypeKey = name + "LinkType"
         if uniqElementNames.contains(name) {
             // The counter is diagram-wide, so where no candidate is taken every alias is what
             // it always was; a taken candidate is skipped, never reused.
@@ -206,16 +213,6 @@ class DiagramContext {
         } else {
             uniqElementNames.append(name)
             uniqElementAndTypes[name] = relationship
-
-            if relationship == "inherits" {
-                uniqElementAndTypes[linkTypeKey] = linkTypeInheritance
-            } else if relationship == "conforms to" {
-                uniqElementAndTypes[linkTypeKey] = linkTypeRealize
-            } else if relationship == "ext" {
-                uniqElementAndTypes[linkTypeKey] = linkTypeDependency
-            } else {
-                uniqElementAndTypes[linkTypeKey] = linkTypeGeneric
-            }
         }
         if item.kind == .extension {
             addExtensionEdge(from: item, alias: newName, relationship: relationship)
@@ -224,7 +221,19 @@ class DiagramContext {
             takenIdentifiers.insert(newName)
         }
         uniqueNameForElement[item] = newName
+        linkTypeForElement[item] = linkType(for: relationship)
         return newName
+    }
+
+    /// The arrow for the supertype edges of an element named with `relationship`, unless the
+    /// supertype is a protocol the diagram declares.
+    private func linkType(for relationship: String) -> String {
+        switch relationship {
+        case "inherits": linkTypeInheritance
+        case "conforms to": linkTypeRealize
+        case "ext": linkTypeDependency
+        default: linkTypeGeneric
+        }
     }
 
     /// Draws the `ext` edge from extension `item`, declared as `alias`, to the type it extends:

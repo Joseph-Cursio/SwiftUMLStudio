@@ -128,6 +128,39 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   - A call on `self` written after a comment line is followed in
     sequence diagrams. The comment was read as part of the receiver, so
     the call was left unresolved.
+- **A repeat declaration's supertype edges start at its own box, with its
+  own arrow** (#68). PlantUML, Mermaid and Nomnoml class diagrams drew
+  every supertype edge from the first box with the declaration's name.
+  So:
+  - `extension Foo: P` drew `P <|.. Foo` from the struct's box, though
+    in PlantUML and Nomnoml its nested types already hung off the
+    extension's box `Foo0`.
+  - Of two `#if` branches that each declare `class PlatformView`, the
+    first box got both superclasses, which Swift does not allow, and the
+    second got none.
+  - Of two extensions of an undeclared `String`, the first drew both
+    conformances, and `String0` had no edge at all.
+
+  A repeat also took the first declaration's arrow, so
+  `extension Foo: Codable` was drawn `Codable <|-- Foo` after a struct,
+  `Codable -- Foo` after an enum or actor and `Codable <|.. Foo` after a
+  protocol, but `Codable <.. String` for an undeclared type. Each
+  declaration now draws its supertype edges from its own box, as SVG and
+  the Studio canvas already did, and with its own kind's arrow. An
+  extension's are drawn with `<..`, so `extension Foo: Codable` gives
+  `Codable <.. Foo0 : inherits`. A supertype the diagram declares as a
+  protocol still takes `<|..` from any declaration. Studio's PlantUML,
+  Mermaid and Nomnoml previews and text exports change with the CLI.
+
+  A first declaration's edges are unchanged, except where another type's
+  name garbled them. Each arrow was stored beside each name's
+  relationship, under the type's name with `LinkType` appended:
+  - With `protocol P {}` and `struct PLinkType {}`, `struct S: P` was
+    drawn `P inherits S` (`[S] inherits conforms to [P]` in Nomnoml),
+    which no format parses. It is now `P <|.. S : conforms to`.
+  - With `class Foo {}`, `class Child: FooLinkType {}` drew its edge with
+    no label or style, because `Foo`'s arrow was read as the relationship
+    of `FooLinkType`. It is now `FooLinkType <|-- Child : inherits`.
 - **An extension's `ext` edge ends on the type it extends** (#72).
   PlantUML, Mermaid and Nomnoml class diagrams drew the edge only when a
   drawn type's short name equalled the extension's full name. So

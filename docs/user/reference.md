@@ -1005,6 +1005,8 @@ Nomnoml writes the same edges child first, with its own arrows: `[Child] -:> [Pa
 
 A conformance is labelled and styled as realization only when the diagram declares the protocol. A conformance to one it does not declare, such as `Codable`, is labelled and styled as inheritance: `struct User: Codable` gives `Codable <|-- User : inherits`. SVG class diagrams honour `relationships.inheritance.exclude` and `relationships.realize.exclude`, but not relationship labels, styles or `dependency.exclude`.
 
+Each declaration draws its supertype edges from its own box, with its own kind's arrow: `<|--` from a class or struct, `<|..` from a protocol, `<..` from an extension and `--` from an enum or actor. A supertype the diagram declares as a protocol takes `<|..` from any of them. So `struct User {}` with `extension User: Codable {}` gives `Codable <.. User0 : inherits`, from the extension's box, and when two `#if` branches each declare `class PlatformView`, each box draws its own superclass. Nomnoml's arrows for the same are `-:>`, `--:>`, `-->` and `-`.
+
 For sequence diagram arrows, see [Sequence Diagrams](#sequence-diagrams).
 
 ---
