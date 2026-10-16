@@ -58,9 +58,11 @@ public struct DependencyGraphGenerator: DependencyGraphGenerating, Sendable {
     /// become edges directly (authoritative — no source-level import parse),
     /// and each node is tagged with its target kind (`<<library>>` /
     /// `<<executable>>`) so emitters can stereotype them. In `.types` mode
-    /// each inheritance/conformance edge is tagged with the owning module of
-    /// the source type (and the parent type's module when it lives in the
-    /// same package). Test targets are excluded.
+    /// each end of an inheritance/conformance edge is tagged with its type's
+    /// module (`PackageTypeOwners`): the target that declares the type or,
+    /// for a type no target declares, the first target in path order that
+    /// extends it. So an extension's edge carries its type's module, not
+    /// necessarily its own. Test targets are excluded.
     public func generateScript(
         forPackage description: SPMPackageDescription,
         packageRoot: URL,
@@ -171,27 +173,23 @@ public struct DependencyGraphGenerator: DependencyGraphGenerating, Sendable {
         configuration: Configuration,
         sdkPath: String?
     ) -> [DependencyEdge] {
-        let pathToModule = description.sourceFileToModuleMap(packageRoot: packageRoot)
-
-        // First pass: index every parsed type by name so we can resolve the
-        // owning module of a parent type for cross-module `toModule` tagging.
-        var typeOwners: [String: String] = [:]
-        var parsedItems: [(item: SyntaxStructure, module: String)] = []
-        for (path, module) in pathToModule {
+        // First pass: record the module of every type the package declares or
+        // extends, so each edge can carry the module of both its ends.
+        var owners = PackageTypeOwners()
+        var parsedItems: [SyntaxStructure] = []
+        for (path, module) in description.sourceFilesInPathOrder(packageRoot: packageRoot) {
             let url = URL(fileURLWithPath: path)
             guard let items = SyntaxStructure
                 .create(from: url, sdkPath: sdkPath, module: module)?.substructure
             else { continue }
             for item in items {
-                if let name = item.name {
-                    typeOwners[name] = module
-                }
-                parsedItems.append((item, module))
+                owners.record(item, in: module)
+                parsedItems.append(item)
             }
         }
 
         var edges: [DependencyEdge] = []
-        for (item, module) in parsedItems {
+        for item in parsedItems {
             guard let basis = typeEdgeBasis(for: item, configuration: configuration) else { continue }
             for parent in basis.inheritedTypes {
                 for parentName in parentNames(from: parent) {
@@ -200,8 +198,8 @@ public struct DependencyGraphGenerator: DependencyGraphGenerating, Sendable {
                         from: basis.name,
                         to: parentName,
                         kind: basis.edgeKind,
-                        fromModule: module,
-                        toModule: typeOwners[parentName]
+                        fromModule: owners.module(of: basis.name),
+                        toModule: owners.module(of: parentName)
                     ))
                 }
             }

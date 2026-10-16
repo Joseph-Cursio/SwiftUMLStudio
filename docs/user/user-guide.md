@@ -394,7 +394,7 @@ swiftumlbridge classdiagram --package /path/to/MyPackage
 swiftumlbridge classdiagram --package /path/to/MyPackage --format mermaid --output consoleOnly
 ```
 
-`--package` overrides any positional `<paths>` arguments — the file list is derived from each target's `sources` array. Test targets are included; if you want to skip them, prefer the dedicated `component` subcommand which excludes them by default.
+`--package` overrides any positional `<paths>` arguments — the file list is derived from each target's `sources` array, and the files are read in path order, so the same package gives the same diagram on every run. Test targets are excluded.
 
 ---
 
