@@ -1,6 +1,5 @@
 import Foundation
 import SourceKittenFramework
-import SwiftParser
 import SwiftSyntax
 
 internal extension SyntaxStructure {
@@ -40,29 +39,31 @@ internal extension SyntaxStructure {
         fileURL: URL?,
         module: String? = nil
     ) -> SyntaxStructure? {
-        // Step 1 — optional SourceKit pass for inferred variable typenames
-        let typenameMap = buildTypenameMap(from: source, sdkPath: sdkPath)
+        ParsingStack.run {
+            // Step 1 — optional SourceKit pass for inferred variable typenames
+            let typenameMap = buildTypenameMap(from: source, sdkPath: sdkPath)
 
-        // Step 2 — SwiftSyntax primary parse
-        let sourceFile = Parser.parse(source: source)
-        let filePath = fileURL?.path ?? ""
-        let converter = SourceLocationConverter(fileName: filePath, tree: sourceFile)
-        // A `SyntaxVisitor`, and SwiftSyntax's contract makes it single-use: construct, walk,
-        // read the result, discard. A fresh one is needed per parse, so there is no instance to
-        // inject and nothing a caller could hold. The six sibling walkers in this codebase that
-        // are declared `private` are exempt for exactly this reason; this one lives in its own
-        // file, one directory over from its only caller, so the access level cannot say it.
-        // swiftprojectlint:disable:next direct-instantiation
-        let builder = SyntaxStructureBuilder(
-            viewMode: .sourceAccurate,
-            typenameMap: typenameMap,
-            filePath: filePath,
-            locationConverter: converter,
-            module: module
-        )
-        builder.walk(sourceFile)
+            // Step 2 — SwiftSyntax primary parse
+            let sourceFile = ParsingStack.parse(source)
+            let filePath = fileURL?.path ?? ""
+            let converter = SourceLocationConverter(fileName: filePath, tree: sourceFile)
+            // A `SyntaxVisitor`, and SwiftSyntax's contract makes it single-use: construct, walk,
+            // read the result, discard. A fresh one is needed per parse, so there is no instance to
+            // inject and nothing a caller could hold. The six sibling walkers in this codebase that
+            // are declared `private` are exempt for exactly this reason; this one lives in its own
+            // file, one directory over from its only caller, so the access level cannot say it.
+            // swiftprojectlint:disable:next direct-instantiation
+            let builder = SyntaxStructureBuilder(
+                viewMode: .sourceAccurate,
+                typenameMap: typenameMap,
+                filePath: filePath,
+                locationConverter: converter,
+                module: module
+            )
+            builder.walk(sourceFile)
 
-        return SyntaxStructure(substructure: builder.topLevelItems.isEmpty ? nil : builder.topLevelItems)
+            return SyntaxStructure(substructure: builder.topLevelItems.isEmpty ? nil : builder.topLevelItems)
+        }
     }
 
     // MARK: - SourceKit typename supplement
@@ -91,22 +92,21 @@ internal extension SyntaxStructure {
             return [:]
         }
 
-        guard let jsonData = structure.description.data(using: .utf8),
-              let root = try? JSONSerialization.jsonObject(with: jsonData) as? [String: Any] else {
-            BridgeLogger.shared.error("Failed to parse SourceKit JSON for typename supplement")
-            return [:]
-        }
-
         var map: [String: String] = [:]
-        collectTypenames(from: root, typeContext: [], into: &map)
+        collectTypenames(from: structure.dictionary, typeContext: [], into: &map)
         return map
     }
 
-    /// Recursively walks a SourceKit JSON dictionary and collects
-    /// `qualifiedName → typename` entries for variable declarations that have a
-    /// resolved type.
+    /// Recursively walks SourceKit's response and collects `qualifiedName → typename` entries for
+    /// variable declarations that have a resolved type.
+    ///
+    /// It walks the response as SourceKitten returns it. It used to write `Structure.description`,
+    /// pretty-printed JSON, and parse that back, which cost an encode and a decode for every file
+    /// and recursed twice more over the response's nesting. Foundation's JSON writer took about
+    /// 9.7 KB of stack a nested call, more than SwiftParser in a release build, so in a release
+    /// build it was the recursion that overflowed first (#71).
     private static func collectTypenames(
-        from dict: [String: Any],
+        from dict: [String: SourceKitRepresentable],
         typeContext: [String],
         into map: inout [String: String]
     ) {
@@ -139,10 +139,9 @@ internal extension SyntaxStructure {
         }
 
         for key in ["key.substructure", "key.elements"] {
-            if let children = dict[key] as? [[String: Any]] {
-                for child in children {
-                    collectTypenames(from: child, typeContext: nextContext, into: &map)
-                }
+            guard let children = dict[key] as? [SourceKitRepresentable] else { continue }
+            for case let child as [String: SourceKitRepresentable] in children {
+                collectTypenames(from: child, typeContext: nextContext, into: &map)
             }
         }
     }

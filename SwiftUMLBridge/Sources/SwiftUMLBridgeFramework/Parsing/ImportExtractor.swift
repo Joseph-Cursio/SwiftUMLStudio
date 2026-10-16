@@ -1,5 +1,4 @@
 import Foundation
-import SwiftParser
 import SwiftSyntax
 
 /// Walks a parsed Swift source file and collects all `import` statement edges.
@@ -24,9 +23,11 @@ final class ImportExtractor: SyntaxVisitor {
 
     /// Parse `source` and extract all import edges, using `sourceModule` as the module label.
     static func extract(from source: String, sourceModule: String) -> [ImportEdge] {
-        let sourceFile = Parser.parse(source: source)
-        let extractor = ImportExtractor(sourceModule: sourceModule)
-        extractor.walk(sourceFile)
-        return extractor.edges
+        ParsingStack.run {
+            let sourceFile = ParsingStack.parse(source)
+            let extractor = ImportExtractor(sourceModule: sourceModule)
+            extractor.walk(sourceFile)
+            return extractor.edges
+        }
     }
 }

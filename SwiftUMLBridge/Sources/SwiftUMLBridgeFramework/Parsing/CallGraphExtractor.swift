@@ -1,5 +1,4 @@
 import Foundation
-import SwiftParser
 import SwiftSyntax
 
 /// Walks a parsed Swift source file and extracts static call edges from function bodies.
@@ -116,17 +115,19 @@ final class CallGraphExtractor: TypeStackVisitor {
     // MARK: - Static factory
 
     /// Result of an extraction run
-    internal struct ExtractionResult {
+    internal struct ExtractionResult: Sendable {
         let edges: [CallEdge]
         let methods: [String]
     }
 
     /// Parse `source` and extract all call edges and method definitions.
     static func extract(from source: String) -> ExtractionResult {
-        let sourceFile = Parser.parse(source: source)
-        let extractor = CallGraphExtractor(viewMode: .sourceAccurate)
-        extractor.walk(sourceFile)
-        return ExtractionResult(edges: extractor.edges, methods: Array(extractor.methods).sorted())
+        ParsingStack.run {
+            let sourceFile = ParsingStack.parse(source)
+            let extractor = CallGraphExtractor(viewMode: .sourceAccurate)
+            extractor.walk(sourceFile)
+            return ExtractionResult(edges: extractor.edges, methods: Array(extractor.methods).sorted())
+        }
     }
 
     /// Collect every `Type.method` entry point defined across the given source paths.
