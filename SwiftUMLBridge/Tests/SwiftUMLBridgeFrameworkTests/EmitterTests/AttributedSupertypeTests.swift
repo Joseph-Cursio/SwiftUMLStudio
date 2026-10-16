@@ -212,7 +212,7 @@ struct AttributedSupertypeTests {
         #expect(Self.edges(Self.script("struct Token: ~Copyable {}", .plantuml)) == ["~Copyable <|-- Token : inherits"])
     }
 
-    // MARK: - deps and TypeInfo
+    // MARK: - deps, ER and TypeInfo
 
     @Test("deps --types draws the edge to the type the attribute is on")
     func depsEdges() throws {
@@ -230,6 +230,24 @@ struct AttributedSupertypeTests {
             DependencyGraphGenerator().extractEdges(for: [$0], mode: .types, with: excluding)
         }
         #expect(kept.map { "\($0.from) -> \($0.to)" } == ["Foo -> Q", "Foo -> P"])
+    }
+
+    /// A type in a target that defaults to `@MainActor` keeps a GRDB conformance nonisolated.
+    @Test("a GRDB record whose conformance is attributed is an ER entity")
+    func grdbRecord() {
+        let source = """
+            protocol FetchableRecord {}
+            protocol PersistableRecord {}
+            struct Player: Codable, FetchableRecord, PersistableRecord {
+                var id: Int64
+                var name: String
+            }
+            @MainActor struct Team: Codable, nonisolated FetchableRecord, nonisolated PersistableRecord {
+                var id: Int64
+                var title: String
+            }
+            """
+        #expect(PersistenceSchemaExtractor.extract(from: source).entities.map(\.name) == ["Player", "Team"])
     }
 
     @Test("TypeInfo names the inherited type without its attribute")
