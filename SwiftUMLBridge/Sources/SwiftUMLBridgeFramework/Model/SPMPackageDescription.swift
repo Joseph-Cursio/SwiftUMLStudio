@@ -28,6 +28,18 @@ public struct SPMPackageDescription: Sendable, Equatable {
         }
         return map
     }
+
+    /// Every (non-test) source file with its module, in path order: sorted with `String`'s `<`,
+    /// so `Sources/Zed` comes before `Sources/app`. The package-mode class diagram and
+    /// `deps --types` walk the files in this order. Walking `sourceFileToModuleMap` itself went in
+    /// hash order, which Swift seeds per process and per dictionary, so the same package's diagram
+    /// changed from run to run (#70). Path order is the `keys.sorted()` order that
+    /// `DiagramGenerating`'s defaults and Studio use.
+    func sourceFilesInPathOrder(packageRoot: URL) -> [(path: String, module: String)] {
+        sourceFileToModuleMap(packageRoot: packageRoot)
+            .sorted { $0.key < $1.key }
+            .map { (path: $0.key, module: $0.value) }
+    }
 }
 
 /// A single target inside a parsed `SPMPackageDescription`.

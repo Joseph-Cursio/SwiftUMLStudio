@@ -171,13 +171,11 @@ public struct DependencyGraphGenerator: DependencyGraphGenerating, Sendable {
         configuration: Configuration,
         sdkPath: String?
     ) -> [DependencyEdge] {
-        let pathToModule = description.sourceFileToModuleMap(packageRoot: packageRoot)
-
         // First pass: index every parsed type by name so we can resolve the
         // owning module of a parent type for cross-module `toModule` tagging.
         var typeOwners: [String: String] = [:]
         var parsedItems: [(item: SyntaxStructure, module: String)] = []
-        for (path, module) in pathToModule {
+        for (path, module) in description.sourceFilesInPathOrder(packageRoot: packageRoot) {
             let url = URL(fileURLWithPath: path)
             guard let items = SyntaxStructure
                 .create(from: url, sdkPath: sdkPath, module: module)?.substructure
