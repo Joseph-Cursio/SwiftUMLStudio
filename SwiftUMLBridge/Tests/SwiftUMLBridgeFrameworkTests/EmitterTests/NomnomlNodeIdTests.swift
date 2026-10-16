@@ -111,12 +111,14 @@ struct NomnomlNodeIdTests {
         #expect(edges(graph) == [[id + "0", "+-", id + ".Inner"], [id + "0", "-->", id]])
     }
 
-    /// An attributed supertype has no declaration, so nomnoml draws a box titled with its id.
-    @Test("an attributed supertype's box reads as written")
-    func attributedSupertype() throws {
-        let graph = try graph("final class Box: @unchecked Sendable {}")
-        let supertype = try #require(graph.node("\"@unchecked\u{00A0}Sendable\""))
-        #expect(supertype.title == "\"@unchecked\u{00A0}Sendable\"")
+    /// An undeclared supertype has no declaration, so nomnoml draws a box titled with its id. An
+    /// attributed one, `@unchecked Sendable`, is named `Sendable` (#152), so a raw identifier holds
+    /// the space.
+    @Test("an undeclared supertype's box reads as written")
+    func undeclaredSupertypeWithSpace() throws {
+        let graph = try graph("final class Box: `Foo Bar` {}")
+        let supertype = try #require(graph.node("`Foo\u{00A0}Bar`"))
+        #expect(supertype.title == "`Foo\u{00A0}Bar`")
         #expect(edges(graph) == [["Box", "-:>", supertype.id]])
     }
 
