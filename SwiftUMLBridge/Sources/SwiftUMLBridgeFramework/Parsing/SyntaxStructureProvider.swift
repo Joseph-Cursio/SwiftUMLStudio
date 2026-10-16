@@ -1,6 +1,5 @@
 import Foundation
 import SourceKittenFramework
-import SwiftParser
 import SwiftSyntax
 
 internal extension SyntaxStructure {
@@ -45,7 +44,7 @@ internal extension SyntaxStructure {
             let typenameMap = buildTypenameMap(from: source, sdkPath: sdkPath)
 
             // Step 2 — SwiftSyntax primary parse
-            let sourceFile = Parser.parse(source: source)
+            let sourceFile = ParsingStack.parse(source)
             let filePath = fileURL?.path ?? ""
             let converter = SourceLocationConverter(fileName: filePath, tree: sourceFile)
             // A `SyntaxVisitor`, and SwiftSyntax's contract makes it single-use: construct, walk,

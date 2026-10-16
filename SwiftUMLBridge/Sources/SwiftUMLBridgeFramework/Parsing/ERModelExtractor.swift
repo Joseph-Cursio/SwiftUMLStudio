@@ -1,5 +1,4 @@
 import Foundation
-import SwiftParser
 import SwiftSyntax
 
 /// Raw property shape captured during the first SwiftSyntax pass over a
@@ -322,7 +321,7 @@ final class ERModelExtractor: SyntaxVisitor {
     /// discovered in the file.
     static func extract(from source: String) -> ERModel {
         ParsingStack.run {
-            let sourceFile = Parser.parse(source: source)
+            let sourceFile = ParsingStack.parse(source)
             let extractor = ERModelExtractor(viewMode: .sourceAccurate)
             extractor.walk(sourceFile)
             return extractor.buildModel()

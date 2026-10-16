@@ -1,4 +1,6 @@
 import Foundation
+import SwiftParser
+import SwiftSyntax
 import Synchronization
 
 /// Runs a parse on a thread with a stack big enough for it (#71).
@@ -14,6 +16,19 @@ enum ParsingStack {
     /// levels in release) and for SourceKit's response to the same source, many times over.
     /// Only the pages a parse touches are committed.
     static let size = 64 << 20
+
+    /// How deep SwiftParser follows nesting before it reads the rest of the file as unexpected
+    /// tokens, so that no declaration after that point is seen: its release default, in debug
+    /// builds too. Their own default of 20 dropped the rest of a file 20 levels in, so `swift run`,
+    /// `swift test` and a Debug Studio read less than a release build. A debug build's parser
+    /// needs about 28 KB of stack a level, so 256 levels fit in `size`.
+    static let maximumNestingLevel = 256
+
+    /// `source` parsed as a Swift file, as deep as `maximumNestingLevel`. Call it inside `run`.
+    static func parse(_ source: String) -> SourceFileSyntax {
+        var parser = Parser(source, maximumNestingLevel: maximumNestingLevel)
+        return SourceFileSyntax.parse(from: &parser)
+    }
 
     /// The result of `body`, run on a thread with a stack of `size` bytes, or on this thread when
     /// its stack is already that big. The calling thread waits for it, as it would have waited

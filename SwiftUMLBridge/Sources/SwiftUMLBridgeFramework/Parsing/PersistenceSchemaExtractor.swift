@@ -1,5 +1,4 @@
 import Foundation
-import SwiftParser
 import SwiftSyntax
 
 /// Walks a parsed Swift source file and extracts an `ERModel` from
@@ -36,7 +35,7 @@ public enum PersistenceSchemaExtractor {
 
     public static func extract(from source: String) -> ERModel {
         ParsingStack.run {
-            let sourceFile = Parser.parse(source: source)
+            let sourceFile = ParsingStack.parse(source)
             let visitor = Visitor(viewMode: .sourceAccurate)
             visitor.walk(sourceFile)
             return ERModel(entities: visitor.entities, relationships: visitor.relationships)

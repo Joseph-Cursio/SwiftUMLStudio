@@ -1,5 +1,4 @@
 import Foundation
-import SwiftParser
 import SwiftSyntax
 
 /// Walks a parsed Swift source file and extracts candidate state machines.
@@ -306,7 +305,7 @@ final class StateMachineExtractor: TypeStackVisitor {
     /// Parse `source` and extract all candidate state machines.
     static func extract(from source: String) -> [StateMachineModel] {
         ParsingStack.run {
-            let sourceFile = Parser.parse(source: source)
+            let sourceFile = ParsingStack.parse(source)
             let extractor = StateMachineExtractor(viewMode: .sourceAccurate)
             extractor.walk(sourceFile)
             return extractor.buildCandidates()

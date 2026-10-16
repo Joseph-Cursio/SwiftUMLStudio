@@ -1,5 +1,4 @@
 import Foundation
-import SwiftParser
 import SwiftSyntax
 
 /// Walks the body of a specific entry function and emits an `ActivityGraph`
@@ -23,7 +22,7 @@ public enum ActivityFlowExtractor {
         entryMethod: String
     ) -> ActivityGraph? {
         ParsingStack.run {
-            let sourceFile = Parser.parse(source: source)
+            let sourceFile = ParsingStack.parse(source)
             let finder = ActivityEntryFunctionFinder(viewMode: .sourceAccurate)
             finder.entryType = entryType
             finder.entryMethod = entryMethod
