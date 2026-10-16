@@ -71,9 +71,7 @@ final class ERModelExtractor: SyntaxVisitor {
 
     private func collectProperty(from varDecl: VariableDeclSyntax) {
         let relInfo = Self.parseRelationshipAttribute(varDecl.attributes)
-        let isUnique = Self.hasAttribute(varDecl.attributes, named: "Attribute")
-            && Self.attributeArgumentText(varDecl.attributes, named: "Attribute")
-                .contains(".unique")
+        let isUnique = Self.hasUniqueOption(varDecl.attributes)
         let isTransient = Self.hasAttribute(varDecl.attributes, named: "Transient")
 
         for binding in varDecl.bindings {
@@ -84,7 +82,7 @@ final class ERModelExtractor: SyntaxVisitor {
 
             let rawType: String
             if let annotation = binding.typeAnnotation {
-                rawType = annotation.type.canonicalTrimmedText
+                rawType = annotation.type.canonicalDescription
             } else if let inferred = Self.inferTypeFromInitializer(binding.initializer?.value) {
                 rawType = inferred
             } else {
@@ -111,62 +109,63 @@ final class ERModelExtractor: SyntaxVisitor {
     static func hasAttribute(
         _ attributes: AttributeListSyntax, named name: String
     ) -> Bool {
-        for attribute in attributes {
-            guard let attribute = attribute.as(AttributeSyntax.self) else { continue }
-            if attribute.attributeName.canonicalTrimmedText == name {
-                return true
-            }
-        }
-        return false
+        firstAttribute(named: name, in: attributes) != nil
     }
 
-    /// Returns the concatenated argument text of the first attribute matching
-    /// `name`, or an empty string if none found. Used for substring sniffing
-    /// (e.g., detecting `.unique` inside `@Attribute(.unique)`).
-    private static func attributeArgumentText(
-        _ attributes: AttributeListSyntax, named name: String
-    ) -> String {
-        for attribute in attributes {
-            guard let attribute = attribute.as(AttributeSyntax.self) else { continue }
-            guard attribute.attributeName.canonicalTrimmedText == name else { continue }
-            return attribute.arguments?.canonicalTrimmedText ?? ""
-        }
-        return ""
+    /// The first attribute named `name`, if any.
+    private static func firstAttribute(
+        named name: String, in attributes: AttributeListSyntax
+    ) -> AttributeSyntax? {
+        attributes.lazy.compactMap { $0.as(AttributeSyntax.self) }
+            .first { $0.attributeName.canonicalDescription == name }
     }
 
-    /// Parse the arguments of `@Relationship(...)` and pull out the inverse
-    /// property name, if specified as a KeyPath like `\Book.author`.
+    /// The arguments an attribute is written with, as `(.unique, originalName: "c")`.
+    private static func arguments(of attribute: AttributeSyntax) -> LabeledExprListSyntax {
+        guard case .argumentList(let arguments) = attribute.arguments else { return [] }
+        return arguments
+    }
+
+    /// Whether `@Attribute` lists `.unique` among its options, which are its unlabeled arguments.
+    /// They are read from the syntax, not searched for as text, so a comment or a string that
+    /// mentions `.unique`, or a labeled argument such as `originalName: Legacy.unique`, does not
+    /// count (#128).
+    private static func hasUniqueOption(_ attributes: AttributeListSyntax) -> Bool {
+        guard let attribute = firstAttribute(named: "Attribute", in: attributes) else { return false }
+        return arguments(of: attribute).contains { argument in
+            argument.label == nil
+                && argument.expression.as(MemberAccessExprSyntax.self)?.declName.baseName.canonicalName == "unique"
+        }
+    }
+
+    /// Whether the property carries `@Relationship`, and the inverse it names if so.
     private static func parseRelationshipAttribute(
         _ attributes: AttributeListSyntax
     ) -> ERRelationshipAttributeInfo? {
-        for attribute in attributes {
-            guard let attribute = attribute.as(AttributeSyntax.self) else { continue }
-            guard attribute.attributeName.canonicalTrimmedText == "Relationship" else { continue }
-            let argText = attribute.arguments?.canonicalTrimmedText ?? ""
-            return ERRelationshipAttributeInfo(
-                inverseProperty: extractInverseProperty(from: argText)
-            )
+        guard let attribute = firstAttribute(named: "Relationship", in: attributes) else { return nil }
+        return ERRelationshipAttributeInfo(inverseProperty: inverseProperty(of: attribute))
+    }
+
+    /// The property an `inverse:` key path ends at: `author` for `\Book.author`, also written
+    /// `(\Book.author)` or `\Book.author as AnyKeyPath`. It is read from the key path's syntax, so
+    /// a comment beside the argument cannot hide or fake one (#128), and the name is read as the
+    /// declared label is: `\Book.`author`` names `var author`, and `\Book.`default`` keeps its
+    /// backticks, as `var `default`` does (#123).
+    private static func inverseProperty(of attribute: AttributeSyntax) -> String? {
+        guard let inverse = arguments(of: attribute).first(where: { $0.label?.canonicalName == "inverse" }),
+              let keyPath = firstKeyPath(in: Syntax(inverse.expression)) else { return nil }
+        for component in keyPath.components.reversed() {
+            if case .property(let property) = component.component {
+                return property.declName.baseName.canonicalName
+            }
         }
         return nil
     }
 
-    /// Pull the trailing property name out of `inverse: \Book.author` → "author".
-    private static func extractInverseProperty(from argText: String) -> String? {
-        guard let range = argText.range(of: "inverse:") else { return nil }
-        let afterInverse = argText[range.upperBound...]
-        guard let backslash = afterInverse.firstIndex(of: "\\") else { return nil }
-        let afterBackslash = afterInverse[afterInverse.index(after: backslash)...]
-        guard let dot = afterBackslash.firstIndex(of: ".") else { return nil }
-        let propertyStart = afterBackslash.index(after: dot)
-        // Take the identifier rather than scanning for terminators: `"\r\n"`
-        // is one `Character` that is not `"\n"`, so a terminator set misses
-        // CRLF line breaks. The name is read as the declared label is, so
-        // `\Book.`author`` names `var author` and `\Book.`default`` keeps
-        // its backticks, as `var `default`` does (#123).
-        let name = String(afterBackslash[propertyStart...].prefix {
-            $0.isLetter || $0.isNumber || $0 == "_" || $0 == "`"
-        })
-        return name.isEmpty ? nil : name.canonicalIdentifier
+    /// `syntax` if it is a key path, or else the first key path inside it.
+    private static func firstKeyPath(in syntax: Syntax) -> KeyPathExprSyntax? {
+        if let keyPath = syntax.as(KeyPathExprSyntax.self) { return keyPath }
+        return syntax.children(viewMode: .sourceAccurate).lazy.compactMap(firstKeyPath(in:)).first
     }
 
     /// Best-effort type inference from an initializer expression (e.g.

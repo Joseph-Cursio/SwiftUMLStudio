@@ -23,24 +23,14 @@ extension TokenSyntax {
 
 extension SyntaxProtocol {
     /// `trimmedDescription`, with each identifier in it written as its `canonicalName`:
-    /// `` [`Pet`] `` is `[Pet]`, and `` [`Foo Bar`] `` stays as it is.
+    /// `` [`Pet`] `` is `[Pet]`, and `` [`Foo Bar`] `` stays as it is. A comment after the node on
+    /// its line, or on the lines above it, is not part of it: `var tag: String // note` is a
+    /// `String` (#128).
     var canonicalDescription: String {
         let text = trimmedDescription
         guard text.contains("`") else { return text }
         // Detached, so the rewriter does not rebuild the whole tree above the node for each name.
         return CanonicalNameRewriter(viewMode: .sourceAccurate).rewrite(self, detach: true).trimmedDescription
-    }
-
-    /// `description` trimmed of whitespace, with each identifier in it written as its
-    /// `canonicalName`. Unlike `canonicalDescription`, it keeps a comment beside the node, as the
-    /// readers that trimmed `description` themselves always have, so on source with no needless
-    /// backticks they read exactly what they read before.
-    var canonicalTrimmedText: String {
-        var text = description
-        if text.contains("`") {
-            text = CanonicalNameRewriter(viewMode: .sourceAccurate).rewrite(self, detach: true).description
-        }
-        return text.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }
 

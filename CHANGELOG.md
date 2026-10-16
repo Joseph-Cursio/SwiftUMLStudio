@@ -96,6 +96,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed — Bridge
 
+- **A comment beside a name is not part of it** (#128). The ER,
+  state-machine and call-graph readers read a name with the comment
+  after it on its line and the comment lines above it. So:
+  - `@Model // persisted` was not an entity, `@Transient // cached` not
+    transient, and `var owner: Owner? // may be nil` not a relationship.
+  - `var state: Light // current` was not a state machine.
+  - A comment line above `Store.shared.load()`, or a comment after
+    `Store.shared`, left the call unresolved or named its participant
+    `Store.shared // the singleton`.
+  - Activity labels, state guards and the `Unresolved:` notes of
+    sequence diagrams held the comment: `// load first` above `load()`
+    labelled the action `// load first load()`.
+
+  A comment between a name's tokens is unchanged, and stays in labels.
+  `@Attribute`'s options and `@Relationship`'s `inverse:` are now read
+  from the syntax rather than searched for in the arguments' text:
+  - `@Attribute(.externalStorage, /* not .unique */ originalName: "c")`
+    and `@Attribute(originalName: "legacy.unique")` are no longer
+    unique. Nor is a `.unique` given to another argument, as in
+    `originalName: Legacy.unique` or `.transformable(by: Legacy.unique)`.
+  - A comment holding `inverse:` no longer gives a relationship an
+    inverse, or hides the one it has.
+  - An inverse key path names its last property, so
+    `\SchemaV1.Book.writer`, for a model nested in a `VersionedSchema`,
+    and `` \`v1.2 Book`.author `` name `writer` and `author`, not `Book`
+    and `2`.
 - **A name written with backticks it doesn't need is the name without
   them** (#123). In Swift, `` `Plain` `` and `Plain` are one identifier,
   but every parser read a name exactly as it was written. So:

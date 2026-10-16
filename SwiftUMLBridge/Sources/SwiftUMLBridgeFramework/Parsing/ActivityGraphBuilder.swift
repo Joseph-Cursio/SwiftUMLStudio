@@ -137,7 +137,7 @@ struct ActivityGraphBuilder {
         if let exprStmt = stmt.as(ExpressionStmtSyntax.self) {
             return walkExpression(exprStmt.expression)
         }
-        return genericAction(description: stmt.description)
+        return genericAction(description: stmt.trimmedDescription)
     }
 
     // MARK: - Expression dispatch
@@ -159,9 +159,9 @@ struct ActivityGraphBuilder {
             if let result = walkTaskGroupCall(funcCall, isAsync: false) {
                 return result
             }
-            return genericAction(description: expr.description)
+            return genericAction(description: expr.trimmedDescription)
         }
-        return genericAction(description: expr.description)
+        return genericAction(description: expr.trimmedDescription)
     }
 
     // MARK: - Declarations
@@ -173,7 +173,7 @@ struct ActivityGraphBuilder {
             }) {
                 return walkAsyncLet(variableDecl)
             }
-            return genericAction(description: variableDecl.description)
+            return genericAction(description: variableDecl.trimmedDescription)
         }
         // Nested functions, types, etc. have no flow of their own at this level.
         return WalkResult(entry: nil, exits: [])
@@ -209,13 +209,13 @@ struct ActivityGraphBuilder {
     }
 
     static func conditionLabel(_ conditions: ConditionElementListSyntax) -> String {
-        compactText(conditions.description)
+        compactText(conditions.trimmedDescription)
     }
 
     static func caseLabelText(_ label: SwitchCaseSyntax.Label) -> String {
         switch label {
         case .case(let caseLabel):
-            return compactText(caseLabel.caseItems.description)
+            return compactText(caseLabel.caseItems.trimmedDescription)
         case .default:
             return "default"
         }
