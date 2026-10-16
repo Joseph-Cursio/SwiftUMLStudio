@@ -762,4 +762,6 @@ Toggle this in the Snapshots section of the Explorer sidebar.
 
 **Variable-receiver calls are unresolved in sequence diagrams.** `dep.doWork()` where `dep` is a local variable or parameter cannot be resolved statically. Such calls appear as notes in the diagram and are not expanded further.
 
+**A file nested more than 256 levels deep is read only up to that point.** SwiftParser follows nesting 256 levels deep, then reads the rest of the file as unexpected text, so no declaration after that point appears in any diagram. The parse still completes, and what came before it is drawn.
+
 **No configuration file support in the GUI.** The GUI uses built-in defaults. Project-level `.swiftumlbridge.yml` settings (custom access levels, themes, extension display, etc.) are not applied. Use the CLI for configuration-file-driven generation.
