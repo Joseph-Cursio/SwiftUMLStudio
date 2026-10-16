@@ -161,6 +161,35 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   - With `class Foo {}`, `class Child: FooLinkType {}` drew its edge with
     no label or style, because `Foo`'s arrow was read as the relationship
     of `FooLinkType`. It is now `FooLinkType <|-- Child : inherits`.
+- **`--package` gives the same diagram on every run, and labels a type
+  with the module that declares it** (#70). `classdiagram --package`,
+  `deps --package --types` and Studio's Open Package… read the package's
+  files in hash order, which Swift seeds anew in every process and for
+  every dictionary. So the same package's diagram changed from run to
+  run, and in Studio from one regeneration to the next:
+  - Declarations and edges came in a different order in every format,
+    and the SVG layout moved.
+  - Extension aliases were renumbered, and which of several same-named
+    declarations kept the plain name, and with it its module stereotype,
+    changed.
+  - `--merge-extensions` merged members in a different order, and a type
+    no target declares took its module from whichever extension came
+    first.
+
+  The files are now read in path order, sorted by byte, so
+  `Sources/Zed` comes before `Sources/app`. `deps --types` also labelled
+  each type with the module of the last edge that named it, so a type
+  another target extended could be labelled with that target. In
+  SwiftUMLBridge itself, `DiagramFormat` and `ClassDiagramOutput` came
+  out `<<swiftumlbridge>>`, the CLI target that extends them, on some
+  runs. A type now takes the module of the target that declares it,
+  nested types included. A type no target declares takes the first
+  target, in path order, that extends it. `deps --modules --package` and
+  `component` were not affected.
+  - Only `deps`' cycle highlighting can still change between runs, and
+    only for a graph with a cycle, in path mode too. `detectCycles` finds
+    a different set of cyclic nodes depending on where its search starts,
+    a separate problem #70 notes.
 - **An extension's `ext` edge ends on the type it extends** (#72).
   PlantUML, Mermaid and Nomnoml class diagrams drew the edge only when a
   drawn type's short name equalled the extension's full name. So
