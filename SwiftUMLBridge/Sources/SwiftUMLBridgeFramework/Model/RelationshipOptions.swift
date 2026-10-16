@@ -47,8 +47,9 @@ public struct Relationship: Codable, Sendable {
     /// The line and arrowhead style for the edge, or `nil` for the format default.
     public var style: RelationshipStyle?
     /// Glob patterns for names whose edges are hidden. For `inheritance` and `realize` they
-    /// match the supertype's name as written, generic arguments included, and the two lists
-    /// are pooled (`supertypeExcludePatterns`). For `dependency` they match the extended
+    /// match the supertype's name as written, generic arguments included but not attributes
+    /// or specifiers (`Sendable` for `@unchecked Sendable`), and the two lists are pooled
+    /// (`supertypeExcludePatterns`). For `dependency` they match the extended
     /// type's name, and hide only the edge from an extension to that type.
     public var exclude: [String]?
 }

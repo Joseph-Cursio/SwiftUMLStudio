@@ -57,8 +57,8 @@ internal extension String {
     ///
     /// - Whitespace around the name is dropped, as nomnoml drops it from an edge end.
     /// - A space inside it becomes a no-break space, which nomnoml keeps there and draws as a
-    ///   space. An attributed supertype, `"@unchecked Sendable"`, has no declaration, so its box
-    ///   shows the id.
+    ///   space. An undeclared supertype has no declaration, so its box shows the id: a raw
+    ///   identifier such as `` `Foo Bar` `` reads as written.
     /// - Each other such character, which only a raw identifier holds, becomes `%` and its UTF-8
     ///   bytes in hex, as in a URL: `` `a|b` `` is `` `a%7Cb` ``.
     /// - `%` and the no-break space are encoded too, so two names that differ by more than the
