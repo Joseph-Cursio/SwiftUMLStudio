@@ -75,6 +75,11 @@ internal class SyntaxStructure: NSObject, Codable, @unchecked Sendable {
     /// name, scope and access come from, and is drawn hanging off this item (`nestingParent`).
     internal var mergedInto: SyntaxStructure?
 
+    /// Set by `mergeExtensions` on the item extensions merge into: the supertypes their
+    /// inheritance clauses name, in merge order, each with the scope of the extension that names
+    /// it. They are drawn from this item's box, as its own supertypes are (#76).
+    internal var carriedSupertypes: [CarriedSupertype] = []
+
     /// The generic arguments an extension's extended type binds on its last component, as
     /// written: `Int` for `extension Foo<Int>`, `String, Int` for `extension [String: Int]`.
     /// `name` holds the type without them (`Foo`, `Dictionary`), so the extension is drawn,
@@ -111,6 +116,7 @@ internal class SyntaxStructure: NSObject, Codable, @unchecked Sendable {
         memberSuffix = original.memberSuffix
         sourceLocation = original.sourceLocation
         module = original.module
+        carriedSupertypes = original.carriedSupertypes
         boundGenericArguments = original.boundGenericArguments
         super.init()
     }

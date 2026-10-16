@@ -159,7 +159,7 @@ swiftumlbridge classdiagram [<paths>...] [options]
 | `--sdk <path>` | `String?` | `nil` | macOS SDK path for improved type inference. Typically `$(xcrun --show-sdk-path -sdk macosx)`. |
 | `--package <path>` | `String?` | `nil` | Path to a `Package.swift` directory. Activates module-aware mode: each type is tagged with its SPM target and rendered with an additional module stereotype. Overrides positional `<paths>` arguments. |
 | `--show-extensions` | Flag | — | Show all extensions as separate nodes (overrides config file). |
-| `--merge-extensions` | Flag | — | Fold extension members into parent type nodes (overrides config file). |
+| `--merge-extensions` | Flag | — | Fold extension members into parent type nodes, and draw the conformances extensions declare from them (overrides config file). |
 | `--hide-extensions` | Flag | — | Remove all extensions from the diagram (overrides config file). |
 | `--verbose` | Flag | `false` | Enable verbose logging to stderr. |
 | `--help` | Flag | — | Print subcommand help and exit. |
@@ -579,7 +579,8 @@ elements:
     # Controls how extension declarations are rendered.
     # Type: all | merged | none
     #   all    — each extension is a separate node (default)
-    #   merged — extension members are folded into the parent type node
+    #   merged — extension members are folded into the parent type node,
+    #            and the conformances extensions declare are drawn from it
     #   none   — extensions are hidden entirely
     # Also accepts Boolean: true → all, false → none
     # Default: all

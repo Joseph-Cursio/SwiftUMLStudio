@@ -96,6 +96,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed — Bridge
 
+- **Merged extensions keep the conformances they declare** (#76). With
+  `showExtensions: merged` (`--merge-extensions`), an extension's
+  members were folded into its type and its inheritance clause was
+  dropped, so `extension Foo: P {}` drew no edge from `Foo` to `P` in
+  any format. Every extension of a type the sources declare lost its
+  conformances, with members or without, the common empty
+  `extension Foo: Codable {}` included. A type the sources only extend,
+  such as `String`, kept its first extension's conformances and lost
+  the rest.
+  - The type now draws each conformance its merged extensions declare,
+    after its own supertypes, with the arrow, label and SVG style its
+    own clause would give it: `extension Plain: Codable {}` merged draws
+    what `class Plain: Codable {}` draws.
+  - SVG looks each one up where its extension is written, as it does
+    for the extension's own box, so a `fileprivate protocol P` in the
+    extension's file is the `P` it ends on, even when the type's own
+    file declares another.
+  - A conformance written the same way twice, as in both clauses of an
+    `#if`, is drawn once. SVG tells repeats by the protocol they end
+    on, so it still draws one edge to each of two same-named protocols.
+    Ids a carried conformance's edge uses are reserved, as for a type's
+    own (#54).
+  - `--show-extensions` and `--hide-extensions` draw what they drew.
 - **A deeply nested expression no longer crashes the CLI** (#71). Every
   parse recursed once per level of nesting in the source, on whatever
   thread called it. Swift concurrency runs the CLI's commands and Swift

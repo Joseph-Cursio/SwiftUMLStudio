@@ -30,6 +30,8 @@ extension Array where Element == SyntaxStructure {
     /// `memberSuffix`, editing the structures in place. The extension records that type in
     /// `mergedInto`, so a type nested in it is drawn hanging off the box that shows its members,
     /// while its `parent` stays the extension that declares it, for its scope and access (#74).
+    /// The type records the supertypes the extension's inheritance clause names in
+    /// `carriedSupertypes`, so the conformances it declares are drawn from that box too (#76).
     /// Diagram code calls it only through `preparedForClassDiagram(with:)`, which hands it a
     /// private copy.
     /// - Parameter mergedMemberIndicator: string appended as suffix to a member that originates from an extension
@@ -45,6 +47,11 @@ extension Array where Element == SyntaxStructure {
             }
             processedItems.removeAll(where: { $0 == structure })
             structure.mergedInto = parent
+            // Before the members guard: `extension Foo: P {}` has no members, and is the commonest form.
+            let scope = DeclarationScope(of: structure)
+            parent.carriedSupertypes += (structure.inheritedTypes ?? []).map {
+                SyntaxStructure.CarriedSupertype(supertype: $0, scope: scope)
+            }
             // A box holding `extension Foo<Int>` and `extension Foo<String>` is no longer either.
             if parent.boundGenericArguments != structure.boundGenericArguments {
                 parent.boundGenericArguments = nil
@@ -113,6 +120,15 @@ extension SyntaxStructure {
     /// Attribute names (e.g. ["Observable", "MainActor"]) extracted from this element's declaration.
     var attributeNames: [String] {
         attributes?.compactMap(\.attribute) ?? []
+    }
+}
+
+extension SyntaxStructure {
+    /// A supertype that a merged extension's inheritance clause names, and the scope of that
+    /// extension, where the name is looked up.
+    struct CarriedSupertype {
+        let supertype: SyntaxStructure
+        let scope: DeclarationScope
     }
 }
 

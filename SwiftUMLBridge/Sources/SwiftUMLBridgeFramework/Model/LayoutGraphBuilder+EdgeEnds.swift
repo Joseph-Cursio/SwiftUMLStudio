@@ -225,11 +225,21 @@ extension LayoutGraphBuilder {
         }
     }
 
+    /// What a `PendingEdge` is, for telling a merged extension's repeated conformance from the rest.
+    enum EdgeRole {
+        /// An edge from a type's box to a supertype its own clause names.
+        case supertype
+        /// An edge from a type's box to a supertype a merged extension carried to it (#76).
+        case carriedSupertype
+        case other
+    }
+
     /// An edge whose ends are resolved to node ids once every node exists.
     struct PendingEdge {
         let source: EdgeEnd
         let target: EdgeEnd
         let style: EdgeStyle
+        var role: EdgeRole = .other
 
         /// The edge between the nodes its ends name, or `nil` when an end names an element the
         /// diagram does not draw.

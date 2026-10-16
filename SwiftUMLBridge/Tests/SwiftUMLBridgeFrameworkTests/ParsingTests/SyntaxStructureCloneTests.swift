@@ -13,7 +13,7 @@ struct SyntaxStructureCloneTests {
     static let storedProperties = [
         "accessibility", "attribute", "attributes", "elements", "inheritedTypes", "kind", "name",
         "runtimename", "substructure", "typename", "memberSuffix", "parent", "sourceLocation", "module",
-        "mergedInto", "boundGenericArguments"
+        "mergedInto", "carriedSupertypes", "boundGenericArguments"
     ]
 
     /// A structure with every stored property set.
@@ -35,6 +35,8 @@ struct SyntaxStructureCloneTests {
         item.sourceLocation = SourceLocation(filePath: "A.swift", line: 3, column: 5)
         item.module = "Core"
         item.mergedInto = parent
+        let sendable = SyntaxStructure(kind: .protocol, name: "Sendable")
+        item.carriedSupertypes = [SyntaxStructure.CarriedSupertype(supertype: sendable, scope: .init(of: item))]
         item.boundGenericArguments = "Int"
         return item
     }
@@ -100,12 +102,16 @@ struct SyntaxStructureCloneTests {
     @Test("merging a clone leaves the original as it was")
     func cloningLeavesTheOriginal() throws {
         let member = SyntaxStructure(kind: .functionMethodInstance, name: "bar")
-        let ext = SyntaxStructure(kind: .extension, name: "Foo", substructure: [member])
+        let ext = SyntaxStructure(
+            inheritedTypes: [SyntaxStructure(name: "P")], kind: .extension, name: "Foo", substructure: [member]
+        )
         let base = SyntaxStructure(kind: .struct, name: "Foo")
         let merged = SyntaxStructure.clonedForest(of: [base, ext]).mergeExtensions()
         #expect(merged.first?.substructure?.map(\.name) == ["bar"])
         #expect(merged.first?.substructure?.first?.memberSuffix == "<&bolt>")
+        #expect(merged.first?.carriedSupertypes.map(\.supertype.name) == ["P"])
         #expect(base.substructure == nil)
+        #expect(base.carriedSupertypes.isEmpty)
         #expect(member.memberSuffix == nil)
     }
 }

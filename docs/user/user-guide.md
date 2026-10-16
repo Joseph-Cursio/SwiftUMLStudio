@@ -367,7 +367,7 @@ Extensions are shown as separate nodes by default. Three flags change this behav
 | Flag | Effect |
 |---|---|
 | `--show-extensions` | Show each extension as a separate node (default) |
-| `--merge-extensions` | Fold extension members back into the parent type node |
+| `--merge-extensions` | Fold extension members back into the parent type node, and draw the conformances extensions declare from it |
 | `--hide-extensions` | Remove all extensions from the diagram |
 
 ```bash
@@ -379,6 +379,8 @@ swiftumlbridge classdiagram Sources/ --hide-extensions
 ```
 
 These flags override the `elements.showExtensions` setting in the configuration file.
+
+When extensions are merged, a conformance an extension declares is drawn from its type's box, exactly as the type's own clause would draw it: `struct Foo {}` with `extension Foo: Codable {}` draws what `struct Foo: Codable {}` draws. A conformance written the same way twice, as in both clauses of an `#if`, is drawn once.
 
 An extension written with generic arguments or sugar is an extension of the type it names. `extension Foo<Int>` is drawn, linked to `Foo`, merged into `Foo` and excluded with `Foo` exactly as `extension Foo where T == Int` is; `extension [Int]`, `extension [String: Int]` and `extension Int?` are extensions of `Array`, `Dictionary` and `Optional`. While `elements.showGenerics` is on, the extension's box also shows the arguments it binds (`Foo<Int>`, `Array<Int>`).
 
