@@ -14,8 +14,8 @@ import Testing
 @Suite("A deeply nested expression no longer overflows the stack or hides what follows it")
 struct DeepNestingTests {
 
-    /// `f(f(…f(0)…))`, `depth` calls deep. 100 is past both depths that crashed, 18 in a debug
-    /// build and 55 in a release one.
+    /// `f(f(…f(0)…))`, `depth` calls deep. 100 is past every depth that crashed: 18 in a debug
+    /// build, and 55 to 81 in a release one.
     static func nestedCalls(_ depth: Int = 100) -> String {
         String(repeating: "f(", count: depth) + "0" + String(repeating: ")", count: depth)
     }
@@ -27,9 +27,11 @@ struct DeepNestingTests {
         return url
     }
 
-    @Test("these tests run on a stack too small for the parse")
+    /// The other tests show the fix only on a stack this small. An 8 MB thread held 1,000 nested
+    /// calls without it, so on one they would pass either way.
+    @Test("these tests run on a stack small enough that the parse overflowed it")
     func smallStack() {
-        #expect(Thread.current.stackSize < ParsingStack.size)
+        #expect(Thread.current.stackSize <= 1 << 20)
     }
 
     @Test("a class diagram is drawn")
@@ -138,8 +140,23 @@ struct DeepNestingTests {
         #expect(edges.map(\.importedModule) == ["Foundation", "Combine"])
     }
 
+    /// The documented limit, written out rather than read from `ParsingStack.maximumNestingLevel`.
+    /// The struct's brace is a level and each call another, so 255 calls are the deepest whose
+    /// next declaration is read.
+    @Test("the nesting cap is 256 levels, the struct's brace included")
+    func capIs256Levels() {
+        func readsAfter(_ depth: Int) -> Bool {
+            ClassDiagramGenerator().generateScript(
+                for: "struct S {\n    let x = \(Self.nestedCalls(depth))\n}\nstruct After {}\n",
+                with: Configuration(format: .plantuml)
+            ).text.contains("as After ")
+        }
+        #expect(readsAfter(255))
+        #expect(!readsAfter(256))
+    }
+
     /// Past the cap SwiftParser still reads the rest of the file as unexpected tokens, in every
-    /// build, but on this stack it gets there without overflowing.
+    /// build, but on the parsing stack it gets there without overflowing.
     @Test("past the nesting cap the parse still ends, and keeps what came before")
     func pastTheCap() {
         let depth = ParsingStack.maximumNestingLevel * 4
