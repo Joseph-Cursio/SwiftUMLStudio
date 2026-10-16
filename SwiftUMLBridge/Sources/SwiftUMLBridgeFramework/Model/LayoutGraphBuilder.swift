@@ -37,7 +37,27 @@ struct LayoutGraphBuilder {
             ))
         }
 
-        return LayoutGraph(nodes: nodes, edges: edges.compactMap { $0.resolved(through: endIds) })
+        return LayoutGraph(nodes: nodes, edges: resolved(edges, through: endIds))
+    }
+
+    /// `edges` between the nodes their ends name, without a carried supertype edge that repeats a
+    /// supertype edge its box already draws. Repeats are found by the nodes the ends resolve to,
+    /// not by name: both clauses of an `#if` name the same protocol, but two files can each declare
+    /// their own `fileprivate protocol P`, and the extension in each file conforms to its own (#76).
+    private static func resolved(_ edges: [PendingEdge], through endIds: EdgeEndIds) -> [LayoutEdge] {
+        var supertypeEnds = Set<[String]>()
+        return edges.compactMap { pending in
+            guard let edge = pending.resolved(through: endIds) else { return nil }
+            switch pending.role {
+            case .other:
+                return edge
+            case .supertype:
+                supertypeEnds.insert([edge.sourceId, edge.targetId])
+                return edge
+            case .carriedSupertype:
+                return supertypeEnds.insert([edge.sourceId, edge.targetId]).inserted ? edge : nil
+            }
+        }
     }
 
     struct DiagramItem {
@@ -72,16 +92,14 @@ struct LayoutGraphBuilder {
         from item: SyntaxStructure, nodeId: String, kind: ElementKind, relationships: RelationshipOptions
     ) -> [PendingEdge] {
         var edges: [PendingEdge] = []
-        if let inheritedTypes = item.inheritedTypes {
-            // The text formats' gate, `DiagramContext.linkTarget(for:)`, matches the same names.
-            // SVG read no relationship setting at all (#113, #74).
-            let excluded = relationships.supertypeExcludePatterns
-            for parent in inheritedTypes where parent.isExcluded(byPatterns: excluded) == false {
-                guard let parentName = parent.name?.removeAngleBracketsWithContent() else { continue }
-                let edgeStyle = edgeStyleForInheritance(parentName: parentName, itemKind: kind)
-                let target = EdgeEnd.named(parentName, from: Scope(of: item))
-                edges.append(PendingEdge(source: .node(nodeId), target: target, style: edgeStyle))
-            }
+        // The text formats' gate, `DiagramContext.linkTarget(for:)`, matches the same names.
+        // SVG read no relationship setting at all (#113, #74).
+        let excluded = relationships.supertypeExcludePatterns
+        for drawn in supertypes(of: item) where drawn.supertype.isExcluded(byPatterns: excluded) == false {
+            guard let parentName = drawn.supertype.name?.removeAngleBracketsWithContent() else { continue }
+            let edgeStyle = edgeStyleForInheritance(parentName: parentName, itemKind: kind)
+            let target = EdgeEnd.named(parentName, from: drawn.scope)
+            edges.append(PendingEdge(source: .node(nodeId), target: target, style: edgeStyle, role: drawn.role))
         }
         if let parent = item.nestingParent, let parentName = parent.fullName ?? parent.name {
             // A nested type hangs off the declaration that contains it, so the second of two
@@ -94,6 +112,26 @@ struct LayoutGraphBuilder {
             edges.append(PendingEdge(source: parentEnd, target: .node(nodeId), style: .composition))
         }
         return edges
+    }
+
+    /// A supertype drawn from a type's box, and the scope its name is looked up from.
+    private struct DrawnSupertype {
+        let supertype: SyntaxStructure
+        let scope: Scope
+        let role: EdgeRole
+    }
+
+    /// The supertypes drawn from `item`'s box: its own, looked up from where it is declared, then
+    /// those merged extensions carried here, looked up from where each extension is written (#76).
+    /// `resolved(_:through:)` drops a carried one that ends where one before it does.
+    private static func supertypes(of item: SyntaxStructure) -> [DrawnSupertype] {
+        let own = (item.inheritedTypes ?? []).map {
+            DrawnSupertype(supertype: $0, scope: Scope(of: item), role: .supertype)
+        }
+        let carried = item.carriedSupertypes.map {
+            DrawnSupertype(supertype: $0.supertype, scope: $0.scope, role: .carriedSupertype)
+        }
+        return own + carried
     }
 
     // MARK: - Dependency Graph
