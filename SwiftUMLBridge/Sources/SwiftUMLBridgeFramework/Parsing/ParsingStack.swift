@@ -32,7 +32,9 @@ enum ParsingStack {
 
     /// The result of `body`, run on a thread with a stack of `size` bytes, or on this thread when
     /// its stack is already that big. The calling thread waits for it, as it would have waited
-    /// for the parse.
+    /// for the parse, and the parsing thread runs at the calling thread's quality of service: a
+    /// semaphore lends the waiting thread's priority to no one, so a thread left at the default
+    /// would have demoted Studio's user-initiated generation and promoted background work.
     ///
     /// `body` is escaping because the `Thread` keeps its block after the block returns, which
     /// `withoutActuallyEscaping` traps on.
@@ -48,6 +50,7 @@ enum ParsingStack {
             finished.signal()
         }
         thread.name = "SwiftUMLBridge.ParsingStack"
+        thread.qualityOfService = Thread.current.qualityOfService
         thread.stackSize = size
         thread.start()
         finished.wait()
