@@ -7,9 +7,10 @@ import SwiftSyntax
 ///
 /// All structural data — type kinds, accessibility, inherited types, generic
 /// parameters, and function effect specifiers (async/throws) — is derived from
-/// SwiftSyntax nodes directly. Variable type names for bindings with no explicit
-/// annotation are resolved via `typenameMap`, which is pre-populated from a
-/// lightweight SourceKit pass in `SyntaxStructureProvider`.
+/// SwiftSyntax nodes directly, and so is a variable's annotation, its own or the one it
+/// shares (`a` in `var a, b: Int`). Variable type names for bindings with no annotation
+/// are resolved via `typenameMap`, which is pre-populated from a lightweight SourceKit
+/// pass in `SyntaxStructureProvider`.
 ///
 /// Every name is read as Swift reads it (`canonicalName`, or `canonicalDescription`
 /// for a type), so `` `Plain` `` and `Plain` are one name wherever each is written (#123).
@@ -149,6 +150,20 @@ final class SyntaxStructureBuilder: SyntaxVisitor {
         }
     }
 
+    /// The type written for `bindings[index]`: its own annotation, or the one it shares with the
+    /// bindings after it, as `a` shares `Int` in `var a, b: Int`. A binding with no annotation and
+    /// no initializer has the type of the next one with an annotation; Swift rejects the
+    /// declaration if a binding between them has an initializer or accessors. Reading this from
+    /// the syntax gives `a` its type when the SourceKit supplement is off, as in the App Store
+    /// build (#146).
+    private static func annotatedType(of index: Int, in bindings: [PatternBindingSyntax]) -> String? {
+        for binding in bindings[index...] {
+            if let annotation = binding.typeAnnotation { return annotation.type.singleLineDescription }
+            if binding.initializer != nil || binding.accessorBlock != nil { return nil }
+        }
+        return nil
+    }
+
     private func effectSpecifierTypename(for specifiers: FunctionEffectSpecifiersSyntax?) -> String? {
         let isAsync = specifiers?.asyncSpecifier != nil
         let isThrows = specifiers?.throwsClause != nil
@@ -231,12 +246,12 @@ final class SyntaxStructureBuilder: SyntaxVisitor {
         let accessibility = extractAccessibility(from: node.modifiers)
         let kind: ElementKind = isStatic ? .varStatic : .varInstance
 
-        for binding in node.bindings {
+        let bindings = Array(node.bindings)
+        for (index, binding) in bindings.enumerated() {
             guard let name = binding.pattern.as(IdentifierPatternSyntax.self)?.identifier.canonicalName else {
                 continue
             }
-            let explicitTypename = binding.typeAnnotation?.type.singleLineDescription
-            let typename = explicitTypename
+            let typename = Self.annotatedType(of: index, in: bindings)
                 ?? typenameMap[binding.pattern.positionAfterSkippingLeadingTrivia.utf8Offset]
             appendMember(SyntaxStructure(accessibility: accessibility, kind: kind, name: name, typename: typename))
         }

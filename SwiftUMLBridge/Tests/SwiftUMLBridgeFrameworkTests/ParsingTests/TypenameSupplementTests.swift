@@ -4,9 +4,11 @@ import Testing
 @testable import SwiftUMLBridgeFramework
 
 /// In `var a, b: Int` the syntax gives only `b` a type annotation, and SourceKit's structure gives
-/// both names the shared type. So `a`'s type comes from the SourceKit typename supplement, which
-/// keys each variable by the UTF-8 offset of its name (#146). No other test reads the supplement:
-/// emptying its map passed the whole suite (#71).
+/// both names the shared type. `a`'s type came from the SourceKit typename supplement until the
+/// builder learned to read the shared annotation itself (#146), so the first test now passes with
+/// or without the supplement. The second checks that the supplement keys each type by the UTF-8
+/// offset of the name, which is how the builder looks it up. Emptying its map once passed the
+/// whole suite (#71).
 @Suite("The SourceKit typename supplement")
 struct TypenameSupplementTests {
 

@@ -1,11 +1,11 @@
 import Testing
 @testable import SwiftUMLBridgeFramework
 
-/// In `var a, b: T` only `b` has a type annotation in the syntax; `a` gets `T` from the SourceKit
-/// typename supplement. These check that it does so in an extension and in a type nested in one,
-/// for a name in backticks, and that no variable gets the type of a different variable with the
-/// same dotted name.
-@Suite("The typename supplement gives each variable its own type")
+/// In `var a, b: T` only `b` has a type annotation in the syntax; `a` shares it. These check that
+/// `a` gets `T` in an extension and in a type nested in one, for a name in backticks, and that no
+/// variable gets the type of a different variable with the same dotted name, which the SourceKit
+/// typename supplement once gave it (#146).
+@Suite("A name that shares an annotation gets its own type")
 struct TypenameSupplementExtensionTests {
 
     /// The member lines of the PlantUML class whose alias is `alias`, trimmed.
