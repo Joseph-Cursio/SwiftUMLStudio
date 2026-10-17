@@ -96,6 +96,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed — Bridge
 
+- **A relative `--package` path that climbs above the current directory
+  reads the package it names** (#141). From a sibling directory,
+  `classdiagram`, `deps` and `component` failed on `--package ../Pkg`
+  with `The file “Pkg” doesn’t exist.`, although the directory and its
+  manifest were there. `--package ..` did not fail, but ran
+  `swift package describe` in the current directory, so from inside a
+  nested package it read the nested package, and the diagram came out
+  empty with exit 0. Foundation's `Process` drops each `..` of a
+  relative working directory that climbs above its base.
+  - `SPMPackageReader.describe(at:)` now gives `Process` the URL's
+    absolute form, so library callers that pass a relative URL get the
+    package it names too. Studio's Open Package… passes an absolute
+    URL, and is unchanged.
+  - The CLI reads `--package` once, against the current directory with
+    each `..` removed by text, as `cd` does, and hands the same URL to
+    the manifest read and to the source-file reads. An absolute path
+    whose `..` climbs out of a symlink, such as `/work/lnk/../Pkg`,
+    read the manifest of `/work/Pkg` and looked for its source files
+    through the symlink, and drew no types; both now read `/work/Pkg`.
+  - A missing directory fails with `--package <path>: no such
+    directory`, naming the path as typed. It printed the same message
+    as this bug, which named only the last component.
+
 - **A suppressed conformance is no longer drawn as a supertype** (#159).
   `struct Token: ~Copyable` says `Token` does *not* conform to
   `Copyable`, but every diagram read `~Copyable` as a supertype of that

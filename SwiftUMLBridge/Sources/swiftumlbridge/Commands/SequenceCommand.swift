@@ -8,6 +8,7 @@ enum CLIError: Error, CustomStringConvertible {
     case erModelNotFound
     case componentModelNotFound
     case noSwiftFiles
+    case packageDirectoryNotFound(path: String)
 
     var description: String {
         switch self {
@@ -23,6 +24,8 @@ enum CLIError: Error, CustomStringConvertible {
         case .noSwiftFiles:
             return "No Swift files were found in the given paths, "
                 + "or the files.include / files.exclude (--exclude) filters left none."
+        case .packageDirectoryNotFound(let path):
+            return "--package \(path): no such directory"
         }
     }
 }

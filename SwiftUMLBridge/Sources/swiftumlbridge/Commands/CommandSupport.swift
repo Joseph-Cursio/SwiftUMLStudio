@@ -38,6 +38,21 @@ extension String {
     }
 }
 
+extension String {
+    /// The package directory a `--package` path names, read against the current directory with
+    /// each `..` removed by text, as `cd` reads it (#141). `describe(at:)` and the generators are
+    /// both handed this one URL, so a `..` after a symlink cannot send the manifest and the source
+    /// files to different directories. Throws `CLIError.packageDirectoryNotFound`, naming the
+    /// path as typed, when no directory is there.
+    func packageRootURL() throws -> URL {
+        let root = URL(fileURLWithPath: self).absoluteURL.standardized
+        var isDirectory: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: root.path, isDirectory: &isDirectory), isDirectory.boolValue
+        else { throw CLIError.packageDirectoryNotFound(path: self) }
+        return root
+    }
+}
+
 extension Optional where Wrapped == ClassDiagramOutput {
     /// The presenter selected by this output option (defaults to the browser).
     var presenter: any DiagramPresenting {
