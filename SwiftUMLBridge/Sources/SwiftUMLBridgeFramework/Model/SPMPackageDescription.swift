@@ -142,7 +142,10 @@ public enum SPMPackageReader {
             "--scratch-path", scratch.path,
             "describe", "--type", "json"
         ]
-        process.currentDirectoryURL = packageRoot
+        // Absolute: the setter drops each `..` of a relative URL that climbs above its base, so
+        // `../Pkg` ran in `<cwd>/Pkg` and `..` in the cwd itself, where SwiftPM's upward search
+        // could find another package (#141).
+        process.currentDirectoryURL = packageRoot.absoluteURL
 
         let stdoutPipe = Pipe()
         let stderrPipe = Pipe()
