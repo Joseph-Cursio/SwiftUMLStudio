@@ -93,7 +93,7 @@ produced in full; what you lose is type *inference*. A property written
 `let items = [Item]()` shows its declared form rather than being resolved to
 `[Item]`, and members whose types are only inferable from context may show
 without a type annotation. Anything with an explicit type annotation is
-unaffected.
+unaffected, including a name that shares one, like `a` in `var a, b: Int`.
 
 If you need package-scoped diagrams or full type resolution, use the direct
 download build or the [`swiftumlbridge` CLI](user-guide.md).

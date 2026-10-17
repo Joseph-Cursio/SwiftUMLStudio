@@ -96,6 +96,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed — Bridge
 
+- **Every name that shares a type annotation gets its own type**
+  (#146). In `var dx, dy: Double` only `dy` has an annotation in the
+  syntax, and `dx` took `Double` from the SourceKit typename supplement,
+  under a key built from the names of the types around it. The
+  supplement left extensions out of that key and the builder did not,
+  so in `extension Point { struct Delta { var dx, dy: Double } }`, and
+  for a static optional declared in an extension, `dx` was drawn with
+  no type. So was the first name of
+  `` var `default`, fallback: String ``, because one side kept the
+  backticks. And two variables could get
+  one key, so the type stored last won: a type nested in an extension
+  gave its types to a top-level type of the same name (`var name = 0`
+  drawn `name : String`), and so did a type nested in a function, or
+  the other clause of an `#if`. The builder now reads the shared
+  annotation from the syntax, so `dx` gets `Double` in the App Store
+  build too, where the supplement is off. The supplement keys each type
+  by the UTF-8 offset of the name, so no name takes part in the match.
 - **A protocol nested in a type is drawn** (#162). Swift 5.10
   (SE-0404) allows `enum Outer { protocol Shape {} }`, but class
   diagrams walked into nested classes, structs, enums, extensions and
