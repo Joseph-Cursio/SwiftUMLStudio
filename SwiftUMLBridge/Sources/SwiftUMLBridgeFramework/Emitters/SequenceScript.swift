@@ -70,6 +70,13 @@ private extension SequenceScript {
         }
         return participants
     }
+
+    /// The participant an unresolved call's note sits beside: the type that made the call (#132).
+    /// A traversed edge's caller is always a participant; a hand-built one may not be, and its note
+    /// goes beside the entry type, so the diagram names no participant it does not declare.
+    static func noteAnchor(for edge: CallEdge, participants: [String], entryType: String) -> String {
+        participants.contains(edge.callerType) ? edge.callerType : entryType
+    }
 }
 
 // MARK: - PlantUML
@@ -85,16 +92,19 @@ private extension SequenceScript {
             "title \(entryType).\(entryMethod)"
         ]
 
-        for participant in orderedParticipants(entryType: entryType, traversedEdges: traversedEdges) {
+        let participants = orderedParticipants(entryType: entryType, traversedEdges: traversedEdges)
+        for participant in participants {
             lines.append("participant \(participant)")
         }
 
         lines.append("")
 
-        // Emit call lines
+        // Emit call lines. A note names its participant: a bare `note right:` would hang on the
+        // message before it, which may be another method's.
         for edge in traversedEdges {
             if edge.isUnresolved {
-                lines.append("note right: Unresolved: \(edge.calleeMethod)()")
+                let anchor = noteAnchor(for: edge, participants: participants, entryType: entryType)
+                lines.append("note right of \(anchor): Unresolved: \(edge.calleeMethod)()")
             } else if let calleeType = edge.calleeType {
                 let arrow = edge.isAsync ? "->>" : "->"
                 lines.append("\(edge.callerType) \(arrow) \(calleeType) : \(edge.calleeMethod)()")
@@ -119,21 +129,21 @@ private extension SequenceScript {
             "%% title: \(entryType).\(entryMethod)"
         ]
 
-        for participant in orderedParticipants(entryType: entryType, traversedEdges: traversedEdges) {
+        let participants = orderedParticipants(entryType: entryType, traversedEdges: traversedEdges)
+        for participant in participants {
             lines.append("participant \(participant)")
         }
 
         lines.append("")
 
-        // Emit call lines; track last resolved callee for unresolved notes
-        var lastCallee = entryType
+        // Emit call lines; an unresolved call's note sits beside the type that made it
         for edge in traversedEdges {
             if edge.isUnresolved {
-                lines.append("Note right of \(lastCallee): Unresolved: \(edge.calleeMethod)()")
+                let anchor = noteAnchor(for: edge, participants: participants, entryType: entryType)
+                lines.append("Note right of \(anchor): Unresolved: \(edge.calleeMethod)()")
             } else if let calleeType = edge.calleeType {
                 let arrow = edge.isAsync ? "-->>" : "->>"
                 lines.append("\(edge.callerType)\(arrow)\(calleeType): \(edge.calleeMethod)()")
-                lastCallee = calleeType
             }
         }
 

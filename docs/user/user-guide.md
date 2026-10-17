@@ -480,13 +480,15 @@ When a call cannot be resolved statically, it is included in the diagram as a no
 
 **PlantUML:**
 ```
-note right: Unresolved: completion()
+note right of Caller: Unresolved: completion()
 ```
 
 **Mermaid:**
 ```
-Note right of LastParticipant: Unresolved: completion()
+Note right of Caller: Unresolved: completion()
 ```
+
+`Caller` is the type whose method made the call. The note sits beside that participant in every format, even when the message before it went to another type, or was sent by another method.
 
 This keeps the diagram honest about what is and is not known statically.
 

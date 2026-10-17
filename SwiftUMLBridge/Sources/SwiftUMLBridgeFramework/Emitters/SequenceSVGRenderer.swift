@@ -83,10 +83,11 @@ public struct SequenceSVGRenderer: Sendable {
     ) -> [SequenceMessage] {
         var messages: [SequenceMessage] = []
         var currentY = startY
-        var lastCallee = entryType
         for (idx, edge) in edges.enumerated() {
             if edge.isUnresolved {
-                let noteX = participantX[lastCallee] ?? participantX[entryType]!
+                // Beside the type that made the call (#132). A traversed edge's caller is always a
+                // participant; a hand-built one may not be, and its note goes beside the entry type.
+                let noteX = participantX[edge.callerType] ?? participantX[entryType]!
                 messages.append(SequenceMessage(
                     id: idx, label: "\(edge.calleeMethod)()", fromX: noteX, toX: noteX + 60,
                     posY: currentY, isUnresolved: true, noteText: "Unresolved: \(edge.calleeMethod)()"
@@ -98,7 +99,6 @@ public struct SequenceSVGRenderer: Sendable {
                     toX: participantX[calleeType] ?? leftMargin,
                     posY: currentY, isAsync: edge.isAsync
                 ))
-                lastCallee = calleeType
             }
             currentY += messageSpacing
         }

@@ -382,7 +382,7 @@ swiftumlbridge sequence Sources/ --entry ClassDiagramGenerator.generateScript
 
 planttext.com opens with the sequence diagram. Each arrow represents a single method call found in a function body. Solid arrows (`->`) are synchronous; open arrows (`->>`) are async calls wrapped in `await`.
 
-> **Reading the diagram:** Each row shows one call. `A -> B : method()` means the method `method` on type `B` was called from type `A`. Note/comment lines beginning with `note right:` are calls that could not be resolved statically (e.g., variable-receiver calls).
+> **Reading the diagram:** Each row shows one call. `A -> B : method()` means the method `method` on type `B` was called from type `A`. Note lines beginning with `note right of` are calls that could not be resolved statically (e.g., variable-receiver calls), each beside the type that made the call.
 
 ---
 
@@ -426,7 +426,7 @@ swiftumlbridge sequence Sources/ \
   --output consoleOnly
 ```
 
-Look for lines beginning with `note right: Unresolved:`. These represent calls where the receiver is a local variable or parameter (e.g., `enumerator.nextObject()`) — the tool cannot determine the callee's type statically. Unresolved calls appear as diagram notes and are not expanded further.
+Look for lines beginning with `note right of` that say `Unresolved:`. These represent calls where the receiver is a local variable or parameter (e.g., `enumerator.nextObject()`) — the tool cannot determine the callee's type statically. Unresolved calls appear as diagram notes and are not expanded further.
 
 **What gets resolved:**
 - `self.doWork()` → same type

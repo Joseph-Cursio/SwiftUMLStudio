@@ -96,6 +96,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed — Bridge
 
+- **A sequence diagram's `Unresolved:` note sits beside the type that
+  made the call** (#132). Mermaid and SVG put it beside the target of
+  the last resolved call before it, or beside the entry type when there
+  was none. The calls are listed breadth-first, so that target was often
+  another type's, or another method's. In `Screen.start`,
+  `Store.shared.load()` then `handlers[0]()` wrote
+  `Note right of Store.shared`. PlantUML wrote `note right:`, which
+  names no participant and hangs on the message before it.
+  - Each format now anchors the note on the call's caller, the type
+    the arrows already start from. PlantUML writes
+    `note right of <Caller>:`, so its note moves from a message to that
+    participant's lifeline, even where it was right before.
+  - Studio's SVG canvas, and its PNG and PDF export, draw the note
+    beside the caller too.
+  - Only the note lines change. The order of the messages and notes is
+    unchanged.
+
 - **A framework name written with its module is read as that name**
   (#134). `@SwiftData.Model` is SwiftData's `@Model`, written so when
   another imported module also declares a `Model` macro, but the ER
