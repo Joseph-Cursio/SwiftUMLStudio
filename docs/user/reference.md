@@ -164,7 +164,7 @@ swiftumlbridge classdiagram [<paths>...] [options]
 | `--verbose` | Flag | `false` | Enable verbose logging to stderr. |
 | `--help` | Flag | — | Print subcommand help and exit. |
 
-**Extension flags are mutually exclusive.** If more than one is passed, the last one wins.
+**Extension flags override `elements.showExtensions`.** If more than one is passed, the last one wins. With none, the config file decides, and without that key, extensions are shown as separate nodes.
 
 If the paths and the `files.include` / `files.exclude` / `--exclude` filters leave no Swift files, the command fails with an error.
 
@@ -589,8 +589,9 @@ elements:
     # Default: all
 
   mergedExtensionMemberIndicator: "^"
-    # String appended to member names that were merged from an extension.
-    # Only applies when showExtensions: merged, and only PlantUML writes it.
+    # String appended, after a space, to member names that were merged from
+    # an extension. Only applies when showExtensions: merged, and only
+    # PlantUML writes it. "" removes it; null keeps the default.
     # Type: String?  Default: "<&bolt>" (PlantUML's OpenIconic bolt)
 
   exclude:
@@ -981,7 +982,7 @@ Access level values used in `havingAccessLevel` and `showMembersWithAccessLevel`
 | `fileprivate` | `fileprivate` | `-` |
 | `private` | `private` | `-` |
 
-The indicator prefix is applied when `showMemberAccessLevelAttribute: true`. The same `+`/`~`/`-` symbols are used in both PlantUML and Mermaid output.
+Each member is prefixed with its indicator by default; `showMemberAccessLevelAttribute: false` removes them. The same `+`/`~`/`-` symbols are used in PlantUML, Mermaid, Nomnoml and SVG output.
 
 **Default access level filter:** Every level except `fileprivate` is included by default, for types and members alike. List `fileprivate` explicitly to draw it. To show only public API:
 
@@ -1506,7 +1507,7 @@ The complete configuration object.
 | Property | Type | Default |
 |---|---|---|
 | `files` | `FileOptions` | Empty include/exclude |
-| `elements` | `ElementOptions` | All access levels, generics on, nested types on, all extensions |
+| `elements` | `ElementOptions` | Every access level but `fileprivate`, generics on, nested types on, all extensions |
 | `hideShowCommands` | `[String]?` | `["hide empty members"]` |
 | `skinparamCommands` | `[String]?` | `["skinparam shadowing false"]` |
 | `includeRemoteURL` | `String?` | `nil` |

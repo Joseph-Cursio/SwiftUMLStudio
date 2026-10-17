@@ -36,8 +36,14 @@ extension SwiftUMLBridgeCLI {
             """)
         var package: String?
 
-        @Flag(help: "Decide if/how Swift extensions appear in the diagram")
-        var extensionVisualization: ExtensionVisualizationFlag = .showExtensions
+        /// Overrides `elements.showExtensions`, as `--format` overrides `format`; the last of
+        /// several wins. With none, the config file decides, and without one too, extensions
+        /// are drawn as their own boxes (#156).
+        @Flag(
+            exclusivity: .chooseLast,
+            help: "Decide if/how Swift extensions appear in the diagram (overrides the config file)"
+        )
+        var extensionVisualization: ExtensionVisualizationFlag?
 
         @Flag(help: "Enable verbose logging")
         var verbose: Bool = false
@@ -52,15 +58,15 @@ extension SwiftUMLBridgeCLI {
                 bridgeConfig.files.exclude = exclude
             }
 
-            if bridgeConfig.elements.showExtensions == nil {
-                switch extensionVisualization {
-                case .hideExtensions:
-                    bridgeConfig.elements.showExtensions = ExtensionVisualization.none
-                case .mergeExtensions:
-                    bridgeConfig.elements.showExtensions = .merged
-                case .showExtensions:
-                    bridgeConfig.elements.showExtensions = .all
-                }
+            switch extensionVisualization {
+            case .hideExtensions:
+                bridgeConfig.elements.showExtensions = ExtensionVisualization.none
+            case .mergeExtensions:
+                bridgeConfig.elements.showExtensions = .merged
+            case .showExtensions:
+                bridgeConfig.elements.showExtensions = .all
+            case nil:
+                break
             }
 
             if let format {

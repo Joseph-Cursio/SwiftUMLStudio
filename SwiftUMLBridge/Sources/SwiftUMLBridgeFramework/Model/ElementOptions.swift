@@ -19,9 +19,12 @@ public struct ElementOptions: Codable, Sendable {
     public private(set) var showGenerics: Bool = true
     /// How extensions are visualized: as separate boxes, merged into the base type, or hidden.
     public var showExtensions: ExtensionVisualization?
-    /// The glyph prefixed to members that were merged in from an extension (PlantUML OpenIconic markup).
+    /// The glyph appended, after a space, to members that were merged in from an extension
+    /// (PlantUML OpenIconic markup). Only PlantUML writes it; `""` turns it off, and `null` in a
+    /// config file keeps this default.
     public private(set) var mergedExtensionMemberIndicator: String? = "<&bolt>"
-    /// Whether each member is annotated with its access-level symbol (`+`, `-`, `#`, …).
+    /// Whether each member is annotated with its access-level symbol: `+` for `open` and `public`,
+    /// `~` for `package` and `internal`, `-` for `private` and `fileprivate`, in every format.
     public private(set) var showMemberAccessLevelAttribute: Bool = true
     /// Name patterns to exclude from the diagram entirely.
     public private(set) var exclude: [String]?
