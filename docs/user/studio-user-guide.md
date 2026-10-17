@@ -524,6 +524,7 @@ Class diagrams can be driven by a Swift Package directly. Click **Open Package�
 In package mode:
 
 - Class-diagram generation switches to the module-aware `ClassDiagramGenerator.generateScript(forPackage:)` entry point — every type is tagged with its owning SPM target.
+- **Dependency graphs** use the package too. With the SVG format, a Types graph draws the same grouping box around each target's types, and a Modules graph labels each target «library» or «executable».
 - **Module grouping boxes.** The native class-diagram canvas draws each module as a tinted, dashed grouping box behind the types it owns, labelled with the module name. The layout engine clusters the types so a target's types are positioned together. Each module's color is deterministic — derived from its name — so a target keeps the same color across runs.
 - **Per-node module stripe (fallback).** When grouping boxes are present, the module is already conveyed by the box. The thin colored stripe along a node's bottom edge is only drawn as a fallback when no grouping boxes are available.
 - **Modules dashboard section.** The Explorer-mode dashboard gains a **Modules** section listing one card per non-test SPM target — see [Project Dashboard](#project-dashboard).
