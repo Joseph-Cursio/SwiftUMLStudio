@@ -48,17 +48,31 @@ extension TypeSyntax {
     }
 
     /// The type an inheritance-clause entry conforms to, without the attributes and specifiers
-    /// that say how: `P` for `@MainActor P`, `@preconcurrency P`, `@retroactive P`, `@unsafe P` or
-    /// `nonisolated P`, `Sendable` for `@unchecked Sendable`, `P & Q` for `@MainActor P & Q`, whose
-    /// attribute covers the whole composition, and `(P)` for `@MainActor (P)`. Every other type is
-    /// itself; `~Copyable` is a suppressed conformance, not an attributed one, and stays as written.
+    /// that say how, or the parentheses around it: `P` for `@MainActor P`, `@preconcurrency P`,
+    /// `@retroactive P`, `@unsafe P`, `nonisolated P`, `(P)`, `(@MainActor P)` or `@MainActor (P)`,
+    /// `Sendable` for `@unchecked Sendable`, and `P & Q` for `@MainActor P & Q`, whose attribute
+    /// covers the whole composition, or `(P & Q)` (#160). Every other type is itself; `~Copyable`
+    /// is a suppressed conformance, not an attributed one, and stays as written.
     var conformedType: TypeSyntax {
         var type = self
-        while let attributed = type.as(AttributedTypeSyntax.self) {
-            if let reread = attributed.typeAfterArgumentlessAttribute { return reread.conformedType }
-            type = attributed.baseType
+        while true {
+            if let attributed = type.as(AttributedTypeSyntax.self) {
+                if let reread = attributed.typeAfterArgumentlessAttribute { return reread.conformedType }
+                type = attributed.baseType
+            } else if let inner = type.as(TupleTypeSyntax.self)?.parenthesizedType {
+                type = inner
+            } else {
+                return type
+            }
         }
-        return type
+    }
+
+    /// `conformedType`, with a composition split into its parts on the syntax tree, each part
+    /// unwrapped the same way: `P` and `Q` for `P & Q`, `(P & Q)` or `(P) & Q` (#160).
+    var conformedTypes: [TypeSyntax] {
+        let type = conformedType
+        guard let composition = type.as(CompositionTypeSyntax.self) else { return [type] }
+        return composition.elements.flatMap(\.type.conformedTypes)
     }
 }
 
@@ -119,7 +133,7 @@ extension ExprSyntax {
 
 private extension TupleTypeSyntax {
     /// The type inside `(T)`, which is `T` itself; `nil` for a real tuple, which no extension
-    /// can extend.
+    /// can extend and no type can inherit from.
     var parenthesizedType: TypeSyntax? {
         guard elements.count == 1, let only = elements.first, only.firstName == nil,
               only.secondName == nil, only.ellipsis == nil else { return nil }
