@@ -96,6 +96,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed — Bridge
 
+- **A type written across lines is read as it is on one line** (#155).
+  `struct Circle: Swift` with `.Equatable` on the next line named its
+  supertype `"Swift\n    .Equatable"`, line break and indent included.
+  PlantUML and Mermaid class diagrams wrote that edge over two lines,
+  and Studio's bundled Mermaid rejected the whole class diagram;
+  `deps --types` in Mermaid and Nomnoml sent the edge to a bare `Swift`
+  node, shared by every such supertype; an edge to a declared type
+  (`Outer` / `.Base`) was lost in SVG; and `--exclude` and the
+  relationship excludes no longer matched. Supertypes, compositions
+  (`Equatable` / `& Sendable`), generic constraints, attribute names,
+  `extension Foo<…>` arguments and property types — including those
+  from the SourceKit typename supplement, as in `var low, high:` — are
+  now read on one line: a line break is dropped beside `.`, `(`, `[`,
+  `<` and before `)`, `]`, `>`, `,`, and is one space elsewhere. Text
+  written on one line reads as before.
+
 - **A long chain or cycle no longer crashes `deps` or the component
   layout** (#149). `DependencyGraphModel.detectCycles` recursed once per
   node on its search path, on the caller's thread — a cooperative thread
@@ -228,7 +244,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
     sequence diagrams held the comment: `// load first` above `load()`
     labelled the action `// load first load()`.
 
-  A comment between a name's tokens is unchanged, and stays in labels.
+  A comment between a name's tokens on one line is unchanged, and stays
+  in labels; one beside a line break inside a type is dropped (#155).
   `@Attribute`'s options and `@Relationship`'s `inverse:` are now read
   from the syntax rather than searched for in the arguments' text:
   - `@Attribute(.externalStorage, /* not .unique */ originalName: "c")`
