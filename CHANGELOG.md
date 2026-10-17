@@ -111,6 +111,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   now read on one line: a line break is dropped beside `.`, `(`, `[`,
   `<` and before `)`, `]`, `>`, `,`, and is one space elsewhere. Text
   written on one line reads as before.
+- **A call receiver written across lines is the receiver written on
+  one line** (#133). `Store` / `.shared` / `.load()` on three lines named
+  its participant by its text, line breaks and indent included, so it
+  was a participant apart from `Store.shared`, and each Mermaid and
+  PlantUML line naming it was split. A comment line inside the receiver
+  became part of its name. The `Unresolved:` notes of sequence diagrams
+  (`{` / `1 + 2` / `}()`) and state-machine `where` guards did the same.
+  All three now read as #155's types do. A name in them is also read
+  without needless backticks, as receivers already were:
+  `` `handlers`[0]() `` is noted as `handlers[0]()`.
 
 - **A long chain or cycle no longer crashes `deps` or the component
   layout** (#149). `DependencyGraphModel.detectCycles` recursed once per
