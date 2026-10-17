@@ -96,6 +96,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed — Bridge
 
+- **A merged extension of a hidden type keeps its box** (#153). With
+  `showExtensions: merged` (`--merge-extensions`), an extension of a type
+  the diagram hides — a `fileprivate` type under the default levels, an
+  internal one in a public-only diagram, a nested type `elements.exclude`
+  names — was merged into that type, and went with it: its members, the
+  conformances it declares and the box its nested types hang off. So
+  `extension Foo: P { func f() {} }` on a `fileprivate struct Foo` drew
+  only `P`, where `--show-extensions` draws the extension, `f` and the
+  edge. In the text formats an edge to the hidden type could also end on
+  an empty box of its name.
+  - The hidden type's first drawn extension now stands in for it, as it
+    does when extensions are drawn apart, and its other extensions merge
+    into that box. With one such extension, `.merged` draws exactly what
+    `.all` draws, in every format.
+  - A type the diagram draws merges as before, and an extension excluded
+    with its type stays out.
+  - Studio always draws extensions apart, so it is unchanged.
 - **An attributed conformance is drawn to the type it names** (#152).
   `final class Box: @unchecked Sendable` named its supertype
   `@unchecked Sendable`, and `@MainActor P` was `@MainActor P`. So:

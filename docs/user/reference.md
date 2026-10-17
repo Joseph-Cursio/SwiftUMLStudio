@@ -580,7 +580,9 @@ elements:
     # Type: all | merged | none
     #   all    — each extension is a separate node (default)
     #   merged — extension members are folded into the parent type node,
-    #            and the conformances extensions declare are drawn from it
+    #            and the conformances extensions declare are drawn from it.
+    #            When the diagram hides that type, its first extension
+    #            keeps its node and the others fold into it, as under `all`
     #   none   — extensions are hidden entirely
     # Also accepts Boolean: true → all, false → none
     # Default: all
