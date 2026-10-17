@@ -659,7 +659,8 @@ relationships:
       # against the name as written: `Container*` for `Container<Int>`. An
       # attribute, specifier or pair of parentheses is not part of it:
       # `Sendable` hides `@unchecked Sendable`, and `P` hides `nonisolated P`
-      # and `(P)`. A supertype written through a typealias is also matched by
+      # and `(P)`. A suppressed conformance such as `~Copyable` is no
+      # supertype, so it draws no edge to exclude. A supertype written through a typealias is also matched by
       # the type it aliases: after `typealias Q = Proto`, either `Q` or `Proto`
       # hides `struct S: Q`. A short name inside a type is also matched by the
       # nested type it means: in `enum Outer`, `Base` or `Outer.Base` hides

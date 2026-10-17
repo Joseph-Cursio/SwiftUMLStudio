@@ -96,6 +96,31 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed — Bridge
 
+- **A suppressed conformance is no longer drawn as a supertype** (#159).
+  `struct Token: ~Copyable` says `Token` does *not* conform to
+  `Copyable`, but every diagram read `~Copyable` as a supertype of that
+  name. PlantUML wrote `~Copyable <|-- Token : inherits`, Nomnoml drew a
+  `~Copyable` box, and Mermaid rejected the whole class diagram or
+  `deps` graph at the `~`, so one noncopyable type lost every box.
+  `deps --types` drew the same edge in all four formats, and
+  `TypeInfo.inheritedTypeNames` listed it, so Studio's dashboard counted
+  it as a relationship. A suppressed entry (`~Copyable`, `~Escapable`,
+  `~BitwiseCopyable`, `~Sendable`) now names no supertype, wherever it
+  is written: alone, in a composition such as `P & ~Copyable`, after an
+  attribute or in parentheses. The rest of the clause is drawn as
+  before, and so is a generic constraint such as `<Value: ~Copyable>` in
+  the type's header.
+  - The diagram no longer says the type is noncopyable. A merged type
+    with `extension Box: Copyable where Value: Copyable` draws only the
+    `Copyable` edge, as a merged type draws every conditional
+    conformance.
+  - In `deps`, a type whose only entries are suppressed has no edges,
+    and leaves the graph as `struct Plain {}` does.
+  - An exclude written for the suppressed spelling, such as `~*`, has
+    nothing left to match.
+  - A Studio snapshot taken before this counted those edges, so the
+    architecture diff shows the relationship count fall once.
+
 - **A supertype named inside its enclosing type ends on the nested
   type** (#157). In `enum Outer { class Base {}; class Near: Base {} }`
   Swift reads `Base` as `Outer.Base`. PlantUML, Mermaid and Nomnoml
@@ -344,7 +369,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
     it once.
   - In Swift 6, `@MainActor (P)` applies the attribute to `(P)`, and is
     drawn as `P` is (#160). Its box was named with the attribute.
-  - `~Copyable` is not an attribute, and is drawn as before.
+  - `~Copyable` is not an attribute, and was drawn as before; since
+    #159 it is not drawn at all.
 - **Merged extensions keep the conformances they declare** (#76). With
   `showExtensions: merged` (`--merge-extensions`), an extension's
   members were folded into its type and its inheritance clause was
