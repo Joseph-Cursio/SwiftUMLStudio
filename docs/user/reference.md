@@ -465,6 +465,8 @@ swiftumlbridge er [<paths>...] [options]
 | **GRDB** | Type conforms to `FetchableRecord` / `PersistableRecord` / similar | Typed associations: `belongsTo`, `hasOne`, `hasMany` |
 | **SQLite.swift** | `Table("name")` value with `Expression<T>("col")` columns | Foreign-key columns matched by name |
 
+A framework's own name may be written with its module: `@SwiftData.Model`, `GRDB.FetchableRecord` and `SQLite.Expression<Int64>("id")` are read as `@Model`, `FetchableRecord` and `Expression<Int64>("id")`. A name of the same spelling from another module, such as `@MyKit.Model`, is not. A member's `@SwiftData.Attribute`, `@SwiftData.Relationship` or `@SwiftData.Transient` is not read, because SwiftData's `@Model` macro does not read it either, so the property is persisted with no options. Write those attributes bare.
+
 If no persisted models are found across all paths, the command fails with an error.
 
 **Examples:**
@@ -1066,6 +1068,8 @@ Nomnoml writes the same edges child first, with its own arrows: `[Child] -:> [Pa
 A conformance is labelled and styled as realization only when the diagram declares the protocol. A conformance to one it does not declare, such as `Codable`, is labelled and styled as inheritance: `struct User: Codable` gives `Codable <|-- User : inherits`. SVG class diagrams honour `relationships.inheritance.exclude` and `relationships.realize.exclude`, but not relationship labels, styles or `dependency.exclude`.
 
 Each declaration draws its supertype edges from its own box, with its own kind's arrow: `<|--` from a class or struct, `<|..` from a protocol, `<..` from an extension and `--` from an enum or actor. A supertype the diagram declares as a protocol takes `<|..` from any of them. So `struct User {}` with `extension User: Codable {}` gives `Codable <.. User0 : inherits`, from the extension's box, and when two `#if` branches each declare `class PlatformView`, each box draws its own superclass. Nomnoml's arrows for the same are `-:>`, `--:>`, `-->` and `-`.
+
+A type also draws the conformances its macro adds, unless its clause already names them: `@Observable` adds `Observable`, and SwiftData's `@Model` adds `Observable` and `PersistentModel`. So `@Model final class Item {}` gives `Observable <|-- Item : inherits` and `PersistentModel <|-- Item : inherits`, in PlantUML, Mermaid and Nomnoml but not SVG. Each macro may be written with its module, as `@Observation.Observable` or `@SwiftData.Model`; a macro of the same name from another module adds nothing. The macro's name, as written, is also the type's stereotype, such as `<<SwiftData.Model>>`.
 
 For sequence diagram arrows, see [Sequence Diagrams](#sequence-diagrams).
 

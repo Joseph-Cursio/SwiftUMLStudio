@@ -96,6 +96,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed — Bridge
 
+- **A framework name written with its module is read as that name**
+  (#134). `@SwiftData.Model` is SwiftData's `@Model`, written so when
+  another imported module also declares a `Model` macro, but the ER
+  extractor and the class diagram compared the whole name with `Model`.
+  - `er` did not take such a class for an entity, so its relationships
+    were lost, an entity's property of its type was listed as an
+    attribute, and a project written that way throughout failed with
+    "No persisted models". Studio's ER diagram lost them too.
+  - Class diagrams dropped the `Observable` and `PersistentModel` edges
+    the macro adds, in PlantUML, Mermaid and Nomnoml. So did
+    `@Observation.Observable`. The stereotype still shows the name as
+    written, `<<SwiftData.Model>>`.
+  - `GRDB.FetchableRecord` and the other record protocols did not mark
+    a GRDB record, and `SQLite.Expression<Int64>("id")` was not read as
+    a column.
+
+  Only the framework's own module is accepted, so `@MyKit.Model` is
+  still not SwiftData's. A member's `@SwiftData.Attribute`,
+  `@SwiftData.Relationship` or `@SwiftData.Transient` is still not read,
+  as SwiftData's own macro does not read it.
+
 - **A Nomnoml dependency graph colours the nodes on a cycle** (#142).
   `deps --format nomnoml` wrote each cycle node's `[<warning> Name]`
   line after every edge, under the bare name. nomnoml keeps the first

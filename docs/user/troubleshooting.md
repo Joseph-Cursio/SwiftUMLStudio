@@ -145,6 +145,8 @@ The ER extractor recognizes four stacks (see [User Guide → Generating ER Diagr
 - GRDB expects `FetchableRecord` / `PersistableRecord` (or related) conformance.
 - SQLite.swift expects `Table("name")` values with `Expression<T>("col")` columns.
 
+Each of these may be written with its framework's module, as `@SwiftData.Model` or `GRDB.FetchableRecord`. With any other module, as `@MyKit.Model`, it is not that framework's, and is not read.
+
 If you have a mixed project, point `er` at every relevant root in one invocation — the entities and relationships are merged into a single diagram.
 
 ### `classdiagram` exits with "No Swift files were found"
