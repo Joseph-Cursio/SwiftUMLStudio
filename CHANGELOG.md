@@ -111,6 +111,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   now read on one line: a line break is dropped beside `.`, `(`, `[`,
   `<` and before `)`, `]`, `>`, `,`, and is one space elsewhere. Text
   written on one line reads as before.
+- **A parenthesized supertype is drawn to the type inside the
+  parentheses** (#160). Swift reads `struct Foo: (P)` as `struct Foo: P`,
+  and `(P & Q)` and `(P) & Q` as `P & Q`, but the supertype was named by
+  its text: `(P)`, or `(P` and `Q)` for `(P & Q)`. So the edge ended on
+  a box of that name, not on the declared `P`, and was drawn as
+  inheritance; SVG drew none; Studio's bundled Mermaid rejected the
+  whole class diagram or `deps` graph; excludes written for `P` missed
+  it; and `er` did not take `(FetchableRecord)` as a GRDB record. Each
+  inherited type is now read without its parentheses, alternating with
+  #152's attributes (`(@MainActor P)`, `@unchecked (Sendable)`,
+  `@MainActor ((P))`), and a composition is split into its parts on the
+  syntax tree rather than at each `&` in its text.
 - **A call receiver written across lines is the receiver written on
   one line** (#133). `Store` / `.shared` / `.load()` on three lines named
   its participant by its text, line breaks and indent included, so it
@@ -190,7 +202,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
     without it in the other is one conformance, so a merged type draws
     it once.
   - In Swift 6, `@MainActor (P)` applies the attribute to `(P)`, and is
-    drawn as `(P)` is. Its box was named with the attribute.
+    drawn as `P` is (#160). Its box was named with the attribute.
   - `~Copyable` is not an attribute, and is drawn as before.
 - **Merged extensions keep the conformances they declare** (#76). With
   `showExtensions: merged` (`--merge-extensions`), an extension's

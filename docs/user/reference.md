@@ -644,8 +644,9 @@ relationships:
     exclude:
       # Supertype names whose edges are hidden. Accepts glob patterns, matched
       # against the name as written: `Container*` for `Container<Int>`. An
-      # attribute or specifier is not part of it: `Sendable` hides
-      # `@unchecked Sendable`, and `P` hides `nonisolated P`.
+      # attribute, specifier or pair of parentheses is not part of it:
+      # `Sendable` hides `@unchecked Sendable`, and `P` hides `nonisolated P`
+      # and `(P)`.
       # Pooled with realize.exclude: a name in either list hides every
       # inheritance or conformance edge to that class or protocol, whichever
       # arrow it is drawn with. Extension edges are dependency.exclude's.
