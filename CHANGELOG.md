@@ -144,6 +144,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
   `inheritance.exclude` and `realize.exclude` still match a supertype as
   written, and `deps --types` keeps its own match.
+- **An extension written through a typealias extends the aliased type**
+  (#125). The parser dropped every `typealias`, so after
+  `typealias Alias = Real`, `extension Alias` was taken for an extension
+  of a type outside the diagram: `--merge-extensions` kept it in a box of
+  its own, it got no `ext` edge, and SVG and Studio's canvas hung a type
+  nested in it off the extension box rather than `Real`. Two extensions
+  through one alias got no edges. Worse, a module's own
+  `typealias Inner = Outer.Inner` sent its extensions' members and edges
+  to an imported `Inner`. Typealiases are now parsed, top level and
+  nested, and the type lookup behind the merge, the `ext` edge and SVG's
+  edge ends ranks each alias with the types of its name by Swift's
+  access and file-then-module rules, then follows it, through chains and
+  nested aliases. An alias of a bound generic (`Box<Int>`) resolves to
+  `Box`. `extension JSON` and `extension [String: Int]` share one merged
+  box. SVG's supertype edge reaches the protocol behind a
+  `typealias Q = Proto`. Extension ids and labels are unchanged. Not
+  changed yet: sequence and activity diagrams, the text formats'
+  supertype edges and `deps --types` still use the name as written.
 - **A type written across lines is read as it is on one line** (#155).
   `struct Circle: Swift` with `.Equatable` on the next line named its
   supertype `"Swift\n    .Equatable"`, line break and indent included.

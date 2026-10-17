@@ -33,14 +33,19 @@ extension LayoutGraphBuilder {
         let ownAccess: ElementAccessibility
         /// The type the enclosing extension extends, as written there, when there is one.
         let extended: (name: String, scope: Scope)?
+        /// For a typealias, the name of the type it aliases, looked up from its own scope (#125).
+        let aliasTarget: String?
 
-        init(_ item: SyntaxStructure, kind: ElementKind, nodeId: String?) {
+        /// `container` is the declaration `item` is a member of, when `item.parent` is not set:
+        /// a typealias is never flattened out of its type's members.
+        init(_ item: SyntaxStructure, kind: ElementKind, nodeId: String?, in container: SyntaxStructure? = nil) {
             self.nodeId = nodeId
             declaration = ObjectIdentifier(item)
             isExtension = kind == .extension
+            aliasTarget = kind == .typealias ? item.typename : nil
             scope = Scope(of: item)
             // Extensions are top level, so a chain holds at most one, last.
-            let chain = Array(sequence(first: item, next: \.parent))
+            let chain = Array(sequence(first: item) { $0 === item ? container ?? $0.parent : $0.parent })
             let declared = chain.prefix { $0.kind != .extension }
             var levels = declared.map { $0.accessibility.flatMap { $0 == .other ? nil : $0 } ?? .internal }
             if let enclosing = chain.first(where: { $0.kind == .extension }), !levels.isEmpty,
@@ -65,34 +70,76 @@ extension LayoutGraphBuilder {
     struct TypeLookup {
         private var declaredForName: [String: [Declared]] = [:]
 
-        /// A lookup of every type and extension in `items`, none of them drawn.
+        /// A lookup of every type, extension and typealias in `items`, none of them drawn.
         init(of items: [SyntaxStructure] = []) {
             for item in items {
                 guard let kind = item.kind, ElementKind.processable.contains(kind),
                       let name = item.fullName ?? item.name else { continue }
                 record(Declared(item, kind: kind, nodeId: nil), named: name)
             }
+            recordAliases(in: items)
         }
 
         mutating func record(_ declared: Declared, named name: String) {
             declaredForName[name, default: []].append(declared)
         }
 
-        /// Every declaration recorded under `name`, types and extensions, in recording order.
+        /// Records the typealiases among `items` and among their members, a member as
+        /// `Container.Alias`, so a name written through one means the type it aliases (#125). Run
+        /// after the types are recorded: when nothing else tells two candidates apart, `nearest`
+        /// picks the first, and that should be a type.
+        mutating func recordAliases(in items: [SyntaxStructure]) {
+            for item in items {
+                if item.kind == .typealias, let name = item.fullName ?? item.name {
+                    record(Declared(item, kind: .typealias, nodeId: nil), named: name)
+                }
+                guard let kind = item.kind, ElementKind.processable.contains(kind),
+                      let containerName = item.fullName ?? item.name else { continue }
+                for member in item.substructure ?? [] where member.kind == .typealias {
+                    guard let name = member.name else { continue }
+                    record(Declared(member, kind: .typealias, nodeId: nil, in: item), named: "\(containerName).\(name)")
+                }
+            }
+        }
+
+        /// Every declaration recorded under `name`, types, typealiases and extensions, in
+        /// recording order.
         func declarations(named name: String) -> [Declared] {
             declaredForName[name] ?? []
         }
 
         /// The type a name means where it is written, close to how Swift looks it up: the nearest
-        /// (`DeclarationScope.nearest(among:scope:)`) of the types visible there, drawn or hidden;
-        /// `nil` when there is none, only extensions or nothing. A name is never matched against
+        /// (`DeclarationScope.nearest(among:scope:)`) of the types and typealiases visible there,
+        /// drawn or hidden, and for a typealias the type it aliases, as seen from the alias;
+        /// `nil` when there is none, only extensions or nothing, or when the alias names a type
+        /// outside the diagram. A typealias ranks with the types, so a module's own alias shadows
+        /// an imported type of its name, as in Swift (#125). A name is never matched against
         /// node ids: an undeclared `Foo_1` must not land on the node issued `Foo_1` as the second
         /// declaration of `Foo`.
         func type(named name: String, from scope: Scope, depth: Int = 0) -> Declared? {
-            let types = declarations(named: name).filter {
+            guard let nearest = nearestDeclaration(named: name, from: scope, depth: depth) else { return nil }
+            guard let target = nearest.aliasTarget else { return nearest }
+            // Each step follows one alias; Swift rejects a cycle, and the guard is a backstop.
+            guard depth < 8 else { return nil }
+            return type(named: target, from: nearest.scope, depth: depth + 1)
+        }
+
+        /// The name `name` comes to where it is written once every typealias it goes through is
+        /// followed: `Dictionary` for `JSON` after `typealias JSON = [String: Int]`, and `name`
+        /// itself when the declaration it means is no typealias. Two extensions of one type
+        /// outside the diagram share this name however each spells the type.
+        func resolvedName(of name: String, from scope: Scope, depth: Int = 0) -> String {
+            guard depth < 8, let nearest = nearestDeclaration(named: name, from: scope, depth: depth),
+                  let target = nearest.aliasTarget else { return name }
+            return resolvedName(of: target, from: nearest.scope, depth: depth + 1)
+        }
+
+        /// The nearest of the types and typealiases named `name` that are visible from `scope`.
+        private func nearestDeclaration(named name: String, from scope: Scope, depth: Int) -> Declared? {
+            let candidates = declarations(named: name).filter {
                 !$0.isExtension && isVisible($0, from: scope, depth: depth)
             }
-            return scope.nearest(among: types, scope: \.scope)
+            return scope.nearest(among: candidates, scope: \.scope)
         }
 
         /// Whether a name written in `lookup` can mean `declared`, as Swift's access control
@@ -144,6 +191,13 @@ extension LayoutGraphBuilder {
             guard entry.kind != .extension else { return }
             lookup.record(Declared(entry.item, kind: entry.kind, nodeId: nil), named: entry.name)
             hiddenDeclarations.insert(ObjectIdentifier(entry.item))
+            extensionEnds = ExtensionEnds()
+        }
+
+        /// Records the typealiases among `items`, the items the diagram was built from, once
+        /// every type is recorded (`TypeLookup.recordAliases(in:)`).
+        mutating func recordAliases(in items: [SyntaxStructure]) {
+            lookup.recordAliases(in: items)
             extensionEnds = ExtensionEnds()
         }
 

@@ -301,7 +301,39 @@ final class SyntaxStructureBuilder: SyntaxVisitor {
         _ = node; return .skipChildren
     }
 
+    /// Records a typealias with the type it names in `typename`, named as an extension of that
+    /// type is (`extendedTypeName`): `Box<Int>` → `Box`, `[String: Int]` → `Dictionary`. No pass
+    /// draws it; `TypeLookup` follows it, so `extension Alias` extends the aliased type (#125). An
+    /// alias of a type no extension can extend, a function type say, and one local to a body are
+    /// left out: neither can be what an extension's name means.
     override func visit(_ node: TypeAliasDeclSyntax) -> SyntaxVisitorContinueKind {
-        _ = node; return .skipChildren
+        guard let target = node.initializer.value.extendedTypeName, !isLocal(node) else { return .skipChildren }
+        let structure = SyntaxStructure(
+            accessibility: extractAccessibility(from: node.modifiers),
+            kind: .typealias,
+            name: node.name.canonicalName,
+            typename: target
+        )
+        stampLocation(on: structure, at: node.name.positionAfterSkippingLeadingTrivia)
+        if typeStack.isEmpty {
+            topLevelItems.append(structure)
+        } else {
+            appendMember(structure)
+        }
+        return .skipChildren
+    }
+
+    /// Whether `node` is declared in a function, closure, accessor or statement body, where the
+    /// name it declares means something only inside that body.
+    private func isLocal(_ node: some SyntaxProtocol) -> Bool {
+        var ancestor = node.parent
+        while let current = ancestor, !current.is(MemberBlockSyntax.self) {
+            if current.is(CodeBlockSyntax.self) || current.is(ClosureExprSyntax.self)
+                || current.is(AccessorBlockSyntax.self) {
+                return true
+            }
+            ancestor = current.parent
+        }
+        return false
     }
 }

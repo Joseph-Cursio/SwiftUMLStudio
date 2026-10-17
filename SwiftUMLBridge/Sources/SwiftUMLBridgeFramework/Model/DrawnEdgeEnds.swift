@@ -24,6 +24,7 @@ struct DrawnEdgeEnds {
             endIds.record(String(index), for: entry)
             elementForKey[String(index)] = item
         }
+        endIds.recordAliases(in: prepared)
     }
 
     /// The drawn element `end` resolves to, or `nil` when it resolves to none.
