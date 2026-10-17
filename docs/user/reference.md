@@ -912,7 +912,7 @@ Dependency graphs visualize how types or modules depend on one another. The `dep
 - **Types mode** (default): edges represent inheritance (`inherits`) and protocol conformance (`conforms`).
 - **Modules mode** (`--modules`): edges represent import statements (`imports`), with the source module name derived from the parent directory of each source file.
 
-Both PlantUML and Mermaid output are supported.
+PlantUML, Mermaid, Nomnoml and SVG output are supported; this section describes the first three.
 
 #### PlantUML dependency graph format
 
@@ -958,6 +958,30 @@ graph TD
 - Cyclic nodes receive a `style SafeId fill:#ffcccc,stroke:#cc0000` line (red fill and border). Style lines are omitted when no cycles are detected.
 - Node IDs are sanitized: spaces, dots, angle brackets, and hyphens are replaced with underscores to produce valid Mermaid identifiers.
 - Browser output uses the same base64 JSON encoding as Mermaid class and sequence diagrams, opened at mermaid.live.
+
+#### Nomnoml dependency graph format
+
+**Script structure:**
+
+```
+#direction: down
+#fontSize: 12
+#spacing: 60
+#edges: rounded
+
+// Cyclic nodes: ModA, ModB
+#.warning: fill=#ffcccc stroke=#cc0000
+[<warning> ModA]
+[<warning> ModB]
+
+[App] --> [ModA]
+[ModB] --> [ModA]
+[ModA] --> [ModB]
+```
+
+- Each edge is rendered as `[From] arrow [To]`, with no label. The arrow is `-:>` for `inherits`, `--:>` for `conforms` and `-->` for `imports`.
+- With `--package`, a node with a stereotype is written with it on every line, as `[Shape «Geometry»]` or `[Core «library»]`. nomnoml names a node by its text, so every line must spell a node the same way.
+- When cycles are detected, the `#.warning` style is declared once, and each cyclic node is declared as a `[<warning> …]` box before the edges. nomnoml keeps the first box of each name, so the edges draw those red boxes. The `// Cyclic nodes:` comment lists the raw names. None of these lines is written when no cycles are detected.
 
 ---
 

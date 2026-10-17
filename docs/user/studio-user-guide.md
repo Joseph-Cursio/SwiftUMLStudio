@@ -445,6 +445,7 @@ When the generator detects a dependency cycle, the nodes involved are highlighte
 
 - **Mermaid format** — cyclic nodes receive a red fill (`fill:#ffcccc, stroke:#cc0000`) applied via a `style` directive.
 - **PlantUML format** — a `note as CyclicDependencies` block is appended at the bottom of the diagram listing the names of the cyclic nodes.
+- **Nomnoml format** — cyclic nodes are drawn with a red fill and border (`fill=#ffcccc stroke=#cc0000`), through a `warning` node style.
 
 ---
 
@@ -611,6 +612,7 @@ Cyclic nodes — those involved in a dependency cycle — are annotated automati
 |---|---|
 | **Mermaid** | Node background filled red (`fill:#ffcccc, stroke:#cc0000`) |
 | **PlantUML** | `note as CyclicDependencies` block listing affected node names |
+| **Nomnoml** | Node filled red, with a red border (`fill=#ffcccc stroke=#cc0000`) |
 
 ### Activity Diagram
 

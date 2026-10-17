@@ -185,7 +185,7 @@ Expected. Mermaid has no dedicated component-diagram dialect, so `swiftumlbridge
 
 ### Deps graph shows a cycle I can't find
 
-The cycle annotation lists every participating node. In PlantUML output, look for the trailing `note as CyclicDependencies` block; in Mermaid, look for `style <Node> fill:#ffcccc` directives. The cycle exists in the directed graph — trace forward from any annotated node and you'll close it within the listed set.
+The cycle annotation lists every participating node. In PlantUML output, look for the trailing `note as CyclicDependencies` block; in Mermaid, look for `style <Node> fill:#ffcccc` directives; in Nomnoml, look for the `[<warning> <Node>]` lines above the edges. The cycle exists in the directed graph — trace forward from any annotated node and you'll close it within the listed set.
 
 ---
 
