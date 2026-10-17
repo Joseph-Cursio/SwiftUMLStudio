@@ -64,7 +64,7 @@ final class CallGraphExtractor: TypeStackVisitor {
             )
         } else {
             // Closure or other complex expression — unresolved
-            let rawDesc = calledExpr.trimmedDescription
+            let rawDesc = calledExpr.singleLineDescription
             return CallEdge(
                 callerType: callerType, callerMethod: callerMethod,
                 calleeType: nil, calleeMethod: rawDesc,
@@ -96,7 +96,7 @@ final class CallGraphExtractor: TypeStackVisitor {
         } else if let declRef = called?.as(DeclReferenceExprSyntax.self) {
             baseText = declRef.baseName.canonicalName
         } else {
-            baseText = base.canonicalDescription
+            baseText = base.singleLineDescription
         }
         // `self.refresh()`, or `self().refresh()` through `callAsFunction`. Told from the token, so
         // a comment beside it does not count and `` `self` `` is `self` as well, though

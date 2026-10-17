@@ -34,7 +34,8 @@ extension SyntaxProtocol {
     }
 
     /// `canonicalDescription`, read as if written on one line: `Swift` then `.Equatable` on the
-    /// next line is `Swift.Equatable`, and `Generic<` / `Int` / `>` is `Generic<Int>` (#155). Where
+    /// next line is `Swift.Equatable`, and `Generic<` / `Int` / `>` is `Generic<Int>` (#155); the
+    /// receiver of `Store` / `.shared` / `.load()` is `Store.shared` (#133). Where
     /// the trivia between two tokens breaks the line, it is dropped after `.`, `(`, `[` or `<` and
     /// before `.`, `)`, `]`, `>` or `,`, and is one space elsewhere, so `Equatable` / `& Sendable`
     /// is `Equatable & Sendable`. A comment in that trivia goes with it. Trivia within a line is
