@@ -157,13 +157,14 @@ final class ERModelExtractor: SyntaxVisitor {
     /// `(\Book.author)` or `\Book.author as AnyKeyPath`. It is read from the key path's syntax, so
     /// a comment beside the argument cannot hide or fake one (#128), and the name is read as the
     /// declared label is: `\Book.`author`` names `var author`, and `\Book.`default`` keeps its
-    /// backticks, as `var `default`` does (#123).
+    /// backticks, as `var `default`` does (#123). So does `\Book.default`, the same property written
+    /// without the backticks a keyword needs only where it is declared (#130).
     private static func inverseProperty(of attribute: AttributeSyntax) -> String? {
         guard let inverse = arguments(of: attribute).first(where: { $0.label?.canonicalName == "inverse" }),
               let keyPath = firstKeyPath(in: Syntax(inverse.expression)) else { return nil }
         for component in keyPath.components.reversed() {
             if case .property(let property) = component.component {
-                return property.declName.baseName.canonicalName
+                return property.declName.baseName.memberReferenceName
             }
         }
         return nil
