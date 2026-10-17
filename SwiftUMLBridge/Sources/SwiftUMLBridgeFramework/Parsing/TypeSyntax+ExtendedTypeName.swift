@@ -78,6 +78,24 @@ extension TypeSyntax {
         guard let composition = type.as(CompositionTypeSyntax.self) else { return [type] }
         return composition.elements.flatMap(\.type.conformedTypes)
     }
+
+    /// Whether this type is a framework's `name`, written bare or with that framework's `module`:
+    /// `names("Model", bareOrIn: "SwiftData")` is true for `Model` and `SwiftData.Model`, also
+    /// spelt `` `SwiftData`.`Model` `` or `SwiftData . Model`, and false for `MyKit.Model`, for a
+    /// longer path, and for a raw identifier such as `` `SwiftData.Model` ``. Read on the syntax
+    /// tree, not by splitting text at `.`. Generic arguments are not read (#134).
+    func names(_ name: String, bareOrIn module: String) -> Bool {
+        switch self.as(TypeSyntaxEnum.self) {
+        case .identifierType(let identifier):
+            return identifier.name.canonicalName == name
+        case .memberType(let member):
+            guard member.name.canonicalName == name,
+                  let base = member.baseType.as(IdentifierTypeSyntax.self) else { return false }
+            return base.genericArgumentClause == nil && base.name.canonicalName == module
+        default:
+            return false
+        }
+    }
 }
 
 private extension AttributedTypeSyntax {

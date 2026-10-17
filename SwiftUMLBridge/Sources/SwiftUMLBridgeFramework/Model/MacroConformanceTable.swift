@@ -12,10 +12,14 @@ enum MacroConformanceTable: Sendable {
         table[macroName] ?? []
     }
 
+    /// Each macro is listed bare and with its own module, as `@SwiftData.Model` writes it (#134).
+    /// A macro of the same name from any other module adds nothing.
     private static let table: [String: [String]] = [
         // Observation framework (Swift 5.9+ / iOS 17+)
         "Observable": ["Observable"],
+        "Observation.Observable": ["Observable"],
         // SwiftData
-        "Model": ["Observable", "PersistentModel"]
+        "Model": ["Observable", "PersistentModel"],
+        "SwiftData.Model": ["Observable", "PersistentModel"]
     ]
 }

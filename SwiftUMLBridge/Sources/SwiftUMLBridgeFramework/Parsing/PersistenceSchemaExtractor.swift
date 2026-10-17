@@ -179,14 +179,13 @@ public enum PersistenceSchemaExtractor {
         func conformsToGRDBRecord(_ clause: InheritanceClauseSyntax) -> Bool {
             for inherited in clause.inheritedTypes {
                 // `nonisolated FetchableRecord` (#152) and `(FetchableRecord)` (#160) are a
-                // `FetchableRecord`, and `A & B` is read part by part.
+                // `FetchableRecord`, and `A & B` is read part by part. `GRDB.FetchableRecord` is
+                // one written with its module (#134).
                 for type in inherited.type.conformedTypes {
-                    let part = type.canonicalDescription
-                    // Strip generics
-                    let bare = part.split(separator: "<").first.map(String.init) ?? part
-                    if PersistenceSchemaExtractor.grdbRecordProtocols.contains(bare) {
-                        return true
+                    let isRecord = PersistenceSchemaExtractor.grdbRecordProtocols.contains {
+                        type.names($0, bareOrIn: "GRDB")
                     }
+                    if isRecord { return true }
                 }
             }
             return false
@@ -253,10 +252,15 @@ public enum PersistenceSchemaExtractor {
             }
             // Generic specialization, e.g. `Expression<Int64>("id")`. The
             // .expression slot holds the bare DeclReference under the type
-            // arguments — unwrap to get the function name.
-            if let generic = call.calledExpression.as(GenericSpecializationExprSyntax.self),
-               let baseRef = generic.expression.as(DeclReferenceExprSyntax.self) {
-                return baseRef.baseName.canonicalName
+            // arguments — unwrap to get the function name. `SQLite.Expression<Int64>("id")` holds
+            // a member access there, read as the unspecialised one above is (#134).
+            if let generic = call.calledExpression.as(GenericSpecializationExprSyntax.self) {
+                if let baseRef = generic.expression.as(DeclReferenceExprSyntax.self) {
+                    return baseRef.baseName.canonicalName
+                }
+                if let memberAccess = generic.expression.as(MemberAccessExprSyntax.self) {
+                    return memberAccess.declName.baseName.canonicalName
+                }
             }
             return nil
         }
