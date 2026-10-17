@@ -367,7 +367,7 @@ Extensions are shown as separate nodes by default. Three flags change this behav
 | Flag | Effect |
 |---|---|
 | `--show-extensions` | Show each extension as a separate node (default) |
-| `--merge-extensions` | Fold extension members back into the parent type node, and draw the conformances extensions declare from it |
+| `--merge-extensions` | Fold extension members back into the parent type node, and draw the conformances extensions declare from it. When the diagram hides that type, its first extension keeps its node and the others fold into it |
 | `--hide-extensions` | Remove all extensions from the diagram |
 
 ```bash
