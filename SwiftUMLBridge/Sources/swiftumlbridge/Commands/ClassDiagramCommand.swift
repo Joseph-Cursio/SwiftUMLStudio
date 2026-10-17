@@ -52,7 +52,7 @@ extension SwiftUMLBridgeCLI {
         var paths = [String]()
 
         mutating func run() async throws {
-            var bridgeConfig = ConfigurationProvider().getConfiguration(for: self.config)
+            var bridgeConfig = try ConfigurationLoader().load(config)
 
             if !exclude.isEmpty {
                 bridgeConfig.files.exclude = exclude

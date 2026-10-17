@@ -39,7 +39,7 @@ extension SwiftUMLBridgeCLI {
         @OptionGroup var common: CommonDiagramOptions
 
         mutating func run() async throws {
-            var bridgeConfig = common.resolvedConfiguration()
+            var bridgeConfig = try common.resolvedConfiguration()
 
             if publicOnly {
                 bridgeConfig.elements = ElementOptions(

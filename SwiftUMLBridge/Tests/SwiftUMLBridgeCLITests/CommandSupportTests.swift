@@ -153,7 +153,7 @@ struct ResolvedConfigurationTests {
     func formatOverrides() throws {
         let options = try CommonDiagramOptions.parse(["--format", "mermaid"])
 
-        #expect(options.resolvedConfiguration().format == .mermaid)
+        #expect(try options.resolvedConfiguration().format == .mermaid)
     }
 
     @Test("omitting --format leaves the configuration's own format in place")
@@ -161,7 +161,7 @@ struct ResolvedConfigurationTests {
         let options = try CommonDiagramOptions.parse([])
         let expected = ConfigurationProvider().getConfiguration(for: nil).format
 
-        #expect(options.resolvedConfiguration().format == expected)
+        #expect(try options.resolvedConfiguration().format == expected)
     }
 
     @Test("every format value the help text advertises is accepted")
