@@ -123,6 +123,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   #152's attributes (`(@MainActor P)`, `@unchecked (Sendable)`,
   `@MainActor ((P))`), and a composition is split into its parts on the
   syntax tree rather than at each `&` in its text.
+- **An `&` inside one supertype's name no longer splits it.**
+  `final class Sub: Base<any P & Q>` drew edges to `Base<any P` and
+  `Q>` in PlantUML, Mermaid and Nomnoml class diagrams and in `deps`,
+  and `` struct File: `Read & Write` `` drew them to `` `Read `` and
+  `` Write` ``. Since #160 the parser splits a composition into its
+  parts itself, so the class-diagram linking and `deps` no longer split
+  a name at `&` again: `Sub` draws one edge to `Base`, and `File` one to
+  `` `Read & Write` ``. SVG already drew them so.
 - **A call receiver written across lines is the receiver written on
   one line** (#133). `Store` / `.shared` / `.load()` on three lines named
   its participant by its text, line breaks and indent included, so it
