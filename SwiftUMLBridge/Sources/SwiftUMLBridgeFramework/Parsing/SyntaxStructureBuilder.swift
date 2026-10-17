@@ -117,18 +117,12 @@ final class SyntaxStructureBuilder: SyntaxVisitor {
         guard let clause else { return nil }
         var result: [SyntaxStructure] = []
         for inherited in clause.inheritedTypes {
-            // `@unchecked Sendable` conforms to `Sendable`: every reader, from the edges to the
-            // excludes, `deps` and `TypeInfo`, takes the plain name (#152).
-            let typeName = inherited.type.conformedType.singleLineDescription
-            if typeName.contains("&") {
-                // Compound type (A & B) — split into individual entries
-                let parts = typeName.components(separatedBy: "&")
-                    .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-                    .filter { !$0.isEmpty }
-                result.append(contentsOf: parts.map { SyntaxStructure(name: $0) })
-            } else if !typeName.isEmpty {
+            // `@unchecked Sendable` is `Sendable` (#152) and `(P & Q)` is `P` and `Q` (#160): every
+            // reader, from the edges to the excludes, `deps` and `TypeInfo`, takes the plain names.
+            for type in inherited.type.conformedTypes {
+                let typeName = type.singleLineDescription
                 // An entry with no type, as in the unfinished `class Foo: {}`, names nothing.
-                result.append(SyntaxStructure(name: typeName))
+                if !typeName.isEmpty { result.append(SyntaxStructure(name: typeName)) }
             }
         }
         return result.isEmpty ? nil : result
