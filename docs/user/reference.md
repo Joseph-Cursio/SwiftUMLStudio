@@ -845,7 +845,7 @@ participant CalleeType
 
 EntryType -> CalleeType : resolvedMethod()
 EntryType ->> CalleeType : asyncMethod()
-note right: Unresolved: variableCall()
+note right of EntryType: Unresolved: variableCall()
 @enduml
 ```
 
@@ -856,7 +856,7 @@ note right: Unresolved: variableCall()
 | `->` | Synchronous call |
 | `->>` | Asynchronous call (wrapped in `await`) |
 
-Unresolved calls (variable-receiver, closures) appear as `note right: Unresolved: expr()` and are not expanded further.
+Unresolved calls (variable-receiver, closures) appear as `note right of <Caller>: Unresolved: expr()` and are not expanded further. `<Caller>` is the type whose method made the call, so the note sits on that participant's lifeline, not on the message before it.
 
 **Browser output:** Same encoding as class diagrams — opened at planttext.com.
 
@@ -872,7 +872,7 @@ participant CalleeType
 
 EntryType->>CalleeType: resolvedMethod()
 EntryType-->>CalleeType: asyncMethod()
-Note right of CalleeType: Unresolved: variableCall()
+Note right of EntryType: Unresolved: variableCall()
 ```
 
 **Arrow styles:**
@@ -882,7 +882,7 @@ Note right of CalleeType: Unresolved: variableCall()
 | `->>` | Synchronous call (solid arrowhead) |
 | `-->>` | Asynchronous call (dashed, indicating async) |
 
-Unresolved calls appear as `Note right of <lastParticipant>: Unresolved: expr()`.
+Unresolved calls appear as `Note right of <Caller>: Unresolved: expr()`, beside the type whose method made the call. In SVG, and on Studio's canvas, the note is centred 60 points right of that type's lifeline.
 
 **Browser output:** Same base64 JSON encoding as class diagrams — opened at mermaid.live.
 
@@ -1739,7 +1739,7 @@ participant Database
 
 MyService -> Database : fetchRecord()
 MyService ->> Database : asyncFlush()
-note right: Unresolved: completion()
+note right of MyService: Unresolved: completion()
 @enduml
 ```
 
@@ -1753,7 +1753,7 @@ participant Database
 
 MyService->>Database: fetchRecord()
 MyService-->>Database: asyncFlush()
-Note right of Database: Unresolved: completion()
+Note right of MyService: Unresolved: completion()
 ```
 
 ---

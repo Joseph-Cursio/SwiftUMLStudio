@@ -771,7 +771,7 @@ Toggle this in the Snapshots section of the Explorer sidebar.
 
 **`async` and `throws` not shown in class diagrams.** Class diagram member labels omit `async`/`throws` annotations. Sequence diagrams correctly distinguish `await`-wrapped calls with a distinct arrow.
 
-**Variable-receiver calls are unresolved in sequence diagrams.** `dep.doWork()` where `dep` is a local variable or parameter cannot be resolved statically. Such calls appear as notes in the diagram and are not expanded further.
+**Variable-receiver calls are unresolved in sequence diagrams.** `dep.doWork()` where `dep` is a local variable or parameter cannot be resolved statically. Such calls appear as notes in the diagram, beside the type that made the call, and are not expanded further.
 
 **A file nested more than 256 levels deep is read only up to that point.** SwiftParser follows nesting 256 levels deep, counting each `(`, `[`, `{` and `#if` it is inside, type and function bodies included. Past that it reads the rest of the file as unexpected text, so nothing after that point, whether declarations, calls or imports, appears in any diagram. The parse still completes, and what came before it is drawn.
 
