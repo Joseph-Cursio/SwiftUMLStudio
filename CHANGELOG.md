@@ -900,6 +900,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed — Bridge
 
+- **`classdiagram`'s extension flags override the config file** (#156).
+  `--show-extensions`, `--merge-extensions` and `--hide-extensions`
+  applied only when `.swiftumlbridge.yml` left `elements.showExtensions`
+  out, so with the tutorial's `showExtensions: merged` they did nothing,
+  with no message, though the reference and user guide said they
+  override the file. They now do, as `--format` overrides `format`, and
+  the last of several wins, as the reference said; two of them used to
+  exit 64. With no flag the config file still decides, and without the
+  key extensions are drawn as their own boxes, as before.
 - **Component diagrams requested in Nomnoml fall back to Mermaid, like
   sequence, activity, state and ER.** Nomnoml has no component dialect,
   and `ComponentScript` was the one emitter that sent that case to
@@ -977,6 +986,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Documentation
 
+- **The reference states the `elements` defaults the code has** (#156).
+  `showMemberAccessLevelAttribute` is on by default, so every member is
+  marked `+`, `~` or `-` in all four formats; `false` removes them.
+  `mergedExtensionMemberIndicator` defaults to `<&bolt>`, appended after
+  a space in PlantUML only; `""` removes it and `null` keeps it. The
+  configuration table's `elements` default leaves `fileprivate` out, and
+  the README's example used an `accessLevel` key that does not exist:
+  it now sets `havingAccessLevel`.
 - **The user docs say what `--format svg` and `--format nomnoml` do on
   the CLI** (#82). The reference, user guide and README said the CLI
   emits text only for `plantuml` and `mermaid` and never writes SVG to
