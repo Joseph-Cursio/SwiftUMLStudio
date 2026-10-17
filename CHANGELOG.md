@@ -96,6 +96,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed — Bridge
 
+- **A type written across lines is read as it is on one line** (#155).
+  `struct Circle: Swift` with `.Equatable` on the next line named its
+  supertype `"Swift\n    .Equatable"`, line break and indent included.
+  PlantUML and Mermaid class diagrams wrote that edge over two lines,
+  and Studio's bundled Mermaid rejected the whole class diagram;
+  `deps --types` in Mermaid and Nomnoml sent the edge to a bare `Swift`
+  node, shared by every such supertype; an edge to a declared type
+  (`Outer` / `.Base`) was lost in SVG; and `--exclude` and the
+  relationship excludes no longer matched. Supertypes, compositions
+  (`Equatable` / `& Sendable`), generic constraints, attribute names,
+  `extension Foo<…>` arguments and property types — including those
+  from the SourceKit typename supplement, as in `var low, high:` — are
+  now read on one line: a line break is dropped beside `.`, `(`, `[`,
+  `<` and before `)`, `]`, `>`, `,`, and is one space elsewhere. Text
+  written on one line reads as before.
+- **A call receiver written across lines is the receiver written on
+  one line** (#133). `Store` / `.shared` / `.load()` on three lines named
+  its participant by its text, line breaks and indent included, so it
+  was a participant apart from `Store.shared`, and each Mermaid and
+  PlantUML line naming it was split. A comment line inside the receiver
+  became part of its name. The `Unresolved:` notes of sequence diagrams
+  (`{` / `1 + 2` / `}()`) and state-machine `where` guards did the same.
+  All three now read as #155's types do. A name in them is also read
+  without needless backticks, as receivers already were:
+  `` `handlers`[0]() `` is noted as `handlers[0]()`.
+
 - **A long chain or cycle no longer crashes `deps` or the component
   layout** (#149). `DependencyGraphModel.detectCycles` recursed once per
   node on its search path, on the caller's thread — a cooperative thread
@@ -228,7 +254,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
     sequence diagrams held the comment: `// load first` above `load()`
     labelled the action `// load first load()`.
 
-  A comment between a name's tokens is unchanged, and stays in labels.
+  A comment between a name's tokens on one line is unchanged, and stays
+  in labels; one beside a line break inside a type is dropped (#155).
   `@Attribute`'s options and `@Relationship`'s `inverse:` are now read
   from the syntax rather than searched for in the arguments' text:
   - `@Attribute(.externalStorage, /* not .unique */ originalName: "c")`

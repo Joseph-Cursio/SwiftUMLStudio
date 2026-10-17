@@ -32,6 +32,35 @@ extension SyntaxProtocol {
         // Detached, so the rewriter does not rebuild the whole tree above the node for each name.
         return CanonicalNameRewriter(viewMode: .sourceAccurate).rewrite(self, detach: true).trimmedDescription
     }
+
+    /// `canonicalDescription`, read as if written on one line: `Swift` then `.Equatable` on the
+    /// next line is `Swift.Equatable`, and `Generic<` / `Int` / `>` is `Generic<Int>` (#155); the
+    /// receiver of `Store` / `.shared` / `.load()` is `Store.shared` (#133). Where
+    /// the trivia between two tokens breaks the line, it is dropped after `.`, `(`, `[` or `<` and
+    /// before `.`, `)`, `]`, `>` or `,`, and is one space elsewhere, so `Equatable` / `& Sendable`
+    /// is `Equatable & Sendable`. A comment in that trivia goes with it. Trivia within a line is
+    /// kept, so text written on one line reads as `canonicalDescription` does.
+    var singleLineDescription: String {
+        guard trimmedDescription.contains(where: \.isNewline) else { return canonicalDescription }
+        let joinsAfter: Set<TokenKind> = [.period, .leftParen, .leftSquare, .leftAngle]
+        let joinsBefore: Set<TokenKind> = [.period, .rightParen, .rightSquare, .rightAngle, .comma]
+        var text = ""
+        var previous: TokenSyntax?
+        for token in tokens(viewMode: .sourceAccurate) {
+            if let previous {
+                // A block comment can break the line too, so look at the text, not the pieces.
+                let between = (previous.trailingTrivia + token.leadingTrivia).description
+                if !between.contains(where: \.isNewline) {
+                    text += between
+                } else if !joinsAfter.contains(previous.tokenKind), !joinsBefore.contains(token.tokenKind) {
+                    text += " "
+                }
+            }
+            text += token.canonicalName
+            previous = token
+        }
+        return text
+    }
 }
 
 extension String {
@@ -41,6 +70,14 @@ extension String {
         guard count > 2, hasPrefix("`"), hasSuffix("`") else { return self }
         let name = String(dropFirst().dropLast())
         return !name.contains("`") && name.isUnescapable ? name : self
+    }
+
+    /// This type, as SourceKit's `key.typename` writes it, read as `singleLineDescription` reads
+    /// a parsed one: SourceKit gives the text as written, line breaks and all (#155).
+    var singleLineTypeName: String {
+        guard contains(where: \.isNewline) else { return self }
+        var parser = Parser(self)
+        return TypeSyntax.parse(from: &parser).singleLineDescription
     }
 
     /// Whether this name reads the same without backticks wherever it is written: not a raw
