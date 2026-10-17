@@ -104,7 +104,7 @@ public enum ComponentSVGRenderer {
     /// components in *later* rows. Row 0 is the top of the canvas (the most
     /// "dependent" targets), the last row is the bottom (the most depended-on
     /// leaf libraries).
-    private static func dependencyLevels(for model: ComponentModel) -> [[String]] {
+    static func dependencyLevels(for model: ComponentModel) -> [[String]] {
         let names = model.components.map(\.name)
         if names.isEmpty { return [] }
 
@@ -116,23 +116,9 @@ public enum ComponentSVGRenderer {
         }
 
         var depthCache: [String: Int] = [:]
-        func depth(of name: String, visiting: Set<String>) -> Int {
-            if let cached = depthCache[name] { return cached }
-            // Cycle guard — treat the back-edge as zero contribution.
-            if visiting.contains(name) { return 0 }
-            let downstream = adjacency[name] ?? []
-            if downstream.isEmpty {
-                depthCache[name] = 0
-                return 0
-            }
-            let result = 1 + (downstream
-                .map { depth(of: $0, visiting: visiting.union([name])) }
-                .max() ?? 0)
-            depthCache[name] = result
-            return result
+        let depths = names.map {
+            (name: $0, depth: chainDepth(of: $0, adjacency: adjacency, cache: &depthCache))
         }
-
-        let depths = names.map { (name: $0, depth: depth(of: $0, visiting: [])) }
         let maxDepth = depths.map(\.depth).max() ?? 0
         var rows = Array(repeating: [String](), count: maxDepth + 1)
         for entry in depths {
@@ -141,6 +127,61 @@ public enum ComponentSVGRenderer {
             rows[row].append(entry.name)
         }
         return rows
+    }
+
+    /// How many dependencies deep `start`'s longest chain goes, with a dependency already on the
+    /// walk's path counting as zero, so a cycle does not loop. Each finished target's depth goes
+    /// into `cache`, which later walks read first.
+    ///
+    /// The walk keeps its own path instead of recursing: a target line a few hundred long
+    /// overflowed the cooperative thread's stack that the CLI and Studio call this on (#149).
+    private static func chainDepth(
+        of start: String,
+        adjacency: [String: [String]],
+        cache: inout [String: Int]
+    ) -> Int {
+        /// A target the walk is inside, the index of its next dependency, and the deepest
+        /// chain found below it so far.
+        struct Step {
+            let name: String
+            var nextDependency = 0
+            var deepest = 0
+        }
+        var path: [Step] = []
+        var onPath = Set<String>()
+
+        /// The depth of `name` when it is known without walking further; otherwise steps into it
+        /// and returns nil.
+        func enter(_ name: String) -> Int? {
+            if let cached = cache[name] { return cached }
+            if onPath.contains(name) { return 0 }
+            if (adjacency[name] ?? []).isEmpty {
+                cache[name] = 0
+                return 0
+            }
+            path.append(Step(name: name))
+            onPath.insert(name)
+            return nil
+        }
+
+        if let known = enter(start) { return known }
+        while let step = path.last {
+            let downstream = adjacency[step.name] ?? []
+            if step.nextDependency < downstream.count {
+                path[path.count - 1].nextDependency += 1
+                if let known = enter(downstream[step.nextDependency]) {
+                    path[path.count - 1].deepest = max(step.deepest, known)
+                }
+                continue
+            }
+            path.removeLast()
+            onPath.remove(step.name)
+            let depth = 1 + step.deepest
+            cache[step.name] = depth
+            guard !path.isEmpty else { return depth }
+            path[path.count - 1].deepest = max(path[path.count - 1].deepest, depth)
+        }
+        return 0
     }
 
     // MARK: - Sizing
