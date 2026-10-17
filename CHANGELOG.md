@@ -96,6 +96,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed — Bridge
 
+- **`elements.exclude` hides a nested type and its extensions
+  together** (#154). `struct Inner` inside `enum Outer` was matched only
+  as `Inner`, and `extension Outer.Inner` only as `Outer.Inner`, so no
+  plain name hid both. `exclude: [Outer.Inner]` kept the struct, and
+  with `--merge-extensions` changed nothing at all, since the excluded
+  extension's members and conformance were merged into the drawn struct;
+  `exclude: [Inner]` kept the extension's box. Each type is now matched
+  by its own name and by its name with the types around it, and each
+  extension by the name it is written with and by its last component,
+  in every format and extension mode, and for `dependency.exclude` too.
+  Top-level names match as before. Three things a pattern can now reach:
+  - a prefix glob reaches nested types, as it already reached
+    extensions of them: `Diagram*` hides `DiagramView.Tab`;
+  - an extension of a type outside the diagram is matched by its last
+    component: `Name` hides `extension Notification.Name`;
+  - `Outer.Inner` no longer hides only the extension.
+
+  `inheritance.exclude` and `realize.exclude` still match a supertype as
+  written, and `deps --types` keeps its own match.
 - **A type written across lines is read as it is on one line** (#155).
   `struct Circle: Swift` with `.Equatable` on the next line named its
   supertype `"Swift\n    .Equatable"`, line break and indent included.
