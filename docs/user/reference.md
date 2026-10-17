@@ -550,19 +550,20 @@ elements:
     # Which type declarations (classes, structs, etc.) to include in the diagram.
     # Type: [AccessLevel]
     # Values: open | public | package | internal | private | fileprivate
-    # Default: [open, public, package, internal, private, fileprivate]
+    # Default: [open, public, package, internal, private] (fileprivate is left out)
     - public
     - internal
 
   showMembersWithAccessLevel:
     # Which member declarations (vars, funcs) to show inside included types.
-    # Type: [AccessLevel]  Default: [open, public, package, internal, private, fileprivate]
+    # Type: [AccessLevel]  Default: [open, public, package, internal, private]
+    # (fileprivate is left out)
     - public
 
   showMemberAccessLevelAttribute: true
     # When true, prefix each member with + (public/open), ~ (internal/package),
     # or - (private/fileprivate).
-    # Type: Bool  Default: false
+    # Type: Bool  Default: true
 
   showNestedTypes: true
     # When true, nested type declarations are shown as child nodes connected
@@ -589,8 +590,8 @@ elements:
 
   mergedExtensionMemberIndicator: "^"
     # String appended to member names that were merged from an extension.
-    # Only applies when showExtensions: merged.
-    # Type: String?  Default: nil
+    # Only applies when showExtensions: merged, and only PlantUML writes it.
+    # Type: String?  Default: "<&bolt>" (PlantUML's OpenIconic bolt)
 
   exclude:
     # Glob patterns matched against type names (not file paths).
@@ -981,7 +982,7 @@ Access level values used in `havingAccessLevel` and `showMembersWithAccessLevel`
 
 The indicator prefix is applied when `showMemberAccessLevelAttribute: true`. The same `+`/`~`/`-` symbols are used in both PlantUML and Mermaid output.
 
-**Default access level filter:** All six levels are included by default. To show only public API:
+**Default access level filter:** Every level except `fileprivate` is included by default, for types and members alike. List `fileprivate` explicitly to draw it. To show only public API:
 
 ```yaml
 elements:
