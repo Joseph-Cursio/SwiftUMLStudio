@@ -22,8 +22,9 @@ final class SyntaxStructureBuilder: SyntaxVisitor {
 
     // MARK: - Init
 
-    /// `qualifiedVarName → resolvedTypeName` from the SourceKit typename supplement.
-    private let typenameMap: [String: String]
+    /// The SourceKit typename supplement: the UTF-8 offset of a variable's name → the type
+    /// SourceKit gives it.
+    private let typenameMap: [Int: String]
 
     /// File path used when stamping each declaration's `sourceLocation`. May be
     /// empty when parsing from an in-memory string.
@@ -39,7 +40,7 @@ final class SyntaxStructureBuilder: SyntaxVisitor {
 
     init(
         viewMode: SyntaxTreeViewMode = .sourceAccurate,
-        typenameMap: [String: String] = [:],
+        typenameMap: [Int: String] = [:],
         filePath: String = "",
         locationConverter: SourceLocationConverter? = nil,
         module: String? = nil
@@ -88,12 +89,6 @@ final class SyntaxStructureBuilder: SyntaxVisitor {
     private func appendMember(_ member: SyntaxStructure) {
         guard !typeStack.isEmpty else { return }
         typeStack[typeStack.count - 1].children.append(member)
-    }
-
-    /// Qualified name for a variable within the current type stack context.
-    func qualifiedVarName(_ varName: String) -> String {
-        let typeNames = typeStack.compactMap(\.structure.name)
-        return (typeNames + [varName]).joined(separator: ".")
     }
 
     // MARK: - Extraction helpers
@@ -241,7 +236,8 @@ final class SyntaxStructureBuilder: SyntaxVisitor {
                 continue
             }
             let explicitTypename = binding.typeAnnotation?.type.singleLineDescription
-            let typename = explicitTypename ?? typenameMap[qualifiedVarName(name)]
+            let typename = explicitTypename
+                ?? typenameMap[binding.pattern.positionAfterSkippingLeadingTrivia.utf8Offset]
             appendMember(SyntaxStructure(accessibility: accessibility, kind: kind, name: name, typename: typename))
         }
         return .skipChildren

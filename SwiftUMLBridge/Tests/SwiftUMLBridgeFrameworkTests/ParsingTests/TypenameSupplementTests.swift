@@ -1,10 +1,12 @@
+import SwiftParser
+import SwiftSyntax
 import Testing
 @testable import SwiftUMLBridgeFramework
 
 /// In `var a, b: Int` the syntax gives only `b` a type annotation, and SourceKit's structure gives
 /// both names the shared type. So `a`'s type comes from the SourceKit typename supplement, which
-/// keys each variable by the types it is nested in. No other test reads the supplement: emptying
-/// its map passed the whole suite (#71).
+/// keys each variable by the UTF-8 offset of its name (#146). No other test reads the supplement:
+/// emptying its map passed the whole suite (#71).
 @Suite("The SourceKit typename supplement")
 struct TypenameSupplementTests {
 
@@ -23,5 +25,24 @@ struct TypenameSupplementTests {
         #expect(text.contains("~a : Int"), "\(text)")
         #expect(text.contains("~e : Double"), "\(text)")
         #expect(text.contains("~g : Bool"), "\(text)")
+    }
+
+    /// The builder looks a variable up by the offset SwiftSyntax gives its name, so every name
+    /// SourceKit types must be stored at that offset: after a byte-order mark, multi-byte text and
+    /// CRLF line ends, in backticks, and in a type nested in an extension.
+    @Test("the supplement stores each type at the offset SwiftSyntax gives the name", arguments: [
+        "\u{FEFF}// caf\u{E9} \u{1F600} \u{4E2D}\u{6587}\r\nlet s = \"\u{1F600}\"\r\n"
+            + "struct S {\r\n    var a, b: Int\r\n}\r\n",
+        "struct Option {\n    var `default`, fallback: Int\n}\n",
+        "struct Point {}\nextension Point {\n    struct Delta { var dx, dy: Int }\n}\n"
+    ])
+    func keysAreNameOffsets(source: String) {
+        let map = SyntaxStructure.buildTypenameMap(from: source, sdkPath: nil)
+        let names = Parser.parse(source: source).tokens(viewMode: .sourceAccurate)
+            .filter { $0.parent?.is(IdentifierPatternSyntax.self) == true && $0.text != "s" }
+        #expect(names.count == 2)
+        for name in names {
+            #expect(map[name.positionAfterSkippingLeadingTrivia.utf8Offset] == "Int", "\(name.text) in \(map)")
+        }
     }
 }
