@@ -178,7 +178,8 @@ public enum PersistenceSchemaExtractor {
 
         func conformsToGRDBRecord(_ clause: InheritanceClauseSyntax) -> Bool {
             for inherited in clause.inheritedTypes {
-                let raw = inherited.type.canonicalDescription
+                // `nonisolated FetchableRecord` is a `FetchableRecord` (#152).
+                let raw = inherited.type.conformedType.canonicalDescription
                 // Strip generics + protocol composition (`A & B`)
                 let parts = raw
                     .components(separatedBy: "&")

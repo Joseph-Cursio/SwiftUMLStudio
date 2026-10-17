@@ -96,6 +96,34 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed — Bridge
 
+- **An attributed conformance is drawn to the type it names** (#152).
+  `final class Box: @unchecked Sendable` named its supertype
+  `@unchecked Sendable`, and `@MainActor P` was `@MainActor P`. So:
+  - the edge ended on a box of that name, not on `Sendable` or on the
+    protocol `P` the sources declare. To a declared `P` it was drawn as
+    inheritance, `<|--` labelled `inherits`, and SVG drew no edge to `P`
+    at all;
+  - Mermaid rejected a whole class diagram or `deps` graph over one
+    such name, and `@unchecked Sendable` is common in Swift 6 code;
+  - `relationships` excludes written for `Sendable` or `P` missed it,
+    and so did `deps --exclude` and `elements.exclude` in `deps`;
+  - `er` did not take `nonisolated FetchableRecord` as a GRDB record.
+
+  Each inherited type is now read without the attributes and specifiers
+  that say how it conforms (`@MainActor` and other global actors,
+  `@preconcurrency`, `@retroactive`, `@unchecked`, `@unsafe`,
+  `nonisolated`), in every diagram, in `deps` and in
+  `TypeInfo.inheritedTypeNames`. Studio draws its class and dependency
+  diagrams with the same code, so its previews and canvas change too.
+  - The attribute is not drawn. An exclude written for the attributed
+    name, such as `@unchecked*`, no longer matches it; write the plain
+    name.
+  - A conformance written with `@retroactive` in one `#if` clause and
+    without it in the other is one conformance, so a merged type draws
+    it once.
+  - In Swift 6, `@MainActor (P)` applies the attribute to `(P)`, and is
+    drawn as `(P)` is. Its box was named with the attribute.
+  - `~Copyable` is not an attribute, and is drawn as before.
 - **Merged extensions keep the conformances they declare** (#76). With
   `showExtensions: merged` (`--merge-extensions`), an extension's
   members were folded into its type and its inheritance clause was
@@ -305,7 +333,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
     only one set of members. Each declaration now carries its alias as
     its id, as in `[<extension id=Foo0> Foo|~bar()]`.
   - In an id, a space becomes a no-break space, so the box nomnoml draws
-    for an undeclared supertype such as `@unchecked Sendable` shows a
+    for an undeclared supertype such as `` `Foo Bar` `` shows a
     plain space. The other characters nomnoml takes as syntax appear only
     in raw identifiers. They are percent-encoded: `` `a|b` `` becomes
     `` `a%7Cb` ``.

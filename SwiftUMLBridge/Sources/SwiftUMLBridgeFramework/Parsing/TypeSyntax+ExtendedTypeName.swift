@@ -1,3 +1,4 @@
+import SwiftParser
 import SwiftSyntax
 
 extension TypeSyntax {
@@ -44,6 +45,38 @@ extension TypeSyntax {
         case .tupleType(let tuple): return tuple.parenthesizedType?.boundGenericArguments
         default: return nil
         }
+    }
+
+    /// The type an inheritance-clause entry conforms to, without the attributes and specifiers
+    /// that say how: `P` for `@MainActor P`, `@preconcurrency P`, `@retroactive P`, `@unsafe P` or
+    /// `nonisolated P`, `Sendable` for `@unchecked Sendable`, `P & Q` for `@MainActor P & Q`, whose
+    /// attribute covers the whole composition, and `(P)` for `@MainActor (P)`. Every other type is
+    /// itself; `~Copyable` is a suppressed conformance, not an attributed one, and stays as written.
+    var conformedType: TypeSyntax {
+        var type = self
+        while let attributed = type.as(AttributedTypeSyntax.self) {
+            if let reread = attributed.typeAfterArgumentlessAttribute { return reread.conformedType }
+            type = attributed.baseType
+        }
+        return type
+    }
+}
+
+private extension AttributedTypeSyntax {
+    /// In Swift 6, `@MainActor (P)` is `@MainActor` applied to the type `(P)`: the space before
+    /// `(` ends the attribute. swift-syntax reads `(P)` as the attribute's arguments instead, and
+    /// leaves the type missing. This is the type read again from that `(` on, as the compiler reads
+    /// it: `(P)`, `(P & Q)`, `(P) & Q`. `nil` when the type is there.
+    var typeAfterArgumentlessAttribute: TypeSyntax? {
+        guard baseType.hasError, case .attribute(let attribute)? = attributes.last,
+              let leftParen = attribute.leftParen,
+              !attribute.attributeName.trailingTrivia.isEmpty || !leftParen.leadingTrivia.isEmpty
+        else { return nil }
+        var parser = Parser(
+            leftParen.trimmedDescription + (attribute.arguments?.description ?? "")
+                + (attribute.rightParen?.description ?? "") + baseType.description
+        )
+        return TypeSyntax.parse(from: &parser)
     }
 }
 
