@@ -76,7 +76,7 @@ extension SwiftUMLBridgeCLI {
             BridgeLogger.shared.info("SDK: \(sdk ?? "no SDK path provided")")
 
             let generator = ClassDiagramGenerator()
-            let presenter = output.presenter
+            let presenter = output.reportingPresenter
 
             if let packagePath = package {
                 let packageRoot = URL(fileURLWithPath: packagePath)
