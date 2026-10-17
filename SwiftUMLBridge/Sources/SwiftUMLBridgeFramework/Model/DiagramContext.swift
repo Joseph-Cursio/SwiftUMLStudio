@@ -40,6 +40,10 @@ class DiagramContext {
     private var extendedTypes: [ObjectIdentifier: SyntaxStructure] = [:]
     private(set) var connections: [String] = []
     private(set) var extnConnections: [String] = []
+    /// The typealiases among the items the diagram was built from, found by
+    /// `reserveIdentifiers(drawing:among:)`: a supertype written through one ends on the type it
+    /// aliases (#125).
+    private var aliases = TypeAliasResolver.none
 
     private var linkTypeInheritance: String {
         (format == .nomnoml || format == .svg) ? "-:>" : "<|--"
@@ -64,16 +68,15 @@ class DiagramContext {
 
     var index = 0
 
-    /// The id `addLinking` writes for `parent`'s end of an edge, or `nil` when
+    /// The id `addLinking` writes for `parent`'s end of an edge, written in `scope`, or `nil` when
     /// `relationships.inheritance.exclude` or `relationships.realize.exclude` suppresses the
     /// edge. Both drawing and `reserveIdentifiers(drawing:)` go through here, so an excluded
-    /// target is neither drawn nor reserved.
-    func linkTarget(for parent: SyntaxStructure) -> String? {
-        guard skipLinking(
-            element: parent,
-            basedOn: configuration.relationships.supertypeExcludePatterns
-        ) == false else { return nil }
-        let linkTo = parent.name?.removeAngleBracketsWithContent() ?? "___"
+    /// target is neither drawn nor reserved. A name written through a typealias is the aliased
+    /// type's, so `struct S: Q` after `typealias Q = Proto` reads as `struct S: Proto` (#125).
+    func linkTarget(for parent: SyntaxStructure, from scope: DeclarationScope) -> String? {
+        let excluded = configuration.relationships.supertypeExcludePatterns
+        guard aliases.isExcluded(parent, from: scope, byPatterns: excluded) == false else { return nil }
+        let linkTo = parent.name.map { aliases.resolve($0.removeAngleBracketsWithContent(), from: scope) } ?? "___"
         return linkTo.starts(with: "@") ? "\"\(linkTo)\"" : linkTo
     }
 
@@ -82,8 +85,10 @@ class DiagramContext {
     /// an extension or the other branch of an `#if`, draws its supertypes from its own box with its
     /// own arrow, not from the first's with the first's (#68). A supertype the diagram declares as
     /// a protocol takes the realization arrow from any declaration.
-    func addLinking(item: SyntaxStructure, parent: SyntaxStructure) {
-        guard let linkTo = linkTarget(for: parent) else { return }
+    /// `scope` is where `parent`'s name is written, `item`'s own scope by default: a merged
+    /// extension's scope for a supertype it carried.
+    func addLinking(item: SyntaxStructure, parent: SyntaxStructure, from scope: DeclarationScope? = nil) {
+        guard let linkTo = linkTarget(for: parent, from: scope ?? DeclarationScope(of: item)) else { return }
         guard let fullName = item.fullName else { return }
         let child = uniqueNameForElement[item] ?? fullName
         let namedConnection = (uniqElementAndTypes[linkTo] != nil)
@@ -120,10 +125,6 @@ class DiagramContext {
             .replacingOccurrences(of: "[", with: "(").replacingOccurrences(of: "]", with: ")")
         let labelText = text.flatMap { $0.isEmpty ? nil : " \($0)" } ?? ""
         return "[\(start.nomnomlIdentifier)] \(arrow)\(labelText) [\(end.nomnomlIdentifier)]"
-    }
-
-    func skipLinking(element: SyntaxStructure, basedOn excludeElements: [String]?) -> Bool {
-        element.isExcluded(byPatterns: excludeElements)
     }
 
     /// Whether the edge from extension `item` to the type it extends is drawn: not when the
@@ -181,6 +182,7 @@ class DiagramContext {
     /// nothing in the diagram uses must not shift an alias.
     func reserveIdentifiers(drawing items: [SyntaxStructure], among prepared: [SyntaxStructure]? = nil) {
         let edgeEnds = DrawnEdgeEnds(drawing: Set(items), among: prepared ?? items)
+        aliases = TypeAliasResolver(flattened: prepared ?? items)
         if drawsNestedTypeConnections {
             hiddenParentEnds = HiddenParentEnd.ends(
                 of: items, through: edgeEnds, declaringIdentifier: declaresIdentifier(of:)
@@ -193,7 +195,7 @@ class DiagramContext {
             if declaresIdentifier(of: item), let fullName = item.fullName {
                 takenIdentifiers.insert(fullName)
             }
-            takenIdentifiers.formUnion(item.linkParents().compactMap(linkTarget(for:)))
+            takenIdentifiers.formUnion(item.linkParents().compactMap { linkTarget(for: $0.supertype, from: $0.scope) })
             if case .undeclared(let parentName)? = hiddenParentEnds[ObjectIdentifier(item)] {
                 takenIdentifiers.insert(parentName)
             }
