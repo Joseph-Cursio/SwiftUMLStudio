@@ -101,8 +101,16 @@ final class ERModelExtractor: SyntaxVisitor {
 
     // MARK: - Attribute helpers
 
+    /// Whether the class carries SwiftData's `@Model`, written `@Model` or `@SwiftData.Model`
+    /// (#134). Only the class's own attribute is read with its module: SwiftData's `@Model` does
+    /// not read a member's `@SwiftData.Attribute`, `@SwiftData.Transient` or
+    /// `@SwiftData.Relationship`, so neither does this extractor. A `Model` from any other module
+    /// is not SwiftData's.
     static func hasModelAttribute(_ attributes: AttributeListSyntax) -> Bool {
-        hasAttribute(attributes, named: "Model")
+        attributes.contains { element in
+            guard case .attribute(let attribute) = element else { return false }
+            return attribute.attributeName.names("Model", bareOrIn: "SwiftData")
+        }
     }
 
     static func hasAttribute(

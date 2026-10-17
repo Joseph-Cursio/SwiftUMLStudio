@@ -746,6 +746,8 @@ swiftumlbridge er [<paths>...] [options]
 | **GRDB** | Type conforms to `FetchableRecord` / `PersistableRecord` (or related) | Typed associations: `belongsTo`, `hasOne`, `hasMany` |
 | **SQLite.swift** | `Table("name")` value with `Expression<T>("col")` columns | Foreign-key columns matched by name |
 
+A framework's own name may be written with its module: `@SwiftData.Model`, `GRDB.FetchableRecord` and `SQLite.Expression<Int64>("id")` are read as `@Model`, `FetchableRecord` and `Expression<Int64>("id")`. A name of the same spelling from another module, such as `@MyKit.Model`, is not. A member's `@SwiftData.Attribute`, `@SwiftData.Relationship` or `@SwiftData.Transient` is not read, because SwiftData's `@Model` macro does not read it either, so the property is persisted with no options. Write those attributes bare.
+
 The extractors look for mutually-exclusive signals so a single source file is never represented twice.
 
 ### Examples
