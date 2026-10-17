@@ -187,11 +187,28 @@ struct SyntaxStructureBuilderTests {
         #expect(member?.typename == nil)
     }
 
+    /// No map is given, so these types come from the syntax alone, as when the SourceKit
+    /// supplement is off in the App Store build (#146).
+    @Test("a name with no annotation of its own takes the one it shares", arguments: [
+        ("struct Foo { var a, b: Int }", ["a": "Int", "b": "Int"]),
+        ("struct Foo { var a: Int, b, c: String }", ["a": "Int", "b": "String", "c": "String"]),
+        ("struct Foo { var a = 1, b, c: String }", ["a": nil, "b": "String", "c": "String"]),
+        ("struct Foo { var a = 1, b = \"\" }", ["a": nil, "b": nil])
+    ] as [(String, [String: String?])])
+    func sharedAnnotationFromSyntax(source: String, expected: [String: String?]) {
+        let members = build(source).first?.substructure ?? []
+        let types = Dictionary(uniqueKeysWithValues: members.compactMap { member in
+            member.name.map { ($0, member.typename) }
+        })
+        #expect(types == expected)
+    }
+
     @Test("variable with inferred type resolved via typenameMap")
     func inferredTypeFromMap() {
         let source = "class Foo { var x = 42 }"
         let sourceFile = Parser.parse(source: source)
-        let builder = SyntaxStructureBuilder(viewMode: .sourceAccurate, typenameMap: ["Foo.x": "Int"])
+        // 16 is the UTF-8 offset of `x`, the key the supplement gives it.
+        let builder = SyntaxStructureBuilder(viewMode: .sourceAccurate, typenameMap: [16: "Int"])
         builder.walk(sourceFile)
         let member = builder.topLevelItems.first?.substructure?.first { $0.kind == .varInstance }
         #expect(member?.typename == "Int")

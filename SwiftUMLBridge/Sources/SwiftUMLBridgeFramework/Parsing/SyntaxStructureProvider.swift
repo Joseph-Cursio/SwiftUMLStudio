@@ -68,10 +68,17 @@ internal extension SyntaxStructure {
 
     // MARK: - SourceKit typename supplement
 
-    /// Runs a SourceKit structure pass and returns a map of
-    /// `"TypeName.varName" → resolvedTypeName` for variables whose type cannot
-    /// be read from the syntax tree alone (inferred types).
-    private static func buildTypenameMap(from source: String, sdkPath: String?) -> [String: String] {
+    /// Runs a SourceKit structure pass and returns a map from the UTF-8 offset of each variable's
+    /// name to the type SourceKit gives it, for variables whose type cannot be read from the syntax
+    /// tree alone (inferred types).
+    ///
+    /// The key is where the name is, not what it is called. A key built from the names of the
+    /// enclosing types left extensions out, kept no backticks, and gave the same key to a type
+    /// nested in a function, to both clauses of an `#if` and to a type nested in an extension and
+    /// a top-level one, so a variable could take another's type (#146). SourceKit's
+    /// `key.nameoffset` and SwiftSyntax's `utf8Offset` both count UTF-8 bytes from the start of
+    /// the file, so they agree past a byte-order mark and multi-byte text.
+    static func buildTypenameMap(from source: String, sdkPath: String?) -> [Int: String] {
         if BridgeConfiguration.skipSourceKitTypenameSupplement {
             return [:]
         }
@@ -92,12 +99,12 @@ internal extension SyntaxStructure {
             return [:]
         }
 
-        var map: [String: String] = [:]
-        collectTypenames(from: structure.dictionary, typeContext: [], into: &map)
+        var map: [Int: String] = [:]
+        collectTypenames(from: structure.dictionary, into: &map)
         return map
     }
 
-    /// Recursively walks SourceKit's response and collects `qualifiedName → typename` entries for
+    /// Recursively walks SourceKit's response and collects `nameOffset → typename` entries for
     /// variable declarations that have a resolved type.
     ///
     /// It walks the response as SourceKitten returns it. It used to write `Structure.description`,
@@ -107,18 +114,8 @@ internal extension SyntaxStructure {
     /// build it was the recursion that overflowed first (#71).
     private static func collectTypenames(
         from dict: [String: SourceKitRepresentable],
-        typeContext: [String],
-        into map: inout [String: String]
+        into map: inout [Int: String]
     ) {
-        let typeKinds: Set<String> = [
-            ElementKind.class.rawValue,
-            ElementKind.struct.rawValue,
-            ElementKind.enum.rawValue,
-            ElementKind.protocol.rawValue,
-            ElementKind.actor.rawValue,
-            // SourceKit reports actors as class on macOS 26 — include both
-            "source.lang.swift.decl.class"
-        ]
         let varKinds: Set<String> = [
             ElementKind.varInstance.rawValue,
             ElementKind.varStatic.rawValue,
@@ -126,22 +123,15 @@ internal extension SyntaxStructure {
         ]
 
         let kind = dict["key.kind"] as? String ?? ""
-        let name = dict["key.name"] as? String ?? ""
-
-        if varKinds.contains(kind), !name.isEmpty, let typename = dict["key.typename"] as? String {
-            let qualified = (typeContext + [name]).joined(separator: ".")
-            map[qualified] = typename.singleLineTypeName
-        }
-
-        var nextContext = typeContext
-        if typeKinds.contains(kind), !name.isEmpty {
-            nextContext = typeContext + [name]
+        if varKinds.contains(kind), let offset = dict["key.nameoffset"] as? Int64,
+           let typename = dict["key.typename"] as? String {
+            map[Int(offset)] = typename.singleLineTypeName
         }
 
         for key in ["key.substructure", "key.elements"] {
             guard let children = dict[key] as? [SourceKitRepresentable] else { continue }
             for case let child as [String: SourceKitRepresentable] in children {
-                collectTypenames(from: child, typeContext: nextContext, into: &map)
+                collectTypenames(from: child, into: &map)
             }
         }
     }
