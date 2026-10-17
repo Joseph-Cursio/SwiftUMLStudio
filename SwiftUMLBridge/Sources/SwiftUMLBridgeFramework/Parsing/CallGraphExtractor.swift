@@ -102,8 +102,9 @@ final class CallGraphExtractor: TypeStackVisitor {
         // a comment beside it does not count and `` `self` `` is `self` as well, though
         // `canonicalName` keeps its backticks.
         let isSelf = (called ?? base).as(DeclReferenceExprSyntax.self)?.baseName.expressionName == "self"
+        // `Alias.make()` calls into the aliased type (#125).
         let resolvedType: String? = isSelf ? callerType
-            : baseText.first?.isUppercase == true ? baseText : nil
+            : baseText.first?.isUppercase == true ? resolveTypeName(baseText) : nil
         let unresolved = resolvedType == nil && !isSelf
         return CallEdge(
             callerType: callerType, callerMethod: callerMethod,
@@ -120,11 +121,16 @@ final class CallGraphExtractor: TypeStackVisitor {
         let methods: [String]
     }
 
-    /// Parse `source` and extract all call edges and method definitions.
-    static func extract(from source: String) -> ExtractionResult {
+    /// Parse `source` and extract all call edges and method definitions. With the project's
+    /// `aliases` and the `file` the source was read from, a name written through a typealias is
+    /// the aliased type's (#125).
+    static func extract(
+        from source: String, file: URL? = nil, aliases: TypeAliasResolver = .none
+    ) -> ExtractionResult {
         ParsingStack.run {
             let sourceFile = ParsingStack.parse(source)
             let extractor = CallGraphExtractor(viewMode: .sourceAccurate)
+            extractor.resolveTypeName = { aliases.resolve($0, in: file) }
             extractor.walk(sourceFile)
             return ExtractionResult(edges: extractor.edges, methods: Array(extractor.methods).sorted())
         }
@@ -132,14 +138,20 @@ final class CallGraphExtractor: TypeStackVisitor {
 
     /// Collect every `Type.method` entry point defined across the given source paths.
     static func entryPoints(for paths: [String]) -> [String] {
-        let files = FileCollector().getFiles(for: paths)
+        let sources = readSources(for: paths)
+        let aliases = TypeAliasResolver(sources: sources)
         var allMethods = Set<String>()
-        for file in files {
-            if let source = try? String(contentsOf: file, encoding: .utf8) {
-                allMethods.formUnion(extract(from: source).methods)
-            }
+        for source in sources {
+            allMethods.formUnion(extract(from: source.contents, file: source.file, aliases: aliases).methods)
         }
         return allMethods.sorted()
+    }
+
+    /// Every readable Swift file under `paths`, in `FileCollector` order, with its contents.
+    static func readSources(for paths: [String]) -> [(file: URL, contents: String)] {
+        FileCollector().getFiles(for: paths).compactMap { file in
+            (try? String(contentsOf: file, encoding: .utf8)).map { (file, $0) }
+        }
     }
 
     /// An entry point as it was typed in, such as the halves of the CLI's `--entry`, named as

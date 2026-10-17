@@ -31,17 +31,25 @@ internal extension SyntaxStructure {
         build(from: contents, sdkPath: nil, fileURL: nil, module: module)
     }
 
+    /// Parse `source`, read from `file`, with SwiftSyntax alone: declarations, names and source
+    /// locations, but no inferred variable types, which only the SourceKit pass supplies. For
+    /// passes that need the declarations and none of the members' types.
+    static func declarations(in source: String, file: URL) -> SyntaxStructure? {
+        build(from: source, sdkPath: nil, fileURL: file, supplementsTypenames: false)
+    }
+
     // MARK: - Core build pipeline
 
     private static func build(
         from source: String,
         sdkPath: String?,
         fileURL: URL?,
-        module: String? = nil
+        module: String? = nil,
+        supplementsTypenames: Bool = true
     ) -> SyntaxStructure? {
         ParsingStack.run {
             // Step 1 — optional SourceKit pass for inferred variable typenames
-            let typenameMap = buildTypenameMap(from: source, sdkPath: sdkPath)
+            let typenameMap = supplementsTypenames ? buildTypenameMap(from: source, sdkPath: sdkPath) : [:]
 
             // Step 2 — SwiftSyntax primary parse
             let sourceFile = ParsingStack.parse(source)

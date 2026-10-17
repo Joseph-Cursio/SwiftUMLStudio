@@ -219,7 +219,7 @@ swiftumlbridge sequence [<paths>...] --entry Type.method [options]
 
 | Option | Type | Description |
 |---|---|---|
-| `--entry <Type.method>` | `String` | Entry point in `TypeName.methodName` form (e.g., `--entry ClassDiagramGenerator.generateScript`). Case-sensitive. |
+| `--entry <Type.method>` | `String` | Entry point in `TypeName.methodName` form (e.g., `--entry ClassDiagramGenerator.generateScript`). Case-sensitive. A method declared in `extension Alias`, after `typealias Alias = Real`, is `Real.method`, and `Alias.method` means it too. |
 
 **Options:**
 
@@ -347,7 +347,7 @@ swiftumlbridge activity [<paths>...] --entry Type.method [options]
 
 | Option | Type | Description |
 |---|---|---|
-| `--entry <Type.method>` | `String` | Entry point in `TypeName.methodName` form (e.g., `--entry AuthService.login`). Case-sensitive. |
+| `--entry <Type.method>` | `String` | Entry point in `TypeName.methodName` form (e.g., `--entry AuthService.login`). Case-sensitive. A method declared in `extension Alias`, after `typealias Alias = Real`, is `Real.method`, and `Alias.method` means it too. |
 
 **Options:**
 
@@ -1013,7 +1013,7 @@ Arrow notation used in generated class diagrams. Both PlantUML and Mermaid use t
 | Composition (nested) | `Outer +-- Inner` | Nested type declaration **(not drawn in Mermaid)** |
 | Generic link | `A -- B` | Generic relationship |
 
-An extension's edge goes to the type its name means where the extension is written: `extension Outer.Inner` to the nested type, and, of two types named `Foo`, the one in the extension's file or module. An extension written through a typealias is an extension of the aliased type: after `typealias Alias = Real`, `extension Alias` gets the edge `Real <.. Alias`, and `--merge-extensions` merges it into `Real`. An alias ranks with the types of its name, so a module's own `typealias Inner = Outer.Inner` shadows an imported `Inner`, and a `fileprivate` alias names its type only in its own file. An extension of a type the diagram hides or does not declare gets no edge. Sequence and activity diagrams, supertype edges in PlantUML, Mermaid and Nomnoml, and `deps --types` still use the name as written.
+An extension's edge goes to the type its name means where the extension is written: `extension Outer.Inner` to the nested type, and, of two types named `Foo`, the one in the extension's file or module. An extension written through a typealias is an extension of the aliased type: after `typealias Alias = Real`, `extension Alias` gets the edge `Real <.. Alias`, and `--merge-extensions` merges it into `Real`. An alias ranks with the types of its name, so a module's own `typealias Inner = Outer.Inner` shadows an imported `Inner`, and a `fileprivate` alias names its type only in its own file. An extension of a type the diagram hides or does not declare gets no edge. Sequence and activity diagrams follow typealiases the same way. Supertype edges in PlantUML, Mermaid and Nomnoml, and `deps --types`, still use the name as written.
 
 Nomnoml writes the same edges child first, with its own arrows: `[Child] -:> [Parent]`, `[Type] --:> [Protocol]`, `[Extension] --> [Type]` and `[Outer] +- [Outer.Inner]`. An enum's or actor's supertypes use `-`, as in `[Suit] - [String]`. nomnoml reads a label only beside the arrow, so that is where it goes: `[Dog] -:> inherits [Animal]`. Each node is declared under the id its edges use, with the type's header as its title, as in `[<extension id=Dog0> Dog|~bark()]`.
 

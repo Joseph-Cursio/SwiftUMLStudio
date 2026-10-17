@@ -21,9 +21,22 @@ public enum ActivityFlowExtractor {
         entryType: String,
         entryMethod: String
     ) -> ActivityGraph? {
+        extract(from: source, entryType: entryType, entryMethod: entryMethod, file: nil, aliases: .none)
+    }
+
+    /// `extract(from:entryType:entryMethod:)`, with a method in `extension Alias` found as the
+    /// aliased type's, by the project's `aliases` as `file` sees them (#125).
+    static func extract(
+        from source: String,
+        entryType: String,
+        entryMethod: String,
+        file: URL?,
+        aliases: TypeAliasResolver
+    ) -> ActivityGraph? {
         ParsingStack.run {
             let sourceFile = ParsingStack.parse(source)
             let finder = ActivityEntryFunctionFinder(viewMode: .sourceAccurate)
+            finder.resolveTypeName = { aliases.resolve($0, in: file) }
             finder.entryType = entryType
             finder.entryMethod = entryMethod
             finder.walk(sourceFile)
@@ -51,6 +64,8 @@ final class ActivityEntryFunctionFinder: SyntaxVisitor {
     var entryType: String = ""
     var entryMethod: String = ""
     var foundBody: CodeBlockSyntax?
+    /// As `TypeStackVisitor.resolveTypeName`: follows typealiases in an extension's name (#125).
+    var resolveTypeName: (String) -> String = { $0 }
     private var typeStack: [String] = []
 
     // MARK: Type declarations
@@ -97,7 +112,7 @@ final class ActivityEntryFunctionFinder: SyntaxVisitor {
 
     override func visit(_ node: ExtensionDeclSyntax) -> SyntaxVisitorContinueKind {
         // Named as `TypeStackVisitor` names it, so every listed entry point is found here (#66).
-        typeStack.append(node.extendedType.extendedTypeName ?? node.extendedType.canonicalDescription)
+        typeStack.append(resolveTypeName(node.extendedType.extendedTypeName ?? node.extendedType.canonicalDescription))
         return .visitChildren
     }
     override func visitPost(_ node: ExtensionDeclSyntax) {

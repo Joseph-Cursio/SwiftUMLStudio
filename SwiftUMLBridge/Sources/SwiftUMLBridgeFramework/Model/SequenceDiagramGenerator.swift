@@ -29,28 +29,26 @@ public struct SequenceDiagramGenerator: SequenceDiagramGenerating, Sendable {
         depth: Int = 3,
         with configuration: Configuration = .default
     ) -> SequenceScript {
-        let files = FileCollector().getFiles(for: paths)
-        var allEdges: [CallEdge] = []
+        let sources = CallGraphExtractor.readSources(for: paths)
         var typeLocations: [String: SourceLocation] = [:]
-
-        for file in files {
-            if let source = try? String(contentsOf: file, encoding: .utf8) {
-                let result = CallGraphExtractor.extract(from: source)
-                allEdges.append(contentsOf: result.edges)
-            }
-            if let structure = SyntaxStructure.create(from: file),
-               let topLevel = structure.substructure {
-                // A typealias is no participant's declaration (#125).
-                for item in topLevel where item.kind != .typealias {
-                    if let name = item.name, let location = item.sourceLocation,
-                       typeLocations[name] == nil {
-                        typeLocations[name] = location
-                    }
-                }
+        // Names and locations need no SourceKit pass. Parsed once, for both of their uses.
+        let declarations = sources.flatMap {
+            SyntaxStructure.declarations(in: $0.contents, file: $0.file)?.substructure ?? []
+        }
+        // A typealias is no participant's declaration (#125).
+        for item in declarations where item.kind != .typealias {
+            if let name = item.name, let location = item.sourceLocation, typeLocations[name] == nil {
+                typeLocations[name] = location
             }
         }
+        let aliases = TypeAliasResolver(items: declarations)
+        let allEdges = sources.flatMap {
+            CallGraphExtractor.extract(from: $0.contents, file: $0.file, aliases: aliases).edges
+        }
 
-        let entry = CallGraphExtractor.listedEntryPoint(type: entryType, method: entryMethod)
+        let listed = CallGraphExtractor.listedEntryPoint(type: entryType, method: entryMethod)
+        // `--entry Alias.start` is the aliased type's `start`, as its extension is (#125).
+        let entry = (type: aliases.resolve(listed.type, in: nil), method: listed.method)
         let callGraph = CallGraph(edges: allEdges)
         let traversed = callGraph.traverse(from: entry.type, entryMethod: entry.method, maxDepth: depth)
         return SequenceScript(
