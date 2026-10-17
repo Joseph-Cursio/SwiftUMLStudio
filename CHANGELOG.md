@@ -96,6 +96,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed — Bridge
 
+- **A supertype named inside its enclosing type ends on the nested
+  type** (#157). In `enum Outer { class Base {}; class Near: Base {} }`
+  Swift reads `Base` as `Outer.Base`. PlantUML, Mermaid and Nomnoml
+  ended the edge on an undeclared `Base`, which Mermaid and nomnoml
+  drew as a second, empty class, and SVG drew no edge; beside a
+  top-level `class Base`, all four ended it on that one. A name in a
+  type's inheritance clause is now looked up as Swift does: a member
+  of each type around the declaration, innermost first, then the file
+  and module. A type in `extension Outer.Box` sees `Box`'s members, an
+  extension's own clause is still read at file scope, and a typealias
+  declared in a type reads its target the same way. An
+  `inheritance.exclude` or `realize.exclude` pattern that matches the
+  nested type also hides the edge, as one matching a typealias's type
+  does.
 - **A package dependency graph in SVG shows each node's target**
   (#144). `deps --package` labels each type with the target that
   declares it (`--types`) and each target with its kind (`--modules`),
@@ -154,7 +168,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   `Outer` like any nested type, with `Square`'s conformance arrow. The
   kinds walked into now come from the same list as the kinds drawn, so
   they cannot drift apart again. A conformance written with the short
-  name inside `Outer`, `Circle: Shape`, still ends on `Shape` (#157).
+  name inside `Outer`, `Circle: Shape`, ends on `Outer.Shape` too (#157).
 - **`elements.exclude` hides a nested type and its extensions
   together** (#154). `struct Inner` inside `enum Outer` was matched only
   as `Inner`, and `extension Outer.Inner` only as `Outer.Inner`, so no

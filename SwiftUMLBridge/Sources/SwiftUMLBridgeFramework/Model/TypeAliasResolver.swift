@@ -51,15 +51,18 @@ struct TypeAliasResolver {
         resolve(name, from: DeclarationScope(filePath: file?.path, module: nil))
     }
 
-    /// The type name `name` comes to where a declaration in `scope` writes it.
+    /// The type name `name` comes to where a declaration in `scope` writes it in its inheritance
+    /// clause: a member of a type around the declaration first, as Swift looks it up
+    /// (`TypeLookup.qualifiedName(ofWritten:from:)`, #157), then through every typealias.
     func resolve(_ name: String, from scope: DeclarationScope) -> String {
         guard let lookup else { return name }
-        return lookup.resolvedName(of: name, from: scope)
+        return lookup.resolvedName(of: lookup.qualifiedName(ofWritten: name, from: scope), from: scope)
     }
 
     /// Whether `patterns` exclude the supertype edge to `supertype`, written in `scope`: by the
     /// name as written, as before, or by the type it comes to, so excluding `Proto` also hides
-    /// `struct S: Q` after `typealias Q = Proto`.
+    /// `struct S: Q` after `typealias Q = Proto`, and excluding `Outer.Base` hides `class Near:
+    /// Base` in `enum Outer`.
     func isExcluded(
         _ supertype: SyntaxStructure, from scope: DeclarationScope, byPatterns patterns: [String]?
     ) -> Bool {

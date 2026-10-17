@@ -8,15 +8,37 @@ import Foundation
 struct DeclarationScope {
     let filePath: String?
     let module: String?
+    /// The full names of the types whose members a name written in the declaration's
+    /// inheritance clause sees, innermost first: each type around it, up to and including the
+    /// type an enclosing extension extends, which sees no further out. Empty for a top-level
+    /// declaration and for an extension, whose clause Swift reads at file scope (#157).
+    let enclosingTypes: [String]
 
-    init(of item: SyntaxStructure) {
-        filePath = item.sourceLocation?.filePath
-        module = item.module
+    /// The scope of `item`, a member of `container` when `item.parent` is not set: a typealias
+    /// is never flattened out of its type's members.
+    init(of item: SyntaxStructure, in container: SyntaxStructure? = nil) {
+        filePath = item.sourceLocation?.filePath ?? container?.sourceLocation?.filePath
+        module = item.module ?? container?.module
+        enclosingTypes = item.kind == .extension ? [] : Self.enclosingTypes(from: container ?? item.parent)
     }
 
     init(filePath: String?, module: String?) {
         self.filePath = filePath
         self.module = module
+        enclosingTypes = []
+    }
+
+    /// The full names of `context` and the types around it, innermost first, stopping after an
+    /// extension: its body sees the members of the type it extends, not of the types around that.
+    private static func enclosingTypes(from context: SyntaxStructure?) -> [String] {
+        var names: [String] = []
+        var current = context
+        while let type = current, let name = type.fullName ?? type.name {
+            names.append(name)
+            if type.kind == .extension { break }
+            current = type.parent
+        }
+        return names
     }
 
     /// The candidate a name means where this scope writes it, close to how Swift looks it up: the

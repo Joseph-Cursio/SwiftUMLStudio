@@ -661,7 +661,9 @@ relationships:
       # `Sendable` hides `@unchecked Sendable`, and `P` hides `nonisolated P`
       # and `(P)`. A supertype written through a typealias is also matched by
       # the type it aliases: after `typealias Q = Proto`, either `Q` or `Proto`
-      # hides `struct S: Q`.
+      # hides `struct S: Q`. A short name inside a type is also matched by the
+      # nested type it means: in `enum Outer`, `Base` or `Outer.Base` hides
+      # `class Near: Base`.
       # Pooled with realize.exclude: a name in either list hides every
       # inheritance or conformance edge to that class or protocol, whichever
       # arrow it is drawn with. Extension edges are dependency.exclude's.
@@ -1024,6 +1026,8 @@ Arrow notation used in generated class diagrams. Both PlantUML and Mermaid use t
 | Generic link | `A -- B` | Generic relationship |
 
 An extension's edge goes to the type its name means where the extension is written: `extension Outer.Inner` to the nested type, and, of two types named `Foo`, the one in the extension's file or module. An extension written through a typealias is an extension of the aliased type: after `typealias Alias = Real`, `extension Alias` gets the edge `Real <.. Alias`, and `--merge-extensions` merges it into `Real`. An alias ranks with the types of its name, so a module's own `typealias Inner = Outer.Inner` shadows an imported `Inner`, and a `fileprivate` alias names its type only in its own file. An extension of a type the diagram hides or does not declare gets no edge. Sequence and activity diagrams, supertype edges in every format, and `deps --types` follow typealiases the same way: after `typealias Q = Proto`, `struct S: Q` is drawn exactly as `struct S: Proto` is.
+
+A supertype edge goes to the type its name means where the type's clause is written, as Swift reads it: first a member of each type around the declaration, innermost first, then the file and module. In `enum Outer { class Base {}; class Near: Base {} }`, `Near`'s edge ends on `Outer.Base`, even beside a top-level `class Base`. A type in `extension Outer.Box` sees `Box`'s members, but not `Outer`'s. An extension's own clause, `extension Outer.Near: Shape`, is read at file scope, so there `Shape` is the top-level one. The superclass of an enclosing class is not looked in.
 
 Nomnoml writes the same edges child first, with its own arrows: `[Child] -:> [Parent]`, `[Type] --:> [Protocol]`, `[Extension] --> [Type]` and `[Outer] +- [Outer.Inner]`. An enum's or actor's supertypes use `-`, as in `[Suit] - [String]`. nomnoml reads a label only beside the arrow, so that is where it goes: `[Dog] -:> inherits [Animal]`. Each node is declared under the id its edges use, with the type's header as its title, as in `[<extension id=Dog0> Dog|~bark()]`.
 

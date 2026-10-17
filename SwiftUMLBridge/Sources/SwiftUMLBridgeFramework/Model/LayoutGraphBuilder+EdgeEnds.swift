@@ -11,7 +11,8 @@ extension LayoutGraphBuilder {
     /// One end of a `PendingEdge`, known by node id or — until every node exists — by what owns it.
     enum EdgeEnd {
         case node(String)
-        /// A type named `name`, as seen from a declaration in `scope`.
+        /// A type written as `name` in the inheritance clause of a declaration in `scope`, which
+        /// may name a member of a type around it (`TypeLookup.qualifiedName(ofWritten:from:)`).
         case named(String, from: Scope)
         /// A particular declaration, or its name as seen from its own scope when it is not drawn.
         case declaration(ObjectIdentifier, name: String, scope: Scope)
@@ -43,7 +44,7 @@ extension LayoutGraphBuilder {
             declaration = ObjectIdentifier(item)
             isExtension = kind == .extension
             aliasTarget = kind == .typealias ? item.typename : nil
-            scope = Scope(of: item)
+            scope = Scope(of: item, in: container)
             // Extensions are top level, so a chain holds at most one, last.
             let chain = Array(sequence(first: item) { $0 === item ? container ?? $0.parent : $0.parent })
             let declared = chain.prefix { $0.kind != .extension }
@@ -121,7 +122,8 @@ extension LayoutGraphBuilder {
             guard let target = nearest.aliasTarget else { return nearest }
             // Each step follows one alias; Swift rejects a cycle, and the guard is a backstop.
             guard depth < 8 else { return nil }
-            return type(named: target, from: nearest.scope, depth: depth + 1)
+            let targetName = qualifiedName(ofWritten: target, from: nearest.scope)
+            return type(named: targetName, from: nearest.scope, depth: depth + 1)
         }
 
         /// The name `name` comes to where it is written once every typealias it goes through is
@@ -131,7 +133,19 @@ extension LayoutGraphBuilder {
         func resolvedName(of name: String, from scope: Scope, depth: Int = 0) -> String {
             guard depth < 8, let nearest = nearestDeclaration(named: name, from: scope, depth: depth),
                   let target = nearest.aliasTarget else { return name }
-            return resolvedName(of: target, from: nearest.scope, depth: depth + 1)
+            let targetName = qualifiedName(ofWritten: target, from: nearest.scope)
+            return resolvedName(of: targetName, from: nearest.scope, depth: depth + 1)
+        }
+
+        /// The name a type written as `name` in a declaration's inheritance clause is recorded
+        /// under: `<enclosing>.<name>` for the innermost type around the declaration that has
+        /// such a member (`DeclarationScope.enclosingTypes`), as Swift looks a name up, and
+        /// `name` itself when none does. So `class Near: Base` in `enum Outer` means
+        /// `Outer.Base`, even beside a top-level `Base` (#157). An enclosing class's inherited
+        /// members are not looked in.
+        func qualifiedName(ofWritten name: String, from scope: Scope) -> String {
+            scope.enclosingTypes.lazy.map { "\($0).\(name)" }
+                .first { nearestDeclaration(named: $0, from: scope, depth: 0) != nil } ?? name
         }
 
         /// The nearest of the types and typealiases named `name` that are visible from `scope`.
@@ -205,7 +219,8 @@ extension LayoutGraphBuilder {
             switch end {
             case .node(let nodeId):
                 return nodeId
-            case .named(let name, let scope):
+            case .named(let written, let scope):
+                let name = lookup.qualifiedName(ofWritten: written, from: scope)
                 guard let type = lookup.type(named: name, from: scope) else {
                     return fallback(named: name)
                 }
