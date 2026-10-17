@@ -130,7 +130,7 @@ internal extension SyntaxStructure {
 
         if varKinds.contains(kind), !name.isEmpty, let typename = dict["key.typename"] as? String {
             let qualified = (typeContext + [name]).joined(separator: ".")
-            map[qualified] = typename
+            map[qualified] = typename.singleLineTypeName
         }
 
         var nextContext = typeContext

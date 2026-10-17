@@ -119,11 +119,11 @@ final class SyntaxStructureBuilder: SyntaxVisitor {
         for inherited in clause.inheritedTypes {
             // `@unchecked Sendable` conforms to `Sendable`: every reader, from the edges to the
             // excludes, `deps` and `TypeInfo`, takes the plain name (#152).
-            let typeName = inherited.type.conformedType.canonicalDescription
+            let typeName = inherited.type.conformedType.singleLineDescription
             if typeName.contains("&") {
                 // Compound type (A & B) — split into individual entries
                 let parts = typeName.components(separatedBy: "&")
-                    .map { $0.trimmingCharacters(in: .whitespaces) }
+                    .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
                     .filter { !$0.isEmpty }
                 result.append(contentsOf: parts.map { SyntaxStructure(name: $0) })
             } else if !typeName.isEmpty {
@@ -137,7 +137,7 @@ final class SyntaxStructureBuilder: SyntaxVisitor {
     private func extractAttributes(from attributes: AttributeListSyntax) -> [SyntaxStructure]? {
         let result = attributes.compactMap { element -> SyntaxStructure? in
             guard case .attribute(let attr) = element else { return nil }
-            let name = attr.attributeName.canonicalDescription
+            let name = attr.attributeName.singleLineDescription
             return SyntaxStructure(attribute: name)
         }
         return result.isEmpty ? nil : result
@@ -145,7 +145,7 @@ final class SyntaxStructureBuilder: SyntaxVisitor {
 
     private func extractGenericParams(from params: GenericParameterListSyntax) -> [SyntaxStructure] {
         params.map { param in
-            let constraint = param.inheritedType.map { SyntaxStructure(name: $0.canonicalDescription) }
+            let constraint = param.inheritedType.map { SyntaxStructure(name: $0.singleLineDescription) }
             return SyntaxStructure(
                 inheritedTypes: constraint.map { [$0] },
                 kind: .genericTypeParam,
@@ -246,7 +246,7 @@ final class SyntaxStructureBuilder: SyntaxVisitor {
             guard let name = binding.pattern.as(IdentifierPatternSyntax.self)?.identifier.canonicalName else {
                 continue
             }
-            let explicitTypename = binding.typeAnnotation?.type.canonicalDescription
+            let explicitTypename = binding.typeAnnotation?.type.singleLineDescription
             let typename = explicitTypename ?? typenameMap[qualifiedVarName(name)]
             appendMember(SyntaxStructure(accessibility: accessibility, kind: kind, name: name, typename: typename))
         }

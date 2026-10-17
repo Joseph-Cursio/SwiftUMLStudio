@@ -134,7 +134,7 @@ private extension GenericArgumentClauseSyntax {
 private extension Sequence where Element: SyntaxProtocol {
     /// The elements' canonical text joined with `", "`, or `nil` when there is none.
     var argumentText: String? {
-        let parts = map(\.canonicalDescription).filter { !$0.isEmpty }
+        let parts = map(\.singleLineDescription).filter { !$0.isEmpty }
         return parts.isEmpty ? nil : parts.joined(separator: ", ")
     }
 }
