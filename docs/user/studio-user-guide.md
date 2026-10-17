@@ -304,6 +304,8 @@ In Developer Mode, the **Format** picker in the inspector strip (above the detai
 | **Nomnoml** | Rendered locally via the bundled `NomnomlHTMLBuilder` WebView | `.nomnoml` | Native for class and dependency diagrams. Sequence, activity, state, ER and component diagrams fall back to Mermaid, which previews and exports (`.mmd`) as Mermaid. Canvas content stays light because `nomnoml.js` uses hardcoded colors |
 | **SVG** | Native SwiftUI `Canvas` renderer using a Dagre layout produced by JavaScriptCore | n/a (rendered in-app) | The fastest, most interactive option; supports node selection, reveal-in-source, and PDF/PNG export |
 
+If the SVG layout fails for a class diagram or dependency graph, the canvas places the boxes on a plain grid and shows a **Boxes placed on a grid** banner above it, naming the error. Every type and relationship is still drawn, and PDF and PNG export the same grid. A layout fails only on an extreme graph, such as an inheritance chain thousands of classes deep.
+
 You can switch formats after generation — click **Generate** again to re-render in the new format. The format picker exposes all four cases, and the active script's `format` field controls which renderer is used in the preview pane.
 
 In Explorer Mode, the format is not exposed — the app uses the build's default for the visual preview (PlantUML in the direct download build, Mermaid in the App Store build). A PlantUML preview asks before anything is sent, exactly as in Developer Mode, and **Use Mermaid Instead** is how Explorer switches to a local format.
