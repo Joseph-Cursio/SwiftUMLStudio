@@ -14,7 +14,7 @@ extension Array where Element == SyntaxStructure {
         prepared = prepared.orderedByProtocolsFirstExtensionsLast()
         if configuration.shallExtensionsBeMerged {
             let indicator = configuration.elements.mergedExtensionMemberIndicator
-            prepared = prepared.mergeExtensions(mergedMemberIndicator: indicator)
+            prepared = prepared.mergeExtensions(mergedMemberIndicator: indicator) { $0.isDrawn(in: configuration) }
         }
         return prepared
     }
@@ -34,15 +34,21 @@ extension Array where Element == SyntaxStructure {
     /// `carriedSupertypes`, so the conformances it declares are drawn from that box too (#76).
     /// Diagram code calls it only through `preparedForClassDiagram(with:)`, which hands it a
     /// private copy.
-    /// - Parameter mergedMemberIndicator: string appended as suffix to a member that originates from an extension
+    /// - Parameters:
+    ///   - mergedMemberIndicator: string appended as suffix to a member that originates from an extension
+    ///   - isDrawn: whether the diagram draws an item; an extension of a type it hides merges into
+    ///     that type's stand-in instead (#153)
     /// - Returns: new array with at most 1 extension per type
-    func mergeExtensions(mergedMemberIndicator: String? = "<&bolt>") -> [SyntaxStructure] {
+    func mergeExtensions(
+        mergedMemberIndicator: String? = "<&bolt>", isDrawn: (SyntaxStructure) -> Bool = { _ in true }
+    ) -> [SyntaxStructure] {
         var processedItems = self
         // Built before any merge, from the declarations as the sources wrote them.
         let lookup = LayoutGraphBuilder.TypeLookup(of: self)
 
         for structure in self where structure.kind == .extension {
-            guard let parent = processedItems.mergeTarget(for: structure, lookup: lookup), structure != parent else {
+            guard let parent = processedItems.mergeTarget(for: structure, lookup: lookup, isDrawn: isDrawn),
+                  structure != parent else {
                 continue
             }
             processedItems.removeAll(where: { $0 == structure })
@@ -74,12 +80,22 @@ extension Array where Element == SyntaxStructure {
     /// lookup `LayoutGraphBuilder` resolves edges by — the nearest type Swift's access control
     /// lets it see. With no such type it extends one outside the diagram, and merges into the
     /// first extension that sees none either, so that type gets one box, its first extension's.
+    /// A type the diagram hides has no box to merge into either: its first drawn extension, one
+    /// whose own lookup finds that same type, stands in for it, as `EdgeEndIds.standIn` has it
+    /// when extensions are drawn apart, and the rest merge there (#153).
     private func mergeTarget(
-        for anExtension: SyntaxStructure, lookup: LayoutGraphBuilder.TypeLookup
+        for anExtension: SyntaxStructure, lookup: LayoutGraphBuilder.TypeLookup,
+        isDrawn: (SyntaxStructure) -> Bool
     ) -> SyntaxStructure? {
         guard let name = anExtension.fullName else { return nil }
         if let type = lookup.type(named: name, from: DeclarationScope(of: anExtension)) {
-            return first { ObjectIdentifier($0) == type.declaration }
+            if let declared = first(where: { ObjectIdentifier($0) == type.declaration }), isDrawn(declared) {
+                return declared
+            }
+            return first { item in
+                item.kind == .extension && item.fullName == name && isDrawn(item)
+                    && lookup.type(named: name, from: DeclarationScope(of: item))?.declaration == type.declaration
+            }
         }
         return first { item in
             item.kind == .extension && item.fullName == name

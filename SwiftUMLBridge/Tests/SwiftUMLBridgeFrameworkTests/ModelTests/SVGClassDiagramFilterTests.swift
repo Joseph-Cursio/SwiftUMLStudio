@@ -64,12 +64,12 @@ struct SVGClassDiagramFilterTests {
         #expect(graph?.edgeEnds == [])
     }
 
-    /// Filtering runs after extensions merge, as in the text formats: a hidden type takes the
-    /// extensions merged into it with it.
-    @Test("a hidden type hides the extensions merged into it")
-    func hiddenTypeHidesMergedExtensions() {
+    /// A hidden type has no box to merge into, so its extension keeps its own and stands in for
+    /// it, as when extensions are drawn apart (#153).
+    @Test("merged: a hidden type's extension stands in for it")
+    func mergedExtensionOfHiddenTypeStandsIn() {
         let source = "fileprivate struct Foo {}\nextension Foo { func bar() {} }\nstruct Shown {}"
-        #expect(svgNodes(source, ElementOptions(showExtensions: .merged)) == ["Shown<<struct>>"])
+        #expect(svgNodes(source, ElementOptions(showExtensions: .merged)) == ["Shown<<struct>>", "Foo<<extension>>"])
     }
 
     /// The access-level filter skips extensions, so a hidden type's extension is still drawn and

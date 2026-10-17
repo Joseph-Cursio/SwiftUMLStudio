@@ -90,13 +90,14 @@ struct ClassDiagramAliasTests {
         #expect(ids == ["Foo", "Foo0"])
     }
 
-    @Test("merged: a hidden type that absorbed an extension does not shift an alias")
-    func mergedHiddenTypeDoesNotReserveItsName() {
-        let ids = ClassDiagramIds.mermaid(
-            for: "fileprivate struct Foo0 {}\nextension Foo0 {}\nstruct Foo {}\nstruct Foo {}",
-            elements: ElementOptions(showExtensions: .merged)
-        )
-        #expect(ids == ["Foo", "Foo0"])
+    /// The hidden type's extension stands in for it, so it is drawn and keeps its name, as when
+    /// extensions are drawn apart (#153).
+    @Test("merged: a hidden type's extension keeps its name, as under .all")
+    func mergedHiddenTypeExtensionKeepsItsName() {
+        let source = "fileprivate struct Foo0 {}\nextension Foo0 {}\nstruct Foo {}\nstruct Foo {}"
+        let ids = ClassDiagramIds.mermaid(for: source, elements: ElementOptions(showExtensions: .merged))
+        #expect(ids == ["Foo", "Foo1", "Foo0"])
+        #expect(ids == ClassDiagramIds.mermaid(for: source, elements: ElementOptions(showExtensions: .all)))
     }
 
     @Test("a nested type's short name does not shift an alias")
