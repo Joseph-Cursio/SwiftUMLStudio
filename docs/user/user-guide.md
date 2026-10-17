@@ -601,7 +601,24 @@ graph TD
     style ModB fill:#ffcccc,stroke:#cc0000
 ```
 
-In PlantUML output, cyclic nodes are listed in a `note` block at the bottom of the diagram. In Mermaid output, each cyclic node is highlighted with a red background using an inline `style` directive.
+**Nomnoml — cycle annotation:**
+
+```
+#direction: down
+#fontSize: 12
+#spacing: 60
+#edges: rounded
+
+// Cyclic nodes: ModA, ModB
+#.warning: fill=#ffcccc stroke=#cc0000
+[<warning> ModA]
+[<warning> ModB]
+
+[ModB] --> [ModA]
+[ModA] --> [ModB]
+```
+
+In PlantUML output, cyclic nodes are listed in a `note` block at the bottom of the diagram. In Mermaid output, each cyclic node is highlighted with a red background using an inline `style` directive. In Nomnoml output, each cyclic node is declared as a red `warning` box before the edges. With `--package` the box carries the node's stereotype, as in `[<warning> Shape «Geometry»]`, so it is the same box the edges draw.
 
 ### Format and Output
 

@@ -96,6 +96,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed — Bridge
 
+- **A Nomnoml dependency graph colours the nodes on a cycle** (#142).
+  `deps --format nomnoml` wrote each cycle node's `[<warning> Name]`
+  line after every edge, under the bare name. nomnoml keeps the first
+  node of a given text, so in path mode the edge's plain box won and no
+  node was red. With `--package`, whose edges write `[Name «Module»]`,
+  the line named a different node, which was drawn as a loose red box
+  with no edges beside a cycle that was not coloured. This happened in
+  `--types` and `--modules` mode, in the CLI and in Studio's Nomnoml
+  preview. The warning boxes now come before the edges, spelled as the
+  edges spell them, and the `#.warning` style is written once.
+  - The edges' text is unchanged. A graph with a cycle lists its cycle
+    nodes first, so nomnoml may place its boxes differently.
+
 - **A colour written as the reference writes it no longer drops the
   config file** (#138). `Color` decoded only its exact case name, so
   `lineColor: DarkGray` or `color: AliceBlue`, as the reference, its
