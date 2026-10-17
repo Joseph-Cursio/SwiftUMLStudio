@@ -143,8 +143,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   `Box`. `extension JSON` and `extension [String: Int]` share one merged
   box. SVG's supertype edge reaches the protocol behind a
   `typealias Q = Proto`. Extension ids and labels are unchanged. Not
-  changed yet: sequence and activity diagrams, the text formats'
-  supertype edges and `deps --types` still use the name as written.
+  changed yet: the text formats' supertype edges and `deps --types`
+  still use the name as written.
+- **Sequence and activity diagrams follow typealiases too** (#125). A
+  method declared in `extension Alias` was filed under `Alias`, so
+  `sequence --entry Real.start` stopped at the call into it, and
+  `--entry Real.helper` found no method in either diagram. The call
+  graph and the activity entry finder now resolve an extension's name,
+  and a call's receiver such as `Alias.make()`, through the project's
+  typealiases before walking each file, by the same lookup class
+  diagrams use, so a `fileprivate` alias reaches only its own file.
+  The entry-point lists show the aliased type, and an entry written
+  with the alias means it too. A sequence diagram now reads each file
+  once with SwiftSyntax alone for participant locations, without the
+  SourceKit pass it never needed.
 - **A type written across lines is read as it is on one line** (#155).
   `struct Circle: Swift` with `.Equatable` on the next line named its
   supertype `"Swift\n    .Equatable"`, line break and indent included.
