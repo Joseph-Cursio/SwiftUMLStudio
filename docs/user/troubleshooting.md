@@ -104,6 +104,16 @@ The CLI shells out to `swift package describe --type json`. The directory you pa
 - Contain a top-level `Package.swift`.
 - Build successfully in isolation — try `swift build --package-path <dir>` first to surface the real error.
 
+### `The file “MyPackage” doesn’t exist.` from `--package ../MyPackage`
+
+Fixed in the release after 1.1.0. On 1.1.0 and earlier, `classdiagram`, `deps` and `component` fail on a relative `--package` path that climbs above the current directory, even though the directory and its `Package.swift` exist. `--package ..` does not fail, but it reads the package around the current directory, which inside a nested package is the nested one. Pass an absolute path instead:
+
+```bash
+swiftumlbridge component --package "$PWD/../MyPackage"
+```
+
+A directory that really is missing now fails with `--package ../MyPackage: no such directory`, naming the path as you typed it.
+
 ### `component --package` hangs with no output and no error
 
 Fixed in the release after 1.0.0. On 1.0.0 and earlier there are two distinct hangs, both of which look identical from the outside — the command sits there indefinitely and never prints anything.

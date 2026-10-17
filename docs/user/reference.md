@@ -165,7 +165,7 @@ swiftumlbridge classdiagram [<paths>...] [options]
 | `--format <format>` | `DiagramFormat?` | `plantuml` | Diagram language. One of: `plantuml`, `mermaid`, `nomnoml`, `svg`. All four are native. Overrides the `format` field in the config file. See [Formats by Subcommand](#formats-by-subcommand). |
 | `--output <format>` | `ClassDiagramOutput?` | `browser` | Output destination. One of: `browser`, `browserImageOnly`, `consoleOnly`. |
 | `--sdk <path>` | `String?` | `nil` | macOS SDK path for improved type inference. Typically `$(xcrun --show-sdk-path -sdk macosx)`. |
-| `--package <path>` | `String?` | `nil` | Path to a `Package.swift` directory. Activates module-aware mode: each type is tagged with its SPM target and rendered with an additional module stereotype. Overrides positional `<paths>` arguments. |
+| `--package <path>` | `String?` | `nil` | Path to a `Package.swift` directory. Activates module-aware mode: each type is tagged with its SPM target and rendered with an additional module stereotype. Overrides positional `<paths>` arguments. A relative path is read against the current directory, with each `..` removed by text as `cd` reads it, so `../MyPackage` works from a sibling directory. |
 | `--show-extensions` | Flag | — | Show all extensions as separate nodes (overrides config file). |
 | `--merge-extensions` | Flag | — | Fold extension members into parent type nodes, and draw the conformances extensions declare from them (overrides config file). |
 | `--hide-extensions` | Flag | — | Remove all extensions from the diagram (overrides config file). |
@@ -303,7 +303,7 @@ swiftumlbridge deps [<paths>...] [--modules] [--types] [--public-only] [--exclud
 | `--exclude <pattern>...` | `[String]` | `[]` | Exclude type or module names matching these glob patterns. May be specified multiple times. |
 | `--format <format>` | `DiagramFormat?` | `plantuml` | Diagram language. One of: `plantuml`, `mermaid`, `nomnoml`, `svg`. All four are native, in both `--types` and `--modules` mode. See [Formats by Subcommand](#formats-by-subcommand). |
 | `--output <format>` | `ClassDiagramOutput?` | `browser` | Output destination. One of: `browser`, `browserImageOnly`, `consoleOnly`. |
-| `--package <path>` | `String?` | `nil` | Path to a `Package.swift` directory. Activates module-aware mode: in `--modules` each SPM `target_dependencies` pair becomes an edge (authoritative — system frameworks are excluded); in `--types` each type is tagged with the SPM target that declares it, rendered as a `<<Module>>` stereotype in PlantUML, Mermaid and Nomnoml, and in SVG as a labelled grouping box around each target's types; in `--modules` each target is labelled with its kind, `<<library>>` or `<<executable>>`, in every format; a type the package only extends takes the first target, in path order (sorted by byte, so `Sources/Zed` comes before `Sources/app`), that extends it. A supertype written with generic arguments, such as `Repo<String>`, is a node of its own and is not tagged. Overrides `<paths>`. Test targets are excluded. |
+| `--package <path>` | `String?` | `nil` | Path to a `Package.swift` directory. Activates module-aware mode: in `--modules` each SPM `target_dependencies` pair becomes an edge (authoritative — system frameworks are excluded); in `--types` each type is tagged with the SPM target that declares it, rendered as a `<<Module>>` stereotype in PlantUML, Mermaid and Nomnoml, and in SVG as a labelled grouping box around each target's types; in `--modules` each target is labelled with its kind, `<<library>>` or `<<executable>>`, in every format; a type the package only extends takes the first target, in path order (sorted by byte, so `Sources/Zed` comes before `Sources/app`), that extends it. A supertype written with generic arguments, such as `Repo<String>`, is a node of its own and is not tagged. Overrides `<paths>`. Test targets are excluded. A relative path is read against the current directory, with each `..` removed by text as `cd` reads it, so `../MyPackage` works from a sibling directory. |
 | `--config <path>` | `String?` | `nil` | Path to a custom `.swiftumlbridge.yml` config file. |
 | `--help` | Flag | — | Print subcommand help and exit. |
 
@@ -494,7 +494,7 @@ swiftumlbridge component --package <path> [options]
 
 | Option | Type | Description |
 |---|---|---|
-| `--package <path>` | `String` | Path to a directory containing `Package.swift`. The CLI runs `swift package describe --type json` to enumerate targets. |
+| `--package <path>` | `String` | Path to a directory containing `Package.swift`. The CLI runs `swift package describe --type json` to enumerate targets. A relative path is read against the current directory, with each `..` removed by text as `cd` reads it, so `../MyPackage` works from a sibling directory. |
 
 **Options:**
 
