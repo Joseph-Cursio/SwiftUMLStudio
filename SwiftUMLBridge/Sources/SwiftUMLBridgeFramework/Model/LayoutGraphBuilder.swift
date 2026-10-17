@@ -21,6 +21,7 @@ struct LayoutGraphBuilder {
         var edges: [PendingEdge] = []
         var nodeIds = NodeIdAllocator(reserving: entries.filter(\.isDrawn).map(\.name))
         var endIds = EdgeEndIds()
+        let aliases = TypeAliasResolver(flattened: prepared)
 
         for entry in entries {
             // Draw the types the text formats draw, by the same `isDrawn(in:)` filter, after
@@ -34,7 +35,8 @@ struct LayoutGraphBuilder {
             nodes.append(buildNode(from: entry.item, nodeId: nodeId, kind: entry.kind, configuration: configuration))
             endIds.record(nodeId, for: entry)
             edges.append(contentsOf: buildEdges(
-                from: entry.item, nodeId: nodeId, kind: entry.kind, relationships: configuration.relationships
+                from: entry.item, nodeId: nodeId, kind: entry.kind, relationships: configuration.relationships,
+                aliases: aliases
             ))
         }
         endIds.recordAliases(in: prepared)
@@ -91,13 +93,15 @@ struct LayoutGraphBuilder {
     }
 
     private static func buildEdges(
-        from item: SyntaxStructure, nodeId: String, kind: ElementKind, relationships: RelationshipOptions
+        from item: SyntaxStructure, nodeId: String, kind: ElementKind, relationships: RelationshipOptions,
+        aliases: TypeAliasResolver
     ) -> [PendingEdge] {
         var edges: [PendingEdge] = []
-        // The text formats' gate, `DiagramContext.linkTarget(for:)`, matches the same names.
-        // SVG read no relationship setting at all (#113, #74).
+        // The text formats' gate, `DiagramContext.linkTarget(for:from:)`, matches the same names,
+        // the aliased type's included (#125). SVG read no relationship setting at all (#113, #74).
         let excluded = relationships.supertypeExcludePatterns
-        for drawn in supertypes(of: item) where drawn.supertype.isExcluded(byPatterns: excluded) == false {
+        for drawn in supertypes(of: item)
+        where aliases.isExcluded(drawn.supertype, from: drawn.scope, byPatterns: excluded) == false {
             guard let parentName = drawn.supertype.name?.removeAngleBracketsWithContent() else { continue }
             let edgeStyle = edgeStyleForInheritance(parentName: parentName, itemKind: kind)
             let target = EdgeEnd.named(parentName, from: drawn.scope)

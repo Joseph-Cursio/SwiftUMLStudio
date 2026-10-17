@@ -159,9 +159,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   nested aliases. An alias of a bound generic (`Box<Int>`) resolves to
   `Box`. `extension JSON` and `extension [String: Int]` share one merged
   box. SVG's supertype edge reaches the protocol behind a
-  `typealias Q = Proto`. Extension ids and labels are unchanged. Not
-  changed yet: the text formats' supertype edges and `deps --types`
-  still use the name as written.
+  `typealias Q = Proto`. Extension ids and labels are unchanged.
 - **Sequence and activity diagrams follow typealiases too** (#125). A
   method declared in `extension Alias` was filed under `Alias`, so
   `sequence --entry Real.start` stopped at the call into it, and
@@ -174,6 +172,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   with the alias means it too. A sequence diagram now reads each file
   once with SwiftSyntax alone for participant locations, without the
   SourceKit pass it never needed.
+- **A supertype written through a typealias is drawn to the aliased
+  type** (#125). After `typealias Q = Proto`, `struct S: Q {}` gave
+  `Q <|-- S : inherits` in PlantUML and Mermaid, and
+  `[S] -:> inherits [Q]` in Nomnoml: an edge to an undeclared `Q`,
+  styled as inheritance. `deps --types` drew `S --> Q`. Each now draws
+  exactly what `struct S: Proto {}` gives, `Proto <|.. S : conforms to`
+  and `S --> Proto`, following chains, nested and bound-generic
+  aliases, a supertype a merged extension carries, and Swift's access
+  rules, so a `fileprivate` alias and an internal one in another target
+  are not followed. `inheritance.exclude`, `realize.exclude` and
+  `elements.exclude` still match the name as written, and now match
+  the aliased type's name too, in every format, SVG included: excluding
+  `Proto` also hides `struct S: Q`.
 - **A type written across lines is read as it is on one line** (#155).
   `struct Circle: Swift` with `.Equatable` on the next line named its
   supertype `"Swift\n    .Equatable"`, line break and indent included.

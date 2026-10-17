@@ -98,23 +98,35 @@ public struct DependencyGraphGenerator: DependencyGraphGenerating, Sendable {
     // MARK: - Types mode
 
     private func extractTypeEdges(from files: [URL], configuration: Configuration) -> [DependencyEdge] {
+        // Every file is parsed before any edge is drawn, so a typealias in one file is followed
+        // from all the others (#125).
+        let items = files.flatMap { SyntaxStructure.create(from: $0)?.substructure ?? [] }
+        let aliases = TypeAliasResolver(items: items)
         var edges: [DependencyEdge] = []
-
-        for file in files {
-            guard let structure = SyntaxStructure.create(from: file),
-                  let items = structure.substructure else { continue }
-
-            for item in items {
-                guard let basis = typeEdgeBasis(for: item, configuration: configuration) else { continue }
-                for parent in basis.inheritedTypes {
-                    guard let parentName = parent.name,
-                          !shouldExclude(name: parentName, configuration: configuration) else { continue }
-                    edges.append(DependencyEdge(from: basis.name, to: parentName, kind: basis.edgeKind))
-                }
+        for item in items {
+            guard let basis = typeEdgeBasis(for: item, configuration: configuration) else { continue }
+            for parent in basis.inheritedTypes {
+                guard let parentName = supertypeName(
+                    of: parent, in: item, aliases: aliases, configuration: configuration
+                ) else { continue }
+                edges.append(DependencyEdge(from: basis.name, to: parentName, kind: basis.edgeKind))
             }
         }
-
         return edges
+    }
+
+    /// The name `item`'s edge to its supertype `parent` ends on: the type it comes to where
+    /// `item` writes it, so `struct S: Q` after `typealias Q = Proto` ends on `Proto` (#125).
+    /// `nil` when the name as written, or the type it comes to, is excluded.
+    private func supertypeName(
+        of parent: SyntaxStructure, in item: SyntaxStructure, aliases: TypeAliasResolver,
+        configuration: Configuration
+    ) -> String? {
+        guard let written = parent.name, !shouldExclude(name: written, configuration: configuration) else {
+            return nil
+        }
+        let resolved = aliases.resolve(written, from: DeclarationScope(of: item))
+        return shouldExclude(name: resolved, configuration: configuration) ? nil : resolved
     }
 
     // MARK: - Modules mode
@@ -187,12 +199,14 @@ public struct DependencyGraphGenerator: DependencyGraphGenerating, Sendable {
             }
         }
 
+        let aliases = TypeAliasResolver(items: parsedItems)
         var edges: [DependencyEdge] = []
         for item in parsedItems {
             guard let basis = typeEdgeBasis(for: item, configuration: configuration) else { continue }
             for parent in basis.inheritedTypes {
-                guard let parentName = parent.name,
-                      !shouldExclude(name: parentName, configuration: configuration) else { continue }
+                guard let parentName = supertypeName(
+                    of: parent, in: item, aliases: aliases, configuration: configuration
+                ) else { continue }
                 edges.append(DependencyEdge(
                     from: basis.name,
                     to: parentName,

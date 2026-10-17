@@ -1,9 +1,11 @@
 import Foundation
 
-/// Follows typealiases for the passes that walk one file at a time: the call graph behind
-/// sequence diagrams and the entry-point lists, and the activity diagram's entry finder (#125).
-/// After `typealias Alias = Real`, a method declared in `extension Alias` is `Real`'s, and
-/// `Alias.make()` calls into `Real`, exactly as if the code had written `Real`.
+/// Follows typealiases for the passes that write a type's name rather than look up its
+/// declaration (#125): the call graph behind sequence diagrams and the entry-point lists, the
+/// activity diagram's entry finder, the text formats' supertype edges and `deps --types`. After
+/// `typealias Alias = Real`, a method declared in `extension Alias` is `Real`'s, `Alias.make()`
+/// calls into `Real`, and `struct S: Alias` ends its edge on `Real`, exactly as if the code had
+/// written `Real`.
 ///
 /// It is built once from every file, on the lookup class diagrams resolve extensions by
 /// (`LayoutGraphBuilder.TypeLookup`), so an alias ranks with the types of its name, and a
@@ -21,7 +23,13 @@ struct TypeAliasResolver {
     /// A resolver for the declarations parsed from every file, `items` being their top-level ones.
     /// Nested types are flattened, setting each one's `parent`, so pass items parsed for this.
     init(items: [SyntaxStructure]) {
-        lookup = LayoutGraphBuilder.TypeLookup(of: items.populateNestedTypes())
+        self.init(flattened: items.populateNestedTypes())
+    }
+
+    /// A resolver for items whose nested types are already flattened, as class-diagram
+    /// preparation leaves them (`preparedForClassDiagram(with:)`); they are not touched.
+    init(flattened items: [SyntaxStructure]) {
+        lookup = LayoutGraphBuilder.TypeLookup(of: items)
     }
 
     /// A resolver for `sources`, each the contents of its file. When no source so much as
@@ -40,7 +48,24 @@ struct TypeAliasResolver {
     /// is followed (`TypeLookup.resolvedName(of:from:)`); `name` itself when it names no alias
     /// there. With no `file`, as for an entry point typed in, every file's aliases are seen.
     func resolve(_ name: String, in file: URL?) -> String {
+        resolve(name, from: DeclarationScope(filePath: file?.path, module: nil))
+    }
+
+    /// The type name `name` comes to where a declaration in `scope` writes it.
+    func resolve(_ name: String, from scope: DeclarationScope) -> String {
         guard let lookup else { return name }
-        return lookup.resolvedName(of: name, from: DeclarationScope(filePath: file?.path, module: nil))
+        return lookup.resolvedName(of: name, from: scope)
+    }
+
+    /// Whether `patterns` exclude the supertype edge to `supertype`, written in `scope`: by the
+    /// name as written, as before, or by the type it comes to, so excluding `Proto` also hides
+    /// `struct S: Q` after `typealias Q = Proto`.
+    func isExcluded(
+        _ supertype: SyntaxStructure, from scope: DeclarationScope, byPatterns patterns: [String]?
+    ) -> Bool {
+        if supertype.isExcluded(byPatterns: patterns) { return true }
+        guard patterns != nil, let name = supertype.name?.removeAngleBracketsWithContent() else { return false }
+        let resolved = resolve(name, from: scope)
+        return resolved != name && SyntaxStructure(name: resolved).isExcluded(byPatterns: patterns)
     }
 }

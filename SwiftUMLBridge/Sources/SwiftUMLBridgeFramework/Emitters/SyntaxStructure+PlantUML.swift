@@ -90,7 +90,7 @@ extension SyntaxStructure {
 
     func addLinking(context: DiagramContext) {
         for parent in linkParents() {
-            context.addLinking(item: self, parent: parent)
+            context.addLinking(item: self, parent: parent.supertype, from: parent.scope)
         }
     }
 
@@ -98,14 +98,16 @@ extension SyntaxStructure {
     /// conformances, then the supertypes merged extensions carried here (#76). The parser has
     /// already split a composition `A & B` into its parts, so an `&` left in a name is part of
     /// that one type, as in `Base<any P & Q>`. A carried one whose name is already drawn is left
-    /// out, so a conformance two `#if` clauses both declare is drawn once.
-    func linkParents() -> [SyntaxStructure] {
+    /// out, so a conformance two `#if` clauses both declare is drawn once. Each comes with the
+    /// scope its name is written in: this declaration's, or the carrying extension's (#125).
+    func linkParents() -> [CarriedSupertype] {
         let own = effectiveInheritedTypes()
         var names = Set(own.compactMap(\.name))
-        let carried = carriedSupertypes.map(\.supertype).filter { supertype in
-            supertype.name.map { names.insert($0).inserted } ?? true
+        let carried = carriedSupertypes.filter { carried in
+            carried.supertype.name.map { names.insert($0).inserted } ?? true
         }
-        return own + carried
+        let scope = DeclarationScope(of: self)
+        return own.map { CarriedSupertype(supertype: $0, scope: scope) } + carried
     }
 
     /// Returns inherited types augmented with synthetic conformances from macro attributes.
