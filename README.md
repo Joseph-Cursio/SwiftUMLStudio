@@ -224,7 +224,7 @@ files:
   exclude:
     - "**/*Tests*"
 elements:
-  accessLevel: internal
+  havingAccessLevel: [open, public, package, internal]
 ```
 
 ## Building

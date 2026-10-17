@@ -378,7 +378,7 @@ swiftumlbridge classdiagram Sources/ --merge-extensions
 swiftumlbridge classdiagram Sources/ --hide-extensions
 ```
 
-These flags override the `elements.showExtensions` setting in the configuration file.
+These flags override the `elements.showExtensions` setting in the configuration file. If more than one is passed, the last one wins.
 
 When extensions are merged, a conformance an extension declares is drawn from its type's box, exactly as the type's own clause would draw it: `struct Foo {}` with `extension Foo: Codable {}` draws what `struct Foo: Codable {}` draws. A conformance written the same way twice, as in both clauses of an `#if`, is drawn once.
 
@@ -967,7 +967,7 @@ Each declaration draws its supertypes from its own box. An extension draws them 
 
 ### Access Level Indicators
 
-When `showMemberAccessLevelAttribute: true` is set, each member displays a prefix. The same symbols are used in both PlantUML and Mermaid.
+By default each member displays a prefix; `showMemberAccessLevelAttribute: false` removes it. The same symbols are used in PlantUML, Mermaid, Nomnoml and SVG.
 
 | Prefix | Access Level |
 |---|---|
