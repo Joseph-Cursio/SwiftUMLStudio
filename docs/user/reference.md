@@ -598,7 +598,11 @@ elements:
     # Glob patterns matched against type names (not file paths).
     # Matched types are excluded from the diagram. An extension is matched by
     # the type it extends, without generic arguments or sugar: "Foo" also
-    # excludes extension Foo<Int>, and "Array" extension [Int].
+    # excludes extension Foo<Int>, and "Array" extension [Int]. A nested type
+    # is matched by its own name and by its name with the types around it,
+    # so "Inner" and "Outer.Inner" each exclude struct Inner in Outer and
+    # extension Outer.Inner. A pattern matches a whole name: "B.C" matches
+    # neither "C" nor "A.B.C".
     # Type: [String]  Default: []
     - "UIViewController"
     - "NS*"
@@ -678,7 +682,9 @@ relationships:
     label: "extends"
     exclude:
       # Extended-type names whose extension edge is hidden, written without
-      # generic arguments ("Foo" for extension Foo<Int>). The extension's
+      # generic arguments ("Foo" for extension Foo<Int>). An extension of a
+      # nested type is matched with and without the types around it: "Inner"
+      # and "Outer.Inner" both reach extension Outer.Inner. The extension's
       # box and its own conformances stay. No effect when extensions are
       # merged or hidden.
       - "Generated*"

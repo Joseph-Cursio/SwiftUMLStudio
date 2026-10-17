@@ -60,10 +60,27 @@ extension SyntaxStructure {
         return actualElement
     }
 
-    /// Whether this element's name matches any of the given exclude glob patterns.
+    /// Whether any of the given exclude glob patterns matches one of this element's `excludeNames`.
     func isExcluded(byPatterns patterns: [String]?) -> Bool {
-        guard let elementName = name, let patterns else { return false }
+        guard let patterns else { return false }
+        let names = excludeNames
         // Names are read as Swift reads them (#123), so a pattern is too: `` `Base` `` is `Base`.
-        return patterns.contains { elementName.isMatching(searchPattern: $0.canonicalDottedName) }
+        return patterns.contains { pattern in
+            let searchPattern = pattern.canonicalDottedName
+            return names.contains { $0.isMatching(searchPattern: searchPattern) }
+        }
+    }
+
+    /// The names an exclude pattern matches this element by: its type's name, with and without
+    /// the types that contain it. A struct nested in `Outer` is named `Inner`, and
+    /// `extension Outer.Inner` is named `Outer.Inner`, so the struct also gives its `fullName` and
+    /// the extension its last component: `Inner` and `Outer.Inner` each match both, as `Foo`
+    /// matches `struct Foo` and `extension Foo` (#154). A supertype entry has no kind and no
+    /// parent, so it gives only its name as written in the inheritance clause.
+    var excludeNames: [String] {
+        guard let name else { return [] }
+        let other = kind == .extension ? displayName : fullName
+        guard let other, other != name else { return [name] }
+        return [name, other]
     }
 }
