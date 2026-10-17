@@ -96,6 +96,31 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed — Bridge
 
+- **A long chain or cycle no longer crashes `deps` or the component
+  layout** (#149). `DependencyGraphModel.detectCycles` recursed once per
+  node on its search path, on the caller's thread — a cooperative thread
+  in the CLI and in Studio's detached tasks. A cycle of 379 types (an
+  inheritance chain, a protocol refinement chain, or folders that import
+  each other) overflowed that stack in a debug build, and about 3,000 in
+  a release one; a chain that long crashed on some runs, depending on
+  where the search started. The process died with SIGILL or SIGBUS and
+  wrote nothing. Studio runs the same search whenever the selection
+  changes, so opening such a folder would quit the app.
+  `component --format svg` (and Studio's native component canvas) did
+  the same on a line of about 350 targets, in `ComponentSVGRenderer`'s
+  layering. Both walks now keep their own path instead of recursing; a
+  cycle of 10,000 types and a line of 10,000 targets hold. The component
+  rows are unchanged.
+- **`deps` marks every type on a cycle, on every run** (#143).
+  `detectCycles` marked only the search path at each back edge, so a
+  node reached through an already-finished part of a cycle was left out,
+  and which nodes were left out followed a `Set`'s per-process order. It
+  now uses Tarjan's strongly connected components: a node is on a cycle
+  when its component has more than one node or it has an edge to itself.
+  Nodes are visited in the order the edges name them, so the cycle note,
+  Mermaid styles, SVG `warning` headers and Studio's cycle insight no
+  longer change between runs.
+
 - **A merged extension of a hidden type keeps its box** (#153). With
   `showExtensions: merged` (`--merge-extensions`), an extension of a type
   the diagram hides — a `fileprivate` type under the default levels, an
@@ -306,10 +331,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   nested types included. A type no target declares takes the first
   target, in path order, that extends it. `deps --modules --package` and
   `component` were not affected.
-  - Only `deps`' cycle highlighting can still change between runs, and
-    only for a graph with a cycle, in path mode too. `detectCycles` finds
-    a different set of cyclic nodes depending on where its search starts,
-    a separate problem #70 notes.
+  - `deps`' cycle highlighting could still change between runs, for a
+    graph with a cycle, in path mode too: `detectCycles` found a
+    different set of cyclic nodes depending on where its search started
+    (#70). #143's fix, above, settles that.
 - **An extension's `ext` edge ends on the type it extends** (#72).
   PlantUML, Mermaid and Nomnoml class diagrams drew the edge only when a
   drawn type's short name equalled the extension's full name. So
