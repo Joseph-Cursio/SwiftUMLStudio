@@ -96,6 +96,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed — Bridge
 
+- **The SVG layout holds a long inheritance chain** (#150).
+  `DagreLayoutEngine` ran graphre.js on the caller's thread, and
+  JavaScriptCore gives a script no more stack than its thread has. The
+  CLI, Studio's diagram tasks and Swift Testing call it on 512 KB
+  cooperative threads, and graphre.js recurses once per rank. So a chain
+  of 660 classes, or a zigzag of 893 structs
+  (`struct S<i>: P<i>, P<i+1>`), made the script throw, and
+  `--format svg` and Studio's SVG
+  canvas drew the grid fallback, with exit 0 and nothing on stderr. The
+  layout now runs on the parse's 64 MB thread, so JavaScriptCore's own
+  cap of about 5 MB is the limit, a chain of about 8,400 classes. What
+  the script throws is now logged at error level, where it was a
+  debug-level "layout script returned undefined".
 - **Every name that shares a type annotation gets its own type**
   (#146). In `var dx, dy: Double` only `dy` has an annotation in the
   syntax, and `dx` took `Double` from the SourceKit typename supplement,
