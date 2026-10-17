@@ -81,6 +81,16 @@ The static call-graph resolver only resolves three patterns:
 
 `localVariable.method()` or `parameterName.method()` cannot be resolved without type inference. These calls appear as notes and are not expanded. There is no flag to "fix" this — refactor the call site to one of the three resolvable forms, or accept the notes as documentation of indirection.
 
+### `warning: …: a `[` nested more than 10 deep in other `[`` on stderr
+
+The file at that line has a chain of `[`, each inside the one before, more than 10 deep. SwiftParser (since swift-syntax 602) and SourceKit take time that doubles with each `[` in such a chain, so every `[` nested more than 10 deep, and the `]` that closes it, was read as a space. The diagram is still drawn, and everything else in the file is read. Only a type written that deep looks different, with spaces where those brackets were. Brackets in comments and string literals are not counted.
+
+To keep a type's full text, write it with fewer levels, for example through a `typealias` for an inner level.
+
+### A diagram never appears for a file with deeply nested arrays
+
+In 1.1.0, a file with a chain of `[`, each inside the one before, such as `[[[…[1]…]]]`, takes time that doubles with each `[` in `classdiagram`, `deps --types`, `sequence` and `component`, where SourceKit reads the file: about 2 s at 24 levels, and minutes past 30. Nothing is printed while it runs. Leave that file out of the paths you pass, or upgrade.
+
 ### State diagram says "no candidates found"
 
 The state-machine detector requires three signals in your source:

@@ -775,4 +775,6 @@ Toggle this in the Snapshots section of the Explorer sidebar.
 
 **A file nested more than 256 levels deep is read only up to that point.** SwiftParser follows nesting 256 levels deep, counting each `(`, `[`, `{` and `#if` it is inside, type and function bodies included. Past that it reads the rest of the file as unexpected text, so nothing after that point, whether declarations, calls or imports, appears in any diagram. The parse still completes, and what came before it is drawn.
 
+**A `[` nested more than 10 deep in other `[` is read as a space.** In a chain of `[` such as `[[[1]]]` or `[[[Int]]]`, SwiftParser (since swift-syntax 602) and SourceKit take time that doubles with each `[`: a 26-deep chain took 14 s, and a 248-deep one never finished. So each `[` nested more than 10 deep, and the `]` that closes it, is read as a space, and the rest of the file is read as usual. A type written that deep shows spaces where those brackets were. Studio does not show a notice for this yet; the CLI prints one on stderr.
+
 **No configuration file support in the GUI.** The GUI uses built-in defaults. Project-level `.swiftumlbridge.yml` settings (custom access levels, themes, extension display, etc.) are not applied. Use the CLI for configuration-file-driven generation.
