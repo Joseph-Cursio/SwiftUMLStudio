@@ -62,7 +62,7 @@ extension SwiftUMLBridgeCLI {
 
             let script: DepsScript
             if let packagePath = package {
-                let packageRoot = URL(fileURLWithPath: packagePath)
+                let packageRoot = try packagePath.packageRootURL()
                 let description = try SPMPackageReader.describe(at: packageRoot)
                 BridgeLogger.shared.info(
                     "Loaded SPM package '\(description.name)' with \(description.targets.count) target(s)"
