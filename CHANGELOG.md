@@ -96,6 +96,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed — Bridge
 
+- **A package dependency graph in SVG shows each node's target**
+  (#144). `deps --package` labels each type with the target that
+  declares it (`--types`) and each target with its kind (`--modules`),
+  and PlantUML, Mermaid and Nomnoml drew those labels. The SVG built
+  each node from its name alone, so every node not on a cycle read
+  «class», with no target, and so did Studio's SVG canvas after
+  **Open Package…**. A `--types` SVG now draws each target's types in a
+  labelled grouping box, as a package class diagram does, and a
+  `--modules` SVG labels each target «library» or «executable». A node
+  on a cycle keeps «warning».
 - **The SVG layout holds a long inheritance chain** (#150).
   `DagreLayoutEngine` ran graphre.js on the caller's thread, and
   JavaScriptCore gives a script no more stack than its thread has. The

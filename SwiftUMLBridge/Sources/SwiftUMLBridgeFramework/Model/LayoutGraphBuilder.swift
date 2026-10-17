@@ -150,10 +150,19 @@ struct LayoutGraphBuilder {
             nodeNames.insert(edge.to)
         }
 
+        // In package mode the text formats label each node with its target (`--types`) or its
+        // target's kind (`--modules`), and the SVG showed neither (#144). A type's target is its
+        // `module`, so the layout groups each target's types in a box, as a package class diagram
+        // does. A target's kind is its stereotype, except on a cycle, where `warning` holds it.
         let cycleNodes = model.detectCycles()
+        let labels = DepsScript.nodeStereotypes(model: model)
+        let labelsAreKinds = !model.targetKinds.isEmpty
         let nodes = nodeNames.sorted().map { name in
-            LayoutNode(id: name, label: name,
-                       stereotype: cycleNodes.contains(name) ? "warning" : nil)
+            LayoutNode(
+                id: name, label: name,
+                stereotype: cycleNodes.contains(name) ? "warning" : (labelsAreKinds ? labels[name] : nil),
+                module: labelsAreKinds ? nil : labels[name]
+            )
         }
 
         let edges = model.edges.map { edge in

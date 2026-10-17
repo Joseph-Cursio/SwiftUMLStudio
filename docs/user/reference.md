@@ -110,7 +110,7 @@ Every subcommand's `--format` accepts `plantuml`, `mermaid`, `nomnoml`, and `svg
 | `classdiagram` | Nomnoml class diagram | SVG document; with `--package`, each target's types sit in a labelled grouping box |
 | `sequence` | Mermaid `sequenceDiagram` (fallback) | SVG document |
 | `activity` | Mermaid `flowchart TD` (fallback) | SVG document |
-| `deps` | Nomnoml graph, in both `--types` and `--modules` mode | SVG document, in both `--types` and `--modules` mode |
+| `deps` | Nomnoml graph, in both `--types` and `--modules` mode | SVG document, in both `--types` and `--modules` mode; with `--package`, each target's types sit in a labelled grouping box (`--types`), or each target is stereotyped with its kind (`--modules`) |
 | `state` | Mermaid `stateDiagram-v2` (fallback) | Mermaid `stateDiagram-v2` (fallback) |
 | `er` | Mermaid `erDiagram` (fallback) | Mermaid `erDiagram` (fallback) |
 | `component` | Mermaid `flowchart TD` (fallback) | SVG document |
@@ -303,7 +303,7 @@ swiftumlbridge deps [<paths>...] [--modules] [--types] [--public-only] [--exclud
 | `--exclude <pattern>...` | `[String]` | `[]` | Exclude type or module names matching these glob patterns. May be specified multiple times. |
 | `--format <format>` | `DiagramFormat?` | `plantuml` | Diagram language. One of: `plantuml`, `mermaid`, `nomnoml`, `svg`. All four are native, in both `--types` and `--modules` mode. See [Formats by Subcommand](#formats-by-subcommand). |
 | `--output <format>` | `ClassDiagramOutput?` | `browser` | Output destination. One of: `browser`, `browserImageOnly`, `consoleOnly`. |
-| `--package <path>` | `String?` | `nil` | Path to a `Package.swift` directory. Activates module-aware mode: in `--modules` each SPM `target_dependencies` pair becomes an edge (authoritative — system frameworks are excluded); in `--types` each type is tagged with the SPM target that declares it, rendered as a `<<Module>>` stereotype in PlantUML, Mermaid and Nomnoml (SVG shows no module); a type the package only extends takes the first target, in path order (sorted by byte, so `Sources/Zed` comes before `Sources/app`), that extends it. A supertype written with generic arguments, such as `Repo<String>`, is a node of its own and is not tagged. Overrides `<paths>`. Test targets are excluded. |
+| `--package <path>` | `String?` | `nil` | Path to a `Package.swift` directory. Activates module-aware mode: in `--modules` each SPM `target_dependencies` pair becomes an edge (authoritative — system frameworks are excluded); in `--types` each type is tagged with the SPM target that declares it, rendered as a `<<Module>>` stereotype in PlantUML, Mermaid and Nomnoml, and in SVG as a labelled grouping box around each target's types; in `--modules` each target is labelled with its kind, `<<library>>` or `<<executable>>`, in every format; a type the package only extends takes the first target, in path order (sorted by byte, so `Sources/Zed` comes before `Sources/app`), that extends it. A supertype written with generic arguments, such as `Repo<String>`, is a node of its own and is not tagged. Overrides `<paths>`. Test targets are excluded. |
 | `--config <path>` | `String?` | `nil` | Path to a custom `.swiftumlbridge.yml` config file. |
 | `--help` | Flag | — | Print subcommand help and exit. |
 
@@ -328,7 +328,7 @@ swiftumlbridge deps Sources/ --modules --exclude Foundation --exclude Swift
 swiftumlbridge deps Sources/ --exclude "Generated*" --format mermaid
 
 # SPM-aware module graph: edges come from target_dependencies, nodes carry
-# <<library>> / <<executable>> stereotypes. PlantUML only for now.
+# <<library>> / <<executable>> stereotypes, in every format.
 swiftumlbridge deps --package . --modules --output consoleOnly
 
 # SPM-aware type graph: each type is tagged with its owning module.
