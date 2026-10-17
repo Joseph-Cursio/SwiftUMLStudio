@@ -21,10 +21,8 @@ public struct DagreLayoutEngine: Sendable {
     /// `marginx` and `marginy` (px).
     private static let canvasMargin: Double = 20.0
 
-    /// Lay out the graph, returning a new graph with positions set.
-    public static func layout(_ graph: LayoutGraph) -> LayoutGraph {
-        guard !graph.nodes.isEmpty else { return graph }
-
+    /// `layout(_:)`'s work, on the thread that calls it.
+    private static func layoutOnThisThread(_ graph: LayoutGraph) -> LayoutGraph {
         var sized = graph
         sizeNodes(&sized)
 
@@ -365,5 +363,20 @@ public struct DagreLayoutEngine: Sendable {
         let scaleY = deltaY == 0 ? 1 : min(node.height / 2 / abs(deltaY), 1)
         let scale = min(scaleX, scaleY)
         return LayoutPoint(posX: node.posX + deltaX * scale, posY: node.posY + deltaY * scale)
+    }
+}
+
+extension DagreLayoutEngine {
+    /// Lay out the graph, returning a new graph with positions set.
+    ///
+    /// graphre.js recurses once per rank when it orders the nodes, and once per level of its
+    /// spanning tree when it ranks them, and JavaScriptCore gives a script no more stack than the
+    /// thread has. On the 512 KB cooperative threads the CLI, Studio's detached tasks and Swift
+    /// Testing call this from, a chain of 660 classes overflowed it, the script threw, and the
+    /// graph fell back to the grid (#150). So the layout runs on `ParsingStack`'s thread, where
+    /// JavaScriptCore's own cap of about 5 MB is the limit: a chain of about 8,400 classes.
+    public static func layout(_ graph: LayoutGraph) -> LayoutGraph {
+        guard !graph.nodes.isEmpty else { return graph }
+        return ParsingStack.run { layoutOnThisThread(graph) }
     }
 }

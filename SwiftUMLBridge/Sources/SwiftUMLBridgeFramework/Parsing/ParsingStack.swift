@@ -12,6 +12,10 @@ import Synchronization
 /// Studio's detached tasks and Swift Testing's tests on cooperative threads with 512 KB stacks,
 /// so 18 nested calls crashed a debug build. A release build crashed at 55 where the supplement
 /// ran and at about 80 elsewhere, with SIGBUS or SIGILL and no diagram.
+///
+/// `DagreLayoutEngine` runs its layout here too. graphre.js recurses once per rank, and
+/// JavaScriptCore gives a script no more stack than its thread has, so on a cooperative thread a
+/// chain of 660 classes made the script throw and the diagram fall back to a grid (#150).
 enum ParsingStack {
     /// The stack a parsing thread gets: room for SwiftParser's deepest nesting
     /// (`maximumNestingLevel`, up to about 8 MB in a debug build) and for SourceKit's response
