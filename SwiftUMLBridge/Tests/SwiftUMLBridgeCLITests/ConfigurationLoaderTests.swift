@@ -172,4 +172,18 @@ struct ConfigurationReportingTests {
         #expect(run.output.contains("Codable <|-- User : inherits"), "\(run.output)")
         #expect(!run.output.contains("Discovered"), "\(run.output)")
     }
+
+    @Test("--verbose says which config file is read")
+    func verbose() throws {
+        let root = try Self.makeProject(discovered: "texts:\n  title: Discovered\n")
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let run = try runCLI(["classdiagram"] + Self.arguments + ["--verbose"], in: root)
+        let quiet = try runCLI(["classdiagram"] + Self.arguments, in: root)
+
+        #expect(run.status == 0, "\(run.output)")
+        #expect(run.output.contains("info: reading config file "), "\(run.output)")
+        #expect(run.output.contains(".swiftumlbridge.yml\n"), "\(run.output)")
+        #expect(!quiet.output.contains("info: "), "\(quiet.output)")
+    }
 }
