@@ -160,7 +160,7 @@ swiftumlbridge classdiagram [<paths>...] [options]
 
 | Option | Type | Default | Description |
 |---|---|---|---|
-| `--config <path>` | `String?` | `nil` | Path to a custom `.swiftumlbridge.yml` file. When omitted, looks for `.swiftumlbridge.yml` in the current directory, then falls back to built-in defaults. |
+| `--config <path>` | `String?` | `nil` | Path to a custom `.swiftumlbridge.yml` file. When omitted, looks for `.swiftumlbridge.yml` in the current directory, then uses the built-in defaults. A file that cannot be used stops the run or is ignored with a warning; see [Configuration File Schema](#configuration-file-schema). |
 | `--exclude <path>...` | `[String]` | `[]` | File or directory paths to exclude. Takes precedence over positional path arguments. May be specified multiple times. |
 | `--format <format>` | `DiagramFormat?` | `plantuml` | Diagram language. One of: `plantuml`, `mermaid`, `nomnoml`, `svg`. All four are native. Overrides the `format` field in the config file. See [Formats by Subcommand](#formats-by-subcommand). |
 | `--output <format>` | `ClassDiagramOutput?` | `browser` | Output destination. One of: `browser`, `browserImageOnly`, `consoleOnly`. |
@@ -169,7 +169,7 @@ swiftumlbridge classdiagram [<paths>...] [options]
 | `--show-extensions` | Flag | — | Show all extensions as separate nodes (overrides config file). |
 | `--merge-extensions` | Flag | — | Fold extension members into parent type nodes, and draw the conformances extensions declare from them (overrides config file). |
 | `--hide-extensions` | Flag | — | Remove all extensions from the diagram (overrides config file). |
-| `--verbose` | Flag | `false` | Enable verbose logging to stderr. |
+| `--verbose` | Flag | `false` | Print the log on stderr, one line per message, such as `info: reading config file .swiftumlbridge.yml`. |
 | `--help` | Flag | — | Print subcommand help and exit. |
 
 **Extension flags override `elements.showExtensions`.** If more than one is passed, the last one wins. With none, the config file decides, and without that key, extensions are shown as separate nodes.
@@ -532,7 +532,14 @@ swiftumlbridge component --package SwiftUMLBridge --include-test-targets
 
 ## Configuration File Schema
 
-The configuration file is a YAML file named `.swiftumlbridge.yml`. All fields are optional. Any field you omit uses its built-in default. The `sequence` subcommand uses `format` from the config file; other fields (elements, relationships, etc.) are class-diagram–specific and are ignored by `sequence`.
+The configuration file is a YAML file named `.swiftumlbridge.yml`. All fields are optional, and any field you omit uses its built-in default, with two exceptions: a relationship `style` needs all of `lineStyle`, `lineColor` and `textColor`, and a stereotype's `spot` needs both `character` and `color`. A file with no settings in it, empty or only comments, is all defaults. The `sequence` subcommand uses `format` from the config file; other fields (elements, relationships, etc.) are class-diagram–specific and are ignored by `sequence`.
+
+**When a file cannot be used.** A value the tool cannot read, such as `format: Mermaid` or `lineStyle: Dashed`, makes the whole file unusable, and the CLI says so with the key at fault:
+
+- A file named with `--config` must load. If it is missing or cannot be used, the run stops with exit code 1 and, for example, `Error: --config dg.yml: invalid value at relationships.inheritance.style.lineColor: '#FF0000' is not a colour name this tool knows`. The current directory's `.swiftumlbridge.yml` is not read in its place.
+- A `.swiftumlbridge.yml` found in the current directory that cannot be used is ignored, with `warning: ignoring .swiftumlbridge.yml: <reason>` on stderr, and the run goes on with the built-in defaults.
+
+A key the schema does not have, such as a misspelt `elemnts`, is ignored without a message. Colour names are read in any case: see [Colors](#colors).
 
 **Annotated full schema:**
 
@@ -1058,7 +1065,7 @@ Controls the line stroke:
 
 ### lineColor and textColor
 
-Any HTML color name recognized by PlantUML. Common values:
+One of the HTML colour names under [Colors](#colors), in any case: `RoyalBlue`, `royalBlue` and `royalblue` are the same colour. A hex value such as `#4169E1` is not accepted. Common values:
 
 | Color Name | Hex |
 |---|---|
@@ -1087,7 +1094,7 @@ relationships:
       textColor: RoyalBlue
 ```
 
-This emits: `#line:RoyalBlue;line.dashed;text:RoyalBlue` inline on the PlantUML relationship arrow.
+This emits: `#line:royalBlue;line.dashed;text:royalBlue` inline on the PlantUML relationship arrow. The tool always writes a colour by its own name, `royalBlue`, however the file spells it.
 
 ---
 
@@ -1129,7 +1136,7 @@ The `__directive__(...)` syntax passes the string verbatim to PlantUML, bypassin
 
 ## Colors
 
-PlantUML accepts any HTML 4 color name. A representative set:
+A colour value in the config file is one of the HTML colour names, in any case: `Firebrick`, `fireBrick` and `FIREBRICK` are all read. A representative set:
 
 ### Reds
 `Red`, `DarkRed`, `Crimson`, `Firebrick`, `IndianRed`, `LightCoral`, `Salmon`, `Tomato`, `OrangeRed`
@@ -1576,12 +1583,15 @@ func readSwiftConfig() -> Configuration
 // Decode a specific YAML file
 func decodeYml(config: URL) -> Configuration?
 
+// Load a specific YAML file, or say why it cannot be used
+public func loadConfiguration(at url: URL) throws -> Configuration
+
 // Default file name and path
 var defaultYmlPath: URL     // <CWD>/.swiftumlbridge.yml
 var defaultConfig: Configuration
 ```
 
-Invalid or missing YAML always falls back to `Configuration.default` — it never throws.
+`getConfiguration(for:)` never throws. A named file that cannot be used falls back to `.swiftumlbridge.yml` in the current directory, and that to `Configuration.default`. `loadConfiguration(at:)` throws a `ConfigurationLoadError` instead, whose `path` and `reason` say which file and which key, and treats a file with no settings in it as `Configuration.default`. The CLI loads its config with it.
 
 ---
 

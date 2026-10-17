@@ -59,20 +59,20 @@ For the `classdiagram` subcommand, the SwiftPlantUML flag → SwiftUMLBridge fla
 | _(no format option)_ | `--format plantuml|mermaid` | PlantUML is the default; Mermaid is new in 0.2.0. |
 | `--extensions show|hide|asObjcLikeCategories` | `--extension-visualization` flag (`--show-extensions` etc.) | Renamed for clarity; same three semantics. |
 | _(no module support)_ | `--package <Package.swift-dir>` | New module-aware mode. Each type is stamped with its owning SPM target and gets a module stereotype. |
-| _(none)_ | `--verbose` | Standard verbose logging flag. |
+| _(none)_ | `--verbose` | Prints the log on stderr, such as which config file is read. `classdiagram` only. |
 
 ---
 
 ## YAML configuration
 
-The configuration shape is mostly the same. Rename your file from `.swiftplantuml.yml` to `.swiftumlbridge.yml` and the existing fields keep working:
+The configuration shape is mostly the same. Rename your file from `.swiftplantuml.yml` to `.swiftumlbridge.yml` and the existing fields keep working. Colour names are read in any case, so SwiftPlantUML's `DarkGray` and `LightBlue` still work:
 
 ```yaml
 files:
   exclude:
     - "Tests/**"
 elements:
-  havingVisibility:
+  havingAccessLevel:
     - public
     - internal
 hideShowCommands:
@@ -80,10 +80,13 @@ hideShowCommands:
 skinparamCommands:
   - "skinparam shadowing false"
 relationships:
-  showInheritance: true
+  inheritance:
+    label: "inherits from"
 stereotypes:
   protocol:
-    color: lightblue
+    spot:
+      character: P
+      color: LightBlue
 theme: amiga
 texts:
   title: "MyLib"
@@ -98,6 +101,7 @@ What changed:
 
 - **Default `hideShowCommands` / `skinparamCommands`** — same defaults as SwiftPlantUML (`hide empty members`, `skinparam shadowing false`), but the entries are now explicit defaults you can override. Passing an empty list clears them entirely.
 - **`theme:`** — still a string, still maps to the bundled PlantUML themes. Unchanged.
+- **A file that cannot be used is reported.** A value the tool cannot read, such as `format: Mermaid`, stops a run that names the file with `--config`, with the key at fault, and a `.swiftumlbridge.yml` in the current directory is ignored with a warning. SwiftPlantUML dropped such a file without a word. See [Reference → Configuration File Schema](reference.md#configuration-file-schema).
 - **`stereotypes:`** — same shape, but new stereotypes are recognized for macro-detected conformances (e.g. `<<Observable>>`, `<<Model>>`) so you can theme them.
 
 What's gone:
