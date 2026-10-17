@@ -40,7 +40,8 @@ public struct SequenceDiagramGenerator: SequenceDiagramGenerating, Sendable {
             }
             if let structure = SyntaxStructure.create(from: file),
                let topLevel = structure.substructure {
-                for item in topLevel {
+                // A typealias is no participant's declaration (#125).
+                for item in topLevel where item.kind != .typealias {
                     if let name = item.name, let location = item.sourceLocation,
                        typeLocations[name] == nil {
                         typeLocations[name] = location

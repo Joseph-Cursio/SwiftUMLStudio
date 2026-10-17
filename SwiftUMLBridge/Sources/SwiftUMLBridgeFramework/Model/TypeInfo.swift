@@ -44,6 +44,7 @@ extension TypeInfo {
             .components(separatedBy: ".").last
         self.inheritedTypeNames = structure.inheritedTypes?.compactMap(\.name) ?? []
         self.attributeNames = structure.attributeNames
-        self.memberCount = structure.substructure?.count ?? 0
+        // A typealias is no member here: nothing counted it before the parser kept them (#125).
+        self.memberCount = structure.substructure?.filter { $0.kind != .typealias }.count ?? 0
     }
 }

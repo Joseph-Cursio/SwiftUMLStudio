@@ -82,24 +82,31 @@ extension Array where Element == SyntaxStructure {
     /// first extension that sees none either, so that type gets one box, its first extension's.
     /// A type the diagram hides has no box to merge into either: its first drawn extension, one
     /// whose own lookup finds that same type, stands in for it, as `EdgeEndIds.standIn` has it
-    /// when extensions are drawn apart, and the rest merge there (#153).
+    /// when extensions are drawn apart, and the rest merge there (#153). Extensions are matched
+    /// by the type their names come to, not by spelling, so `extension Alias` and `extension Real`
+    /// share a box after `typealias Alias = Real`, and so do `extension JSON` and
+    /// `extension [String: Int]` after `typealias JSON = [String: Int]` (#125).
     private func mergeTarget(
         for anExtension: SyntaxStructure, lookup: LayoutGraphBuilder.TypeLookup,
         isDrawn: (SyntaxStructure) -> Bool
     ) -> SyntaxStructure? {
         guard let name = anExtension.fullName else { return nil }
-        if let type = lookup.type(named: name, from: DeclarationScope(of: anExtension)) {
+        let scope = DeclarationScope(of: anExtension)
+        if let type = lookup.type(named: name, from: scope) {
             if let declared = first(where: { ObjectIdentifier($0) == type.declaration }), isDrawn(declared) {
                 return declared
             }
             return first { item in
-                item.kind == .extension && item.fullName == name && isDrawn(item)
-                    && lookup.type(named: name, from: DeclarationScope(of: item))?.declaration == type.declaration
+                guard item.kind == .extension, isDrawn(item), let itemName = item.fullName else { return false }
+                return lookup.type(named: itemName, from: DeclarationScope(of: item))?.declaration == type.declaration
             }
         }
+        let resolvedName = lookup.resolvedName(of: name, from: scope)
         return first { item in
-            item.kind == .extension && item.fullName == name
-                && lookup.type(named: name, from: DeclarationScope(of: item)) == nil
+            guard item.kind == .extension, let itemName = item.fullName else { return false }
+            let itemScope = DeclarationScope(of: item)
+            return lookup.resolvedName(of: itemName, from: itemScope) == resolvedName
+                && lookup.type(named: itemName, from: itemScope) == nil
         }
     }
 

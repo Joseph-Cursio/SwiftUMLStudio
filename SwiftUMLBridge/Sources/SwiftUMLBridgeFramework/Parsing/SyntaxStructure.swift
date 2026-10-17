@@ -52,7 +52,7 @@ internal class SyntaxStructure: NSObject, Codable, @unchecked Sendable {
     private let runtimename: String?
     /// sub elements (e.g. variables and methods of a class/struct)
     internal var substructure: [SyntaxStructure]?
-    /// typename
+    /// typename; for a `.typealias`, the name of the type it aliases (#125)
     internal let typename: String?
 
     internal var memberSuffix: String?

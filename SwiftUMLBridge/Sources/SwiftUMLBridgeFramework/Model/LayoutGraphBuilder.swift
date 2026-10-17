@@ -11,7 +11,8 @@ struct LayoutGraphBuilder {
         from items: [SyntaxStructure],
         configuration: Configuration
     ) -> LayoutGraph {
-        let entries = items.preparedForClassDiagram(with: configuration).compactMap { item -> DiagramItem? in
+        let prepared = items.preparedForClassDiagram(with: configuration)
+        let entries = prepared.compactMap { item -> DiagramItem? in
             guard let kind = item.kind, ElementKind.processable.contains(kind) else { return nil }
             guard let name = item.fullName ?? item.name else { return nil }
             return DiagramItem(item: item, kind: kind, name: name, isDrawn: item.isDrawn(in: configuration))
@@ -36,6 +37,7 @@ struct LayoutGraphBuilder {
                 from: entry.item, nodeId: nodeId, kind: entry.kind, relationships: configuration.relationships
             ))
         }
+        endIds.recordAliases(in: prepared)
 
         return LayoutGraph(nodes: nodes, edges: resolved(edges, through: endIds))
     }
