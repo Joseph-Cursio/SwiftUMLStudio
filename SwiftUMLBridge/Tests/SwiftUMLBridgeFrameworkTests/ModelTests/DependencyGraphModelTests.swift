@@ -90,6 +90,75 @@ struct DependencyGraphModelTests {
         #expect(cycles.contains("D") == false)
     }
 
+    // MARK: - Cycle detection: every member, wherever the search starts (#143)
+
+    /// The edges `deps --types` lists for `class Canvas: Drawable, Themed {}`,
+    /// `protocol Drawable: Paintable {}`, `protocol Paintable: Canvas {}` and
+    /// `protocol Themed: Paintable {}`. A search that reached `Themed` after `Paintable` was
+    /// finished left `Themed` out.
+    static let canvas = [
+        DependencyEdge(from: "Canvas", to: "Drawable", kind: .inherits),
+        DependencyEdge(from: "Canvas", to: "Themed", kind: .inherits),
+        DependencyEdge(from: "Drawable", to: "Paintable", kind: .conforms),
+        DependencyEdge(from: "Paintable", to: "Canvas", kind: .conforms),
+        DependencyEdge(from: "Themed", to: "Paintable", kind: .conforms)
+    ]
+
+    /// The same for `class Node: Visible, Styled {}`, `protocol Visible: Rooted, Framed {}`,
+    /// `protocol Rooted: Node {}`, `protocol Styled: Visible {}` and `protocol Framed: Rooted {}`.
+    /// Every start node missed at least one member.
+    static let node = [
+        DependencyEdge(from: "Node", to: "Visible", kind: .inherits),
+        DependencyEdge(from: "Node", to: "Styled", kind: .inherits),
+        DependencyEdge(from: "Visible", to: "Rooted", kind: .conforms),
+        DependencyEdge(from: "Visible", to: "Framed", kind: .conforms),
+        DependencyEdge(from: "Rooted", to: "Node", kind: .conforms),
+        DependencyEdge(from: "Styled", to: "Visible", kind: .conforms),
+        DependencyEdge(from: "Framed", to: "Rooted", kind: .conforms)
+    ]
+
+    private func results(_ edges: [DependencyEdge], calls: Int = 50) -> Set<[String]> {
+        Set((0..<calls).map { _ in DependencyGraphModel(edges: edges).detectCycles().sorted() })
+    }
+
+    @Test("a node reached through a finished part of the cycle is still on it")
+    func canvasCycle() {
+        #expect(results(Self.canvas) == [["Canvas", "Drawable", "Paintable", "Themed"]])
+    }
+
+    @Test("every node of a cycle with several back edges is on it")
+    func nodeCycle() {
+        #expect(results(Self.node) == [["Framed", "Node", "Rooted", "Styled", "Visible"]])
+    }
+
+    @Test("a node that only leads into a cycle, or is only reached from one, is not on it")
+    func feedersAreNotMembers() {
+        let edges = [DependencyEdge(from: "Button", to: "Canvas", kind: .inherits)] + Self.canvas
+            + [DependencyEdge(from: "Paintable", to: "AnyObject", kind: .conforms)]
+        #expect(results(edges) == [["Canvas", "Drawable", "Paintable", "Themed"]])
+    }
+
+    @Test("an edge from a node to itself puts only that node on a cycle")
+    func selfLoopOnly() {
+        let edges = [
+            DependencyEdge(from: "Core", to: "Core", kind: .imports),
+            DependencyEdge(from: "Core", to: "Foundation", kind: .imports)
+        ]
+        #expect(results(edges) == [["Core"]])
+    }
+
+    @Test("two separate cycles are both found")
+    func twoCycles() {
+        let edges = [
+            DependencyEdge(from: "A", to: "B", kind: .imports),
+            DependencyEdge(from: "B", to: "A", kind: .imports),
+            DependencyEdge(from: "B", to: "C", kind: .imports),
+            DependencyEdge(from: "C", to: "D", kind: .imports),
+            DependencyEdge(from: "D", to: "C", kind: .imports)
+        ]
+        #expect(results(edges) == [["A", "B", "C", "D"]])
+    }
+
     // MARK: - edges property
 
     @Test("model exposes edges")

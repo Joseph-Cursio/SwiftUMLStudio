@@ -1973,13 +1973,13 @@ An in-memory model of dependency edges, with built-in cycle detection. Produced 
 public let edges: [DependencyEdge]
 public init(edges: [DependencyEdge])
 
-// DFS cycle detection — returns all node names involved in at least one cycle.
+// Cycle detection — returns all node names involved in at least one cycle.
 // Self-cycles (A → A) are detected. Nodes that merely feed into a cycle
 // but are not themselves part of one are not included.
 public func detectCycles() -> Set<String>
 ```
 
-Cycle detection uses a gray/black DFS coloring scheme. A node is included in the result set when a back edge is found from it or through it.
+Cycle detection finds strongly connected components with Tarjan's algorithm. A node is included in the result set when its component has more than one node, or when it has an edge to itself. The answer does not depend on edge or start order, and the search keeps its own stack rather than recursing, so a chain or cycle of any length is safe to analyse on a small (cooperative-thread) stack.
 
 ---
 
