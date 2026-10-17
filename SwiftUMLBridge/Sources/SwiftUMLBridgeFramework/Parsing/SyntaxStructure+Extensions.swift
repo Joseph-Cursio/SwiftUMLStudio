@@ -123,12 +123,13 @@ extension Array where Element == SyntaxStructure {
         return items
     }
 
+    /// The kinds `populateNestedTypes` walks into and flattens: every `ElementKind.processable`
+    /// kind but `.macro`, which is declared only at the top level and keeps its place after the
+    /// types. Derived from that list so it cannot drift from it again: a hand-written copy left
+    /// out `.protocol`, so a protocol nested in a type (SE-0404) was never drawn (#162).
     func isNestedType(_ structure: SyntaxStructure) -> Bool {
-        structure.kind == .class
-            || structure.kind == .struct
-            || structure.kind == .enum
-            || structure.kind == .extension
-            || structure.kind == .actor
+        guard let kind = structure.kind, kind != .macro else { return false }
+        return ElementKind.processable.contains(kind)
     }
 }
 

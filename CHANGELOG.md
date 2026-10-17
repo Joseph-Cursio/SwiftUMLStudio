@@ -96,6 +96,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed — Bridge
 
+- **A protocol nested in a type is drawn** (#162). Swift 5.10
+  (SE-0404) allows `enum Outer { protocol Shape {} }`, but class
+  diagrams walked into nested classes, structs, enums, extensions and
+  actors only, so the protocol had no box in any format. Its
+  requirements and supertypes were lost, `struct Square: Outer.Shape`
+  ended on an undeclared `Outer.Shape` drawn as inheritance (SVG drew no
+  edge), and an `extension Outer.Shape` found no type to link to or
+  merge into. It is now drawn as a protocol box `Outer.Shape`, hung off
+  `Outer` like any nested type, with `Square`'s conformance arrow. The
+  kinds walked into now come from the same list as the kinds drawn, so
+  they cannot drift apart again. A conformance written with the short
+  name inside `Outer`, `Circle: Shape`, still ends on `Shape` (#157).
 - **`elements.exclude` hides a nested type and its extensions
   together** (#154). `struct Inner` inside `enum Outer` was matched only
   as `Inner`, and `extension Outer.Inner` only as `Outer.Inner`, so no
