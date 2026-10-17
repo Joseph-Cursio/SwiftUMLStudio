@@ -69,6 +69,8 @@ Means the toolchain doesn't understand `swift-tools-version: 6.2`. Same fix as a
 grep -n "func myMethod" Sources/
 ```
 
+A method named with a keyword is declared with backticks, as ``func `default`()``. Type it with or without them: `--entry Keyed.default`, or ``--entry 'Keyed.`default`'`` with the backticks quoted for the shell. In 1.1.0 and earlier, only the escaped spelling is found.
+
 Pass `--depth 1` first to confirm the entry method itself is being found. If depth-1 returns a single participant, the resolver found the entry — increase depth to expand.
 
 ### Sequence diagram is full of `Unresolved: foo()` notes
@@ -80,6 +82,16 @@ The static call-graph resolver only resolves three patterns:
 - `bareMethod()` (no receiver) — bound to the caller's type
 
 `localVariable.method()` or `parameterName.method()` cannot be resolved without type inference. These calls appear as notes and are not expanded. There is no flag to "fix" this — refactor the call site to one of the three resolvable forms, or accept the notes as documentation of indirection.
+
+### A member named with a keyword is not matched with its declaration
+
+A keyword can name a member if it is escaped where it is declared: ``func `default`()``, ``case `default` ``, ``var `default` ``. After a `.`, Swift reads a keyword as a plain name, so `self.default()`, `state = .default`, `case .default:` and `\Book.default` name those members without the backticks. In 1.1.0 and earlier, the parsers read the reference after the dot as `default` and the declaration as `` `default` ``, so:
+
+- a sequence diagram draws `self.default()` but does not follow it into the method's body;
+- a state diagram names the case `` `default` `` in its initial edge and `default` in its transitions, and a state property declared ``var `default` `` and assigned through `self.default` is not found;
+- an ER relationship whose inverse is written `\Book.default` is drawn twice.
+
+Each reference is now matched with its declaration, so each diagram has what the escaped spelling gives. A sequence diagram still labels the call as written, `default()`, and a state is named as its case is declared, `` `default` ``. In 1.1.0 and earlier, write the reference with the declaration's backticks: ``self.`default`()``, ``.`default` `` and ``\Book.`default` ``.
 
 ### State diagram says "no candidates found"
 
