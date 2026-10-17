@@ -95,24 +95,17 @@ extension SyntaxStructure {
     }
 
     /// The parents `addLinking` draws an edge to: inherited types plus macro-synthesised
-    /// conformances, then the supertypes merged extensions carried here (#76), with a composition
-    /// `A & B` split into its parts. A carried one whose name is already drawn is left out, so a
-    /// conformance two `#if` clauses both declare is drawn once.
+    /// conformances, then the supertypes merged extensions carried here (#76). The parser has
+    /// already split a composition `A & B` into its parts, so an `&` left in a name is part of
+    /// that one type, as in `Base<any P & Q>`. A carried one whose name is already drawn is left
+    /// out, so a conformance two `#if` clauses both declare is drawn once.
     func linkParents() -> [SyntaxStructure] {
-        let own = effectiveInheritedTypes().flatMap(\.compositionParts)
+        let own = effectiveInheritedTypes()
         var names = Set(own.compactMap(\.name))
-        let carried = carriedSupertypes.flatMap(\.supertype.compositionParts).filter { part in
-            part.name.map { names.insert($0).inserted } ?? true
+        let carried = carriedSupertypes.map(\.supertype).filter { supertype in
+            supertype.name.map { names.insert($0).inserted } ?? true
         }
         return own + carried
-    }
-
-    /// This supertype, or for a composition `A & B` each of its parts.
-    private var compositionParts: [SyntaxStructure] {
-        guard let name, name.contains("&") else { return [self] }
-        return name.components(separatedBy: "&").map {
-            SyntaxStructure(name: $0.trimmingCharacters(in: .whitespacesAndNewlines))
-        }
     }
 
     /// Returns inherited types augmented with synthetic conformances from macro attributes.
