@@ -26,7 +26,7 @@ public struct DagreLayoutEngine: Sendable {
         var sized = graph
         sizeNodes(&sized)
 
-        guard let context = JSContext() else {
+        guard let context = makeContext() else {
             BridgeLogger.shared.debug("DagreLayoutEngine: failed to create JSContext")
             return fallbackLayout(sized)
         }
@@ -378,5 +378,15 @@ extension DagreLayoutEngine {
     public static func layout(_ graph: LayoutGraph) -> LayoutGraph {
         guard !graph.nodes.isEmpty else { return graph }
         return ParsingStack.run { layoutOnThisThread(graph) }
+    }
+
+    /// A context that logs what a script throws. Without a handler a thrown error only makes
+    /// `evaluateScript` return `undefined`, and the grid fallback was the only sign of it.
+    private static func makeContext() -> JSContext? {
+        let context = JSContext()
+        context?.exceptionHandler = { _, exception in
+            BridgeLogger.shared.error("DagreLayoutEngine: \(exception?.toString() ?? "unknown exception")")
+        }
+        return context
     }
 }
