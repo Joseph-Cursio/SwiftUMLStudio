@@ -725,11 +725,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   - SVG class diagrams now honour `inheritance.exclude` and
     `realize.exclude`; they read no relationship setting before.
 
-  The reference's arrow table had its arrows reversed, and both it and
-  the user guide's illustrated conformance with `Equatable` or `Codable`,
-  which are labelled as inheritance; both are corrected. The reference
-  now says that a `relationships:` block replaces the inheritance and
-  realize labels.
+  The reference's arrow table had its arrows reversed, and it, the user
+  guide's and the Studio user guide's illustrated conformance with
+  `Equatable` or `Codable`, which are labelled as inheritance; all three
+  are corrected (#137). The Studio guide now also says which arrow a
+  conformance to an undeclared protocol gets, and what the SVG canvas
+  draws. The reference now says that a `relationships:` block replaces
+  the inheritance and realize labels.
 - **A `{…}` group in `files.include` or `files.exclude` now stands for one
   entry per option** (#58). Each group became a regex alternation instead.
   Its options were escaped with an old copy of the escape class, then
