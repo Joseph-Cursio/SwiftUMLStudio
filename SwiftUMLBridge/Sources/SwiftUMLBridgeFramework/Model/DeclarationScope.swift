@@ -14,6 +14,11 @@ struct DeclarationScope {
         module = item.module
     }
 
+    init(filePath: String?, module: String?) {
+        self.filePath = filePath
+        self.module = module
+    }
+
     /// The candidate a name means where this scope writes it, close to how Swift looks it up: the
     /// first declared in the same file, then in the same module, then the first of all; `nil`
     /// only when there are no candidates.

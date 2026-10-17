@@ -20,12 +20,15 @@ public struct ActivityDiagramGenerator: ActivityDiagramGenerating, Sendable {
         entryMethod: String,
         with configuration: Configuration = .default
     ) -> ActivityScript {
-        let entry = CallGraphExtractor.listedEntryPoint(type: entryType, method: entryMethod)
-        let files = FileCollector().getFiles(for: paths)
-        for file in files {
-            guard let source = try? String(contentsOf: file, encoding: .utf8) else { continue }
+        let listed = CallGraphExtractor.listedEntryPoint(type: entryType, method: entryMethod)
+        let sources = CallGraphExtractor.readSources(for: paths)
+        let aliases = TypeAliasResolver(sources: sources)
+        // `--entry Alias.helper` is the aliased type's `helper`, as its extension is (#125).
+        let entry = (type: aliases.resolve(listed.type, in: nil), method: listed.method)
+        for source in sources {
             if let graph = ActivityFlowExtractor.extract(
-                from: source, entryType: entry.type, entryMethod: entry.method
+                from: source.contents, entryType: entry.type, entryMethod: entry.method,
+                file: source.file, aliases: aliases
             ) {
                 return ActivityScript(graph: graph, configuration: configuration)
             }

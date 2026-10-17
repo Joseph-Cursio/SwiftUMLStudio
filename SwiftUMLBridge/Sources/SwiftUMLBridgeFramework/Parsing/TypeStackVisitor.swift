@@ -14,6 +14,11 @@ class TypeStackVisitor: SyntaxVisitor {
     /// Enclosing type names, outermost first; `last` is the innermost type.
     private(set) var typeStack: [String] = []
 
+    /// The type a name written in this file means, for the names an extension and a call's
+    /// receiver are written with: `TypeAliasResolver.resolve(_:in:)` follows typealiases (#125).
+    /// The name itself by default.
+    var resolveTypeName: (String) -> String = { $0 }
+
     override func visit(_ node: ClassDeclSyntax) -> SyntaxVisitorContinueKind {
         typeStack.append(node.name.canonicalName)
         return .visitChildren
@@ -47,7 +52,8 @@ class TypeStackVisitor: SyntaxVisitor {
     override func visit(_ node: ExtensionDeclSyntax) -> SyntaxVisitorContinueKind {
         // Named as `SyntaxStructureBuilder` names the extension, so a sequence participant finds
         // its source location under it, and `Foo<Int>` and `[Int]` read `Foo` and `Array` (#66).
-        typeStack.append(node.extendedType.extendedTypeName ?? node.extendedType.canonicalDescription)
+        // `extension Alias` is the aliased type's (#125).
+        typeStack.append(resolveTypeName(node.extendedType.extendedTypeName ?? node.extendedType.canonicalDescription))
         return .visitChildren
     }
     override func visitPost(_ node: ExtensionDeclSyntax) { typeStack.removeLast() }
