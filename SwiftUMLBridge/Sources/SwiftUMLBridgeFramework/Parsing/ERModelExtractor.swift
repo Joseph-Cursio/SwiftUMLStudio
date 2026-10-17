@@ -326,10 +326,10 @@ final class ERModelExtractor: SyntaxVisitor {
     // MARK: - Static factory
 
     /// Parse `source` and extract an `ERModel` containing every `@Model` class
-    /// discovered in the file.
-    static func extract(from source: String) -> ERModel {
+    /// discovered in the file, read from `file` when there is one.
+    static func extract(from source: String, file: URL? = nil) -> ERModel {
         ParsingStack.run {
-            let sourceFile = ParsingStack.parse(source)
+            let sourceFile = ParsingStack.parse(source, file: file)
             let extractor = ERModelExtractor(viewMode: .sourceAccurate)
             extractor.walk(sourceFile)
             return extractor.buildModel()

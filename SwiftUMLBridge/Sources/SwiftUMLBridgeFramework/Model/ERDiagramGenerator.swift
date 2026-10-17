@@ -40,11 +40,11 @@ public struct ERDiagramGenerator: ERDiagramGenerating, Sendable {
             let files = FileCollector().getFiles(for: swiftSourcePaths)
             for file in files {
                 guard let source = try? String(contentsOf: file, encoding: .utf8) else { continue }
-                let swiftDataModel = ERModelExtractor.extract(from: source)
+                let swiftDataModel = ERModelExtractor.extract(from: source, file: file)
                 mergeIn(swiftDataModel, entities: &entities, relationships: &relationships,
                         seenEntity: &seenEntity, seenRelationship: &seenRelationship)
 
-                let grdbModel = PersistenceSchemaExtractor.extract(from: source)
+                let grdbModel = PersistenceSchemaExtractor.extract(from: source, file: file)
                 mergeIn(grdbModel, entities: &entities, relationships: &relationships,
                         seenEntity: &seenEntity, seenRelationship: &seenRelationship)
             }

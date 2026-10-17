@@ -14,7 +14,7 @@ public struct StateMachineGenerator: StateMachineGenerating, Sendable {
 
         for file in files {
             if let source = try? String(contentsOf: file, encoding: .utf8) {
-                all.append(contentsOf: StateMachineExtractor.extract(from: source))
+                all.append(contentsOf: StateMachineExtractor.extract(from: source, file: file))
             }
         }
 
