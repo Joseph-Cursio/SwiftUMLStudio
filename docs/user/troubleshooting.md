@@ -231,9 +231,20 @@ If you run `swiftumlbridge` from a parent directory and the config lives elsewhe
 
 When `files.include` patterns are defined in the config, they take precedence over positional `<paths>...` arguments. Either remove `files.include`, pass `--config /dev/null` to bypass the config, or update the include patterns.
 
-### YAML parse errors point to "unknown key X"
+### `Error: --config …: invalid value at …` or `warning: ignoring .swiftumlbridge.yml: …`
 
-Yams is strict about top-level structure. Keys you set must match the schema in [Reference → Configuration File Schema](reference.md#configuration-file-schema). Common typos:
+A value in the file cannot be read, and the message names its key. Common causes:
+
+- A value in the wrong case outside the colours: `format: Mermaid`, `lineStyle: Dashed` and `havingAccessLevel: [Public]` must be lower case (`mermaid`, `dashed`, `public`). Colour names are read in any case.
+- A hex colour, such as `lineColor: "#FF0000"`. Use a colour name.
+- A relationship `style` without all of `lineStyle`, `lineColor` and `textColor` (`missing key 'lineColor' in relationships.inheritance.style`), or a stereotype `spot` without both `character` and `color`.
+- A key written twice (`duplicated key(s): 'theme'`).
+
+A file named with `--config` stops the run with exit code 1. A `.swiftumlbridge.yml` found in the current directory is ignored with the warning, and the diagram uses the defaults. On 1.1.0 and earlier, both were dropped without a message and the run exited 0; `log show --predicate 'subsystem == "name.JosephCursio.SwiftUMLBridge"'` shows the reason there.
+
+### A setting in the config file has no effect
+
+A key the schema does not have is ignored, with no message. Check the spelling against [Reference → Configuration File Schema](reference.md#configuration-file-schema). Common typos:
 
 - `format` (top level) — not `outputFormat`.
 - `elements.showExtensions: merged` — not `mergeExtensions: true`.
@@ -283,5 +294,5 @@ Change Tracking compares the current parse against earlier saved snapshots. On a
 
 ## Still stuck?
 
-- Run with `--verbose` to see SourceKit / SwiftSyntax diagnostics on stderr.
+- Run `classdiagram` with `--verbose` to see the log on stderr, including which config file is read.
 - File an issue with the failing command, full output, and the smallest source file that reproduces the problem.

@@ -96,6 +96,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed — Bridge
 
+- **A colour written as the reference writes it no longer drops the
+  config file** (#138). `Color` decoded only its exact case name, so
+  `lineColor: DarkGray` or `color: AliceBlue`, as the reference, its
+  full schema and SwiftPlantUML write them, failed to decode. The CLI
+  then dropped every setting in that file, not just the colour, with
+  nothing on stderr and exit code 0: no label, filter, format, theme or
+  page text from it applied. A colour name is now read in any case, and
+  a diagram writes it by the tool's own name (`darkGray`) however the
+  file spells it. A file that decodes today gives the same output.
+  - With such a file, the diagram now follows every setting in it, so
+    its format, the files and types drawn, the labels, the theme and
+    the page texts can all change.
+  - A hex value such as `"#FF0000"`, and a name outside the HTML colour
+    list, are still not accepted. They are now reported (see *Changed*).
+  - The migration guide's example used keys neither tool has and a
+    stereotype with no `spot`, and failed to decode. It now decodes.
+
 - **A relative `--package` path that climbs above the current directory
   reads the package it names** (#141). From a sibling directory,
   `classdiagram`, `deps` and `component` failed on `--package ../Pkg`
@@ -1081,6 +1098,41 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   spans the string's UTF-16 length.
 
 ### Changed — Bridge
+
+- **A config file that cannot be used is reported** (#138). One value
+  the tool cannot read, such as `format: Mermaid`, `lineStyle: Dashed`
+  or a `style` without `lineColor`, dropped the whole file without a
+  word: the reason went to the macOS unified log only, and the run
+  exited 0. Every subcommand that reads a config (`classdiagram`,
+  `deps`, `sequence`, `activity`, `state`, `er`) now says why, naming
+  the key:
+  - A file named with `--config` must load. When it is missing or
+    cannot be used, the run stops with exit code 1 and
+    `Error: --config <path>: <reason>`, for example
+    `invalid value at relationships.inheritance.style.lineColor:
+    '#FF0000' is not a colour name this tool knows`. It used to fall
+    back to the current directory's `.swiftumlbridge.yml`, and then to
+    the defaults; it no longer does. **A CI job that passes a broken or
+    missing `--config` file now fails.**
+  - A `.swiftumlbridge.yml` found in the current directory that cannot
+    be used is ignored, with `warning: ignoring .swiftumlbridge.yml:
+    <reason>` on stderr, and the run goes on with the defaults. A
+    script that sends stderr into the diagram file (`2>&1`) gets that
+    line in it.
+  - A file with no settings in it, empty or only comments, is all
+    defaults. So `--config /dev/null` runs without any config file, as
+    the troubleshooting guide says; it used to read the current
+    directory's file.
+  - An unknown key is still ignored without a message.
+  - Library callers get the same reasons from the new
+    `ConfigurationProvider.loadConfiguration(at:)`, which throws a
+    `ConfigurationLoadError`. `getConfiguration(for:)` still never
+    throws and falls back as before, except that it now takes an empty
+    file as all defaults.
+- **`classdiagram --verbose` prints the log on stderr** (#138). The
+  flag was documented as verbose logging to stderr, but nothing read
+  it. It now prints each message as `<level>: <message>`, starting with
+  which config file the run reads.
 
 - **`classdiagram`'s extension flags override the config file** (#156).
   `--show-extensions`, `--merge-extensions` and `--hide-extensions`

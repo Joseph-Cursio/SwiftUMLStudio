@@ -9,6 +9,7 @@ enum CLIError: Error, CustomStringConvertible {
     case componentModelNotFound
     case noSwiftFiles
     case packageDirectoryNotFound(path: String)
+    case invalidConfiguration(path: String, reason: String)
 
     var description: String {
         switch self {
@@ -26,6 +27,8 @@ enum CLIError: Error, CustomStringConvertible {
                 + "or the files.include / files.exclude (--exclude) filters left none."
         case .packageDirectoryNotFound(let path):
             return "--package \(path): no such directory"
+        case let .invalidConfiguration(path, reason):
+            return "--config \(path): \(reason)"
         }
     }
 }
@@ -53,7 +56,7 @@ extension SwiftUMLBridgeCLI {
         @OptionGroup var common: CommonDiagramOptions
 
         mutating func run() async throws {
-            let bridgeConfig = common.resolvedConfiguration()
+            let bridgeConfig = try common.resolvedConfiguration()
 
             let (entryType, entryMethod) = try entry.parsedEntryPoint()
 

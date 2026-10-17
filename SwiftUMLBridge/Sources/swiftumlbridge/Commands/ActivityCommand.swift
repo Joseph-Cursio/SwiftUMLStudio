@@ -19,7 +19,7 @@ extension SwiftUMLBridgeCLI {
         @OptionGroup var common: CommonDiagramOptions
 
         mutating func run() async throws {
-            let bridgeConfig = common.resolvedConfiguration()
+            let bridgeConfig = try common.resolvedConfiguration()
 
             let (entryType, entryMethod) = try entry.parsedEntryPoint()
 

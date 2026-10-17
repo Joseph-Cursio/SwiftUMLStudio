@@ -45,14 +45,17 @@ extension SwiftUMLBridgeCLI {
         )
         var extensionVisualization: ExtensionVisualizationFlag?
 
-        @Flag(help: "Enable verbose logging")
+        @Flag(help: "Print what the run does on stderr, such as which config file it reads")
         var verbose: Bool = false
 
         @Argument(help: "Paths to Swift source files or directories")
         var paths = [String]()
 
         mutating func run() async throws {
-            var bridgeConfig = ConfigurationProvider().getConfiguration(for: self.config)
+            if verbose {
+                BridgeLogger.shared.echo { FileHandle.standardError.write(Data(($0 + "\n").utf8)) }
+            }
+            var bridgeConfig = try ConfigurationLoader().load(config)
 
             if !exclude.isEmpty {
                 bridgeConfig.files.exclude = exclude
