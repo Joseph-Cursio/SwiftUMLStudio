@@ -109,6 +109,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   cap of about 5 MB is the limit, a chain of about 8,400 classes. What
   the script throws is now logged at error level, where it was a
   debug-level "layout script returned undefined".
+- **A layout that falls back to the grid says so** (#150). The grid
+  keeps every box and edge, so nothing told the user that the boxes
+  were not laid out. `LayoutGraph.fallbackReason` now holds why, such
+  as the exception the script threw. `classdiagram` and `deps` print a
+  warning to stderr after the diagram, with the exit status unchanged:
+  `warning: the SVG layout failed (<reason>), so the boxes are on a grid`.
+  Studio shows a **Boxes placed on a grid** banner above the SVG canvas.
 - **Every name that shares a type annotation gets its own type**
   (#146). In `var dx, dy: Double` only `dy` has an annotation in the
   syntax, and `dx` took `Double` from the SourceKit typename supplement,

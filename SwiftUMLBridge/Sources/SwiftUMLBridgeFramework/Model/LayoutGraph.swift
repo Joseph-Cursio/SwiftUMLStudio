@@ -15,6 +15,12 @@ public struct LayoutGraph: Sendable {
     public var width: Double = 0
     public var height: Double = 0
 
+    /// Why the layout engine put the nodes on its grid instead of laying them out with dagre,
+    /// such as `RangeError: Maximum call stack size exceeded.` from a chain too long for
+    /// JavaScriptCore (#150). `nil` when dagre laid the graph out. The grid keeps every node and
+    /// edge, so this is the only way to tell the two apart.
+    public var fallbackReason: String?
+
     public init(nodes: [LayoutNode] = [], edges: [LayoutEdge] = []) {
         self.nodes = nodes
         self.edges = edges

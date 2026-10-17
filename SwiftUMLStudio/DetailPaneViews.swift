@@ -64,6 +64,11 @@ struct DiagramPreviewView: View {
             if let model = lowConfidenceModel {
                 StateMachineConfidenceBanner(model: model)
             }
+            if let reason = LayoutFallbackBanner.reason(
+                for: viewModel.currentScript, isGenerating: viewModel.isGenerating
+            ) {
+                LayoutFallbackBanner(reason: reason)
+            }
             ZStack(alignment: .topTrailing) {
                 Group {
                     if viewModel.isGenerating {

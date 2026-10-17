@@ -124,6 +124,14 @@ swiftumlbridge classdiagram Sources/ --format svg --output consoleOnly > classes
 swiftumlbridge deps Sources/ --modules --format svg --output consoleOnly > modules.svg
 ```
 
+`classdiagram` and `deps` lay their SVG out with dagre, run in JavaScriptCore. If that layout fails, the boxes go on a plain grid instead, in the order the types were read. Every type and relationship is still drawn, but the edges are straight lines and there are no module boxes. The command then writes one line to stderr after the diagram, and the exit status is unchanged:
+
+```
+warning: the SVG layout failed (RangeError: Maximum call stack size exceeded.), so the boxes are on a grid
+```
+
+The error above is what an inheritance chain of about 8,400 classes or more gives: dagre recurses once per rank, past what JavaScriptCore allows. In the framework, `LayoutGraph.fallbackReason` holds the reason, and is `nil` when dagre laid the graph out.
+
 With `--output browser` (the default) or `browserImageOnly`, where the diagram goes depends on the language the subcommand actually produced:
 
 | Produced | Browser output |

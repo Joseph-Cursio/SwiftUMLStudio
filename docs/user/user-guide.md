@@ -322,7 +322,7 @@ swiftumlbridge classdiagram Sources/ --format mermaid
 # Mermaid, raw markup to stdout
 swiftumlbridge classdiagram Sources/ --format mermaid --output consoleOnly
 
-# SVG, saved to a file
+# SVG, saved to a file (if the layout fails, a warning goes to stderr; see the reference)
 swiftumlbridge classdiagram Sources/ --format svg --output consoleOnly > classes.svg
 
 # Persist the format preference in the config file

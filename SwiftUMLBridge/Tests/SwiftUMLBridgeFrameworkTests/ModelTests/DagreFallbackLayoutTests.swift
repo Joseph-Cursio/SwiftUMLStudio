@@ -43,7 +43,7 @@ struct DagreFallbackLayoutTests {
     @Test("wide nodes neither overlap nor leave the canvas")
     func wideNodes() {
         let graph = sizedGraph([(357.5, 50), (350, 50), (357.5, 50), (365, 50)])
-        let laid = DagreLayoutEngine.fallbackLayout(graph)
+        let laid = DagreLayoutEngine.fallbackLayout(graph, because: "a test")
         #expect(overlappingPairs(in: laid).isEmpty)
         #expect(laid.nodesOutsideCanvas.isEmpty)
     }
@@ -53,7 +53,7 @@ struct DagreFallbackLayoutTests {
     @Test("tall nodes neither overlap nor leave the canvas")
     func tallNodes() {
         let graph = sizedGraph([(100, 214), (100, 50), (100, 50), (100, 320)])
-        let laid = DagreLayoutEngine.fallbackLayout(graph)
+        let laid = DagreLayoutEngine.fallbackLayout(graph, because: "a test")
         #expect(overlappingPairs(in: laid).isEmpty)
         #expect(laid.nodesOutsideCanvas.isEmpty)
     }
@@ -64,7 +64,7 @@ struct DagreFallbackLayoutTests {
         let sizes = (0..<count).map { idx in
             (width: Double(100 + idx * 137 % 540), height: Double(50 + idx * 89 % 280))
         }
-        let laid = DagreLayoutEngine.fallbackLayout(sizedGraph(sizes))
+        let laid = DagreLayoutEngine.fallbackLayout(sizedGraph(sizes), because: "a test")
         #expect(overlappingPairs(in: laid).isEmpty, "\(overlappingPairs(in: laid))")
         #expect(laid.nodesOutsideCanvas.isEmpty, "\(laid.nodesOutsideCanvas)")
     }
@@ -72,7 +72,7 @@ struct DagreFallbackLayoutTests {
     @Test("the fallback keeps each node's size")
     func keepsNodeSizes() {
         let sizes: [(width: Double, height: Double)] = [(357.5, 50), (100, 214), (180, 90)]
-        let laid = DagreLayoutEngine.fallbackLayout(sizedGraph(sizes))
+        let laid = DagreLayoutEngine.fallbackLayout(sizedGraph(sizes), because: "a test")
         #expect(laid.nodes.map(\.width) == sizes.map(\.width))
         #expect(laid.nodes.map(\.height) == sizes.map(\.height))
     }
@@ -99,7 +99,7 @@ struct DagreFallbackLayoutTests {
         ]
         let pairs = [(0, 1), (0, 3), (0, 4), (0, 2), (0, 8), (7, 5)]
         let edges = pairs.map { LayoutEdge(sourceId: "N\($0.0)", targetId: "N\($0.1)", label: "uses") }
-        let laid = DagreLayoutEngine.fallbackLayout(sizedGraph(sizes, edges: edges))
+        let laid = DagreLayoutEngine.fallbackLayout(sizedGraph(sizes, edges: edges), because: "a test")
 
         for edge in laid.edges {
             let source = try #require(laid.nodes.first { $0.id == edge.sourceId })
@@ -125,7 +125,7 @@ struct DagreFallbackLayoutTests {
             LayoutEdge(sourceId: "N0", targetId: "Missing"),
             LayoutEdge(sourceId: "N0", targetId: "N1")
         ]
-        let laid = DagreLayoutEngine.fallbackLayout(sizedGraph([(100, 50), (100, 50)], edges: edges))
+        let laid = DagreLayoutEngine.fallbackLayout(sizedGraph([(100, 50), (100, 50)], edges: edges), because: "a test")
         #expect(laid.edges.map(\.points.count) == [0, 0, 3])
     }
 
@@ -137,11 +137,23 @@ struct DagreFallbackLayoutTests {
             LayoutEdge(sourceId: "N0", targetId: "N1", label: "owns", style: .composition),
             LayoutEdge(sourceId: "N2", targetId: "N0", label: "extends", style: .inheritance)
         ]
-        let laid = DagreLayoutEngine.fallbackLayout(sizedGraph([(100, 50), (100, 50), (100, 50)], edges: edges))
+        let graph = sizedGraph([(100, 50), (100, 50), (100, 50)], edges: edges)
+        let laid = DagreLayoutEngine.fallbackLayout(graph, because: "a test")
         let svg = SVGRenderer.render(laid)
         // Edge paths are the only elements drawn 1.2 px wide; the arrowhead markers are paths too.
         #expect(svg.components(separatedBy: "stroke-width=\"1.2\"").count - 1 == 2)
         #expect(svg.contains(">owns</text>"))
         #expect(svg.contains(">extends</text>"))
+    }
+
+    // MARK: - Reason
+
+    /// The grid keeps every node and edge, so its reason is the only way a caller can tell it
+    /// from a dagre layout and say so (#150).
+    @Test("the fallback keeps its reason, and a dagre layout has none")
+    func reason() {
+        let graph = sizedGraph([(100, 50), (100, 50)])
+        #expect(DagreLayoutEngine.fallbackLayout(graph, because: "a test").fallbackReason == "a test")
+        #expect(DagreLayoutEngine.layout(graph).fallbackReason == nil)
     }
 }
