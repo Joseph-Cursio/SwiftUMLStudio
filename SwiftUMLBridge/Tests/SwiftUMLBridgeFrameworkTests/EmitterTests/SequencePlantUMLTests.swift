@@ -63,10 +63,10 @@ struct SequencePlantUMLTests {
         #expect(script.text.contains("Foo ->> Bar : finish()"))
     }
 
-    @Test("unresolved emits note right")
+    @Test("unresolved emits a note right of its caller")
     func unresolvedNotePresent() {
         let script = makeScript(edges: makeEdges())
-        #expect(script.text.contains("note right: Unresolved: unknownClosure()"))
+        #expect(script.text.contains("note right of Foo: Unresolved: unknownClosure()"))
     }
 
     @Test("empty edges produces minimal valid diagram")

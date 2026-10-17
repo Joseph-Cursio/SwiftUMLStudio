@@ -62,11 +62,10 @@ struct SequenceMermaidTests {
         #expect(script.text.contains("Foo-->>Bar: finish()"))
     }
 
-    @Test("unresolved emits Note right of")
+    @Test("unresolved emits a Note right of its caller")
     func unresolvedNotePresent() {
         let script = makeScript(edges: makeEdges())
-        #expect(script.text.contains("Note right of"))
-        #expect(script.text.contains("Unresolved: unknownClosure()"))
+        #expect(script.text.contains("Note right of Foo: Unresolved: unknownClosure()"))
     }
 
     @Test("empty edges produces minimal valid diagram")
