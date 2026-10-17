@@ -78,21 +78,6 @@ struct MergedExtensionConformanceTests {
         #expect(Self.edges(source, .mermaid) == ["P <|.. Foo : conforms to", "Q <|.. Foo : conforms to"])
     }
 
-    /// The parser already splits `P & Q`, so this builds a carried composition by hand, as the
-    /// tests of a type's own composition do.
-    @Test("a carried composition is split, as the type's own is")
-    func carriedCompositionIsSplit() {
-        let items = [
-            SyntaxStructure(kind: .protocol, name: "P"),
-            SyntaxStructure(kind: .protocol, name: "Q"),
-            SyntaxStructure(kind: .struct, name: "Foo"),
-            SyntaxStructure(inheritedTypes: [SyntaxStructure(name: "P & Q")], kind: .extension, name: "Foo")
-        ]
-        let configuration = Configuration(elements: ElementOptions(showExtensions: .merged), format: .plantuml)
-        let script = DiagramScript(items: items, configuration: configuration).text
-        #expect(Self.edges(script) == ["P <|.. Foo : conforms to", "Q <|.. Foo : conforms to"])
-    }
-
     @Test("a conformance a macro already gives the type is drawn once")
     func macroConformanceDrawnOnce() {
         let source = "@Observable final class Model {}\nextension Model: Observable {}"

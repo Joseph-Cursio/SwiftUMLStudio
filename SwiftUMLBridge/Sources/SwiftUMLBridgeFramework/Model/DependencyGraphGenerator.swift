@@ -107,10 +107,9 @@ public struct DependencyGraphGenerator: DependencyGraphGenerating, Sendable {
             for item in items {
                 guard let basis = typeEdgeBasis(for: item, configuration: configuration) else { continue }
                 for parent in basis.inheritedTypes {
-                    for parentName in parentNames(from: parent) {
-                        guard !shouldExclude(name: parentName, configuration: configuration) else { continue }
-                        edges.append(DependencyEdge(from: basis.name, to: parentName, kind: basis.edgeKind))
-                    }
+                    guard let parentName = parent.name,
+                          !shouldExclude(name: parentName, configuration: configuration) else { continue }
+                    edges.append(DependencyEdge(from: basis.name, to: parentName, kind: basis.edgeKind))
                 }
             }
         }
@@ -192,16 +191,15 @@ public struct DependencyGraphGenerator: DependencyGraphGenerating, Sendable {
         for item in parsedItems {
             guard let basis = typeEdgeBasis(for: item, configuration: configuration) else { continue }
             for parent in basis.inheritedTypes {
-                for parentName in parentNames(from: parent) {
-                    guard !shouldExclude(name: parentName, configuration: configuration) else { continue }
-                    edges.append(DependencyEdge(
-                        from: basis.name,
-                        to: parentName,
-                        kind: basis.edgeKind,
-                        fromModule: owners.module(of: basis.name),
-                        toModule: owners.module(of: parentName)
-                    ))
-                }
+                guard let parentName = parent.name,
+                      !shouldExclude(name: parentName, configuration: configuration) else { continue }
+                edges.append(DependencyEdge(
+                    from: basis.name,
+                    to: parentName,
+                    kind: basis.edgeKind,
+                    fromModule: owners.module(of: basis.name),
+                    toModule: owners.module(of: parentName)
+                ))
             }
         }
 
@@ -231,17 +229,6 @@ public struct DependencyGraphGenerator: DependencyGraphGenerating, Sendable {
         let name: String
         let inheritedTypes: [SyntaxStructure]
         let edgeKind: DependencyEdgeKind
-    }
-
-    /// Splits an inherited-type entry into individual parent names, expanding
-    /// `A & B` composition clauses. Returns an empty array for an unnamed entry.
-    private func parentNames(from parent: SyntaxStructure) -> [String] {
-        guard let parentName = parent.name else { return [] }
-        guard parentName.contains("&") else { return [parentName] }
-        return parentName
-            .components(separatedBy: "&")
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty }
     }
 
     // MARK: - Filtering helpers

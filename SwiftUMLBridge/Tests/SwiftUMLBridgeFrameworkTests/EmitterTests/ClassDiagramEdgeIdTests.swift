@@ -90,12 +90,7 @@ struct ClassDiagramEdgeIdTests {
 
     @Test("a composition draws one edge per part")
     func compositionDrawsOneEdgePerPart() {
-        let item = SyntaxStructure(
-            inheritedTypes: [SyntaxStructure(name: "Sendable & Codable")],
-            kind: .struct,
-            name: "MyType"
-        )
-        let script = DiagramScript(items: [item], configuration: Configuration(format: .mermaid)).text
+        let script = ClassDiagramIds.script(for: "struct MyType: Sendable & Codable {}", format: .mermaid)
         #expect(ClassDiagramIds.lines(of: script, containing: "<|--")
             == ["Sendable <|-- MyType : inherits", "Codable <|-- MyType : inherits"])
     }

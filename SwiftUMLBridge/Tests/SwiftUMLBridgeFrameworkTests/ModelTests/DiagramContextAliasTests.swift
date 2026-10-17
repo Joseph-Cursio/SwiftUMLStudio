@@ -87,10 +87,10 @@ struct DiagramContextAliasTests {
     }
 
     @Test("each part of a composition is reserved")
-    func compositionPartsAreReserved() {
+    func compositionPartsAreReserved() throws {
         let ctx = DiagramContext()
-        let child = SyntaxStructure(inheritedTypes: [SyntaxStructure(name: "P & Base0")], kind: .struct, name: "C")
-        ctx.reserveIdentifiers(drawing: [child])
+        let parsed = try #require(SyntaxStructure.create(from: "struct C: P & Base0 {}")?.substructure)
+        ctx.reserveIdentifiers(drawing: parsed)
         #expect(ctx.takenIdentifiers == ["C", "P", "Base0"])
     }
 }
