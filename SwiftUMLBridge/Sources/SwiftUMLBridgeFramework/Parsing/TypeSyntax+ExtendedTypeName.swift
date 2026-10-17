@@ -52,7 +52,8 @@ extension TypeSyntax {
     /// `@retroactive P`, `@unsafe P`, `nonisolated P`, `(P)`, `(@MainActor P)` or `@MainActor (P)`,
     /// `Sendable` for `@unchecked Sendable`, and `P & Q` for `@MainActor P & Q`, whose attribute
     /// covers the whole composition, or `(P & Q)` (#160). Every other type is itself; `~Copyable`
-    /// is a suppressed conformance, not an attributed one, and stays as written.
+    /// is a suppressed conformance, not an attributed one, and stays as written: its base type,
+    /// `Copyable`, is the one conformance it does not declare.
     var conformedType: TypeSyntax {
         var type = self
         while true {
@@ -68,9 +69,12 @@ extension TypeSyntax {
     }
 
     /// `conformedType`, with a composition split into its parts on the syntax tree, each part
-    /// unwrapped the same way: `P` and `Q` for `P & Q`, `(P & Q)` or `(P) & Q` (#160).
+    /// unwrapped the same way: `P` and `Q` for `P & Q`, `(P & Q)` or `(P) & Q` (#160). A suppressed
+    /// conformance names no supertype and is left out: `P` for `P & ~Copyable`, and nothing for
+    /// `~Copyable`, `(~Copyable)` or `@unchecked ~Escapable` (#159).
     var conformedTypes: [TypeSyntax] {
         let type = conformedType
+        if type.is(SuppressedTypeSyntax.self) { return [] }
         guard let composition = type.as(CompositionTypeSyntax.self) else { return [type] }
         return composition.elements.flatMap(\.type.conformedTypes)
     }

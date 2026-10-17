@@ -206,10 +206,11 @@ struct AttributedSupertypeTests {
         ])
     }
 
-    /// `~Copyable` suppresses a conformance; it is not an attributed one, and is left as written.
-    @Test("a suppressed conformance keeps its name")
-    func suppressedConformanceUnchanged() {
-        #expect(Self.edges(Self.script("struct Token: ~Copyable {}", .plantuml)) == ["~Copyable <|-- Token : inherits"])
+    /// `~Copyable` suppresses a conformance; it is not an attributed one, and names no supertype
+    /// (#159). `SuppressedConformanceTests` covers the other formats.
+    @Test("a suppressed conformance draws no edge")
+    func suppressedConformanceDropped() {
+        #expect(Self.edges(Self.script("struct Token: ~Copyable {}", .plantuml)) == [])
     }
 
     // MARK: - deps, ER and TypeInfo
