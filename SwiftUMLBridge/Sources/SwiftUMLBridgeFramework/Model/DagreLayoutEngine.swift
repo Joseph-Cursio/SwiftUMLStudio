@@ -21,21 +21,22 @@ public struct DagreLayoutEngine: Sendable {
     /// `marginx` and `marginy` (px).
     private static let canvasMargin: Double = 20.0
 
-    /// `layout(_:)`'s work, on the thread that calls it.
-    private static func layoutOnThisThread(_ graph: LayoutGraph) -> LayoutGraph {
+    /// `layout(_:)`'s work, on the thread that calls it. Internal so a test can run it on a
+    /// thread too small for the graph, and see the script throw.
+    static func layoutOnThisThread(_ graph: LayoutGraph) -> LayoutGraph {
         var sized = graph
         sizeNodes(&sized)
 
         guard let context = makeContext() else {
             BridgeLogger.shared.debug("DagreLayoutEngine: failed to create JSContext")
-            return fallbackLayout(sized)
+            return fallbackLayout(sized, because: "JavaScriptCore could not create a context")
         }
 
         // Load graphre.js
         guard let jsURL = Bundle.module.url(forResource: "graphre", withExtension: "js"),
               let jsSource = try? String(contentsOf: jsURL, encoding: .utf8) else {
             BridgeLogger.shared.debug("DagreLayoutEngine: graphre.js not found in bundle")
-            return fallbackLayout(sized)
+            return fallbackLayout(sized, because: "graphre.js is missing from the bundle")
         }
 
         context.evaluateScript(jsSource)
@@ -45,7 +46,7 @@ public struct DagreLayoutEngine: Sendable {
         guard let result = context.evaluateScript(layoutScript),
               !result.isUndefined else {
             BridgeLogger.shared.debug("DagreLayoutEngine: layout script returned undefined")
-            return fallbackLayout(sized)
+            return fallbackLayout(sized, because: context.exception?.toString() ?? "the layout script returned nothing")
         }
 
         return parseResult(result, into: sized)
@@ -211,7 +212,7 @@ public struct DagreLayoutEngine: Sendable {
         guard let jsonString = jsValue.toString(),
               let data = jsonString.data(using: .utf8),
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-            return fallbackLayout(graph)
+            return fallbackLayout(graph, because: "the layout script's result is not a JSON object")
         }
 
         var result = graph
@@ -305,8 +306,10 @@ public struct DagreLayoutEngine: Sendable {
     /// every box is on the canvas. A fixed 250 × 200 cell let wide or tall
     /// nodes overlap their neighbours and run off the canvas (#61). Edges are
     /// routed straight (see `routeStraightEdges`); no module clusters are set.
-    static func fallbackLayout(_ graph: LayoutGraph) -> LayoutGraph {
+    /// `reason` goes in `fallbackReason`, so callers can say the layout failed.
+    static func fallbackLayout(_ graph: LayoutGraph, because reason: String) -> LayoutGraph {
         var result = graph
+        result.fallbackReason = reason
         let count = graph.nodes.count
         let columns = max(Int(ceil(sqrt(Double(count)))), 1)
         let rows = (count + columns - 1) / columns
@@ -380,11 +383,13 @@ extension DagreLayoutEngine {
         return ParsingStack.run { layoutOnThisThread(graph) }
     }
 
-    /// A context that logs what a script throws. Without a handler a thrown error only makes
+    /// A context that logs what a script throws, and keeps it in `exception` as the default
+    /// handler does, for `fallbackReason`. Without a handler a thrown error only made
     /// `evaluateScript` return `undefined`, and the grid fallback was the only sign of it.
     private static func makeContext() -> JSContext? {
         let context = JSContext()
-        context?.exceptionHandler = { _, exception in
+        context?.exceptionHandler = { context, exception in
+            context?.exception = exception
             BridgeLogger.shared.error("DagreLayoutEngine: \(exception?.toString() ?? "unknown exception")")
         }
         return context

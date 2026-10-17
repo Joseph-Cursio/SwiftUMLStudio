@@ -84,7 +84,7 @@ struct LayoutGraphBuilderNodeIdTests {
         let graph = graph(for: Self.collidingSources[0])
         let laidOut = DagreLayoutEngine.layout(graph)
         // The grid fallback never overlaps, so it would pass this test without dagre running.
-        try #require(laidOut.nodes.map(\.posX) != DagreLayoutEngine.fallbackLayout(graph).nodes.map(\.posX))
+        try #require(laidOut.fallbackReason == nil)
         #expect(laidOut.nodes.count == 4)
         let centres = laidOut.nodes.map { "\($0.posX),\($0.posY)" }
         #expect(Set(centres).count == centres.count, "centres: \(centres)")

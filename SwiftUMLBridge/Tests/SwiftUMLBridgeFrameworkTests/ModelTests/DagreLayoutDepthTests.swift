@@ -70,4 +70,13 @@ struct DagreLayoutDepthTests {
         #expect(graph.nodes.count == Self.length)
         #expect(Set(graph.nodes.map(\.posX)).count == 1)
     }
+
+    /// `layoutOnThisThread` is the layout without the big thread, so on this one it throws, as
+    /// `layout` did before. The grid then says why, for the CLI and Studio to pass on.
+    @Test("a layout that throws says what it threw")
+    func fallbackReason() {
+        let laid = DagreLayoutEngine.layoutOnThisThread(Self.chain(Self.length))
+        #expect(laid.fallbackReason == "RangeError: Maximum call stack size exceeded.")
+        #expect(DagreLayoutEngine.layout(Self.chain(Self.length)).fallbackReason == nil)
+    }
 }
