@@ -74,6 +74,8 @@ extension LayoutGraphBuilder {
         /// by: its target name and that name's C99 form (`my-lib` and `my_lib`). A qualifier must be
         /// one of these to be read as a module (#124).
         private var modulesForQualifier: [String: Set<String>] = [:]
+        /// The extensions recorded, each with the name it was recorded under, in recording order.
+        private(set) var extensions: [(name: String, declared: Declared)] = []
 
         /// A lookup of every type, extension and typealias in `items`, none of them drawn.
         init(of items: [SyntaxStructure] = []) {
@@ -87,6 +89,9 @@ extension LayoutGraphBuilder {
 
         mutating func record(_ declared: Declared, named name: String) {
             declaredForName[name, default: []].append(declared)
+            if declared.isExtension {
+                extensions.append((name, declared))
+            }
             if let module = declared.scope.module {
                 modulesForQualifier[module, default: []].insert(module)
                 modulesForQualifier[Self.c99Name(of: module), default: []].insert(module)
@@ -264,34 +269,35 @@ extension LayoutGraphBuilder {
                 guard let type = lookup.type(named: name, from: scope) else {
                     return fallback(named: name)
                 }
-                return node(for: type, named: name)
+                return node(for: type)
             case .declaration(let declaration, let name, let scope):
                 if let nodeId = idForDeclaration[declaration] { return nodeId }
-                if hiddenDeclarations.contains(declaration) { return standIn(for: declaration, named: name) }
+                if hiddenDeclarations.contains(declaration) { return standIn(for: declaration) }
                 guard let type = lookup.type(named: name, from: scope) else {
                     return fallback(named: name)
                 }
-                return node(for: type, named: name)
+                return node(for: type)
             case .extended(let declaration, let name, let scope):
                 // With no type of that name visible there, the extension stands for itself.
                 guard let type = lookup.type(named: name, from: scope) else {
                     return idForDeclaration[declaration] ?? fallback(named: name)
                 }
                 // For a hidden type, this very extension is its stand-in: its own lookup found it.
-                return type.nodeId ?? idForDeclaration[declaration] ?? standIn(for: type.declaration, named: name)
+                return type.nodeId ?? idForDeclaration[declaration] ?? standIn(for: type.declaration)
             }
         }
 
         /// The node an edge to `type` ends on: its own, or for a hidden type its stand-in.
-        private func node(for type: Declared, named name: String) -> String? {
-            type.nodeId ?? standIn(for: type.declaration, named: name)
+        private func node(for type: Declared) -> String? {
+            type.nodeId ?? standIn(for: type.declaration)
         }
 
-        /// A drawn extension of the hidden type `declaration`, one whose own lookup of `name`
-        /// finds it, or `nil` to drop the edge. The access-level filter passes extensions, so an
-        /// extension can be drawn while its type is hidden.
-        private func standIn(for declaration: ObjectIdentifier, named name: String) -> String? {
-            extensionEnds.ends(named: name, in: lookup).standIns[declaration]
+        /// The first drawn extension of the hidden type `declaration`, one whose own lookup finds
+        /// it however it spells the type (`Foo`, `ModA.Foo`, an alias), or `nil` to drop the edge;
+        /// `mergeExtensions` merges into the same one (#153). The access-level filter passes
+        /// extensions, so an extension can be drawn while its type is hidden.
+        private func standIn(for declaration: ObjectIdentifier) -> String? {
+            extensionEnds.standIn(for: declaration, in: lookup)
         }
 
         /// The end for a name no visible type takes, so a type outside the diagram, such as
@@ -300,37 +306,43 @@ extension LayoutGraphBuilder {
         /// none. An extension of a type the reference cannot see, a hidden `fileprivate` one,
         /// say, extends something else and never stands in.
         private func fallback(named name: String) -> String? {
-            extensionEnds.ends(named: name, in: lookup).fallback
+            extensionEnds.fallback(named: name, in: lookup)
         }
     }
 
-    /// Where the drawn extensions of one name end edges: for each type their own lookups find,
-    /// the first such extension (`EdgeEndIds.standIn`), and the first that finds none
-    /// (`EdgeEndIds.fallback`), each the node id of a drawn extension.
-    struct NameEnds {
-        var standIns: [ObjectIdentifier: String] = [:]
-        var fallback: String?
-    }
-
-    /// `NameEnds` for each name, filled the first time an edge end asks for it. A class, so
-    /// `EdgeEndIds.id(of:)` can fill it without being mutating; `EdgeEndIds` starts a new one
-    /// whenever it records a declaration, so no entry outlives what it was worked out from.
+    /// Where drawn extensions end edges, each the node id of a drawn extension: for each type
+    /// their own lookups find, the first such extension (`EdgeEndIds.standIn`), and for each name,
+    /// the first extension recorded under it that finds none (`EdgeEndIds.fallback`). Worked out
+    /// the first time an edge end asks; a class, so `EdgeEndIds.id(of:)` can fill it without being
+    /// mutating. `EdgeEndIds` starts a new one whenever it records a declaration, so no entry
+    /// outlives what it was worked out from.
     final class ExtensionEnds {
-        private var endsForName: [String: NameEnds] = [:]
+        private var standIns: [ObjectIdentifier: String]?
+        private var fallbackForName: [String: String?] = [:]
 
-        func ends(named name: String, in lookup: TypeLookup) -> NameEnds {
-            if let known = endsForName[name] { return known }
-            var ends = NameEnds()
-            for candidate in lookup.declarations(named: name) where candidate.isExtension {
-                guard let nodeId = candidate.nodeId else { continue }
-                if let type = lookup.type(named: name, from: candidate.scope) {
-                    if ends.standIns[type.declaration] == nil { ends.standIns[type.declaration] = nodeId }
-                } else if ends.fallback == nil {
-                    ends.fallback = nodeId
-                }
+        /// One pass over every drawn extension, so a stand-in is found whatever name the
+        /// extension spells its type with.
+        func standIn(for declaration: ObjectIdentifier, in lookup: TypeLookup) -> String? {
+            if let standIns { return standIns[declaration] }
+            var found: [ObjectIdentifier: String] = [:]
+            for (name, candidate) in lookup.extensions {
+                guard let nodeId = candidate.nodeId,
+                      let type = lookup.type(named: name, from: candidate.scope),
+                      found[type.declaration] == nil else { continue }
+                found[type.declaration] = nodeId
             }
-            endsForName[name] = ends
-            return ends
+            standIns = found
+            return found[declaration]
+        }
+
+        func fallback(named name: String, in lookup: TypeLookup) -> String? {
+            if let known = fallbackForName[name] { return known }
+            let fallback = lookup.declarations(named: name).first { candidate in
+                candidate.isExtension && candidate.nodeId != nil
+                    && lookup.type(named: name, from: candidate.scope) == nil
+            }?.nodeId
+            fallbackForName[name] = .some(fallback)
+            return fallback
         }
     }
 

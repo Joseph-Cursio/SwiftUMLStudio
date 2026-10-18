@@ -127,6 +127,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   - A qualifier that names no module in the diagram, such as `Swift` in
     `extension Swift.String`, and every qualifier without `--package`,
     is left as written.
+  - A drawn extension now stands in for its hidden type however it
+    spells it, `ModA.Foo` or a typealias, as `--merge-extensions`
+    already chose it (#153).
   - SVG now ends a module-qualified supertype, as in
     `extension ModA.Foo: ModA.Q {}`, on the protocol. PlantUML, Mermaid
     and Nomnoml still end it on the name as written.

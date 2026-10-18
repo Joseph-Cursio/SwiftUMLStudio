@@ -261,6 +261,33 @@ struct ModuleQualifiedExtensionTests {
         #expect(owner(of: "viaAlias", in: graph) == "Foo")
     }
 
+    /// Only `internal` declarations are drawn, so ModA's `public` `Foo` is hidden while its
+    /// internal `Inner` and ModB's extension (extensions pass the access filter) are drawn. The
+    /// qualified extension stands in for `Foo`, as `extension Foo` would in ModA (#74, #153).
+    @Test("a qualified extension stands in for the hidden type it extends")
+    func standInForHiddenType() throws {
+        let modA = """
+            public struct Foo {
+                struct Inner {}
+            }
+            """
+        let modB = """
+            import ModA
+
+            extension ModA.Foo {
+                func fromB() {}
+            }
+            """
+        let items = try items([("ModA", modA), ("ModB", modB)])
+        let internalOnly = ElementOptions(havingAccessLevel: [.internal])
+        let svg = LayoutGraphBuilder.buildClassDiagram(
+            from: items, configuration: Configuration(elements: internalOnly, format: .svg)
+        )
+        #expect(svg.edgeEnds == ["ModA.Foo -> Foo.Inner"])
+        #expect(lines(items, Configuration(elements: internalOnly, format: .plantuml), containing: "+--")
+            == ["ModA.Foo +-- Foo.Inner"])
+    }
+
     @Test("a qualified supertype in a qualified extension reaches its protocol in SVG")
     func qualifiedSupertypeSVG() throws {
         let modA = Self.modA + "\npublic protocol Q {}\n"
