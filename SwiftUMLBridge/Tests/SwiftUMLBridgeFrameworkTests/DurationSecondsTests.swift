@@ -27,7 +27,7 @@ struct DurationSecondsTests {
     /// Monotone in the duration — the only thing a reader does with two of these numbers is compare
     /// them.
     @Test("longer durations convert to larger numbers", arguments: [
-        (1, 2), (99, 100), (1_000, 60_000),
+        (1, 2), (99, 100), (1_000, 60_000)
     ])
     func conversionIsMonotone(shorter: Int, longer: Int) {
         #expect(Duration.milliseconds(shorter).seconds < Duration.milliseconds(longer).seconds)
