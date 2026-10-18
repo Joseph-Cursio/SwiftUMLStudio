@@ -10,7 +10,7 @@ struct SyntaxStructureCloneTests {
     static let storedProperties = [
         "accessibility", "attribute", "attributes", "elements", "inheritedTypes", "kind", "name",
         "runtimename", "substructure", "typename", "memberSuffix", "parent", "sourceLocation", "module",
-        "mergedInto", "carriedSupertypes", "boundGenericArguments"
+        "mergedInto", "carriedSupertypes", "boundGenericArguments", "isSugared"
     ]
 
     /// A structure with every stored property set.
@@ -35,6 +35,7 @@ struct SyntaxStructureCloneTests {
         let sendable = SyntaxStructure(kind: .protocol, name: "Sendable")
         item.carriedSupertypes = [SyntaxStructure.CarriedSupertype(supertype: sendable, scope: .init(of: item))]
         item.boundGenericArguments = "Int"
+        item.isSugared = true
         return item
     }
 

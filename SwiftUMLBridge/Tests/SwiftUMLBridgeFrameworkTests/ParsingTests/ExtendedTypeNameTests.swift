@@ -54,6 +54,27 @@ struct ExtendedTypeNameTests {
         #expect(try extendedType(spelling).extendedTypeName == expected)
     }
 
+    @Test("sugar is told apart from the name it is given, which a project's type may shadow", arguments: [
+        ("[Int]", true),
+        ("[String: Int]", true),
+        ("[3 of Int]", true),
+        ("Int?", true),
+        ("Int!", true),
+        ("[Int]?", true),
+        ("Foo<Int>?", true),
+        ("([Int])", true),
+        ("[Int].Index", true),
+        ("Array", false),
+        ("Array<Int>", false),
+        ("Swift.Array<Int>", false),
+        ("Foo<[Int]>", false),
+        ("Outer<Int?>.Inner", false),
+        ("(Int)", false)
+    ])
+    func sugarIsMarked(spelling: String, expected: Bool) throws {
+        #expect(try extendedType(spelling).isSugared == expected)
+    }
+
     @Test("a type no extension can extend has no name", arguments: [
         "(Int, Int)", "()", "(x: Int)", "P & Q", "any P", "some P",
         "Foo.Type", "() -> Void", "~Copyable", "@Sendable Foo", "Foo."
