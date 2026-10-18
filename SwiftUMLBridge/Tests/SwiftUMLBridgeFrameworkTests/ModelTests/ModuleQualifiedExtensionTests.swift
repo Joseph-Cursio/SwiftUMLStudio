@@ -7,6 +7,28 @@ import Testing
 /// module name is a qualifier, not part of the type's name. `TypeLookup` used to look the
 /// extension up under `ModA.Foo`, which no type is named, so it was never merged into its type and
 /// got no `ext` edge (#124).
+/// Each file parsed as `generateScript(forPackage:)` parses it, in the order given, under its
+/// module; `module` is `nil` for a directory-mode parse.
+func moduleQualifiedItems(_ files: [(module: String?, source: String)]) throws -> [SyntaxStructure] {
+    let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: directory) }
+    var items: [SyntaxStructure] = []
+    for (index, file) in files.enumerated() {
+        let url = directory.appendingPathComponent("\(file.module ?? "File")\(index).swift")
+        try file.source.write(to: url, atomically: true, encoding: .utf8)
+        items += try #require(SyntaxStructure.create(from: url, module: file.module)?.substructure)
+    }
+    return items
+}
+
+extension LayoutGraph {
+    /// The id of the node that lists `member`.
+    func owner(of member: String) -> String? {
+        nodes.first { $0.compartments.flatMap(\.items).contains { $0.contains(member) } }?.id
+    }
+}
+
 @Suite("Module-qualified extensions find the type they extend")
 struct ModuleQualifiedExtensionTests {
     private static let modA = """
@@ -51,19 +73,8 @@ struct ModuleQualifiedExtensionTests {
 
     private static let merged = ElementOptions(showExtensions: .merged)
 
-    /// Each module's file parsed as `generateScript(forPackage:)` parses it, in the order given;
-    /// `module` is `nil` for a directory-mode parse.
     private func items(_ files: [(module: String?, source: String)]) throws -> [SyntaxStructure] {
-        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: directory) }
-        var items: [SyntaxStructure] = []
-        for (index, file) in files.enumerated() {
-            let url = directory.appendingPathComponent("\(file.module ?? "File")\(index).swift")
-            try file.source.write(to: url, atomically: true, encoding: .utf8)
-            items += try #require(SyntaxStructure.create(from: url, module: file.module)?.substructure)
-        }
-        return items
+        try moduleQualifiedItems(files)
     }
 
     private func packageItems(modB: String = Self.modB) throws -> [SyntaxStructure] {
@@ -82,9 +93,8 @@ struct ModuleQualifiedExtensionTests {
         )
     }
 
-    /// The id of the merged node that lists `member`.
     private func owner(of member: String, in graph: LayoutGraph) -> String? {
-        graph.nodes.first { $0.compartments.flatMap(\.items).contains { $0.contains(member) } }?.id
+        graph.owner(of: member)
     }
 
     // MARK: - The issue's reproduction
@@ -195,9 +205,10 @@ struct ModuleQualifiedExtensionTests {
         #expect(owner(of: "own", in: graph) == "Foo_1")
     }
 
-    /// Swift code names a target by its C99 name: `my-lib` is `my_lib`, `2D` is `_2D`.
+    /// Swift code names a target by its C99 name, as `swift package describe` reports it:
+    /// `my-lib` is `my_lib`, and a leading digit becomes `_`, so `2D` is `_D`.
     @Test("a target is matched by the module name Swift code writes", arguments: [
-        ("my-lib", "my_lib"), ("2D", "_2D"), ("Plain", "Plain")
+        ("my-lib", "my_lib"), ("2D", "_D"), ("1st-party", "_st_party"), ("Plain", "Plain")
     ])
     func c99ModuleName(target: String, qualifier: String) throws {
         let app = """
