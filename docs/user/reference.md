@@ -99,6 +99,12 @@ The default subcommand is `classdiagram`. Running `swiftumlbridge` with no verb 
 
 **Subcommands:** `classdiagram`, `sequence`, `deps`, `activity`, `state`, `er`, `component`.
 
+**Deeply nested `[`.** Every subcommand reads a file with each `[` nested more than 10 deep in other `[`, and the `]` that closes it, as a space. In a chain such as `[[[1]]]` or `[[[Int]]]`, both SwiftParser (since swift-syntax 602) and SourceKit take time that doubles with each `[`, so a 26-deep chain took 14 s and a 248-deep one never finished. Everything else in the file is read, what follows the chain included, so the diagram is the same unless it shows the chain's own text: a type written that deep shows spaces where those brackets were. Brackets in comments and string literals do not count. For each such file, the command writes one line to stderr after its output, and before any error. The exit status is unchanged:
+
+```
+warning: Sources/Grid.swift:2:25: a `[` nested more than 10 deep in other `[`. It and each such `[` after it in the file were read as spaces, with their `]`, as each one doubles the time a parse takes
+```
+
 ---
 
 ### Formats by Subcommand
@@ -2372,6 +2378,18 @@ func debug(_ message: String)
 ```
 
 Subsystem: `name.JosephCursio.SwiftUMLBridge`
+
+### SourceReadNotices
+
+```swift
+public enum SourceReadNotices
+```
+
+What the parsers were not given as written: so far, each file whose `[` nested more than 10 deep were read as spaces (see [Root Command](#root-command)). Each notice is one line, `<file>:<line>:<column>: <what was done>`. A file read by several passes gives one notice, and each is also logged through `BridgeLogger` as a warning. The notices are kept for the whole process, as the parse that finds one does not know which diagram it is for.
+
+```swift
+static func drain() -> [String]   // the notices since the last call, in the order found; clears them
+```
 
 ---
 

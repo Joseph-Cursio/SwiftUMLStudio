@@ -1025,6 +1025,8 @@ A few things render differently between PlantUML and Mermaid:
 
 **A file nested more than 256 levels deep is read only up to that point.** SwiftParser follows nesting 256 levels deep, counting each `(`, `[`, `{` and `#if` it is inside, type and function bodies included. Past that it reads the rest of the file as unexpected text, so nothing after that point, whether declarations, calls or imports, appears in any diagram. The parse still completes, and what came before it is drawn.
 
+**A `[` nested more than 10 deep in other `[` is read as a space.** In a chain of `[` such as `[[[1]]]` or `[[[Int]]]`, SwiftParser (since swift-syntax 602) and SourceKit take time that doubles with each `[`: a 26-deep chain took 14 s, and a 248-deep one never finished. So each `[` nested more than 10 deep, and the `]` that closes it, is read as a space, and the rest of the file is read as usual. A type written that deep shows spaces where those brackets were. Each command prints a warning on stderr naming the file, line and column (see [CLI Reference → Root Command](reference.md#root-command)).
+
 ---
 
 ## Getting Help

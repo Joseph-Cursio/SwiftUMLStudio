@@ -96,6 +96,34 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed — Bridge
 
+- **A chain of nested `[` no longer takes time that doubles with each
+  `[`** (#148). Since swift-syntax 602, SwiftParser reads the element
+  after each `[` twice, once to look for InlineArray sugar
+  (`[3 of Int]`) and once as an array or dictionary type, and each read
+  goes into any `[` inside it. SourceKit's parser does the same. So in
+  `[[[1]]]`, `[[[Int]]]`, `[(Int, [(Int, …)])]` or `[Array<[…]>]`, each
+  `[` doubled the time: a release `classdiagram` took 3.5 s at 24
+  levels and 14 s at 26, a debug build 8 to 15 s at 20, and 248 levels
+  never finished. Every subcommand that parses paid it, and SourceKit's
+  half twice where the typename supplement runs. Nothing was printed
+  while it ran, and Studio's generation could not be stopped.
+  - Both parsers are now given the file with each `[` nested more than
+    10 deep in other `[`, and its `]`, as a space. Every other byte is
+    kept, so the rest of the file, what follows the chain included, is
+    read as before, at any depth: 248 levels take about 0.2 s in a
+    debug build. Brackets in comments, string literals and `#/…/#`
+    regex literals do not count; those in an interpolation do.
+  - A type written that deep shows spaces where those brackets were.
+    No file in this repository, its dependencies or swift-syntax nests
+    `[` more than 7 deep, and their diagrams are unchanged.
+  - Each command prints, on stderr, one warning a file that was read
+    so, naming the file, line and column, even when the command then
+    fails. Studio does not show it yet. Library callers can read the
+    same notices through the new `SourceReadNotices.drain()`.
+
+  The cause is in swift-syntax and in the Swift compiler's parser, and
+  is not fixed in swift-syntax 604 or on either's `main`.
+
 - **A sequence diagram's `Unresolved:` note sits beside the type that
   made the call** (#132). Mermaid and SVG put it beside the target of
   the last resolved call before it, or beside the entry type when there
@@ -1151,6 +1179,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   spans the string's UTF-16 length.
 
 ### Changed — Bridge
+
+- **swift-syntax 602 or later is required** (`a53bedd`). The pin moved
+  from `from: "600.0.0"`, which allowed only 600.x, to `from: "602.0.0"`,
+  so a package that also depends on something needing 602 resolves.
+  602 checks each `[` for InlineArray sugar, which made a chain of
+  nested `[` slow until #148.
 
 - **A config file that cannot be used is reported** (#138). One value
   the tool cannot read, such as `format: Mermaid`, `lineStyle: Dashed`

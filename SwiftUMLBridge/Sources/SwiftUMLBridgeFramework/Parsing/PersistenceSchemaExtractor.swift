@@ -33,9 +33,10 @@ public enum PersistenceSchemaExtractor {
         "belongsTo", "hasMany", "hasOne", "hasManyThrough"
     ]
 
-    public static func extract(from source: String) -> ERModel {
+    /// The GRDB and SQLite.swift tables in `source`, read from `file` when there is one.
+    public static func extract(from source: String, file: URL? = nil) -> ERModel {
         ParsingStack.run {
-            let sourceFile = ParsingStack.parse(source)
+            let sourceFile = ParsingStack.parse(source, file: file)
             let visitor = Visitor(viewMode: .sourceAccurate)
             visitor.walk(sourceFile)
             return ERModel(entities: visitor.entities, relationships: visitor.relationships)

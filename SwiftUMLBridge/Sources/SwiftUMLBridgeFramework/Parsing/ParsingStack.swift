@@ -30,9 +30,11 @@ enum ParsingStack {
     /// level, so 256 levels fit in `size`.
     static let maximumNestingLevel = 256
 
-    /// `source` parsed as a Swift file, as deep as `maximumNestingLevel`. Call it inside `run`.
-    static func parse(_ source: String) -> SourceFileSyntax {
-        var parser = Parser(source, maximumNestingLevel: maximumNestingLevel)
+    /// `source` parsed as a Swift file, as deep as `maximumNestingLevel`, with a chain of `[`
+    /// nested past `NestedSquareBrackets.limit` cut short, so the parse ends (#148). `file`, where
+    /// the source was read from, names it in the notice that records the cut. Call it inside `run`.
+    static func parse(_ source: String, file: URL? = nil) -> SourceFileSyntax {
+        var parser = Parser(NestedSquareBrackets.readable(source, file: file), maximumNestingLevel: maximumNestingLevel)
         return SourceFileSyntax.parse(from: &parser)
     }
 

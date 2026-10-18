@@ -49,10 +49,11 @@ internal extension SyntaxStructure {
     ) -> SyntaxStructure? {
         ParsingStack.run {
             // Step 1 — optional SourceKit pass for inferred variable typenames
-            let typenameMap = supplementsTypenames ? buildTypenameMap(from: source, sdkPath: sdkPath) : [:]
+            let typenameMap = supplementsTypenames
+                ? buildTypenameMap(from: source, sdkPath: sdkPath, file: fileURL) : [:]
 
             // Step 2 — SwiftSyntax primary parse
-            let sourceFile = ParsingStack.parse(source)
+            let sourceFile = ParsingStack.parse(source, file: fileURL)
             let filePath = fileURL?.path ?? ""
             let converter = SourceLocationConverter(fileName: filePath, tree: sourceFile)
             // A `SyntaxVisitor`, and SwiftSyntax's contract makes it single-use: construct, walk,
@@ -86,11 +87,14 @@ internal extension SyntaxStructure {
     /// a top-level one, so a variable could take another's type (#146). SourceKit's
     /// `key.nameoffset` and SwiftSyntax's `utf8Offset` both count UTF-8 bytes from the start of
     /// the file, so they agree past a byte-order mark and multi-byte text.
-    static func buildTypenameMap(from source: String, sdkPath: String?) -> [Int: String] {
+    ///
+    /// SourceKit's parser doubles its time with each `[` in a chain as SwiftParser does, so it is
+    /// given the source SwiftParser is, with the same bytes, and so the same offsets (#148).
+    static func buildTypenameMap(from source: String, sdkPath: String?, file fileURL: URL? = nil) -> [Int: String] {
         if BridgeConfiguration.skipSourceKitTypenameSupplement {
             return [:]
         }
-        let file = File(contents: source)
+        let file = File(contents: NestedSquareBrackets.readable(source, file: fileURL))
         let structure: Structure
         do {
             if let sdk = sdkPath, !sdk.isEmpty {
