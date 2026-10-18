@@ -154,7 +154,7 @@ struct SnapshotManagerTests {
         let modelContext = controller.container.mainContext
         let summary = makeTestSummary()
 
-        SnapshotManager.saveSnapshot(from: summary, paths: ["/test/path"], modelContext: modelContext)
+        try SnapshotManager.saveSnapshot(from: summary, paths: ["/test/path"], modelContext: modelContext)
 
         let descriptor = FetchDescriptor<ProjectSnapshot>()
         let results = try modelContext.fetch(descriptor)
@@ -196,10 +196,10 @@ struct SnapshotManagerTests {
 
         // Save snapshot with matching paths
         let summary = makeTestSummary()
-        SnapshotManager.saveSnapshot(from: summary, paths: targetPaths, modelContext: modelContext)
+        try SnapshotManager.saveSnapshot(from: summary, paths: targetPaths, modelContext: modelContext)
 
         // Save snapshot with different paths
-        SnapshotManager.saveSnapshot(from: summary, paths: ["/other/path"], modelContext: modelContext)
+        try SnapshotManager.saveSnapshot(from: summary, paths: ["/other/path"], modelContext: modelContext)
 
         let latest = SnapshotManager.latestSnapshot(for: targetPaths, modelContext: modelContext)
         #expect(latest != nil)
@@ -222,13 +222,13 @@ struct SnapshotManagerTests {
         let newer = makeTestSummary(totalFiles: 99)
 
         // Saved newest-first, so passing the test cannot be an accident of insertion order.
-        SnapshotManager.saveSnapshot(
+        try SnapshotManager.saveSnapshot(
             from: newer,
             paths: targetPaths,
             at: Date(timeIntervalSince1970: 2_000),
             modelContext: modelContext
         )
-        SnapshotManager.saveSnapshot(
+        try SnapshotManager.saveSnapshot(
             from: older,
             paths: targetPaths,
             at: Date(timeIntervalSince1970: 1_000),
@@ -289,7 +289,7 @@ struct SnapshotManagerTests {
         let summary = makeTestSummary()
         let bookmarks: [Data?] = [Data([0xAA, 0xBB]), nil]
 
-        SnapshotManager.saveSnapshot(
+        try SnapshotManager.saveSnapshot(
             from: summary,
             paths: ["/one", "/two"],
             bookmarks: bookmarks,
@@ -312,7 +312,7 @@ struct SnapshotManagerTests {
         let modelContext = controller.container.mainContext
         let summary = makeTestSummary()
 
-        SnapshotManager.saveSnapshot(
+        try SnapshotManager.saveSnapshot(
             from: summary,
             paths: ["/legacy"],
             modelContext: modelContext
@@ -331,12 +331,12 @@ struct SnapshotManagerTests {
         let modelContext = controller.container.mainContext
 
         let summary = makeTestSummary()
-        SnapshotManager.saveSnapshot(from: summary, paths: ["/test"], modelContext: modelContext)
+        try SnapshotManager.saveSnapshot(from: summary, paths: ["/test"], modelContext: modelContext)
 
         let snapshots = SnapshotManager.fetchSnapshots(modelContext: modelContext)
         #expect(snapshots.count == 1)
 
-        SnapshotManager.deleteSnapshot(snapshots.first!, modelContext: modelContext)
+        try SnapshotManager.deleteSnapshot(snapshots.first!, modelContext: modelContext)
 
         let remaining = SnapshotManager.fetchSnapshots(modelContext: modelContext)
         #expect(remaining.isEmpty)
