@@ -65,7 +65,7 @@ struct NativeComponentDiagramView: View {
         context.fill(headerPath, with: .color(Self.headerFill))
         context.stroke(headerPath, with: .color(Self.strokeColor), lineWidth: 1.2)
 
-        let stereotypeText = Text("«\(Self.stereotypeLabel(for: component.kind))»")
+        let stereotypeText = Text("«\(ComponentSVGRenderer.stereotypeLabel(for: component.kind))»")
             .font(.system(size: 10).italic())
             .foregroundStyle(Self.stereotypeColor)
         context.draw(
@@ -145,16 +145,5 @@ struct NativeComponentDiagramView: View {
             x: source.centerX + deltaX * scale,
             y: source.centerY + deltaY * scale
         )
-    }
-
-    /// Mirrors `ComponentSVGRenderer.stereotypeLabel` so the native canvas and
-    /// the SVG fallback label a component identically.
-    static func stereotypeLabel(for kind: Component.Kind) -> String {
-        switch kind {
-        case .executable: return "executable"
-        case .library:    return "library"
-        case .test:       return "test"
-        case .other:      return "component"
-        }
     }
 }
