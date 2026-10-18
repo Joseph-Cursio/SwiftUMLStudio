@@ -88,7 +88,10 @@ public struct FileCollector: Sendable {
                         if fileAttributes.isRegularFile == true, isSwift {
                             files.append(fileURL)
                         }
-                    } catch { print(error, fileURL) }
+                    } catch {
+                        // Not `print`: the CLI writes the diagram to stdout, and this would land in it.
+                        BridgeLogger.shared.warning("skipped \(fileURL.path): \(error.localizedDescription)")
+                    }
                 }
             }
             return files
