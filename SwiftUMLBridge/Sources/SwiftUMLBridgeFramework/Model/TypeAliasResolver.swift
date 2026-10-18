@@ -53,22 +53,30 @@ struct TypeAliasResolver {
 
     /// The type name `name` comes to where a declaration in `scope` writes it in its inheritance
     /// clause: a member of a type around the declaration first, as Swift looks it up
-    /// (`TypeLookup.qualifiedName(ofWritten:from:)`, #157), then through every typealias.
+    /// (`TypeLookup.qualifiedName(ofWritten:from:)`, #157), then through every typealias. A module
+    /// qualifier is not read: the name ends an edge on the first box of that name, which for a
+    /// bare `Foo` could be another module's `Foo`, so `ModA.Foo` stays as written (#124).
     func resolve(_ name: String, from scope: DeclarationScope) -> String {
         guard let lookup else { return name }
-        return lookup.resolvedName(of: lookup.qualifiedName(ofWritten: name, from: scope), from: scope)
+        let qualified = lookup.qualifiedName(ofWritten: name, from: scope, readingModules: false)
+        return lookup.resolvedName(of: qualified, from: scope, readingModules: false)
     }
 
     /// Whether `patterns` exclude the supertype edge to `supertype`, written in `scope`: by the
     /// name as written, as before, or by the type it comes to, so excluding `Proto` also hides
-    /// `struct S: Q` after `typealias Q = Proto`, and excluding `Outer.Base` hides `class Near:
-    /// Base` in `enum Outer`.
+    /// `struct S: Q` after `typealias Q = Proto`, excluding `Outer.Base` hides `class Near:
+    /// Base` in `enum Outer`, and excluding `Q` hides `extension ModA.Foo: ModA.Q` (#124).
     func isExcluded(
         _ supertype: SyntaxStructure, from scope: DeclarationScope, byPatterns patterns: [String]?
     ) -> Bool {
         if supertype.isExcluded(byPatterns: patterns) { return true }
-        guard patterns != nil, let name = supertype.name?.removeAngleBracketsWithContent() else { return false }
-        let resolved = resolve(name, from: scope)
-        return resolved != name && SyntaxStructure(name: resolved).isExcluded(byPatterns: patterns)
+        guard let lookup, patterns != nil, let name = supertype.name?.removeAngleBracketsWithContent() else {
+            return false
+        }
+        let resolved = [
+            resolve(name, from: scope),
+            lookup.resolvedName(of: lookup.qualifiedName(ofWritten: name, from: scope), from: scope)
+        ]
+        return resolved.contains { $0 != name && SyntaxStructure(name: $0).isExcluded(byPatterns: patterns) }
     }
 }

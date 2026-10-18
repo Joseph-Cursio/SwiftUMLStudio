@@ -127,8 +127,10 @@ class DiagramContext {
         return "[\(start.nomnomlIdentifier)] \(arrow)\(labelText) [\(end.nomnomlIdentifier)]"
     }
 
-    /// Whether the edge from extension `item` to the type it extends is drawn: not when the
-    /// extended type's name, which is the extension's own, matches `relationships.dependency.exclude`.
+    /// Whether the edge from extension `item` to the type it extends is drawn: not when
+    /// `relationships.dependency.exclude` matches the extended type's name, which `addExtensionEdge`
+    /// tests both as the extension writes it and as the type it extends is declared, so
+    /// `Foo.Inner` also hides the edge of `extension ModA.Foo.Inner` (#124).
     private func drawsExtensionEdge(for item: SyntaxStructure) -> Bool {
         item.isExcluded(byPatterns: configuration.relationships.dependency?.exclude) == false
     }
@@ -248,7 +250,7 @@ class DiagramContext {
         // `dependency.exclude` hides only this edge (#113): the extension keeps its box, its
         // alias and its own conformances, so no id moves.
         guard let type = extendedTypes[ObjectIdentifier(item)], let typeAlias = uniqueNameForElement[type],
-              drawsExtensionEdge(for: item) else { return }
+              drawsExtensionEdge(for: item), drawsExtensionEdge(for: type) else { return }
         let label = configuration.relationships.dependency?.label ?? relationship
         if format == .nomnoml || format == .svg {
             extnConnections.append(nomnomlEdge(from: alias, linkTypeDependency, to: typeAlias, label: label))

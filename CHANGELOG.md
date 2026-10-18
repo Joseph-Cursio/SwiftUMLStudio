@@ -114,25 +114,43 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   it found no `ModA.Foo`: no format drew an `ext` edge to the type,
   `--merge-extensions` left the members in a box of their own, and a
   type nested in the extension hung off that box. A name whose first
-  component is a module the diagram has seen now means the rest of the
-  name in that module.
-  - The full name is tried first, as Swift reads a type before a module
-    of its name: `Networking.Request` still means a `Request` nested in
-    `enum Networking`.
-  - A target is matched by the name Swift code writes for it, so
-    `my_lib.Foo` reaches a type in the target `my-lib`.
-  - A module's `internal` types are still not reached from another
-    module, a qualified typealias means the type it aliases, and a
-    module may qualify its own types.
-  - A qualifier that names no module in the diagram, such as `Swift` in
+  component is a target of the package now means the rest of the name
+  in that target, in every format.
+  - Swift reads a type before a module of its name, so the full name is
+    tried first (`Networking.Request` is still a `Request` nested in
+    `enum Networking`), and a type named like the qualifier, in the
+    writer's own module or the module named, keeps the qualifier a
+    type. Imports are not tracked, so such a type in any other module
+    is taken to be one the file does not import.
+  - A target is matched by the name Swift code writes for it, as
+    SwiftPM derives it: `my_lib.Foo` reaches the target `my-lib`, and
+    `_D.Foo` the target `2D`. Beyond ASCII the derivation keeps Unicode
+    letters and digits where SwiftPM keeps C99's identifier ranges.
+  - `ModA.Foo.Nested` also reaches a `Nested` another module adds to
+    ModA's `Foo` in an extension. A module's `internal` types are still
+    not reached from another module, a qualified typealias means the
+    type it aliases, and a module may qualify its own types.
+  - A qualifier that names no target, such as `Swift` in
     `extension Swift.String`, and every qualifier without `--package`,
-    is left as written.
-  - A drawn extension now stands in for its hidden type however it
-    spells it, `ModA.Foo` or a typealias, as `--merge-extensions`
-    already chose it (#153).
-  - SVG now ends a module-qualified supertype, as in
-    `extension ModA.Foo: ModA.Q {}`, on the protocol. PlantUML, Mermaid
-    and Nomnoml still end it on the name as written.
+    is kept as part of the name.
+  - A drawn `extension ModA.Foo` stands in for ModA's `Foo` when the
+    diagram hides it, as `extension Foo` does, so a type nested in
+    `Foo` hangs off it, as `--merge-extensions` already chose.
+  - `relationships.dependency.exclude` now also matches the type an
+    extension extends as that type is declared, so `Foo.Inner` hides
+    the edge of `extension ModA.Foo.Inner`; `inheritance.exclude` and
+    `realize.exclude` match a supertype written through its module, so
+    `Q` hides the edges of `extension ModA.Foo: ModA.Q` and
+    `struct S: ModA.Q` in every format.
+  - Supertype edges in PlantUML, Mermaid and Nomnoml end on a name, the
+    first box of that name, which cannot tell ModA's `Q` from another
+    module's, so they read no module qualifier and are drawn as before:
+    `struct S: ModA.Q` still ends on `ModA.Q`. SVG ends it on ModA's
+    `Q`.
+  - Still unread: a type declared inside `extension ModA.Foo` is known
+    by that spelling, so `extension Foo.Nested` written where `Foo` is
+    ModA's does not reach it, and `deps --types` draws
+    `extension ModA.Foo: P` apart from ModA's `Foo`.
 
 - **A member named with a keyword is the one a reference after a `.`
   names** (#130). A keyword must be escaped where a member is declared,

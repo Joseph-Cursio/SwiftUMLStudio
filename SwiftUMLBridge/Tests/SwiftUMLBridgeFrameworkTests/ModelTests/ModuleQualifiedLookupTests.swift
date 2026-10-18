@@ -156,4 +156,60 @@ struct ModuleQualifiedLookupTests {
         #expect(merged.owner(of: "fromB") == standIn)
         #expect(merged.edgeEnds == ["\(standIn) -> Foo.Inner"])
     }
+
+    // MARK: - Excludes
+
+    @Test("dependency.exclude matches the type a qualified extension extends")
+    func dependencyExclude() throws {
+        let modB = "import ModA\n\nextension ModA.Foo.Inner {\n    func innerFromB() {}\n}\n"
+        let excluded = RelationshipOptions(dependency: Relationship(label: "ext", exclude: ["Foo.Inner"]))
+        let edges = try lines(
+            [("ModA", Self.modA), ("ModB", modB)], Configuration(relationships: excluded), containing: " : ext"
+        )
+        #expect(edges.isEmpty)
+    }
+
+    @Test("realize.exclude matches a protocol named through its module")
+    func realizeExclude() throws {
+        let modA = Self.modA + "\npublic protocol Q {}\n"
+        let modB = "import ModA\n\nextension ModA.Foo: ModA.Q {}\n"
+        let excluded = RelationshipOptions(realize: Relationship(label: "conforms to", exclude: ["Q"]))
+        let graph = try graph([("ModA", modA), ("ModB", modB)], Configuration(relationships: excluded, format: .svg))
+        #expect(graph.edgeEnds.contains { $0.hasSuffix("-> Q") } == false)
+    }
+
+    // MARK: - Supertypes in the text formats
+
+    /// PlantUML, Mermaid and Nomnoml end a supertype edge on a name, the first box of that name,
+    /// so they read no module qualifier and end it where they did before #124. SVG ends it on the
+    /// declaration.
+    @Test("a supertype inside a qualified extension ends on no name nothing declares")
+    func supertypeInQualifiedExtension() throws {
+        let modA = """
+            public struct Foo {
+                public init() {}
+                open class Base {
+                    public init() {}
+                }
+            }
+            """
+        let modB = "import ModA\n\nextension ModA.Foo {\n    class Child: Base {}\n}\n"
+        let files: [(module: String?, source: String)] = [("ModA", modA), ("ModB", modB)]
+        let edges = try lines(files, Configuration(format: .plantuml), containing: "<|--")
+        #expect(edges.contains { $0.hasPrefix("ModA.Foo.Base") } == false)
+        #expect(try graph(files, Configuration(format: .svg)).edgeEnds.contains("ModA.Foo.Child -> Foo.Base"))
+    }
+
+    /// App declares its own `Store`, so the bare name would end the edge on App's box; Swift
+    /// conforms `Cache` to Lib's.
+    @Test("a qualified typealias supertype is not moved onto another module's type of its name")
+    func qualifiedAliasSupertype() throws {
+        let lib = "public protocol Store {}\npublic typealias StoreType = Store\n"
+        let app = "import Lib\n\nprotocol Store {}\n\nstruct Cache: Lib.StoreType {}\n"
+        let files: [(module: String?, source: String)] = [("Lib", lib), ("App", app)]
+        let edges = try lines(files, Configuration(format: .plantuml), containing: "Cache")
+            .filter { $0.contains("<|") }
+        #expect(edges == ["Lib.StoreType <|-- Cache : inherits"])
+        #expect(try graph(files, Configuration(format: .svg)).edgeEnds.contains("Cache -> Store"))
+    }
 }
