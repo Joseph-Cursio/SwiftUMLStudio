@@ -4,6 +4,7 @@ import Testing
 @testable import SwiftUMLStudio
 
 @Suite("InsightRowView.color")
+@MainActor
 struct InsightRowViewColorTests {
 
     @Test("info severity maps to blue")

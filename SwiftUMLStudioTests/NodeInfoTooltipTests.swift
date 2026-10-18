@@ -6,6 +6,7 @@ import SwiftUMLBridgeFramework
 @testable import SwiftUMLStudio
 
 @Suite("NodeInfoTooltip.shortPath")
+@MainActor
 struct NodeInfoTooltipShortPathTests {
 
     @Test("returns filename:line for an absolute path")

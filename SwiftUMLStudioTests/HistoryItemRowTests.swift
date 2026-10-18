@@ -3,6 +3,7 @@ import Testing
 @testable import SwiftUMLStudio
 
 @Suite("HistoryItemRow.displayMode")
+@MainActor
 struct HistoryItemRowDisplayModeTests {
 
     @Test("nil mode falls back to \"Diagram\"")
