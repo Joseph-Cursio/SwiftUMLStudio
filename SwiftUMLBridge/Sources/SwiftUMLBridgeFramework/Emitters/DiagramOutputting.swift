@@ -31,7 +31,6 @@ public extension DiagramOutputting {
         DiagramText(rawValue: text).encodedValue
     }
 
-
     var layoutGraph: LayoutGraph? { nil }
     var sequenceLayout: SequenceLayout? { nil }
     var activityLayout: ActivityLayout? { nil }
