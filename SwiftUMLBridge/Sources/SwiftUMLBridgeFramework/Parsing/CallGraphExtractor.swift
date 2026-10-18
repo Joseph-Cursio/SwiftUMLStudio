@@ -128,7 +128,7 @@ final class CallGraphExtractor: TypeStackVisitor {
         from source: String, file: URL? = nil, aliases: TypeAliasResolver = .none
     ) -> ExtractionResult {
         ParsingStack.run {
-            let sourceFile = ParsingStack.parse(source)
+            let sourceFile = ParsingStack.parse(source, file: file)
             let extractor = CallGraphExtractor(viewMode: .sourceAccurate)
             extractor.resolveTypeName = { aliases.resolve($0, in: file) }
             extractor.walk(sourceFile)

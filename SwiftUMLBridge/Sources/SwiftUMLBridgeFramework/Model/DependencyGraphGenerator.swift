@@ -137,7 +137,7 @@ public struct DependencyGraphGenerator: DependencyGraphGenerating, Sendable {
         for file in files {
             let sourceModule = file.deletingLastPathComponent().lastPathComponent
             guard let source = try? String(contentsOf: file, encoding: .utf8) else { continue }
-            let importEdges = ImportExtractor.extract(from: source, sourceModule: sourceModule)
+            let importEdges = ImportExtractor.extract(from: source, sourceModule: sourceModule, file: file)
             for importEdge in importEdges {
                 edges.append(DependencyEdge(
                     from: importEdge.sourceModule,

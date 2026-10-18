@@ -302,10 +302,10 @@ final class StateMachineExtractor: TypeStackVisitor {
 
     // MARK: - Static factory
 
-    /// Parse `source` and extract all candidate state machines.
-    static func extract(from source: String) -> [StateMachineModel] {
+    /// Parse `source`, read from `file` when there is one, and extract all candidate state machines.
+    static func extract(from source: String, file: URL? = nil) -> [StateMachineModel] {
         ParsingStack.run {
-            let sourceFile = ParsingStack.parse(source)
+            let sourceFile = ParsingStack.parse(source, file: file)
             let extractor = StateMachineExtractor(viewMode: .sourceAccurate)
             extractor.walk(sourceFile)
             return extractor.buildCandidates()

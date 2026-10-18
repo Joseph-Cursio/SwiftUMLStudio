@@ -34,7 +34,7 @@ public enum ActivityFlowExtractor {
         aliases: TypeAliasResolver
     ) -> ActivityGraph? {
         ParsingStack.run {
-            let sourceFile = ParsingStack.parse(source)
+            let sourceFile = ParsingStack.parse(source, file: file)
             let finder = ActivityEntryFunctionFinder(viewMode: .sourceAccurate)
             finder.resolveTypeName = { aliases.resolve($0, in: file) }
             finder.entryType = entryType
