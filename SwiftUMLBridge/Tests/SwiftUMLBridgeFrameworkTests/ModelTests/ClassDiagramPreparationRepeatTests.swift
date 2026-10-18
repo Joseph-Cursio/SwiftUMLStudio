@@ -4,9 +4,6 @@ import Testing
 /// Class-diagram preparation edits the structures it works on, and it used to edit the caller's
 /// parsed items: a second diagram from the same items saw the first one's merged members, parent
 /// links and merge indicators (#73). It now works on a private copy, so these hold.
-///
-/// Identity checks are computed into a `Bool` before `#expect`: a failing expectation renders its
-/// operands, and `SyntaxStructure.debugDescription` force-unwraps `kind` and `fullName`.
 @Suite("Class-diagram preparation — repeatable and non-mutating")
 struct ClassDiagramPreparationRepeatTests {
 

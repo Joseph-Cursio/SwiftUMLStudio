@@ -4,6 +4,19 @@ import Testing
 @Suite("SyntaxStructure")
 struct SyntaxStructureTests {
 
+    // MARK: - debugDescription
+
+    @Test("debugDescription names the kind and the qualified name")
+    func debugDescriptionNamesKindAndName() {
+        #expect(SyntaxStructure(kind: .class, name: "Foo").debugDescription == "class Foo")
+    }
+
+    /// A failing `#expect` prints its operands, so this must not trap on a partial structure.
+    @Test("debugDescription of a structure with no kind or name does not trap")
+    func debugDescriptionWithoutKindOrName() {
+        #expect(SyntaxStructure().debugDescription == "unknown <unnamed>")
+    }
+
     // MARK: - find(_:named:)
 
     @Test("find returns self when name and kind match")
