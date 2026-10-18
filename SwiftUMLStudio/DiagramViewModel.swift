@@ -86,6 +86,9 @@ final class DiagramViewModel {
     var architectureDiff: ArchitectureDiff?
 
     var currentTask: Task<Void, Never>?
+    /// The running `analyzeProject()` pass. A newer pass cancels it so its results,
+    /// which may arrive after the newer pass's, are dropped rather than shown.
+    var analysisTask: Task<Void, Never>?
     let modelContext: ModelContext
     let classGenerator: any ClassDiagramGenerating
     let sequenceGenerator: any SequenceDiagramGenerating
