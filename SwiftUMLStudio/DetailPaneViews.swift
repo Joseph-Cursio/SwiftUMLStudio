@@ -69,6 +69,11 @@ struct DiagramPreviewView: View {
             ) {
                 LayoutFallbackBanner(reason: reason)
             }
+            if let places = SourceReadNoticeBanner.places(
+                for: viewModel.sourceReadNotices, isGenerating: viewModel.isGenerating
+            ) {
+                SourceReadNoticeBanner(places: places)
+            }
             ZStack(alignment: .topTrailing) {
                 Group {
                     if viewModel.isGenerating {

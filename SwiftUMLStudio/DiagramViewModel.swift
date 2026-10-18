@@ -38,6 +38,10 @@ final class DiagramViewModel {
     /// restoring a snapshot triggers a generate via `onChange(selectedPaths)`
     /// — the notice would be wiped before the UI could display it.
     var restoreNotice: String?
+    /// What the parsers were not given as written in the selected files, as the framework's
+    /// `SourceReadNotices` records it: so far, `[` nested too deep to parse in time (#148). Cleared
+    /// when a generation starts and filled when it finishes.
+    var sourceReadNotices: [String] = []
     var diagramFormat: DiagramFormat = DiagramViewModel.buildDefaultFormat
     var diagramMode: DiagramMode = .classDiagram
     var entryPoint: String = ""
@@ -150,6 +154,7 @@ final class DiagramViewModel {
         currentTask?.cancel()
         isGenerating = true
         errorMessage = nil
+        sourceReadNotices = []
         selectedHistoryItem = nil
         restoredScript = nil
 
@@ -177,6 +182,7 @@ final class DiagramViewModel {
             }
 
             guard !Task.isCancelled else { return }
+            self.collectSourceReadNotices()
             self.isGenerating = false
         }
     }
