@@ -21,30 +21,31 @@ struct DiagramExportMenuTests {
     }
 
     /// Titles of the menu's items, in order.
-    private func itemTitles(_ viewModel: DiagramViewModel) throws -> [String] {
-        let menu = try DiagramExportMenu(viewModel: viewModel, viewport: DiagramViewport())
-            .inspect().find(ViewType.Menu.self)
-        return menu.findAll(ViewType.Button.self).compactMap { try? $0.labelView().text().string() }
+    private func itemTitles(_ viewModel: DiagramViewModel) async throws -> [String] {
+        try await DiagramExportMenu(viewModel: viewModel, viewport: DiagramViewport()).inspectHosted { view in
+            try view.find(ViewType.Menu.self)
+                .findAll(ViewType.Button.self).compactMap { try? $0.labelView().text().string() }
+        }
     }
 
     @Test("no script offers no export items")
-    func noScript() throws {
-        #expect(try itemTitles(makeViewModel()).isEmpty)
+    func noScript() async throws {
+        #expect(try await itemTitles(makeViewModel()).isEmpty)
     }
 
     @Test("native SVG canvas offers PDF, PNG and SVG but not source")
-    func nativeCanvas() throws {
+    func nativeCanvas() async throws {
         let viewModel = makeViewModel()
         viewModel.diagramMode = .dependencyGraph
         viewModel.depsScript = depsScript(format: .svg)
-        #expect(try itemTitles(viewModel) == ["Export as PDF…", "Export as PNG…", "Export SVG…"])
+        #expect(try await itemTitles(viewModel) == ["Export as PDF…", "Export as PNG…", "Export SVG…"])
     }
 
     @Test("SVG without a native layout offers only SVG")
-    func svgWithoutLayout() throws {
+    func svgWithoutLayout() async throws {
         let viewModel = makeViewModel()
         viewModel.restoredScript = SimpleDiagramScript(text: "<svg/>", format: .svg)
-        #expect(try itemTitles(viewModel) == ["Export SVG…"])
+        #expect(try await itemTitles(viewModel) == ["Export SVG…"])
     }
 
     @Test(
@@ -55,26 +56,28 @@ struct DiagramExportMenuTests {
             (.nomnoml, "nomnoml")
         ]
     )
-    func sourceExport(format: DiagramFormat, ext: String) throws {
+    func sourceExport(format: DiagramFormat, ext: String) async throws {
         let viewModel = makeViewModel()
         viewModel.diagramMode = .dependencyGraph
         viewModel.depsScript = depsScript(format: format)
-        #expect(try itemTitles(viewModel) == ["Export source (.\(ext))…"])
+        #expect(try await itemTitles(viewModel) == ["Export source (.\(ext))…"])
     }
 
     @Test("empty source text offers no export items")
-    func emptySource() throws {
+    func emptySource() async throws {
         let viewModel = makeViewModel()
         viewModel.restoredScript = SimpleDiagramScript(text: "", format: .plantuml)
-        #expect(try itemTitles(viewModel).isEmpty)
+        #expect(try await itemTitles(viewModel).isEmpty)
     }
 
     @Test("menu is labelled with the share icon and identifiable for UI tests")
-    func labelAndIdentifier() throws {
-        let view = try DiagramExportMenu(viewModel: makeViewModel(), viewport: DiagramViewport()).inspect()
-        let menu = try view.find(viewWithAccessibilityIdentifier: "diagramExportMenu").menu()
-        let label = try menu.labelView().label()
-        #expect(try label.title().text().string() == "Export")
-        #expect(try label.icon().image().actualImage().name() == "square.and.arrow.up")
+    func labelAndIdentifier() async throws {
+        let menu = DiagramExportMenu(viewModel: makeViewModel(), viewport: DiagramViewport())
+        try await menu.inspectHosted { view in
+            let label = try view.find(viewWithAccessibilityIdentifier: "diagramExportMenu").menu()
+                .labelView().label()
+            #expect(try label.title().text().string() == "Export")
+            #expect(try label.icon().image().actualImage().name() == "square.and.arrow.up")
+        }
     }
 }

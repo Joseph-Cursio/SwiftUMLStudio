@@ -23,6 +23,7 @@ struct DiagramWebView: View {
 
     @Environment(\.colorScheme) private var colorScheme
     @State private var localPage = WebPage()
+    let inspection = Inspection<Self>()
 
     private var dark: Bool { colorScheme == .dark }
 
@@ -48,6 +49,7 @@ struct DiagramWebView: View {
                 EmptyView()
             }
         }
+        .onReceive(inspection.notice) { inspection.visit(self, $0) }
     }
 
     /// Wraps raw SVG in a minimal HTML page with pan/zoom support.

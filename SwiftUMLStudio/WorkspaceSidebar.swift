@@ -3,6 +3,7 @@ import SwiftUI
 struct WorkspaceSidebar: View {
     @Bindable var viewModel: DiagramViewModel
     @State private var selectedTab: Tab = .files
+    let inspection = Inspection<Self>()
 
     enum Tab: String, CaseIterable, Identifiable {
         case files = "Files"
@@ -39,6 +40,7 @@ struct WorkspaceSidebar: View {
             .frame(minHeight: 120)
         }
         .navigationTitle("SwiftUML Studio")
+        .onReceive(inspection.notice) { inspection.visit(self, $0) }
     }
 }
 
