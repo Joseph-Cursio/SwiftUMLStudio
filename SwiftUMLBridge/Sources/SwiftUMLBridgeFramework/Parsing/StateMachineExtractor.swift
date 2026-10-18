@@ -189,7 +189,7 @@ final class StateMachineExtractor: TypeStackVisitor {
         // backticks.
         if let memberAccess = expr.as(MemberAccessExprSyntax.self),
            memberAccess.base?.as(DeclReferenceExprSyntax.self)?.baseName.expressionName == "self" {
-            return memberAccess.declName.baseName.canonicalName
+            return memberAccess.declName.baseName.memberReferenceName
         }
         if let declRef = expr.as(DeclReferenceExprSyntax.self) {
             return declRef.baseName.canonicalName
@@ -201,7 +201,7 @@ final class StateMachineExtractor: TypeStackVisitor {
     private static func enumCaseFromMemberAccess(_ expr: ExprSyntax) -> String? {
         guard let memberAccess = expr.as(MemberAccessExprSyntax.self),
               memberAccess.base == nil else { return nil }
-        return memberAccess.declName.baseName.canonicalName
+        return memberAccess.declName.baseName.memberReferenceName
     }
 
     /// Extract the enum case label and optional `where`-clause guard from a `case .foo:` switch case.
@@ -212,7 +212,7 @@ final class StateMachineExtractor: TypeStackVisitor {
             guard let pattern = item.pattern.as(ExpressionPatternSyntax.self),
                   let memberAccess = pattern.expression.as(MemberAccessExprSyntax.self),
                   memberAccess.base == nil else { continue }
-            let caseName = memberAccess.declName.baseName.canonicalName
+            let caseName = memberAccess.declName.baseName.memberReferenceName
             let guardText = item.whereClause?.condition.singleLineDescription
             return (caseName, guardText)
         }

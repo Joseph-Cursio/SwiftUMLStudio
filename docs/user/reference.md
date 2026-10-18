@@ -233,7 +233,7 @@ swiftumlbridge sequence [<paths>...] --entry Type.method [options]
 
 | Option | Type | Description |
 |---|---|---|
-| `--entry <Type.method>` | `String` | Entry point in `TypeName.methodName` form (e.g., `--entry ClassDiagramGenerator.generateScript`). Case-sensitive. A method declared in `extension Alias`, after `typealias Alias = Real`, is `Real.method`, and `Alias.method` means it too. |
+| `--entry <Type.method>` | `String` | Entry point in `TypeName.methodName` form (e.g., `--entry ClassDiagramGenerator.generateScript`). Case-sensitive. A method declared in `extension Alias`, after `typealias Alias = Real`, is `Real.method`, and `Alias.method` means it too. A method named with a keyword, ``func `default`()``, is typed with or without its backticks, as `Keyed.default` or ``'Keyed.`default`'`` (quoted for the shell), as a call after a `.` may write it either way. |
 
 **Options:**
 
@@ -361,7 +361,7 @@ swiftumlbridge activity [<paths>...] --entry Type.method [options]
 
 | Option | Type | Description |
 |---|---|---|
-| `--entry <Type.method>` | `String` | Entry point in `TypeName.methodName` form (e.g., `--entry AuthService.login`). Case-sensitive. A method declared in `extension Alias`, after `typealias Alias = Real`, is `Real.method`, and `Alias.method` means it too. |
+| `--entry <Type.method>` | `String` | Entry point in `TypeName.methodName` form (e.g., `--entry AuthService.login`). Case-sensitive. A method declared in `extension Alias`, after `typealias Alias = Real`, is `Real.method`, and `Alias.method` means it too. A method named with a keyword, ``func `default`()``, is typed with or without its backticks, as `Keyed.default` or ``'Keyed.`default`'`` (quoted for the shell), as a call after a `.` may write it either way. |
 
 **Options:**
 

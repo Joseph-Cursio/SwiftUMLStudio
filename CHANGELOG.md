@@ -96,6 +96,36 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed — Bridge
 
+- **A member named with a keyword is the one a reference after a `.`
+  names** (#130). A keyword must be escaped where a member is declared,
+  as ``func `default`()`` or ``case `default` ``, but after a `.` Swift
+  reads it as a plain name, so `self.default()`, `.default` and
+  `\Book.default` name those members. The parsers read the reference as
+  `default` and the declaration as `` `default` ``, so the two never
+  matched.
+  - Sequence diagrams drew `self.default()` and `Keyed.import()` but did
+    not follow them into the methods' bodies, and marked nothing
+    unresolved.
+  - `--entry Keyed.default` found nothing, in `sequence` and `activity`.
+    It now names ``func `default`()``, as ``'Keyed.`default`'`` does.
+  - A state machine whose case is ``case `default` `` and is assigned
+    or matched as `.default` drew one state with two ids, `` `default` ``
+    in the initial edge and `default` in the transitions. A state
+    property declared ``var `default` `` and assigned through
+    `self.default` was not found, so `state --list` showed no candidate.
+  - An ER relationship whose inverse was written `\Book.default` was
+    drawn twice, once from each end.
+
+  A reference after a `.` is now matched with its declaration as if it
+  were written with the backticks, so nothing written with them changes.
+  - A sequence diagram still labels a call as the source writes it,
+    `default()`, and follows it into ``func `default`()``.
+  - A state is named as its case is declared, `` `default` ``, however a
+    transition writes it.
+  - Entry points are still listed as declared, as ``Keyed.`default` ``.
+  - After a `.`, `self`, `Self` and `init` are not member names, so
+    `Maker.init()` is not ``func `init`()``.
+
 - **A chain of nested `[` no longer takes time that doubles with each
   `[`** (#148). Since swift-syntax 602, SwiftParser reads the element
   after each `[` twice, once to look for InlineArray sugar
@@ -585,10 +615,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   cases, call receivers, ER entities and properties, state machines,
   GRDB and SQLite.swift tables, and imports. In an expression,
   `` `self` `` and `` `Self` `` are `self` and `Self`.
-  - A name that needs its backticks everywhere it is written keeps them,
+  - A name that needs its backticks where it is declared keeps them,
     so its ids are unchanged: a raw identifier (`` `Foo Bar` ``), a
     keyword (`` `default` ``), and `Type` or `Protocol`, which a type
-    member must escape.
+    member must escape. After a `.` a keyword needs no backticks, and
+    such a reference is read with them, as its declaration is (#130).
   - `--entry`, `--state` and exclude patterns (`elements.exclude`, the
     relationship excludes and `deps --exclude`) take either spelling.
   - A label changes only where the source wrote needless backticks:

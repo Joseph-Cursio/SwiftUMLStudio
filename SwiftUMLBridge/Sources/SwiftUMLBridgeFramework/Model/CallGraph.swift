@@ -11,6 +11,10 @@ public struct CallGraph: Sendable {
 
     /// Performs a depth-limited BFS from the given entry point and returns all traversed edges in order.
     ///
+    /// A call is followed into the method it names as Swift reads the name after a `.`, where a
+    /// keyword needs no backticks: `self.default()` into `` func `default`() `` (#130). The edge
+    /// keeps the name as the call writes it, for its label.
+    ///
     /// - Parameters:
     ///   - entryType: The type containing the entry method.
     ///   - entryMethod: The entry method name.
@@ -20,7 +24,9 @@ public struct CallGraph: Sendable {
         struct QueueEntry { let type: String; let method: String; let depth: Int }
         var result: [CallEdge] = []
         var visited = Set<String>()
-        var queue: [QueueEntry] = [QueueEntry(type: entryType, method: entryMethod, depth: 0)]
+        var queue: [QueueEntry] = [
+            QueueEntry(type: entryType, method: entryMethod.canonicalMemberIdentifier, depth: 0)
+        ]
 
         while !queue.isEmpty {
             let entry = queue.removeFirst()
@@ -33,7 +39,9 @@ public struct CallGraph: Sendable {
                 result.append(edge)
                 // Expand resolved edges only
                 if !edge.isUnresolved, let calleeType = edge.calleeType {
-                    queue.append(QueueEntry(type: calleeType, method: edge.calleeMethod, depth: entry.depth + 1))
+                    queue.append(QueueEntry(
+                        type: calleeType, method: edge.calleeMethod.canonicalMemberIdentifier, depth: entry.depth + 1
+                    ))
                 }
             }
         }

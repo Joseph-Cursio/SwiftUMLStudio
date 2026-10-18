@@ -156,8 +156,9 @@ final class CallGraphExtractor: TypeStackVisitor {
 
     /// An entry point as it was typed in, such as the halves of the CLI's `--entry`, named as
     /// `entryPoints(for:)` lists it: each name, and each component of a dotted type, as Swift
-    /// reads it. So `` `Plain`.helper `` is `Plain.helper`, which it calls (#123).
+    /// reads it. So `` `Plain`.helper `` is `Plain.helper`, which it calls (#123), and
+    /// `Keyed.default` is `` Keyed.`default` ``, as a call written `self.default()` names it (#130).
     static func listedEntryPoint(type: String, method: String) -> (type: String, method: String) {
-        (type.canonicalDottedName, method.canonicalIdentifier)
+        (type.canonicalDottedName, method.canonicalMemberIdentifier)
     }
 }

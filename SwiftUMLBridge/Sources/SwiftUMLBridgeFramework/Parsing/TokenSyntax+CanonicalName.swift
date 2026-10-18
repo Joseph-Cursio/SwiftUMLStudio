@@ -3,11 +3,13 @@ import SwiftSyntax
 
 extension TokenSyntax {
     /// The name as Swift reads it: `` `Plain` `` is `Plain`, one identifier spelt two ways. A name
-    /// that needs its backticks wherever it is written keeps them, so it still matches itself: a
-    /// raw identifier (`` `Foo Bar` ``) or a keyword (`` `default` ``). Names read as written kept
-    /// `` extension `Plain` `` apart from `struct Plain`, and a call to `` `Plain`.make() `` apart
-    /// from the method it calls (#123). `` `Type` `` and `` `Protocol` `` keep theirs too: a type
-    /// member must be written so, and bare, after a `.`, either means a metatype.
+    /// that needs its backticks where it is declared keeps them, so it still matches itself: a
+    /// raw identifier (`` `Foo Bar` ``) or a keyword (`` `default` ``). After a `.` a keyword may
+    /// be written bare, and `memberReferenceName` reads it as its declaration is read (#130).
+    /// Names read as written kept `` extension `Plain` `` apart from `struct Plain`, and a call to
+    /// `` `Plain`.make() `` apart from the method it calls (#123). `` `Type` `` and `` `Protocol` ``
+    /// keep theirs too: a type member must be written so, and bare, after a `.`, either means a
+    /// metatype.
     var canonicalName: String {
         guard let name = identifier?.name, name != text, name.isUnescapable else { return text }
         return name
@@ -18,6 +20,15 @@ extension TokenSyntax {
     var expressionName: String {
         if let name = identifier?.name, name == "self" || name == "Self" { return name }
         return canonicalName
+    }
+
+    /// `canonicalName` for a member named after a `.`, where Swift reads a keyword as a plain name
+    /// and needs no backticks on it: `state = .default` assigns `` case `default` ``, so it is
+    /// `` `default` ``, as that declaration is read (#130). After a `.`, `self`, `Self` and `init`
+    /// are not member names, so `x.init()` is not `` func `init`() `` and stays `init`.
+    var memberReferenceName: String {
+        let name = canonicalName
+        return name.isBareKeywordMember ? "`\(name)`" : name
     }
 }
 
@@ -72,6 +83,13 @@ extension String {
         return !name.contains("`") && name.isUnescapable ? name : self
     }
 
+    /// `canonicalIdentifier` for a member name typed in, such as the method half of an `--entry`,
+    /// read as `TokenSyntax.memberReferenceName` reads one after a `.`: `default` is `` `default` ``,
+    /// the name `` func `default`() `` is listed under (#130).
+    var canonicalMemberIdentifier: String {
+        isBareKeywordMember ? "`\(self)`" : canonicalIdentifier
+    }
+
     /// This type, as SourceKit's `key.typename` writes it, read as `singleLineDescription` reads
     /// a parsed one: SourceKit gives the text as written, line breaks and all (#155).
     var singleLineTypeName: String {
@@ -84,6 +102,13 @@ extension String {
     /// identifier or a keyword, nor `Type` or `Protocol`, which a type member must escape.
     fileprivate var isUnescapable: Bool {
         self != "Type" && self != "Protocol" && isValidSwiftIdentifier(for: .variableName)
+    }
+
+    /// Whether this is a keyword written bare after a `.`, as Swift allows there: `default` or
+    /// `import`, but not `self`, `Self` or `init`, which mean something else after a `.`.
+    fileprivate var isBareKeywordMember: Bool {
+        !isEmpty && !contains("`") && !isValidSwiftIdentifier(for: .variableName)
+            && isValidSwiftIdentifier(for: .memberAccess)
     }
 
     /// This dotted name, typed in as `--entry`'s type or `--state`'s `Host.Enum`, with each
