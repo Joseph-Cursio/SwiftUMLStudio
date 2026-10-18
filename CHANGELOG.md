@@ -10,6 +10,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added — Studio
 
+- **A banner names each file whose nested `[` were read as spaces**
+  (#148). A diagram of a file with `[` nested more than 10 deep is drawn
+  as usual, with only those brackets read as spaces, so nothing in
+  Studio said the file was not read as written. **Deeply nested brackets
+  read as spaces** now shows above the diagram, beside the layout
+  fallback banner, listing each such file with the line and column of
+  its first cut bracket (the full path on hover). It is cleared when a
+  generation starts, and lists only files in the current selection, so
+  a replaced generation that is still running cannot add to it.
+
 - **A Settings window, with a toggle to withdraw PlantUML consent.**
   **Settings…** in the app menu (⌘,) offers **Render PlantUML previews
   with planttext.com**. Until now a grant could only be withdrawn with
@@ -148,7 +158,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
     `[` more than 7 deep, and their diagrams are unchanged.
   - Each command prints, on stderr, one warning a file that was read
     so, naming the file, line and column, even when the command then
-    fails. Studio does not show it yet. Library callers can read the
+    fails. Studio shows them in a banner. Library callers can read the
     same notices through the new `SourceReadNotices.drain()`.
 
   The cause is in swift-syntax and in the Swift compiler's parser, and
