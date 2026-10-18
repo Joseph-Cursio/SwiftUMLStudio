@@ -2,9 +2,6 @@ import Testing
 @testable import SwiftUMLBridgeFramework
 
 /// `SyntaxStructure.clonedForest(of:)` gives class-diagram preparation a private copy to edit (#73).
-///
-/// Identity checks are computed into a `Bool` before `#expect`: a failing expectation renders its
-/// operands, and `SyntaxStructure.debugDescription` force-unwraps `kind` and `fullName`.
 @Suite("SyntaxStructure — cloned forest")
 struct SyntaxStructureCloneTests {
 

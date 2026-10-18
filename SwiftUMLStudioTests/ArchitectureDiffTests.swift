@@ -45,7 +45,7 @@ struct ArchitectureDiffTests {
 
         // Previous state: 5 types, 8 relationships, 2 modules, 10 files
         let previousSummary = makeTestSummary()
-        SnapshotManager.saveSnapshot(from: previousSummary, paths: ["/test"], modelContext: modelContext)
+        try SnapshotManager.saveSnapshot(from: previousSummary, paths: ["/test"], modelContext: modelContext)
         let snapshot = SnapshotManager.fetchSnapshots(modelContext: modelContext).first!
 
         // Current state: 8 types, 15 relationships, 3 modules, 14 files
@@ -71,7 +71,7 @@ struct ArchitectureDiffTests {
         let modelContext = controller.container.mainContext
 
         let previousSummary = makeTestSummary(totalTypes: 10, totalRelationships: 20)
-        SnapshotManager.saveSnapshot(from: previousSummary, paths: ["/test"], modelContext: modelContext)
+        try SnapshotManager.saveSnapshot(from: previousSummary, paths: ["/test"], modelContext: modelContext)
         let snapshot = SnapshotManager.fetchSnapshots(modelContext: modelContext).first!
 
         let currentSummary = makeTestSummary(totalTypes: 7, totalRelationships: 12)
@@ -87,7 +87,7 @@ struct ArchitectureDiffTests {
         let modelContext = controller.container.mainContext
 
         let previousSummary = makeTestSummary(typeBreakdown: ["Classes": 3, "Structs": 2])
-        SnapshotManager.saveSnapshot(from: previousSummary, paths: ["/test"], modelContext: modelContext)
+        try SnapshotManager.saveSnapshot(from: previousSummary, paths: ["/test"], modelContext: modelContext)
         let snapshot = SnapshotManager.fetchSnapshots(modelContext: modelContext).first!
 
         let currentSummary = makeTestSummary(
@@ -108,7 +108,7 @@ struct ArchitectureDiffTests {
         let previousSummary = makeTestSummary(
             topConnectedTypes: [(name: "ViewModel", connectionCount: 4)]
         )
-        SnapshotManager.saveSnapshot(from: previousSummary, paths: ["/test"], modelContext: modelContext)
+        try SnapshotManager.saveSnapshot(from: previousSummary, paths: ["/test"], modelContext: modelContext)
         let snapshot = SnapshotManager.fetchSnapshots(modelContext: modelContext).first!
 
         let currentSummary = makeTestSummary(
@@ -126,7 +126,7 @@ struct ArchitectureDiffTests {
         let modelContext = controller.container.mainContext
 
         let summary = makeTestSummary()
-        SnapshotManager.saveSnapshot(from: summary, paths: ["/test"], modelContext: modelContext)
+        try SnapshotManager.saveSnapshot(from: summary, paths: ["/test"], modelContext: modelContext)
         let snapshot = SnapshotManager.fetchSnapshots(modelContext: modelContext).first!
 
         let diff = SnapshotManager.computeDiff(current: summary, previous: snapshot)

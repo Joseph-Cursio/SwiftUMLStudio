@@ -2,6 +2,9 @@ import SwiftUI
 
 /// Floating zoom/pan toolbar overlay for the native diagram canvases.
 /// Sits in the top-trailing corner of `DiagramPreviewView`.
+///
+/// Each button shows only its icon, but names itself through its `Label`, so VoiceOver
+/// reads "Zoom In" rather than the symbol's name.
 struct DiagramViewportControls: View {
     @Bindable var viewport: DiagramViewport
 
@@ -10,7 +13,8 @@ struct DiagramViewportControls: View {
             Button {
                 viewport.zoomOut()
             } label: {
-                Image(systemName: "minus.magnifyingglass")
+                Label("Zoom Out", systemImage: "minus.magnifyingglass")
+                    .labelStyle(.iconOnly)
             }
             .keyboardShortcut("-", modifiers: .command)
             .help("Zoom out (⌘−)")
@@ -25,7 +29,8 @@ struct DiagramViewportControls: View {
             Button {
                 viewport.zoomIn()
             } label: {
-                Image(systemName: "plus.magnifyingglass")
+                Label("Zoom In", systemImage: "plus.magnifyingglass")
+                    .labelStyle(.iconOnly)
             }
             .keyboardShortcut("=", modifiers: .command)
             .help("Zoom in (⌘=)")
@@ -36,7 +41,8 @@ struct DiagramViewportControls: View {
             Button {
                 viewport.fitToWindow()
             } label: {
-                Image(systemName: "arrow.up.left.and.down.right.magnifyingglass")
+                Label("Fit to Window", systemImage: "arrow.up.left.and.down.right.magnifyingglass")
+                    .labelStyle(.iconOnly)
             }
             .keyboardShortcut("9", modifiers: .command)
             .help("Fit to window (⌘9)")
@@ -45,7 +51,8 @@ struct DiagramViewportControls: View {
             Button {
                 viewport.actualSize()
             } label: {
-                Image(systemName: "1.magnifyingglass")
+                Label("Actual Size", systemImage: "1.magnifyingglass")
+                    .labelStyle(.iconOnly)
             }
             .keyboardShortcut("0", modifiers: .command)
             .help("Actual size (⌘0)")
@@ -54,7 +61,8 @@ struct DiagramViewportControls: View {
             Button {
                 viewport.reset()
             } label: {
-                Image(systemName: "arrow.counterclockwise")
+                Label("Reset Zoom and Pan", systemImage: "arrow.counterclockwise")
+                    .labelStyle(.iconOnly)
             }
             .keyboardShortcut("r", modifiers: [.command, .shift])
             .help("Reset zoom and pan (⇧⌘R)")

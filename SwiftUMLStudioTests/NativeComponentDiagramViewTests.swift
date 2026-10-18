@@ -47,52 +47,6 @@ private func makeComponent(
     )
 }
 
-/// Every `ComponentKind`. The enum is not `CaseIterable`, so this list is
-/// maintained by hand; the exhaustiveness test below fails if a case is added.
-private let allKinds: [ComponentKind] = [.executable, .library, .test, .other]
-
-// MARK: - Stereotype labelling
-
-@Suite("NativeComponentDiagramView — stereotype labels")
-@MainActor
-struct NativeComponentStereotypeTests {
-
-    @Test("each kind maps to its UML stereotype")
-    func labelsPerKind() {
-        #expect(NativeComponentDiagramView.stereotypeLabel(for: .executable) == "executable")
-        #expect(NativeComponentDiagramView.stereotypeLabel(for: .library) == "library")
-        #expect(NativeComponentDiagramView.stereotypeLabel(for: .test) == "test")
-    }
-
-    /// `.other` deliberately renders as "component", not "other" — it is the
-    /// catch-all, and «other» would read as a real UML stereotype.
-    @Test("the catch-all kind renders as «component», not «other»")
-    func otherRendersAsComponent() {
-        #expect(NativeComponentDiagramView.stereotypeLabel(for: .other) == "component")
-    }
-
-    /// The native canvas and the SVG fallback must label a component
-    /// identically — the view documents itself as mirroring the SVG renderer,
-    /// and the two switch statements are currently duplicated source.
-    @Test("labels match ComponentSVGRenderer for every kind")
-    func matchesSVGRenderer() {
-        for kind in allKinds {
-            #expect(
-                NativeComponentDiagramView.stereotypeLabel(for: kind)
-                    == ComponentSVGRenderer.stereotypeLabel(for: kind),
-                "native and SVG stereotype labels diverged for \(kind)"
-            )
-        }
-    }
-
-    @Test("no kind produces an empty label")
-    func noEmptyLabels() {
-        for kind in allKinds {
-            #expect(NativeComponentDiagramView.stereotypeLabel(for: kind).isEmpty == false)
-        }
-    }
-}
-
 // MARK: - Geometry constants
 
 @Suite("NativeComponentDiagramView — geometry constants")

@@ -247,7 +247,7 @@ extension DiagramViewModel {
         }
 
         modelContext.insert(entity)
-        try? modelContext.save()
+        saveContext(failing: "save the diagram to history")
         loadHistory()
     }
 }

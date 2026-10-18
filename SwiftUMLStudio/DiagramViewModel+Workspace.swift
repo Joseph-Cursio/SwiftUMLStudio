@@ -146,8 +146,17 @@ extension DiagramViewModel {
             restoredScript = nil
         }
         modelContext.delete(entity)
-        try? modelContext.save()
+        saveContext(failing: "delete the history item")
         loadHistory()
+    }
+
+    /// Saves pending SwiftData changes, or says in `saveError` what was not saved.
+    func saveContext(failing action: String) {
+        do {
+            try modelContext.save()
+        } catch {
+            saveError = "Couldn't \(action): \(error.localizedDescription)"
+        }
     }
 
     // MARK: - File Tree
@@ -197,20 +206,28 @@ extension DiagramViewModel {
 
     func saveSnapshot(isProUnlocked: Bool, at savedAt: Date = Date()) {
         guard isProUnlocked, let summary = projectSummary else { return }
-        SnapshotManager.saveSnapshot(
-            from: summary,
-            paths: selectedPaths,
-            bookmarks: selectedPathBookmarks,
-            at: savedAt,
-            modelContext: modelContext
-        )
+        do {
+            try SnapshotManager.saveSnapshot(
+                from: summary,
+                paths: selectedPaths,
+                bookmarks: selectedPathBookmarks,
+                at: savedAt,
+                modelContext: modelContext
+            )
+        } catch {
+            saveError = "Couldn't save the snapshot: \(error.localizedDescription)"
+        }
         loadSnapshots()
         updateArchitectureDiff()
         ReviewReminderManager.rescheduleIfEnabled()
     }
 
     func deleteSnapshot(_ snapshot: ProjectSnapshot) {
-        SnapshotManager.deleteSnapshot(snapshot, modelContext: modelContext)
+        do {
+            try SnapshotManager.deleteSnapshot(snapshot, modelContext: modelContext)
+        } catch {
+            saveError = "Couldn't delete the snapshot: \(error.localizedDescription)"
+        }
         loadSnapshots()
         updateArchitectureDiff()
     }
@@ -232,6 +249,7 @@ extension DiagramViewModel {
     // MARK: - Project Analysis
 
     func analyzeProject(isProUnlocked: Bool = true) {
+        analysisTask?.cancel()
         guard !selectedPaths.isEmpty else {
             projectSummary = nil
             insights = []
@@ -242,7 +260,7 @@ extension DiagramViewModel {
         let proUnlocked = isProUnlocked
         let description = packageDescription
         let root = packageRoot
-        Task {
+        analysisTask = Task {
             let (summary, newInsights, newSuggestions) = await Task.detached(
                 priority: .userInitiated
             ) {
@@ -258,6 +276,7 @@ extension DiagramViewModel {
                 )
                 return (result, insights, suggestions)
             }.value
+            guard !Task.isCancelled else { return }
             projectSummary = summary
             insights = newInsights
             suggestions = newSuggestions

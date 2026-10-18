@@ -38,6 +38,9 @@ final class DiagramViewModel {
     /// restoring a snapshot triggers a generate via `onChange(selectedPaths)`
     /// — the notice would be wiped before the UI could display it.
     var restoreNotice: String?
+    /// Set when SwiftData could not save a history or snapshot change, which would
+    /// otherwise be lost without a word on the next launch.
+    var saveError: String?
     /// What the parsers were not given as written in the selected files, as the framework's
     /// `SourceReadNotices` records it: so far, `[` nested too deep to parse in time (#148). Cleared
     /// when a generation starts and filled when it finishes.
@@ -86,6 +89,9 @@ final class DiagramViewModel {
     var architectureDiff: ArchitectureDiff?
 
     var currentTask: Task<Void, Never>?
+    /// The running `analyzeProject()` pass. A newer pass cancels it so its results,
+    /// which may arrive after the newer pass's, are dropped rather than shown.
+    var analysisTask: Task<Void, Never>?
     let modelContext: ModelContext
     let classGenerator: any ClassDiagramGenerating
     let sequenceGenerator: any SequenceDiagramGenerating

@@ -31,7 +31,7 @@ enum SnapshotManager {
         bookmarks: [Data?] = [],
         at savedAt: Date = Date(),
         modelContext: ModelContext
-    ) {
+    ) throws {
         // `identifier` is not passed: `ProjectSnapshot.init` already defaults it to a fresh UUID,
         // so the argument that used to be here minted a second one and threw the first away.
         let snapshot = ProjectSnapshot(
@@ -50,7 +50,7 @@ enum SnapshotManager {
                 : try? JSONEncoder().encode(bookmarks)
         )
         modelContext.insert(snapshot)
-        try? modelContext.save()
+        try modelContext.save()
     }
 
     /// Fetch all snapshots, newest first.
@@ -125,8 +125,8 @@ enum SnapshotManager {
     }
 
     /// Delete a snapshot.
-    static func deleteSnapshot(_ snapshot: ProjectSnapshot, modelContext: ModelContext) {
+    static func deleteSnapshot(_ snapshot: ProjectSnapshot, modelContext: ModelContext) throws {
         modelContext.delete(snapshot)
-        try? modelContext.save()
+        try modelContext.save()
     }
 }

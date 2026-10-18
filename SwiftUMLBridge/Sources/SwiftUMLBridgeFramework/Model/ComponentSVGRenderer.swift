@@ -200,7 +200,9 @@ public enum ComponentSVGRenderer {
         return (width, height)
     }
 
-    static func stereotypeLabel(for kind: Component.Kind) -> String {
+    /// The UML stereotype for `kind`. Public so Studio's native canvas labels a
+    /// component exactly as this SVG renderer does.
+    public static func stereotypeLabel(for kind: Component.Kind) -> String {
         switch kind {
         case .executable: return "executable"
         case .library:    return "library"

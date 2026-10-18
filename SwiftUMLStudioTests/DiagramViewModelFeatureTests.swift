@@ -32,6 +32,52 @@ struct DiagramViewModelFeatureTests {
         #expect(viewModel.suggestions.isEmpty)
     }
 
+    /// The analysis runs detached, so it can finish after the selection has moved on.
+    @Test("a selection change drops the results of the analysis it replaced")
+    func analyzeProjectDropsStaleResults() async throws {
+        let directory = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("studio-stale-analysis-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let file = directory.appendingPathComponent("Shape.swift")
+        try "struct Circle {}\nstruct Square {}\n".write(to: file, atomically: true, encoding: .utf8)
+
+        // Held to the end: the analysis fetches snapshots, and SwiftData traps on a freed container.
+        let persistence = PersistenceController(inMemory: true)
+        let viewModel = DiagramViewModel(persistenceController: persistence)
+        viewModel.selectedPaths = [directory.path]
+        viewModel.analyzeProject()
+        let staleAnalysis = try #require(viewModel.analysisTask)
+
+        viewModel.selectedPaths = []
+        viewModel.analyzeProject()
+        await staleAnalysis.value
+
+        #expect(viewModel.projectSummary == nil)
+        #expect(viewModel.insights.isEmpty)
+        withExtendedLifetime(persistence) {}
+    }
+
+    @Test("an analysis that is not replaced fills in the summary")
+    func analyzeProjectFillsSummary() async throws {
+        let directory = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("studio-analysis-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let file = directory.appendingPathComponent("Shape.swift")
+        try "struct Circle {}\nstruct Square {}\n".write(to: file, atomically: true, encoding: .utf8)
+
+        // Held to the end: the analysis fetches snapshots, and SwiftData traps on a freed container.
+        let persistence = PersistenceController(inMemory: true)
+        let viewModel = DiagramViewModel(persistenceController: persistence)
+        viewModel.selectedPaths = [directory.path]
+        viewModel.analyzeProject()
+        await viewModel.analysisTask?.value
+
+        #expect(viewModel.projectSummary != nil)
+        withExtendedLifetime(persistence) {}
+    }
+
     // MARK: - saveToHistory name generation
 
     @Test("save with multiple paths generates name with count")

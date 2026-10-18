@@ -254,6 +254,14 @@ private struct NoticeAlerts: ViewModifier {
             } message: {
                 Text(viewModel.restoreNotice ?? "")
             }
+            .alert(
+                "Couldn't save",
+                isPresented: binding(\.saveError)
+            ) {
+                Button("OK", role: .cancel) { viewModel.saveError = nil }
+            } message: {
+                Text(viewModel.saveError ?? "")
+            }
     }
 
     private func binding(
