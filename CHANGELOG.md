@@ -106,6 +106,31 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed — Bridge
 
+- **A module-qualified extension reaches the type it extends** (#124).
+  In package mode (`--package`, or Open Package… in Studio),
+  `extension ModA.Foo` written in ModB extends ModA's `Foo`, and
+  `extension ModA.Foo.Inner` its nested `Foo.Inner`. The lookup that
+  finds an extension's type keyed types by their unqualified names, so
+  it found no `ModA.Foo`: no format drew an `ext` edge to the type,
+  `--merge-extensions` left the members in a box of their own, and a
+  type nested in the extension hung off that box. A name whose first
+  component is a module the diagram has seen now means the rest of the
+  name in that module.
+  - The full name is tried first, as Swift reads a type before a module
+    of its name: `Networking.Request` still means a `Request` nested in
+    `enum Networking`.
+  - A target is matched by the name Swift code writes for it, so
+    `my_lib.Foo` reaches a type in the target `my-lib`.
+  - A module's `internal` types are still not reached from another
+    module, a qualified typealias means the type it aliases, and a
+    module may qualify its own types.
+  - A qualifier that names no module in the diagram, such as `Swift` in
+    `extension Swift.String`, and every qualifier without `--package`,
+    is left as written.
+  - SVG now ends a module-qualified supertype, as in
+    `extension ModA.Foo: ModA.Q {}`, on the protocol. PlantUML, Mermaid
+    and Nomnoml still end it on the name as written.
+
 - **A member named with a keyword is the one a reference after a `.`
   names** (#130). A keyword must be escaped where a member is declared,
   as ``func `default`()`` or ``case `default` ``, but after a `.` Swift

@@ -70,6 +70,10 @@ extension LayoutGraphBuilder {
     /// that shows an extension's members is the box its nested types hang off (#107).
     struct TypeLookup {
         private var declaredForName: [String: [Declared]] = [:]
+        /// Each module a recorded declaration belongs to, under every name Swift code can write it
+        /// by: its target name and that name's C99 form (`my-lib` and `my_lib`). A qualifier must be
+        /// one of these to be read as a module (#124).
+        private var modulesForQualifier: [String: Set<String>] = [:]
 
         /// A lookup of every type, extension and typealias in `items`, none of them drawn.
         init(of items: [SyntaxStructure] = []) {
@@ -83,6 +87,10 @@ extension LayoutGraphBuilder {
 
         mutating func record(_ declared: Declared, named name: String) {
             declaredForName[name, default: []].append(declared)
+            if let module = declared.scope.module {
+                modulesForQualifier[module, default: []].insert(module)
+                modulesForQualifier[Self.c99Name(of: module), default: []].insert(module)
+            }
         }
 
         /// Records the typealiases among `items` and among their members, a member as
@@ -148,12 +156,44 @@ extension LayoutGraphBuilder {
                 .first { nearestDeclaration(named: $0, from: scope, depth: 0) != nil } ?? name
         }
 
-        /// The nearest of the types and typealiases named `name` that are visible from `scope`.
+        /// The nearest of the types and typealiases named `name` that are visible from `scope`. With
+        /// none, a name whose first component is a module the lookup has seen means the rest of the
+        /// name in that module: `ModA.Foo.Inner` is ModA's `Foo.Inner` (#124). Swift reads a type
+        /// before a module of its name, so the full name is tried first — `Networking.Request` is
+        /// still the type nested in an `enum Networking` — and a visible type named like the
+        /// qualifier keeps it from being read as a module at all. Imports are not tracked, so a
+        /// public type of that name in a module the file does not import keeps it too.
         private func nearestDeclaration(named name: String, from scope: Scope, depth: Int) -> Declared? {
             let candidates = declarations(named: name).filter {
                 !$0.isExtension && isVisible($0, from: scope, depth: depth)
             }
-            return scope.nearest(among: candidates, scope: \.scope)
+            if let nearest = scope.nearest(among: candidates, scope: \.scope) { return nearest }
+            guard let dot = name.firstIndex(of: "."),
+                  let modules = modulesForQualifier[String(name[..<dot])],
+                  nearestDeclaration(named: String(name[..<dot]), from: scope, depth: depth) == nil else {
+                return nil
+            }
+            let rest = String(name[name.index(after: dot)...])
+            let qualified = declarations(named: rest).filter {
+                !$0.isExtension && $0.scope.module.map(modules.contains) == true
+                    && isVisible($0, from: scope, depth: depth)
+            }
+            return scope.nearest(among: qualified, scope: \.scope)
+        }
+
+        /// The name Swift code writes for the module of the target `name`, as SwiftPM derives a
+        /// target's `c99name`: each character that cannot be in an identifier becomes `_`, and a
+        /// leading digit gets a `_` before it, so `my-lib` is `my_lib` and `2D` is `_2D`.
+        static func c99Name(of name: String) -> String {
+            var scalars = name.unicodeScalars.map { scalar -> Unicode.Scalar in
+                let isIdentifier = scalar == "_" || scalar.properties.isAlphabetic
+                    || scalar.properties.numericType == .decimal
+                return isIdentifier ? scalar : "_"
+            }
+            if let first = scalars.first, first.properties.numericType == .decimal {
+                scalars.insert("_", at: 0)
+            }
+            return String(String.UnicodeScalarView(scalars))
         }
 
         /// Whether a name written in `lookup` can mean `declared`, as Swift's access control
