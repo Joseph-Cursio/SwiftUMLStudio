@@ -58,6 +58,7 @@ struct DiagramPreviewView: View {
     /// Injected by tests, which must not read or change the developer's own decision.
     var consent: PlantUMLConsent = .shared
     @State private var viewport = DiagramViewport()
+    let inspection = Inspection<Self>()
 
     var body: some View {
         VStack(spacing: 0) {
@@ -173,6 +174,7 @@ struct DiagramPreviewView: View {
                 viewport.clearForNewDiagram()
             }
         }
+        .onReceive(inspection.notice) { inspection.visit(self, $0) }
     }
 
     /// The consent card's Mermaid switch, offered only when there is a source to regenerate from.

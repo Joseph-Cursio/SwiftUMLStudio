@@ -20,7 +20,8 @@ final class NativeCanvasCoverageUITests: XCTestCase {
             .path
     }
 
-    override func setUpWithError() throws {
+    @MainActor
+    override func setUp() async throws {
         continueAfterFailure = false
         app = XCUIApplication()
         app.launchArguments += [
@@ -39,6 +40,7 @@ final class NativeCanvasCoverageUITests: XCTestCase {
 
     /// Switch the toolbar Format picker to SVG, routing the preview to the
     /// native `Canvas`-based renderer instead of the web view.
+    @MainActor
     private func switchFormatToSVG() {
         let formatPicker = app.popUpButtons["formatPicker"]
         XCTAssertTrue(
@@ -52,6 +54,7 @@ final class NativeCanvasCoverageUITests: XCTestCase {
     }
 
     /// Type an entry point into the given accessibility-identified text field.
+    @MainActor
     private func typeEntryPoint(_ entryPoint: String, intoField identifier: String) {
         let field = app.textFields[identifier]
         XCTAssertTrue(

@@ -6,6 +6,7 @@ struct ExplorerSidebar: View {
     let subscriptionManager: SubscriptionManager
     @State private var showPaywall = false
     @State private var reminderEnabled = ReviewReminderManager.isEnabled()
+    let inspection = Inspection<Self>()
 
     var body: some View {
         List {
@@ -75,6 +76,7 @@ struct ExplorerSidebar: View {
         }
         .navigationTitle("SwiftUML Explorer")
         .paywallSheet(isPresented: $showPaywall, subscriptionManager: subscriptionManager)
+        .onReceive(inspection.notice) { inspection.visit(self, $0) }
     }
 
     private func handleSuggestion(_ suggestion: DiagramSuggestion) {

@@ -23,7 +23,7 @@ struct CoreDataIntegrationTests {
         let controller = PersistenceController(inMemory: true)
         // SwiftData container is successfully created if we get here
         let context = controller.container.mainContext
-        #expect(context != nil)
+        #expect(context.container === controller.container)
     }
 
     // MARK: DiagramEntity CRUD

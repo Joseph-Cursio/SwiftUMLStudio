@@ -85,11 +85,9 @@ struct MockSubscriptionProviderTests {
     }
 
     @Test("purchase call is tracked")
-    func purchaseCallTracked() async {
-        await MainActor.run {
-            let mock = MockSubscriptionProvider()
-            #expect(mock.purchaseCallCount == 0)
-        }
+    func purchaseCallTracked() {
+        let mock = MockSubscriptionProvider()
+        #expect(mock.purchaseCallCount == 0)
         // Note: We cannot construct a Product in tests, so we verify the
         // counter initializes to zero. The tracking mechanism is validated
         // by the mock's implementation and would increment on actual call.
@@ -97,20 +95,18 @@ struct MockSubscriptionProviderTests {
 
     @Test("restore call is tracked")
     func restoreCallTracked() async {
-        let mock = await MainActor.run { MockSubscriptionProvider() }
+        let mock = MockSubscriptionProvider()
         await mock.restorePurchases()
-        let count = await mock.restoreCallCount
-        #expect(count == 1)
+        #expect(mock.restoreCallCount == 1)
     }
 
     @Test("multiple restore calls accumulate")
     func multipleRestoreCallsAccumulate() async {
-        let mock = await MainActor.run { MockSubscriptionProvider() }
+        let mock = MockSubscriptionProvider()
         await mock.restorePurchases()
         await mock.restorePurchases()
         await mock.restorePurchases()
-        let count = await mock.restoreCallCount
-        #expect(count == 3)
+        #expect(mock.restoreCallCount == 3)
     }
 
     @Test("products defaults to empty array")

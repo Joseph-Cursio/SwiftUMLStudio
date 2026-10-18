@@ -20,6 +20,7 @@ private func fallenBack(_ reason: String) -> LayoutGraph {
 /// The canvas draws a fallen-back graph like any other, so the banner is the only sign that the
 /// boxes are on a grid (#150).
 @Suite("LayoutFallbackBanner")
+@MainActor
 struct LayoutFallbackBannerTests {
 
     @Test("an SVG layout that fell back shows its reason")

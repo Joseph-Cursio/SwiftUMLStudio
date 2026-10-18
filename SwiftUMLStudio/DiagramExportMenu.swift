@@ -8,6 +8,7 @@ struct DiagramExportMenu: View {
     let viewport: DiagramViewport
 
     @State private var lastError: String?
+    let inspection = Inspection<Self>()
 
     var body: some View {
         Menu {
@@ -38,6 +39,7 @@ struct DiagramExportMenu: View {
         } message: {
             Text(lastError ?? "")
         }
+        .onReceive(inspection.notice) { inspection.visit(self, $0) }
     }
 
     // MARK: - Capability checks

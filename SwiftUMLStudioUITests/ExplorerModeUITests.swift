@@ -4,7 +4,8 @@ final class ExplorerModeUITests: XCTestCase {
 
     private var app: XCUIApplication!
 
-    override func setUpWithError() throws {
+    @MainActor
+    override func setUp() async throws {
         continueAfterFailure = false
         app = XCUIApplication()
         app.launchArguments += ["-appMode", "Explorer"]

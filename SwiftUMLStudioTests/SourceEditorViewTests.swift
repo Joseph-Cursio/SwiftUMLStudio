@@ -3,6 +3,7 @@ import Testing
 @testable import SwiftUMLStudio
 
 @Suite("SourceEditorView.lineRange")
+@MainActor
 struct SourceEditorViewLineRangeTests {
 
     private static let threeLines = "abc\ndef\nghi"

@@ -54,6 +54,7 @@ private let allKinds: [ComponentKind] = [.executable, .library, .test, .other]
 // MARK: - Stereotype labelling
 
 @Suite("NativeComponentDiagramView — stereotype labels")
+@MainActor
 struct NativeComponentStereotypeTests {
 
     @Test("each kind maps to its UML stereotype")
@@ -95,6 +96,7 @@ struct NativeComponentStereotypeTests {
 // MARK: - Geometry constants
 
 @Suite("NativeComponentDiagramView — geometry constants")
+@MainActor
 struct NativeComponentGeometryConstantTests {
 
     /// The view states these "must stay in sync with `ComponentSVGRenderer`'s

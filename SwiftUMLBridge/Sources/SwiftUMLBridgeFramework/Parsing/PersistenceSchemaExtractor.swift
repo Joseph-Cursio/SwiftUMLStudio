@@ -92,7 +92,7 @@ public enum PersistenceSchemaExtractor {
 
         private func handleGRDBType(name: String, members: MemberBlockItemListSyntax) {
             var attributes: [ERAttribute] = []
-            for case let member as MemberBlockItemSyntax in members {
+            for member in members {
                 guard let varDecl = member.decl.as(VariableDeclSyntax.self) else { continue }
 
                 if let relationship = grdbRelationship(from: varDecl, ownerType: name) {
@@ -119,7 +119,7 @@ public enum PersistenceSchemaExtractor {
             var tableNames: [String] = []
             var columnAttributes: [ERAttribute] = []
 
-            for case let member as MemberBlockItemSyntax in members {
+            for member in members {
                 guard let varDecl = member.decl.as(VariableDeclSyntax.self),
                       isStatic(varDecl.modifiers),
                       let binding = varDecl.bindings.first,

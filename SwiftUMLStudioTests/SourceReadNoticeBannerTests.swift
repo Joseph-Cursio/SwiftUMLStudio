@@ -126,15 +126,17 @@ struct SourceReadNoticeViewModelTests {
     }
 
     @Test("the preview shows the banner when there are notices, and not while generating")
-    func preview() throws {
+    func preview() async throws {
         let viewModel = makeViewModel(selecting: ["/p"])
         viewModel.sourceReadNotices = [notice("/p/Deep.swift")]
-        _ = try DiagramPreviewView(viewModel: viewModel).inspect()
-            .find(viewWithAccessibilityIdentifier: "sourceReadNoticeBanner")
+        try await DiagramPreviewView(viewModel: viewModel).inspectHosted { view in
+            _ = try view.find(viewWithAccessibilityIdentifier: "sourceReadNoticeBanner")
+        }
         viewModel.isGenerating = true
-        #expect(throws: InspectionError.self) {
-            try DiagramPreviewView(viewModel: viewModel).inspect()
-                .find(viewWithAccessibilityIdentifier: "sourceReadNoticeBanner")
+        try await DiagramPreviewView(viewModel: viewModel).inspectHosted { view in
+            #expect(throws: InspectionError.self) {
+                try view.find(viewWithAccessibilityIdentifier: "sourceReadNoticeBanner")
+            }
         }
     }
 }

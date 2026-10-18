@@ -5,6 +5,7 @@ import SwiftUMLBridgeFramework
 @testable import SwiftUMLStudio
 
 @Suite("StateMachineConfidenceBanner")
+@MainActor
 struct StateMachineConfidenceBannerTests {
 
     private func makeModel(confidence: DetectionConfidence) -> StateMachineModel {
@@ -41,6 +42,7 @@ struct StateMachineConfidenceBannerTests {
 }
 
 @Suite("DiagramPreviewView.lowConfidenceModel")
+@MainActor
 struct DiagramPreviewViewLowConfidenceTests {
 
     private func makeModel(confidence: DetectionConfidence) -> StateMachineModel {
