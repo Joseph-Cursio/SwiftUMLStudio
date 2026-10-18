@@ -34,11 +34,13 @@ struct DrawnEdgeEnds {
 
     /// The drawn type the drawn extension `anExtension` extends: the one its name means where it
     /// is written, as `mergeExtensions` merges it into (#107). `nil` when that type is hidden, or
-    /// when no type of the name is visible there, as for an extension of `String`.
+    /// when no type of the name is visible there, as for an extension of `String`, or of `[Int]`
+    /// beside a project's own `Array` (#126).
     func extendedType(of anExtension: SyntaxStructure) -> SyntaxStructure? {
         guard let name = anExtension.fullName else { return nil }
         let end = LayoutGraphBuilder.EdgeEnd.extended(
-            ObjectIdentifier(anExtension), name: name, scope: DeclarationScope(of: anExtension)
+            ObjectIdentifier(anExtension), name: name, scope: DeclarationScope(of: anExtension),
+            isSugared: anExtension.isSugared
         )
         // When its type is hidden or outside the diagram, a drawn extension stands for that type
         // and so resolves to itself.

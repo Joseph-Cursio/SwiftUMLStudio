@@ -111,10 +111,11 @@ struct LayoutGraphBuilder {
             // A nested type hangs off the declaration that contains it, so the second of two
             // same-named types keeps its own children; one nested in an extension hangs off the
             // type the extension extends, as seen from the extension's file — or off the
-            // extension itself when the diagram draws no such type.
+            // extension itself when the diagram draws no such type, as for `extension [Int]`.
+            let scope = Scope(of: parent)
             let parentEnd: EdgeEnd = parent.kind == .extension
-                ? .extended(ObjectIdentifier(parent), name: parentName, scope: Scope(of: parent))
-                : .declaration(ObjectIdentifier(parent), name: parentName, scope: Scope(of: parent))
+                ? .extended(ObjectIdentifier(parent), name: parentName, scope: scope, isSugared: parent.isSugared)
+                : .declaration(ObjectIdentifier(parent), name: parentName, scope: scope)
             edges.append(PendingEdge(source: parentEnd, target: .node(nodeId), style: .composition))
         }
         return edges

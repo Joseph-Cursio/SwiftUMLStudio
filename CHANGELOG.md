@@ -136,6 +136,40 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   - After a `.`, `self`, `Self` and `init` are not member names, so
     `Maker.init()` is not ``func `init`()``.
 
+- **A sugared extension extends Swift's type, not a project's own of
+  that name** (#126). `[Int]`, `[String: Int]`, `[3 of Int]` and `Int?`
+  always mean Swift's `Array`, `Dictionary`, `InlineArray` and
+  `Optional`, even where the project declares a type of that name. The
+  parser named `extension [Int]` `Array` and kept nothing else, so the
+  type lookup took it for an extension of the project's `Array`:
+  - `--merge-extensions` merged its members into that type's box, in
+    every format.
+  - PlantUML, Mermaid and Nomnoml drew its `ext` edge to that type.
+  - SVG and Studio's canvas hung a type nested in it off that type, as
+    PlantUML and Nomnoml did under `--merge-extensions` or
+    `--hide-extensions`.
+  - When the access levels hid the project's type, a `fileprivate
+    struct Array` say, the sugared extension stood in for it, so the
+    hidden type's nested types hung off the sugared extension's box.
+
+  The parser now records the sugar. Asked which type a sugared extension
+  extends, the type lookup now answers a type outside the diagram, as it
+  does for an extension of `String`. The extension keeps its own box,
+  gets no `ext` edge, and its nested types hang off it. A `typealias` of
+  a sugared type, such as `typealias JSON = [String: Int]`, is read the
+  same way.
+  - Past a member path, only the base is Swift's type.
+    `extension [Int].Index` extends Swift's `Index`, not one nested in a
+    project `struct Array`. `extension [Int].Stats` still extends a
+    `Stats` the project declares in `extension [Int]`, or in
+    `extension Array` when the project has no `Array`.
+  - A bare `extension Array` still extends the project's `Array`, as in
+    Swift.
+  - Sugared extensions of one type still share a box with each other,
+    and with a bare `extension Array` when the project has no `Array`
+    (#66).
+  - An extension's id and label are unchanged.
+
 - **A chain of nested `[` no longer takes time that doubles with each
   `[`** (#148). Since swift-syntax 602, SwiftParser reads the element
   after each `[` twice, once to look for InlineArray sugar
