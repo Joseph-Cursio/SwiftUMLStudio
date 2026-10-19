@@ -80,6 +80,13 @@ internal class SyntaxStructure: NSObject, Codable, @unchecked Sendable {
     /// it. They are drawn from this item's box, as its own supertypes are (#76).
     internal var carriedSupertypes: [CarriedSupertype] = []
 
+    /// Set by `mergeExtensions` on the item extensions merge into: those extensions, in merge
+    /// order. A typealias one declares now sits among this item's members, but Swift still reads
+    /// it where the extension declares it, and takes it under the extension's spelling,
+    /// `Crate.Desc` after `typealias Crate = Outer`, so `TypeLookup.recordAliases(in:)` records it
+    /// so, as it does when extensions are drawn apart.
+    internal var mergedExtensions: [SyntaxStructure] = []
+
     /// The generic arguments an extension's extended type binds on its last component, as
     /// written: `Int` for `extension Foo<Int>`, `String, Int` for `extension [String: Int]`.
     /// `name` holds the type without them (`Foo`, `Dictionary`), so the extension is drawn,
@@ -126,6 +133,7 @@ internal class SyntaxStructure: NSObject, Codable, @unchecked Sendable {
         sourceLocation = original.sourceLocation
         module = original.module
         carriedSupertypes = original.carriedSupertypes
+        mergedExtensions = original.mergedExtensions
         boundGenericArguments = original.boundGenericArguments
         isSugared = original.isSugared
         super.init()

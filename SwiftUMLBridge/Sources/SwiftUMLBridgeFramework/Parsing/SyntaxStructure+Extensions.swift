@@ -53,6 +53,7 @@ extension Array where Element == SyntaxStructure {
             }
             processedItems.removeAll(where: { $0 == structure })
             structure.mergedInto = parent
+            parent.mergedExtensions.append(structure)
             // Before the members guard: `extension Foo: P {}` has no members, and is the commonest form.
             let scope = DeclarationScope(of: structure)
             parent.carriedSupertypes += (structure.inheritedTypes ?? []).map {
@@ -87,7 +88,9 @@ extension Array where Element == SyntaxStructure {
     /// share a box after `typealias Alias = Real`, and so do `extension JSON` and
     /// `extension [String: Int]` after `typealias JSON = [String: Int]` (#125). Sugar always
     /// extends the standard library's type, so `extension [Int]` never merges into a project's
-    /// own `Array`, which a bare `extension Array` does (#126).
+    /// own `Array`, which a bare `extension Array` does (#126). An extension whose type's name is
+    /// not sure, `extension Date.Style` after `extension Date { typealias Style = FormatStyle }`,
+    /// shares a box only with extensions spelled as it is (`TypeLookup.resolvedExtendedName(of:)`).
     private func mergeTarget(
         for anExtension: SyntaxStructure, lookup: LayoutGraphBuilder.TypeLookup,
         isDrawn: (SyntaxStructure) -> Bool
@@ -101,10 +104,14 @@ extension Array where Element == SyntaxStructure {
                 return lookup.extendedType(of: item)?.declaration == type.declaration
             }
         }
-        guard let resolvedName = lookup.resolvedExtendedName(of: anExtension) else { return nil }
+        guard let ownName = anExtension.fullName else { return nil }
+        let resolvedName = lookup.resolvedExtendedName(of: anExtension)
         return first { item in
             guard item.kind == .extension else { return false }
-            return lookup.resolvedExtendedName(of: item) == resolvedName && lookup.extendedType(of: item) == nil
+            // The names first: they rule out nearly every item, at less cost than its type's lookup.
+            if resolvedName == nil, item.fullName != ownName { return false }
+            guard lookup.resolvedExtendedName(of: item) == resolvedName else { return false }
+            return lookup.extendedType(of: item) == nil
         }
     }
 
@@ -142,6 +149,20 @@ extension SyntaxStructure {
     /// Attribute names (e.g. ["Observable", "MainActor"]) extracted from this element's declaration.
     var attributeNames: [String] {
         attributes?.compactMap(\.attribute) ?? []
+    }
+}
+
+extension SyntaxStructure {
+    /// The extension each typealias among this item's members was merged in from, by the
+    /// typealias (`mergedExtensions`): where that typealias is written, and so read.
+    var mergedTypealiasOrigins: [ObjectIdentifier: SyntaxStructure] {
+        var origins: [ObjectIdentifier: SyntaxStructure] = [:]
+        for merged in mergedExtensions {
+            for member in merged.substructure ?? [] where member.kind == .typealias {
+                origins[ObjectIdentifier(member)] = merged
+            }
+        }
+        return origins
     }
 }
 

@@ -50,7 +50,9 @@ extension LayoutGraphBuilder {
         func supertype(named written: String, from scope: Scope) -> (id: String?, isProtocol: Bool) {
             let name = lookup.qualifiedName(ofWritten: written, from: scope)
             let (type, kindIsSure) = lookup.typeWithSureKind(name, from: scope, kinds: aliasKinds)
-            guard let type else { return (fallback(named: name.name), false) }
+            guard let type else {
+                return (fallback(named: name.name, resolving: lookup.sureResolvedName(of: name, from: scope)), false)
+            }
             return (node(for: type, named: name.name), type.kind == .protocol && (kindIsSure || type.nodeId != nil))
         }
 
@@ -60,19 +62,25 @@ extension LayoutGraphBuilder {
                 return nodeId
             case .named(let written, let scope):
                 let name = lookup.qualifiedName(ofWritten: written, from: scope)
-                guard let type = lookup.type(name, from: scope) else { return fallback(named: name.name) }
+                guard let type = lookup.type(name, from: scope) else {
+                    return fallback(named: name.name, resolving: lookup.sureResolvedName(of: name, from: scope))
+                }
                 return node(for: type, named: name.name)
             case .declaration(let declaration, let name, let scope):
                 if let nodeId = idForDeclaration[declaration] { return nodeId }
                 if hiddenDeclarations.contains(declaration) { return standIn(for: declaration, named: name) }
                 guard let type = lookup.type(named: name, from: scope) else {
-                    return fallback(named: name)
+                    let written = QualifiedName(name: name, root: .asWritten)
+                    return fallback(named: name, resolving: lookup.sureResolvedName(of: written, from: scope))
                 }
                 return node(for: type, named: name)
             case .extended(let declaration, let name, let scope, let isSugared):
                 // With no type of that name visible there, the extension stands for itself.
                 guard let type = lookup.extendedType(named: name, from: scope, isSugared: isSugared) else {
-                    return idForDeclaration[declaration] ?? fallback(named: name)
+                    if let nodeId = idForDeclaration[declaration] { return nodeId }
+                    return fallback(named: name, resolving: lookup.resolvedExtendedName(
+                        named: name, from: scope, isSugared: isSugared
+                    ))
                 }
                 // For a hidden type, this very extension is its stand-in: its own lookup found it.
                 return type.nodeId ?? idForDeclaration[declaration] ?? standIn(for: type.declaration, named: name)
@@ -84,20 +92,41 @@ extension LayoutGraphBuilder {
             type.nodeId ?? standIn(for: type.declaration, named: name)
         }
 
-        /// A drawn extension of the hidden type `declaration`, one whose own lookup of `name`
-        /// finds it, or `nil` to drop the edge. The access-level filter passes extensions, so an
-        /// extension can be drawn while its type is hidden.
+        /// A drawn extension of the hidden type `declaration`, or `nil` to drop the edge: the
+        /// first one recorded under the edge's own `name` whose own lookup finds it, else under
+        /// the type's own name, else the first written through a typealias of it, as
+        /// `mergeExtensions` picks its stand-in however it is spelled (#153). The access-level
+        /// filter passes extensions, so an extension can be drawn while its type is hidden.
         private func standIn(for declaration: ObjectIdentifier, named name: String) -> String? {
-            extensionEnds.ends(named: name, in: lookup).standIns[declaration]
+            if let standIn = extensionEnds.ends(named: name, in: lookup).standIns[declaration] { return standIn }
+            if let own = lookup.recordedName(of: declaration), own != name,
+               let standIn = extensionEnds.ends(named: own, in: lookup).standIns[declaration] {
+                return standIn
+            }
+            return extensionEnds.aliasSpelled(in: lookup).standIns[declaration]
         }
 
         /// The end for a name no visible type takes, so a type outside the diagram, such as
         /// `String`: the first drawn extension of that same outside type, one whose own lookup
         /// finds no visible type of the name either (#55 pins the first), or `nil` when there is
-        /// none. An extension of a type the reference cannot see, a hidden `fileprivate` one,
-        /// say, extends something else and never stands in.
-        private func fallback(named name: String) -> String? {
-            extensionEnds.ends(named: name, in: lookup).fallback
+        /// none. One recorded under `name` comes first, then one recorded under the name the type
+        /// comes to, `resolved` (`TypeLookup.sureResolvedName(of:from:depth:)`), then one written
+        /// through a typealias that comes to it, as `mergeExtensions` gives that type one box:
+        /// `struct T: CustomStringConvertible` ends on `extension Describable` after
+        /// `typealias Describable = CustomStringConvertible` (#125). A name no typealias takes is
+        /// trusted as written, as the first step trusts it, so `resolved` is worked out only for
+        /// one a typealias takes; with no sure name for it, as written in an extension of a type
+        /// outside the diagram, where it may be that type's member, only `name` counts. An
+        /// extension of a type the reference cannot see, a hidden `fileprivate` one, say, extends
+        /// something else and never stands in.
+        private func fallback(named name: String, resolving resolved: @autoclosure () -> String?) -> String? {
+            if let fallback = extensionEnds.ends(named: name, in: lookup).fallback { return fallback }
+            guard lookup.namesTypealias(name) else { return extensionEnds.aliasSpelled(in: lookup).fallbacks[name] }
+            guard let resolved = resolved() else { return nil }
+            if resolved != name, let fallback = extensionEnds.ends(named: resolved, in: lookup).fallback {
+                return fallback
+            }
+            return extensionEnds.aliasSpelled(in: lookup).fallbacks[resolved]
         }
     }
 }

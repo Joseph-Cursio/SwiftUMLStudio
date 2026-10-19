@@ -263,6 +263,68 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   reference, the user guide and the Studio guide now say a
   protocol the sources declare, drawn or hidden, takes realization.
 
+- **An extension written through a typealias takes every spelling's
+  edges**. After `typealias Describable = CustomStringConvertible`,
+  `extension Describable` extends `CustomStringConvertible`, and
+  `--merge-extensions` already gave both spellings one box (#125). An
+  edge end was looked up only among the extensions written with the
+  edge's own spelling, in every format:
+  - `struct T: CustomStringConvertible` reached no box, while
+    `struct S: Describable` reached `extension Describable`.
+  - A hidden protocol `P` whose only extension is written through
+    `fileprivate typealias Q = P` had no stand-in for an edge written
+    `P`.
+  - Under `--merge-extensions`, with both spellings extended, an edge
+    written with the merged-away spelling was dropped.
+
+  An edge now ends on an extension of its own spelling when there is
+  one, as before. Otherwise it ends on an extension spelled with the
+  type's own name, and failing that on the first drawn extension
+  written through a typealias of it, for a type in the diagram or
+  outside it. A type nested in an extension the diagram hides hangs off
+  its type's other extension in the same way.
+  - A name written inside an extension of a type outside the diagram
+    may be one of that type's members, which the diagram cannot see.
+    So `extension Date { typealias Style = FormatStyle }` means
+    `Date.FormatStyle`, not Foundation's protocol `FormatStyle`. Such an
+    extension is no other spelling's end, and `--merge-extensions` no
+    longer folds it into `extension FormatStyle`. The same holds when
+    the extension spells the outside type through a typealias, as in
+    `extension Day` after `typealias Day = Date`.
+  - A name written there that the project declares, such as its own
+    `typealias Describable`, is taken as the project's, as everywhere
+    else, though the outside type may have a member of that name, which
+    the diagram cannot see. A name that no typealias takes is trusted
+    as written. So
+    `struct Stamp: CustomStringConvertible` inside `extension Date`
+    ends on `extension CustomStringConvertible`, or, under
+    `--merge-extensions`, on the box that extension merged into.
+  - A name written inside an extension of a project type is the
+    project's. This holds with nested types hidden, when the extension
+    spells the type through a typealias, as in `extension Crate.Inner`
+    after `typealias Crate = Outer`, when it writes the type's module
+    first, as `extension MyModule.Outer` does under `--package`, and
+    for a project type nested in an outside type's extension, as
+    `extension Date.Box` after `extension Date { struct Box {} }`.
+  - A name written inside an extension whose name is a typealias is
+    looked up among its type's members, as Swift does: inside
+    `extension Crate`, after `typealias Crate = Outer`, `Inner` is
+    `Outer.Inner`, not a top-level `Inner`, and inside `extension Day`,
+    after `typealias Day = Date`, `P` is the `Date.P` the project
+    declares in `extension Date`. An extension that writes a typealias
+    only as the first part of its name, as `extension Crate.Mid` does,
+    is not read this way yet.
+  - A typealias an extension spelled through a typealias declares is
+    also known by its type's own name: after
+    `extension Crate { typealias D = Date }`, `Outer.D` is `Date`, so
+    `Style` inside `extension Outer.D` may be `Date.FormatStyle`.
+  - Under `--merge-extensions`, a typealias an extension declares is
+    read where that extension declares it, not in the scope of the type
+    it merges into. It is also still known by the extension's own
+    spelling, so `extension Crate.Desc` after
+    `extension Crate { typealias Desc = CustomStringConvertible }` ends
+    edges as it does drawn apart.
+
 - **A chain of nested `[` no longer takes time that doubles with each
   `[`** (#148). Since swift-syntax 602, SwiftParser reads the element
   after each `[` twice, once to look for InlineArray sugar

@@ -91,16 +91,27 @@ extension LayoutGraphBuilder {
         private var declaredForName: [String: [Declared]] = [:]
         /// `declaredForName` without its extensions, which a name never means. A name is looked
         /// up among these, so a namespace's thousand extensions do not slow a lookup of its name.
-        private var typesForName: [String: [Declared]] = [:]
+        private(set) var typesForName: [String: [Declared]] = [:]
         /// `typesForName` by the file each was declared in, so a name with a candidate in the
         /// writer's own file, which `DeclarationScope.nearest` always picks, is looked up there alone.
-        private var typesForNameInFile: [String: [String: [Declared]]] = [:]
+        private(set) var typesForNameInFile: [String: [String: [Declared]]] = [:]
         /// The type each declaration's enclosing extension extends, once worked out
         /// (`enclosingExtensionType(of:depth:)`); `record` starts a new one.
         private var enclosingTypes = EnclosingTypes()
         /// The names a type declared in an extension is recorded under, the only names a dotted
         /// name as written can be told apart by (`fitsEachAlone(_:)`).
         private var namesWithExtendedTypes: Set<String> = []
+        /// Every extension recorded, with the name it was recorded under, in recording order.
+        private(set) var recordedExtensions: [(name: String, declared: Declared)] = []
+        /// The name each declaration was first recorded under.
+        private var nameForDeclaration: [ObjectIdentifier: String] = [:]
+        /// The names a typealias is recorded under (`namesTypealias(_:)`), so asking costs no scan
+        /// of a name's many same-named types.
+        private(set) var aliasNames: Set<String> = []
+        /// The nested types the items do not list, as while nested types are hidden, and their
+        /// typealiases, by full name (`unlistedMembers(of:named:)`). Never what a name means:
+        /// only whether an extension is of a project type goes by them.
+        var unlistedMembers: [String: [Declared]] = [:]
 
         /// A lookup of every type, extension and typealias in `items`, none of them drawn.
         init(of items: [SyntaxStructure] = []) {
@@ -114,32 +125,25 @@ extension LayoutGraphBuilder {
 
         mutating func record(_ declared: Declared, named name: String) {
             declaredForName[name, default: []].append(declared)
-            if !declared.isExtension {
+            if declared.isExtension {
+                recordedExtensions.append((name, declared))
+            } else {
                 typesForName[name, default: []].append(declared)
                 if let filePath = declared.scope.filePath {
                     typesForNameInFile[name, default: [:]][filePath, default: []].append(declared)
                 }
                 if declared.extended != nil { namesWithExtendedTypes.insert(name) }
+                if declared.kind == .typealias { aliasNames.insert(name) }
+            }
+            if nameForDeclaration[declared.declaration] == nil {
+                nameForDeclaration[declared.declaration] = name
             }
             enclosingTypes = EnclosingTypes()
         }
 
-        /// Records the typealiases among `items` and among their members, a member as
-        /// `Container.Alias`, so a name written through one means the type it aliases (#125). Run
-        /// after the types are recorded: when nothing else tells two candidates apart, `nearest`
-        /// picks the first, and that should be a type.
-        mutating func recordAliases(in items: [SyntaxStructure]) {
-            for item in items {
-                if item.kind == .typealias, let name = item.fullName ?? item.name {
-                    record(Declared(item, kind: .typealias, nodeId: nil), named: name)
-                }
-                guard let kind = item.kind, ElementKind.processable.contains(kind),
-                      let containerName = item.fullName ?? item.name else { continue }
-                for member in item.substructure ?? [] where member.kind == .typealias {
-                    guard let name = member.name else { continue }
-                    record(Declared(member, kind: .typealias, nodeId: nil, in: item), named: "\(containerName).\(name)")
-                }
-            }
+        /// The name `declaration` was recorded under.
+        func recordedName(of declaration: ObjectIdentifier) -> String? {
+            nameForDeclaration[declaration]
         }
 
         /// Every declaration recorded under `name`, types, typealiases and extensions, in
@@ -201,14 +205,6 @@ extension LayoutGraphBuilder {
             return resolvedName(of: targetName, from: nearest.scope, depth: depth + 1)
         }
 
-        /// The name the type the extension `anExtension` extends comes to (`resolvedName(of:from:)`),
-        /// so two extensions of one type outside the diagram share it however each spells the
-        /// type. Written with sugar, it is the standard-library type's name as it stands (#126).
-        func resolvedExtendedName(of anExtension: SyntaxStructure) -> String? {
-            guard let name = anExtension.fullName else { return nil }
-            return anExtension.isSugared ? name : resolvedName(of: name, from: Scope(of: anExtension))
-        }
-
         /// The name a type written as `name` in a declaration's inheritance clause is recorded
         /// under: `<enclosing>.<name>` for the innermost type around the declaration that has
         /// such a member (`DeclarationScope.enclosingTypes`), as Swift looks a name up, and
@@ -221,7 +217,10 @@ extension LayoutGraphBuilder {
         /// the lookups it goes through.
         func qualifiedName(ofWritten name: String, from scope: Scope, depth: Int = 0) -> QualifiedName {
             let asWritten = QualifiedName(name: name, root: .asWritten)
-            let names = scope.enclosingTypes.map { "\($0).\(name)" }
+            var names = scope.enclosingTypes.map { "\($0).\(name)" }
+            // An extension written through a typealias, `extension Crate` after
+            // `typealias Crate = Outer`, sees the members recorded under its type's own name too.
+            if let typeName = extendedTypeName(around: scope, depth: depth) { names.append("\(typeName).\(name)") }
             // Most supertypes, `Encodable` say, are no enclosing type's member. Working the root
             // out takes a lookup of the enclosing extension's type, so it waits for a name a type
             // is recorded under.
@@ -233,7 +232,7 @@ extension LayoutGraphBuilder {
 
         /// The nearest of the types and typealiases recorded under `name` that are visible from
         /// `scope` and that it can mean there (`fitting(_:for:from:depth:)`).
-        private func nearestDeclaration(_ name: QualifiedName, from scope: Scope, depth: Int) -> Declared? {
+        func nearestDeclaration(_ name: QualifiedName, from scope: Scope, depth: Int) -> Declared? {
             if let local = localNearest(name, from: scope, depth: depth) { return local }
             return scope.nearest(among: candidates(name, from: scope, depth: depth), scope: \.scope)
         }
@@ -334,7 +333,7 @@ extension LayoutGraphBuilder {
         /// allows: a `private` or `fileprivate` type only in its own file, and a type below
         /// `package` only in its own module. A file or module that is unknown on either side is
         /// taken to be the same; parsed sources always carry a file path.
-        private func isVisible(_ declared: Declared, from lookup: Scope, depth: Int) -> Bool {
+        func isVisible(_ declared: Declared, from lookup: Scope, depth: Int) -> Bool {
             if lookup.filePath == nil || declared.scope.filePath == nil || lookup.filePath == declared.scope.filePath {
                 return true
             }
