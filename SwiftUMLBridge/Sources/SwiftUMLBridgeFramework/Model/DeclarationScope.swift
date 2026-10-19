@@ -8,6 +8,8 @@ import Foundation
 struct DeclarationScope {
     let filePath: String?
     let module: String?
+    /// The modules the declaration's file imports; nil when unknown (`SyntaxStructure.imports`).
+    let imports: Set<String>?
     /// The full names of the types whose members a name written in the declaration's
     /// inheritance clause sees, innermost first: each type around it, up to and including the
     /// type an enclosing extension extends, which sees no further out. Empty for a top-level
@@ -19,12 +21,14 @@ struct DeclarationScope {
     init(of item: SyntaxStructure, in container: SyntaxStructure? = nil) {
         filePath = item.sourceLocation?.filePath ?? container?.sourceLocation?.filePath
         module = item.module ?? container?.module
+        imports = item.imports ?? container?.imports
         enclosingTypes = item.kind == .extension ? [] : Self.enclosingTypes(from: container ?? item.parent)
     }
 
     init(filePath: String?, module: String?) {
         self.filePath = filePath
         self.module = module
+        imports = nil
         enclosingTypes = []
     }
 

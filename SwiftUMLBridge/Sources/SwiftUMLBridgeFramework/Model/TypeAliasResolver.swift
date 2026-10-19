@@ -53,22 +53,36 @@ struct TypeAliasResolver {
 
     /// The type name `name` comes to where a declaration in `scope` writes it in its inheritance
     /// clause: a member of a type around the declaration first, as Swift looks it up
-    /// (`TypeLookup.qualifiedName(ofWritten:from:)`, #157), then through every typealias.
+    /// (`TypeLookup.qualifiedName(ofWritten:from:)`, #157), then through every typealias. A module
+    /// qualifier is not read: the name ends an edge on the first box of that name, which for a
+    /// bare `Foo` could be another module's `Foo`, so `ModA.Foo` stays as written, and
+    /// `DiagramContext.addLinking` ends it on the declaration's box when no box has it (#124). A
+    /// member of `extension ModA.Foo` is still looked for in ModA's `Foo` first, and found as
+    /// `ModA.Foo.Base`, a name no box has, so `addLinking` ends it on `Foo.Base`.
     func resolve(_ name: String, from scope: DeclarationScope) -> String {
         guard let lookup else { return name }
-        return lookup.resolvedName(of: lookup.qualifiedName(ofWritten: name, from: scope), from: scope)
+        let qualified = lookup.qualifiedName(ofWritten: name, from: scope)
+        return lookup.resolvedName(of: qualified, from: scope, readingModules: false)
     }
 
     /// Whether `patterns` exclude the supertype edge to `supertype`, written in `scope`: by the
     /// name as written, as before, or by the type it comes to, so excluding `Proto` also hides
     /// `struct S: Q` after `typealias Q = Proto`, and excluding `Outer.Base` hides `class Near:
-    /// Base` in `enum Outer`.
+    /// Base` in `enum Outer`. A module qualifier is read here (#124), as SVG reads it, so
+    /// excluding `Q` hides `struct S: ModA.Q`, and excluding `StoreType` or `Store` hides
+    /// `struct S: Lib.StoreType` after Lib's `typealias StoreType = Store`.
     func isExcluded(
         _ supertype: SyntaxStructure, from scope: DeclarationScope, byPatterns patterns: [String]?
     ) -> Bool {
         if supertype.isExcluded(byPatterns: patterns) { return true }
-        guard patterns != nil, let name = supertype.name?.removeAngleBracketsWithContent() else { return false }
-        let resolved = resolve(name, from: scope)
-        return resolved != name && SyntaxStructure(name: resolved).isExcluded(byPatterns: patterns)
+        guard let lookup, patterns?.isEmpty == false, let name = supertype.name?.removeAngleBracketsWithContent() else {
+            return false
+        }
+        let qualified = lookup.qualifiedName(ofWritten: name, from: scope)
+        var resolved = [resolve(name, from: scope), lookup.resolvedName(of: qualified, from: scope)]
+        if lookup.readsModule(qualified, from: scope), let recorded = lookup.recordedName(of: qualified, from: scope) {
+            resolved.append(recorded)
+        }
+        return resolved.contains { $0 != name && SyntaxStructure(name: $0).isExcluded(byPatterns: patterns) }
     }
 }

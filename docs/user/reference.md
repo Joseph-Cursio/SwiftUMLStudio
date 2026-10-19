@@ -679,7 +679,8 @@ relationships:
       # the type it aliases: after `typealias Q = Proto`, either `Q` or `Proto`
       # hides `struct S: Q`. A short name inside a type is also matched by the
       # nested type it means: in `enum Outer`, `Base` or `Outer.Base` hides
-      # `class Near: Base`.
+      # `class Near: Base`. With --package, a name written through its module
+      # is also matched by the type it means: `Q` hides `struct S: ModA.Q`.
       # Pooled with realize.exclude: a name in either list hides every
       # inheritance or conformance edge to that class or protocol, whichever
       # arrow it is drawn with. Extension edges are dependency.exclude's.
@@ -712,9 +713,12 @@ relationships:
       # Extended-type names whose extension edge is hidden, written without
       # generic arguments ("Foo" for extension Foo<Int>). An extension of a
       # nested type is matched with and without the types around it: "Inner"
-      # and "Outer.Inner" both reach extension Outer.Inner. The extension's
-      # box and its own conformances stay. No effect when extensions are
-      # merged or hidden.
+      # and "Outer.Inner" both reach extension Outer.Inner. The type the
+      # extension extends is matched as it is declared too, so "Real" hides
+      # the edge of extension Alias after typealias Alias = Real, and
+      # "Foo.Inner" that of extension ModA.Foo.Inner. The extension's box and
+      # its own conformances stay. No effect when extensions are merged or
+      # hidden.
       - "Generated*"
     style:
       lineStyle: dotted
@@ -1065,7 +1069,7 @@ Arrow notation used in generated class diagrams. Both PlantUML and Mermaid use t
 | Composition (nested) | `Outer +-- Inner` | Nested type declaration **(not drawn in Mermaid)** |
 | Generic link | `A -- B` | Generic relationship |
 
-An extension's edge goes to the type its name means where the extension is written: `extension Outer.Inner` to the nested type, and, of two types named `Foo`, the one in the extension's file or module. An extension written through a typealias is an extension of the aliased type: after `typealias Alias = Real`, `extension Alias` gets the edge `Real <.. Alias`, and `--merge-extensions` merges it into `Real`. An alias ranks with the types of its name, so a module's own `typealias Inner = Outer.Inner` shadows an imported `Inner`, and a `fileprivate` alias names its type only in its own file. An extension of a type the diagram hides or does not declare gets no edge. Sequence and activity diagrams, supertype edges in every format, and `deps --types` follow typealiases the same way: after `typealias Q = Proto`, `struct S: Q` is drawn exactly as `struct S: Proto` is.
+An extension's edge goes to the type its name means where the extension is written: `extension Outer.Inner` to the nested type, and, of two types named `Foo`, the one in the extension's file or module. An extension written through a typealias is an extension of the aliased type: after `typealias Alias = Real`, `extension Alias` gets the edge `Real <.. Alias`, and `--merge-extensions` merges it into `Real`. An alias ranks with the types of its name, so a module's own `typealias Inner = Outer.Inner` shadows an imported `Inner`, and a `fileprivate` alias names its type only in its own file. An extension of a type the diagram hides or does not declare gets no edge. With `--package`, a name may start with a module: in ModB, `extension ModA.Foo` extends ModA's `Foo`, `extension ModA.Foo.Inner` its nested type, and `my_lib.Foo` a type in the target `my-lib`, which Swift names `my_lib`. As in Swift, the file must import the module or be in it, and a type named like the module comes first when the file can see it, in its own module or one it imports: `Networking.Request` is a `Request` nested in `enum Networking` when there is one. Only the file's own `import` lines count, not a module another re-exports with `@_exported import`, and a type the diagram does not declare, such as Foundation's `Calendar`, does not keep a target named `Calendar` from being read as a module. A qualifier that names no target of the package, such as `Swift` in `extension Swift.String`, is kept as part of the name. When the diagram hides a type but draws its extensions, an edge to the type ends on one of them: under `--merge-extensions` the box they merged into, which is the first that names the type without a module; drawn apart, the first spelled as the edge spells the type, else as the type's own name, else through its module, else through a typealias. A name written inside `extension ModA.Foo` is looked for among `Foo`'s members first, in every format. PlantUML, Mermaid and Nomnoml end a supertype edge on the first box with the name it comes to; when no box has that name, or only the box of an extension such as `extension ModA.Base`, they end it on the box of the type the name means, as SVG does, so `struct S: ModA.Q` ends on ModA's `Q`. A name some box has still ends there, even where Swift means another type of that name, which SVG ends it on. Sequence and activity diagrams, supertype edges in every format, and `deps --types` follow typealiases the same way: after `typealias Q = Proto`, `struct S: Q` is drawn exactly as `struct S: Proto` is.
 
 A supertype edge goes to the type its name means where the type's clause is written, as Swift reads it: first a member of each type around the declaration, innermost first, then the file and module. In `enum Outer { class Base {}; class Near: Base {} }`, `Near`'s edge ends on `Outer.Base`, even beside a top-level `class Base`. A type in `extension Outer.Box` sees `Box`'s members, but not `Outer`'s. An extension's own clause, `extension Outer.Near: Shape`, is read at file scope, so there `Shape` is the top-level one. The superclass of an enclosing class is not looked in.
 

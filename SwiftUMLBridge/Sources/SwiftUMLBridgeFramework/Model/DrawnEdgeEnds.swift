@@ -32,6 +32,11 @@ struct DrawnEdgeEnds {
         endIds.id(of: end).flatMap { elementForKey[$0] }
     }
 
+    /// Whether `item` is a drawn extension of a drawn type (`extendedType(of:)`).
+    func isExtensionOfDrawnType(_ item: SyntaxStructure) -> Bool {
+        item.kind == .extension && extendedType(of: item) != nil
+    }
+
     /// The drawn type the drawn extension `anExtension` extends: the one its name means where it
     /// is written, as `mergeExtensions` merges it into (#107). `nil` when that type is hidden, or
     /// when no type of the name is visible there, as for an extension of `String`, or of `[Int]`
