@@ -45,9 +45,9 @@ extension LayoutGraphBuilder {
             if let known = qualifiedStandInsForName[name] { return known }
             var standIns: [ObjectIdentifier: String] = [:]
             for (spelled, candidate) in lookup.extensions(named: lookup.moduleQualifiedNames(of: name)) {
-                guard let nodeId = candidate.nodeId,
-                      let type = lookup.extendedType(named: spelled, from: candidate.scope, isSugared: candidate.isSugared),
-                      standIns[type.declaration] == nil else { continue }
+                guard let nodeId = candidate.nodeId, let type = lookup.extendedType(
+                    named: spelled, from: candidate.scope, isSugared: candidate.isSugared
+                ), standIns[type.declaration] == nil else { continue }
                 standIns[type.declaration] = nodeId
             }
             qualifiedStandInsForName[name] = standIns
@@ -60,9 +60,9 @@ extension LayoutGraphBuilder {
             if let aliasStandIns { return aliasStandIns }
             var standIns: [ObjectIdentifier: String] = [:]
             for (spelled, candidate) in lookup.extensions(named: lookup.aliasNames.sorted()) {
-                guard let nodeId = candidate.nodeId,
-                      let type = lookup.extendedType(named: spelled, from: candidate.scope, isSugared: candidate.isSugared),
-                      standIns[type.declaration] == nil else { continue }
+                guard let nodeId = candidate.nodeId, let type = lookup.extendedType(
+                    named: spelled, from: candidate.scope, isSugared: candidate.isSugared
+                ), standIns[type.declaration] == nil else { continue }
                 standIns[type.declaration] = nodeId
             }
             aliasStandIns = standIns
