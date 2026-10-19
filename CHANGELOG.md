@@ -191,9 +191,47 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
     Only a name two such types share is told apart.
   - `relationships.inheritance.exclude` matches the supertype the name
     now means.
-  - PlantUML, Mermaid and Nomnoml write a supertype by its name, so
-    when both `Array.Base` boxes are drawn, they still end the edge on
-    the first. SVG and Studio's canvas reach the right one.
+  - When both `Array.Base` boxes are drawn, every format ends the edge
+    on the right one (see the next entry).
+
+- **PlantUML, Mermaid and Nomnoml end a supertype edge where SVG does**.
+  They wrote the end as the supertype's name, so when two boxes shared
+  it, the edge reached the first, while SVG ends it on the type the
+  name means where it is written. Now they end it on that same box:
+  - a supertype in the file's own `fileprivate class Base`, not
+    another file's;
+  - a hidden type's stand-in (#153), not another hidden type's of its
+    name, nor `extension Int?` beside a hidden `protocol Optional`;
+  - the `Array.Base` the name means when a project `struct Array` and
+    `extension [Int]` both declare one.
+
+  Where SVG finds no box to end the edge on, the text formats wrote the
+  name, and so ended it on whatever drawn box had that name. Now they
+  leave the edge out, as SVG does. This covers a hidden type with no
+  stand-in beside another type's box of its name, and Swift's
+  `Identifiable` beside another file's `fileprivate protocol
+  Identifiable`. With no box of that name, the edge is still written to
+  a node of its own, as for `Codable`.
+
+  Under `--merge-extensions`, a conformance a merged extension carries
+  is now left out only when it ends on the same box as one drawn
+  before it, as SVG does (#76). The name no longer decides it. So each
+  file's extension of one type still conforms to its own
+  `fileprivate protocol P`, and a conformance written once directly and
+  once through a typealias is drawn once.
+
+  An edge that ends on a protocol is now labelled and styled
+  `conforms to`, with the realization arrow, and one that ends on a
+  class `inherits`, with the arrow of the type it starts at. Both used
+  to follow the first box of the name drawn so far:
+  - an edge to a class took the realization arrow and the `conforms to`
+    label when a protocol of the class's name was drawn first;
+  - an edge from a protocol to a parent protocol drawn after it was
+    labelled `inherits`.
+
+  An edge that ends on a stand-in, another extension or no drawn box
+  still follows the first box of its name drawn so far, which can be
+  another file's type of that name.
 
 - **A chain of nested `[` no longer takes time that doubles with each
   `[`** (#148). Since swift-syntax 602, SwiftParser reads the element
@@ -883,10 +921,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   type takes no name written in another file, nor one below `package` a
   name written in another module. A type is as visible as the most
   restrictive of itself, the types and the extension enclosing it, and
-  the type that extension extends. (The text formats link a supertype or
-  conformance by bare name, so there such an edge still lands on
-  whichever declaration holds that name; a nested type's edge follows
-  SVG, see above.)
+  the type that extension extends. (The text formats now end a supertype
+  or conformance edge where SVG does, see "PlantUML, Mermaid and
+  Nomnoml end a supertype edge where SVG does"; a nested type's edge
+  follows SVG too, see above.)
 - **`relationships.realize.exclude` and `relationships.dependency.exclude`
   now hide edges** (#113). Both were decoded but never read, so the
   reference's own `realize.exclude: [Codable, Sendable]` hid nothing.
