@@ -55,7 +55,8 @@ struct TypeAliasResolver {
     /// clause: a member of a type around the declaration first, as Swift looks it up
     /// (`TypeLookup.qualifiedName(ofWritten:from:)`, #157), then through every typealias. A module
     /// qualifier is not read: the name ends an edge on the first box of that name, which for a
-    /// bare `Foo` could be another module's `Foo`, so `ModA.Foo` stays as written (#124).
+    /// bare `Foo` could be another module's `Foo`, so `ModA.Foo` stays as written, and
+    /// `DiagramContext.addLinking` ends it on the declaration's box when no box has it (#124).
     func resolve(_ name: String, from scope: DeclarationScope) -> String {
         guard let lookup else { return name }
         let qualified = lookup.qualifiedName(ofWritten: name, from: scope, readingModules: false)
@@ -72,7 +73,7 @@ struct TypeAliasResolver {
         _ supertype: SyntaxStructure, from scope: DeclarationScope, byPatterns patterns: [String]?
     ) -> Bool {
         if supertype.isExcluded(byPatterns: patterns) { return true }
-        guard let lookup, patterns != nil, let name = supertype.name?.removeAngleBracketsWithContent() else {
+        guard let lookup, patterns?.isEmpty == false, let name = supertype.name?.removeAngleBracketsWithContent() else {
             return false
         }
         let qualified = lookup.qualifiedName(ofWritten: name, from: scope)

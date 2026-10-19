@@ -115,8 +115,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   `--merge-extensions` left the members in a box of their own, and a
   type nested in the extension hung off that box. A name whose first
   component is a target of the package now means the rest of the name
-  in that target, for the `ext` edges and nesting edges of every format,
-  for `--merge-extensions`, and for SVG's supertype edges.
+  in that target, for the edges of every format and for
+  `--merge-extensions`.
   - The name is read as Swift reads it. The file must import the target
     or be in it. The full name is tried first, so `Networking.Request`
     is still a `Request` nested in `enum Networking`, and a type named
@@ -139,19 +139,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   - A qualifier that names no target, such as `Swift` in
     `extension Swift.String`, and every qualifier without `--package`,
     is kept as part of the name.
-  - Supertype edges in PlantUML, Mermaid and Nomnoml end on a name, the
-    first box of that name, which cannot tell ModA's `Q` from another
-    module's, so they read no module qualifier and are drawn as before:
-    `struct S: ModA.Q` still ends on `ModA.Q`, and a supertype inside
-    `extension ModA.Foo` is not looked for among `Foo`'s members. SVG
-    ends both on the type they mean.
+  - PlantUML, Mermaid and Nomnoml end a supertype edge on the first box
+    with the name as written, so a name some box already has still ends
+    there, as before, even where Swift means another type of that name:
+    beside ModB's own `Base`, `class Child: Base` inside
+    `extension ModA.Foo` ends on ModB's `Base`, where SVG ends it on
+    ModA's `Foo.Base`. A name no box has used to give the edge an
+    undeclared node of its own; it now ends on the box of the type the
+    name means, as in SVG, so `struct S: ModA.Q` ends on ModA's `Q`, and
+    `struct S: Lib.StoreType` on Lib's `Store`.
   - Still unread: a type declared inside `extension ModA.Foo` is known
     by that spelling, so `extension Foo.Nested` written where `Foo` is
-    ModA's does not reach it; a type outside the diagram, such as
+    ModA's does not reach it. A type outside the diagram, such as
     Foundation's `Calendar`, does not keep a target named `Calendar`
-    from being read as a module in a file that imports both; and
-    `deps --types` draws `extension ModA.Foo: P` apart from ModA's
-    `Foo`.
+    from being read as a module, in a file of that target or one that
+    imports it. Only a file's own imports are read, so a module it sees
+    through another's `@_exported import` neither names a module nor
+    keeps one from being read. `deps --types` draws
+    `extension ModA.Foo: P` apart from ModA's `Foo`.
+  - Reading names through modules costs lookups where they resolve: a
+    package of deep types nested in module-qualified extensions across
+    many targets draws about a third slower, and gets the edges it was
+    missing. Each lookup also copies less than before, which makes
+    lookup-heavy diagrams faster: one of deep types nested in plain
+    extensions across many targets drew in 49 s and now takes 32 s.
 
 - **An edge to a hidden type ends on the extension that stands in for
   it, however the edge spells the type** (#124, #153). When the diagram

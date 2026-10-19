@@ -24,14 +24,14 @@ extension LayoutGraphBuilder.TypeLookup {
         guard let dot = name.firstIndex(of: "."), name.index(after: dot) < name.endIndex else { return nil }
         let qualifier = String(name[..<dot])
         let named = modules.modules(namedBy: qualifier)
-        guard !named.isEmpty, canName(qualifier, modules: named, from: scope),
+        let rest = String(name[name.index(after: dot)...])
+        let declared = named.isEmpty ? [] : declarations(named: rest).filter { !$0.isExtension }
+        guard !declared.isEmpty, canName(qualifier, modules: named, from: scope),
               !shadows(qualifier, from: scope, depth: depth) else {
             return nil
         }
-        let rest = String(name[name.index(after: dot)...])
-        let candidates = declarations(named: rest).filter {
-            !$0.isExtension && isVisible($0, from: scope, depth: depth)
-                && owningModule(of: $0, depth: depth).map(named.contains) == true
+        let candidates = declared.filter {
+            isVisible($0, from: scope, depth: depth) && owningModule(of: $0, depth: depth).map(named.contains) == true
         }
         return scope.nearest(among: candidates, scope: \.scope).map { Match(declared: $0, name: rest) }
     }
@@ -59,13 +59,21 @@ extension LayoutGraphBuilder.TypeLookup {
     }
 
     /// Whether `name`, written in `scope`, means a type only once its first component is read as
-    /// a module: `ModA.Foo`, but not `Foo`, nor `Outer.Inner` for a nested type. A name whose
-    /// first component names no module of the diagram is answered without a lookup.
+    /// a module: `ModA.Foo`, but not `Foo`, nor `Outer.Inner` for a nested type. A name that
+    /// cannot be read so (`mayReadModule`) is answered without a lookup.
     func readsModule(_ name: String, from scope: Scope) -> Bool {
-        guard let dot = name.firstIndex(of: "."),
-              !modules.modules(namedBy: String(name[..<dot])).isEmpty else { return false }
+        guard mayReadModule(name) else { return false }
         return nearestMatch(named: name, from: scope, depth: 0, readingModules: false) == nil
             && moduleMatch(named: name, from: scope, depth: 0) != nil
+    }
+
+    /// Whether `name`'s first component names a module of the diagram and some type is recorded
+    /// under the rest of it: a dictionary check, before any lookup.
+    func mayReadModule(_ name: String) -> Bool {
+        guard let dot = name.firstIndex(of: "."), !modules.modules(namedBy: String(name[..<dot])).isEmpty else {
+            return false
+        }
+        return declarations(named: String(name[name.index(after: dot)...])).contains { !$0.isExtension }
     }
 
     /// The module of the outermost type `declared` belongs to: its own, or for a declaration

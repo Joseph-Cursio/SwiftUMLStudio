@@ -122,9 +122,18 @@ struct ModuleQualifiedScopeTests {
             struct S: ModA.P {}
             struct T: P {}
             """
-        let graph = try graph([("ModA", modA), ("ModB", modB)], Self.internalMerged)
+        let files: [(module: String?, source: String)] = [("ModA", modA), ("ModB", modB)]
+        let graph = try graph(files, Self.internalMerged)
         #expect(graph.owner(of: "fromB") == "P")
         #expect(graph.edgeEnds.sorted() == ["S -> P", "T -> P"])
+        // The text formats end `S: ModA.P` on the merged box too, as they end `T: P`.
+        let text = DiagramScript(
+            items: try moduleQualifiedItems(files), configuration: Configuration(elements: Self.internalMerged)
+        ).text
+        let edges = ClassDiagramIds.lines(of: text, containing: "<|").sorted()
+        #expect(edges.count == 2)
+        #expect(edges.allSatisfy { $0.hasPrefix("P <|") })
+        #expect(edges.map { $0.replacingOccurrences(of: " S ", with: " T ") }.allSatisfy { $0 == edges[1] })
     }
 
     /// The first extension of the hidden `Foo` spells it through a typealias and its module, so
@@ -146,6 +155,49 @@ struct ModuleQualifiedScopeTests {
         let graph = try graph([("ModA", modA), ("ModB", modB)], Self.internalMerged)
         #expect(graph.owner(of: "direct") == "ModA.Thing")
         #expect(graph.edgeEnds == ["ModA.Thing -> Foo.Kid"])
+    }
+
+    /// `elements.exclude` names `Outer.Inner`, which hides the type and ModA's `extension Outer.Inner`
+    /// but not ModB's `extension ModA.Outer.Inner`. The hidden extension's members must not come
+    /// back by merging into the one that is drawn.
+    @Test("an excluded extension does not merge into a host spelled through a module")
+    func excludedExtensionStaysHidden() throws {
+        let modA = """
+            public enum Outer {
+                public struct Inner {}
+            }
+
+            extension Outer.Inner {
+                func secretA() {}
+            }
+            """
+        let modB = "import ModA\n\nextension ModA.Outer.Inner {\n    func fromB() {}\n}\n"
+        let excluding = ElementOptions(showExtensions: .merged, exclude: ["Outer.Inner"])
+        let graph = try graph([("ModA", modA), ("ModB", modB)], excluding)
+        #expect(graph.owner(of: "fromB") == "ModA.Outer.Inner")
+        #expect(graph.owner(of: "secretA") == nil)
+    }
+
+    /// The alias is declared in `extension ModA.Foo`, so it is `Foo.Alias` too, as it is once
+    /// merged into `Foo`, and `extension Foo.Alias` extends `Bar` with and without merging.
+    @Test("a typealias declared in a qualified extension is also known by the type's own name")
+    func aliasInQualifiedExtension() throws {
+        let modA = "public struct Foo {\n    public init() {}\n}\n\npublic struct Bar {\n    public init() {}\n}\n"
+        let modB = """
+            import ModA
+
+            extension ModA.Foo {
+                typealias Alias = Bar
+            }
+
+            extension Foo.Alias {
+                func viaAlias() {}
+            }
+            """
+        let files: [(module: String?, source: String)] = [("ModA", modA), ("ModB", modB)]
+        #expect(try graph(files).owner(of: "viaAlias") == "Bar")
+        let text = DiagramScript(items: try moduleQualifiedItems(files), configuration: Configuration()).text
+        #expect(ClassDiagramIds.lines(of: text, containing: " : ext").contains("Bar <.. Foo.Alias : ext"))
     }
 
     /// `S: Alias` ends where the text formats end it, on the box named `Q`, before the box of

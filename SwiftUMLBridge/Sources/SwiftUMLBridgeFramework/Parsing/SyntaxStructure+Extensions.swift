@@ -219,7 +219,10 @@ private struct MergeTargets {
             }
         }
         for (item, type) in hiddenTypeOfExtension {
-            targetForExtension[ObjectIdentifier(item)] = plainHost[type] ?? qualifiedHost[type]
+            // An extension the diagram does not draw, such as one `elements.exclude` names, joins
+            // only a host that names the type as it could before #124, so its members stay hidden.
+            targetForExtension[ObjectIdentifier(item)] = isDrawn(item)
+                ? plainHost[type] ?? qualifiedHost[type] : plainHost[type]
         }
         for (type, host) in qualifiedHost.merging(plainHost, uniquingKeysWith: { $1 }) {
             host.standsInFor = typeForDeclaration[type]

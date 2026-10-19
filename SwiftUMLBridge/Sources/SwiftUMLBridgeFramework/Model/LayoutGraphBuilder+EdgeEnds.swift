@@ -21,8 +21,10 @@ extension LayoutGraphBuilder {
         case extended(ObjectIdentifier, name: String, scope: Scope)
     }
 
-    /// A declaration, as `TypeLookup` needs it to choose among same-named types.
-    struct Declared {
+    /// A declaration, as `TypeLookup` needs it to choose among same-named types. A class, since
+    /// every lookup filters and passes them along: a copy of the struct it was retained each of
+    /// its strings, its two scopes and their imports.
+    final class Declared: Sendable {
         /// `nil` for a type the diagram hides: it has no node, but still takes its name's lookup.
         let nodeId: String?
         let declaration: ObjectIdentifier
@@ -114,9 +116,16 @@ extension LayoutGraphBuilder {
                 }
                 guard let kind = item.kind, ElementKind.processable.contains(kind),
                       let containerName = item.fullName ?? item.name else { continue }
+                // An alias in `extension ModA.Foo` is also `Foo.Alias`, the name it has once merged.
+                let canonical = kind == .extension && readsModule(containerName, from: Scope(of: item))
+                    ? recordedName(of: containerName, from: Scope(of: item)) : nil
                 for member in item.substructure ?? [] where member.kind == .typealias {
                     guard let name = member.name else { continue }
-                    record(Declared(member, kind: .typealias, nodeId: nil, in: item), named: "\(containerName).\(name)")
+                    let declared = Declared(member, kind: .typealias, nodeId: nil, in: item)
+                    record(declared, named: "\(containerName).\(name)")
+                    if let canonical, canonical != containerName {
+                        record(declared, named: "\(canonical).\(name)")
+                    }
                 }
             }
         }
@@ -173,8 +182,9 @@ extension LayoutGraphBuilder {
         func qualifiedName(ofWritten name: String, from scope: Scope, readingModules: Bool = true) -> String {
             let probes = scope.enclosingTypes.lazy.map { enclosing in (enclosing, "\(enclosing).\(name)") }
             return probes.first { enclosing, probe in
-                let throughModule = readingModules && readsModule(enclosing, from: scope)
-                return nearestMatch(named: probe, from: scope, depth: 0, readingModules: throughModule) != nil
+                if nearestMatch(named: probe, from: scope, depth: 0, readingModules: false) != nil { return true }
+                guard readingModules, mayReadModule(probe), readsModule(enclosing, from: scope) else { return false }
+                return moduleMatch(named: probe, from: scope, depth: 0) != nil
             }?.1 ?? name
         }
 
