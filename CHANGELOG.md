@@ -106,6 +106,102 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed — Bridge
 
+- **A module-qualified extension reaches the type it extends** (#124).
+  In package mode (`--package`, or Open Package… in Studio),
+  `extension ModA.Foo` written in ModB extends ModA's `Foo`, and
+  `extension ModA.Foo.Inner` its nested `Foo.Inner`. The lookup that
+  finds an extension's type keyed types by their unqualified names, so
+  it found no `ModA.Foo`: no format drew an `ext` edge to the type,
+  `--merge-extensions` left the members in a box of their own, and a
+  type nested in the extension hung off that box. A name whose first
+  component is a target of the package now means the rest of the name
+  in that target, for the edges of every format and for
+  `--merge-extensions`.
+  - The name is read as Swift reads it. The file must import the target
+    or be in it. The full name is tried first, so `Networking.Request`
+    is still a `Request` nested in `enum Networking`, and a type named
+    like the target keeps the name a type when the file can see it: one
+    in the file's own module, or in a module the file imports. Each
+    file's imports are read for this, `#if` branches included, so a
+    namespace `enum Analytics` in a module the file does not import
+    leaves `Analytics.Event` to the target Analytics.
+  - A target is matched by the name Swift code writes for it, as
+    SwiftPM derives it: `my_lib.Foo` reaches the target `my-lib`, and
+    `_D.Foo` the target `2D`. Beyond ASCII the derivation keeps Unicode
+    letters and digits where SwiftPM keeps C99's identifier ranges.
+  - `ModA.Foo.Nested` also reaches a `Nested` another module adds to
+    ModA's `Foo` in an extension. A module's `internal` types are still
+    not reached from another module, a qualified typealias means the
+    type it aliases, and a module may qualify its own types. In
+    `extension ModA.Foo`, a supertype is looked for among `Foo`'s
+    members, as Swift does; in an extension of a type that merely
+    shares a target's name, it is not looked for in that target.
+  - A qualifier that names no target, such as `Swift` in
+    `extension Swift.String`, and every qualifier without `--package`,
+    is kept as part of the name.
+  - An extension that `elements.exclude` hides by its spelling through a
+    module, such as `ModA.Foo`, is not merged into the type either, so
+    its members stay hidden, as they did when the spelling found no
+    type.
+  - In every format, a name written inside `extension ModA.Foo` is looked
+    for among `Foo`'s members first, as Swift does: `class Child: Base`
+    there means ModA's `Foo.Base`, even beside ModB's own `Base`.
+  - PlantUML, Mermaid and Nomnoml end a supertype edge written through a
+    module where SVG ends it (see "PlantUML, Mermaid and Nomnoml end a
+    supertype edge where SVG does" below). Such a name used to give the
+    edge an undeclared node of its own. Now `struct S: ModA.Q` ends on
+    ModA's `Q`, and `struct S: Lib.StoreType` on Lib's `Store`.
+    `class Sub: ModA.Base` ends on `Base`, not on the box of
+    `extension ModA.Base`, which is not the class. The edge is drawn
+    once when the same conformance is also written without the module.
+  - Still unread: a type declared inside `extension ModA.Foo` is known
+    by that spelling, so `extension Foo.Nested` written where `Foo` is
+    ModA's does not reach it. A type outside the diagram, such as
+    Foundation's `Calendar`, does not keep a target named `Calendar`
+    from being read as a module, in a file of that target or one that
+    imports it. Only a file's own imports are read, so a module it sees
+    through another's `@_exported import` neither names a module nor
+    keeps one from being read. `deps --types` draws
+    `extension ModA.Foo: P` apart from ModA's `Foo`.
+  - Reading names through modules costs lookups where they resolve: a
+    package of deep types nested in module-qualified extensions across
+    many targets draws about a third slower, and gets the edges it was
+    missing. Each lookup also copies less than before, which makes
+    lookup-heavy diagrams faster: one of deep types nested in plain
+    extensions across many targets drew in 49 s and now takes 32 s.
+
+- **An edge to a hidden type ends on the extension that stands in for
+  it, however the edge spells the type** (#124, #153). When the diagram
+  hides a type and draws its extensions, an edge to the type ends on
+  one of them. Under `--merge-extensions` that is now always the box
+  the extensions merged into, which is the first that names the type
+  without a module qualifier, so `struct S: ModA.P` and `struct T: P`
+  both reach it, and so does a type nested in the hidden type. Drawn
+  apart, an edge looks first among extensions spelled the way it is,
+  as before, then among those spelled with the type's own name, then
+  through its module, then through a typealias. So `struct S: Alias`,
+  after `typealias Alias = Real` with only `extension Real` drawn, now
+  ends on that box in SVG, as it already did in PlantUML, Mermaid and
+  Nomnoml, and `struct A: Real` with only `extension Alias` drawn ends
+  on that one in every format, where it had no edge in SVG and an
+  undeclared node in the others. Diagrams without module qualifiers
+  gain such edges.
+
+- **`relationships.dependency.exclude` matches the type an extension
+  extends as that type is declared, and supertype excludes match a
+  name written through its module** (#124). `Foo.Inner` hides the
+  `ext` edge of `extension ModA.Foo.Inner`, and `Real` that of
+  `extension Alias` after `typealias Alias = Real`, in any mode.
+  `inheritance.exclude` and `realize.exclude` match a supertype written
+  through its module by the type or typealias it names, so `Q` hides
+  the edges of `extension ModA.Foo: ModA.Q` and `struct S: ModA.Q` in
+  every format.
+
+- **`--merge-extensions` looks each extension up once.** Finding a
+  hidden type's first extension used to look every extension up again
+  for each one: 300 files that each extend their own `fileprivate` type
+  of one shared name took 42 s, and now take 2 s.
+
 - **A member named with a keyword is the one a reference after a `.`
   names** (#130). A keyword must be escaped where a member is declared,
   as ``func `default`()`` or ``case `default` ``, but after a `.` Swift
@@ -202,6 +298,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
     another file's;
   - a hidden type's stand-in (#153), not another hidden type's of its
     name, nor `extension Int?` beside a hidden `protocol Optional`;
+  - the type a typealias comes to, even where another box has its name:
+    after Lib's `typealias StoreType = Store`, `Cache: StoreType` ends on
+    Lib's `Store`, not on App's own `Store` drawn first;
   - the `Array.Base` the name means when a project `struct Array` and
     `extension [Int]` both declare one.
 
@@ -251,8 +350,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
     labelled `ext`, and a subclass of Foundation's `NSObject` beside
     another file's `private protocol NSObject` was a conformance.
 
-  Imports are not tracked, so when other modules declare the name as
-  different kinds, the lookup cannot tell which one the writer imports.
+  A file's imports are read only for module qualifiers, so when other
+  modules declare a bare name as different kinds, the lookup cannot
+  tell which one the writer imports.
   If the edge then ends on no protocol's own box, it is named
   `inherits`, not after whichever module came first. This holds through
   a typealias, the writer's own included, and when the other module's
@@ -263,26 +363,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   reference, the user guide and the Studio guide now say a
   protocol the sources declare, drawn or hidden, takes realization.
 
-- **An extension written through a typealias takes every spelling's
-  edges**. After `typealias Describable = CustomStringConvertible`,
+- **An edge to a type outside the diagram ends on an extension of it,
+  however each spells the type**. After
+  `typealias Describable = CustomStringConvertible`,
   `extension Describable` extends `CustomStringConvertible`, and
-  `--merge-extensions` already gave both spellings one box (#125). An
-  edge end was looked up only among the extensions written with the
-  edge's own spelling, in every format:
+  `--merge-extensions` already gave both spellings one box (#125). A
+  hidden type's edge already reached its stand-in through any spelling
+  (see "An edge to a hidden type ends on the extension that stands in
+  for it" above), but the edge to a type outside the diagram was looked
+  up only among the extensions written with the edge's own spelling, in
+  every format:
   - `struct T: CustomStringConvertible` reached no box, while
     `struct S: Describable` reached `extension Describable`.
-  - A hidden protocol `P` whose only extension is written through
-    `fileprivate typealias Q = P` had no stand-in for an edge written
-    `P`.
   - Under `--merge-extensions`, with both spellings extended, an edge
     written with the merged-away spelling was dropped.
 
-  An edge now ends on an extension of its own spelling when there is
-  one, as before. Otherwise it ends on an extension spelled with the
-  type's own name, and failing that on the first drawn extension
-  written through a typealias of it, for a type in the diagram or
-  outside it. A type nested in an extension the diagram hides hangs off
-  its type's other extension in the same way.
+  Such an edge now ends on an extension of its own spelling when there
+  is one, as before. Otherwise it ends on an extension spelled with the
+  name the type comes to, and failing that on the first drawn extension
+  written through a typealias that comes to it. A type nested in an
+  extension the diagram hides hangs off its type's other extension in
+  the same way.
   - A name written inside an extension of a type outside the diagram
     may be one of that type's members, which the diagram cannot see.
     So `extension Date { typealias Style = FormatStyle }` means

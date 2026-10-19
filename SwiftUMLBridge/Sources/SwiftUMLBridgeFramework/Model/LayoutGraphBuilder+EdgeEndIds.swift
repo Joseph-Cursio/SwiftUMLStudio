@@ -9,6 +9,8 @@ extension LayoutGraphBuilder {
         private var lookup = TypeLookup()
         private var idForDeclaration: [ObjectIdentifier: String] = [:]
         private var hiddenDeclarations: Set<ObjectIdentifier> = []
+        /// The drawn extension `mergeExtensions` merged each hidden type's extensions into.
+        private var hostForDeclaration: [ObjectIdentifier: String] = [:]
         /// `standIn` and `fallback` for each name, worked out once: searching per edge end made a
         /// diagram of many files that each hide a same-named type cubic in their number.
         private var extensionEnds = ExtensionEnds()
@@ -17,6 +19,9 @@ extension LayoutGraphBuilder {
         mutating func record(_ nodeId: String, for entry: DiagramItem) {
             lookup.record(Declared(entry.item, kind: entry.kind, nodeId: nodeId), named: entry.name)
             idForDeclaration[ObjectIdentifier(entry.item)] = nodeId
+            if let hidden = entry.item.standsInFor {
+                hostForDeclaration[ObjectIdentifier(hidden)] = nodeId
+            }
             forgetWorkedOutEnds()
         }
 
@@ -92,18 +97,23 @@ extension LayoutGraphBuilder {
             type.nodeId ?? standIn(for: type.declaration, named: name)
         }
 
-        /// A drawn extension of the hidden type `declaration`, or `nil` to drop the edge: the
-        /// first one recorded under the edge's own `name` whose own lookup finds it, else under
-        /// the type's own name, else the first written through a typealias of it, as
-        /// `mergeExtensions` picks its stand-in however it is spelled (#153). The access-level
-        /// filter passes extensions, so an extension can be drawn while its type is hidden.
+        /// A drawn extension of the hidden type `declaration`, or `nil` to drop the edge: the one
+        /// `mergeExtensions` merged its extensions into, when it did (#153); else the first
+        /// recorded under the edge's own name, `name`, whose own lookup finds it, as before #124;
+        /// else one recorded under the type's own name, then one spelled with that name qualified
+        /// by a module (`ExtensionEnds.qualifiedStandIns`), then the first written through a
+        /// typealias of it. The access-level filter passes extensions, so an extension can be
+        /// drawn while its type is hidden.
         private func standIn(for declaration: ObjectIdentifier, named name: String) -> String? {
+            if let host = hostForDeclaration[declaration] { return host }
             if let standIn = extensionEnds.ends(named: name, in: lookup).standIns[declaration] { return standIn }
-            if let own = lookup.recordedName(of: declaration), own != name,
-               let standIn = extensionEnds.ends(named: own, in: lookup).standIns[declaration] {
+            guard let recorded = lookup.recordedName(of: declaration) else { return nil }
+            if recorded != name,
+               let standIn = extensionEnds.ends(named: recorded, in: lookup).standIns[declaration] {
                 return standIn
             }
-            return extensionEnds.aliasSpelled(in: lookup).standIns[declaration]
+            return extensionEnds.qualifiedStandIns(spelling: recorded, in: lookup)[declaration]
+                ?? extensionEnds.aliasSpelled(in: lookup).standIns[declaration]
         }
 
         /// The end for a name no visible type takes, so a type outside the diagram, such as

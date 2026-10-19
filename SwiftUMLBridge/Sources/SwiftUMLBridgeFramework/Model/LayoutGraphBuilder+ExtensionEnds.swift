@@ -26,12 +26,13 @@ extension LayoutGraphBuilder {
         var fallbacks: [String: String] = [:]
     }
 
-    /// `NameEnds` for each name, and `AliasSpelledEnds`, each filled the first time an edge end
-    /// asks for it. A class, so `EdgeEndIds.id(of:)` can fill it without being mutating;
-    /// `EdgeEndIds` starts a new one whenever it records a declaration, so no entry outlives what
-    /// it was worked out from.
+    /// `NameEnds` for each name, the stand-ins among extensions spelled through a module, and
+    /// `AliasSpelledEnds`, each filled the first time an edge end asks for it. A class, so
+    /// `EdgeEndIds.id(of:)` can fill it without being mutating; `EdgeEndIds` starts a new one
+    /// whenever it records a declaration, so no entry outlives what it was worked out from.
     final class ExtensionEnds {
         private var endsForName: [String: NameEnds] = [:]
+        private var qualifiedStandInsForName: [String: [ObjectIdentifier: String]] = [:]
         private var aliasSpelledEnds: AliasSpelledEnds?
 
         /// One pass over the drawn extensions written through a typealias, in recording order. An
@@ -68,6 +69,21 @@ extension LayoutGraphBuilder {
             }
             endsForName[name] = ends
             return ends
+        }
+
+        /// For each type they find, the first drawn extension spelled `<module>.<name>`, such as
+        /// `extension ModA.Foo` for `Foo`, in recording order (#124).
+        func qualifiedStandIns(spelling name: String, in lookup: TypeLookup) -> [ObjectIdentifier: String] {
+            if let known = qualifiedStandInsForName[name] { return known }
+            var standIns: [ObjectIdentifier: String] = [:]
+            for (spelled, candidate) in lookup.extensions(named: lookup.moduleQualifiedNames(of: name)) {
+                guard let nodeId = candidate.nodeId, let type = lookup.extendedType(
+                    named: spelled, from: candidate.scope, isSugared: candidate.isSugared
+                ), standIns[type.declaration] == nil else { continue }
+                standIns[type.declaration] = nodeId
+            }
+            qualifiedStandInsForName[name] = standIns
+            return standIns
         }
     }
 }

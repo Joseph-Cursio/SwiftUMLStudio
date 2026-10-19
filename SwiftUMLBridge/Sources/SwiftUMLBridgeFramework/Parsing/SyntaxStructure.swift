@@ -70,6 +70,12 @@ internal class SyntaxStructure: NSObject, Codable, @unchecked Sendable {
     /// knows the source file's owning target; nil otherwise.
     internal var module: String?
 
+    /// The modules the declaration's file imports, first path component only (`Foundation` for
+    /// `import Foundation.NSString`). Stamped by `SyntaxStructureBuilder`; nil when unknown, as
+    /// for a hand-built or decoded structure. A module qualifier in the file can name only these
+    /// and its own module (#124).
+    internal var imports: Set<String>?
+
     /// Set by `mergeExtensions` on an extension it merges away: the item that now shows its
     /// members. A type nested in that extension keeps the extension as its `parent`, which its
     /// name, scope and access come from, and is drawn hanging off this item (`nestingParent`).
@@ -86,6 +92,11 @@ internal class SyntaxStructure: NSObject, Codable, @unchecked Sendable {
     /// `Crate.Desc` after `typealias Crate = Outer`, so `TypeLookup.recordAliases(in:)` records it
     /// so, as it does when extensions are drawn apart.
     internal var mergedExtensions: [SyntaxStructure] = []
+
+    /// Set by `mergeExtensions` on the extension a hidden type's extensions merge into: that type.
+    /// The extension's box stands in for it, so an edge to the type ends there however the edge
+    /// spells it (#153, #124).
+    internal var standsInFor: SyntaxStructure?
 
     /// The generic arguments an extension's extended type binds on its last component, as
     /// written: `Int` for `extension Foo<Int>`, `String, Int` for `extension [String: Int]`.
@@ -132,6 +143,7 @@ internal class SyntaxStructure: NSObject, Codable, @unchecked Sendable {
         memberSuffix = original.memberSuffix
         sourceLocation = original.sourceLocation
         module = original.module
+        imports = original.imports
         carriedSupertypes = original.carriedSupertypes
         mergedExtensions = original.mergedExtensions
         boundGenericArguments = original.boundGenericArguments
@@ -164,6 +176,7 @@ internal class SyntaxStructure: NSObject, Codable, @unchecked Sendable {
         for pair in pairs {
             pair.clone.parent = pair.original.parent.map { copies[ObjectIdentifier($0)] ?? $0 }
             pair.clone.mergedInto = pair.original.mergedInto.map { copies[ObjectIdentifier($0)] ?? $0 }
+            pair.clone.standsInFor = pair.original.standsInFor.map { copies[ObjectIdentifier($0)] ?? $0 }
         }
         return clonedRoots
     }

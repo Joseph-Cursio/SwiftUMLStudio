@@ -83,10 +83,9 @@ extension LayoutGraphBuilder.TypeLookup {
     /// Swift looks a name up among the members of the type it extends.
     func enclosingRoot(of scope: LayoutGraphBuilder.Scope, depth: Int) -> LayoutGraphBuilder.NameRoot {
         guard let enclosing = scope.enclosingExtension else { return .projectType }
-        // An extension's scope is its file and module; its own clause sees no enclosing types.
+        // An extension's own clause sees no enclosing types.
         let target = LayoutGraphBuilder.ExtensionTarget(
-            name: enclosing.name, scope: LayoutGraphBuilder.Scope(filePath: scope.filePath, module: scope.module),
-            isSugared: enclosing.isSugared
+            name: enclosing.name, scope: scope.fileScope, isSugared: enclosing.isSugared
         )
         return extendsOutsideType(target, depth: depth) ? .outsideType : .projectType
     }

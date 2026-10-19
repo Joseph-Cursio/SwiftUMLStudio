@@ -8,6 +8,8 @@ import Foundation
 struct DeclarationScope {
     let filePath: String?
     let module: String?
+    /// The modules the declaration's file imports; nil when unknown (`SyntaxStructure.imports`).
+    let imports: Set<String>?
     /// The full names of the types whose members a name written in the declaration's
     /// inheritance clause sees, innermost first: each type around it, up to and including the
     /// type an enclosing extension extends, which sees no further out. Empty for a top-level
@@ -23,6 +25,7 @@ struct DeclarationScope {
     init(of item: SyntaxStructure, in container: SyntaxStructure? = nil) {
         filePath = item.sourceLocation?.filePath ?? container?.sourceLocation?.filePath
         module = item.module ?? container?.module
+        imports = item.imports ?? container?.imports
         let enclosing = item.kind == .extension ? [] : Self.enclosingTypes(from: container ?? item.parent)
         enclosingTypes = enclosing.compactMap { $0.fullName ?? $0.name }
         enclosingExtension = enclosing.last.flatMap { outermost in
@@ -30,11 +33,18 @@ struct DeclarationScope {
         }
     }
 
-    init(filePath: String?, module: String?) {
+    init(filePath: String?, module: String?, imports: Set<String>? = nil) {
         self.filePath = filePath
         self.module = module
+        self.imports = imports
         enclosingTypes = []
         enclosingExtension = nil
+    }
+
+    /// This scope's file, module and imports alone: where an extension's own clause is read,
+    /// which sees no enclosing types.
+    var fileScope: DeclarationScope {
+        DeclarationScope(filePath: filePath, module: module, imports: imports)
     }
 
     /// `context` and the types around it, innermost first, stopping after an extension: its body
