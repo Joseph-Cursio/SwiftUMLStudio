@@ -212,6 +212,8 @@ struct ModuleQualifiedExtensionTests {
     ])
     func c99ModuleName(target: String, qualifier: String) throws {
         let app = """
+            import \(qualifier)
+
             extension \(qualifier).Foo {
                 func viaModuleName() {}
             }

@@ -67,7 +67,8 @@ internal extension SyntaxStructure {
                 typenameMap: typenameMap,
                 filePath: filePath,
                 locationConverter: converter,
-                module: module
+                module: module,
+                imports: ImportExtractor.importedModules(in: sourceFile)
             )
             builder.walk(sourceFile)
 

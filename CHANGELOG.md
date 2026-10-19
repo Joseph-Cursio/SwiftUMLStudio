@@ -117,14 +117,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   component is a target of the package now means the rest of the name
   in that target, for the `ext` edges and nesting edges of every format,
   for `--merge-extensions`, and for SVG's supertype edges.
-  - Swift reads a type before a module of its name, so the full name is
-    tried first (`Networking.Request` is still a `Request` nested in
-    `enum Networking`), and a visible type named like the qualifier
-    keeps it a type when it is in the writer's own module or the module
-    named, or, since imports are not tracked, when it is in another
-    module and declares a member of the next name. A namespace
-    `enum Analytics` in a module the file does not import leaves
-    `Analytics.Event` to the module Analytics.
+  - The name is read as Swift reads it. The file must import the target
+    or be in it. The full name is tried first, so `Networking.Request`
+    is still a `Request` nested in `enum Networking`, and a type named
+    like the target keeps the name a type when the file can see it: one
+    in the file's own module, or in a module the file imports. Each
+    file's imports are read for this, `#if` branches included, so a
+    namespace `enum Analytics` in a module the file does not import
+    leaves `Analytics.Event` to the target Analytics.
   - A target is matched by the name Swift code writes for it, as
     SwiftPM derives it: `my_lib.Foo` reaches the target `my-lib`, and
     `_D.Foo` the target `2D`. Beyond ASCII the derivation keeps Unicode
@@ -139,17 +139,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   - A qualifier that names no target, such as `Swift` in
     `extension Swift.String`, and every qualifier without `--package`,
     is kept as part of the name.
-  - A drawn `extension ModA.Foo` stands in for ModA's `Foo` when the
-    diagram hides it, after any extension spelled the way the edge is,
-    as before. `--merge-extensions` merges into the same box, the first
-    extension that names the type without a module if there is one.
-  - `relationships.dependency.exclude` now also matches the type an
-    extension extends as that type is declared, so `Foo.Inner` hides
-    the edge of `extension ModA.Foo.Inner`, and `Real` that of
-    `extension Alias` after `typealias Alias = Real`. `inheritance` and
-    `realize.exclude` match a supertype written through its module, by
-    the type or typealias it names, so `Q` hides the edges of
-    `extension ModA.Foo: ModA.Q` and `struct S: ModA.Q` in every format.
   - Supertype edges in PlantUML, Mermaid and Nomnoml end on a name, the
     first box of that name, which cannot tell ModA's `Q` from another
     module's, so they read no module qualifier and are drawn as before:
@@ -158,12 +147,40 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
     ends both on the type they mean.
   - Still unread: a type declared inside `extension ModA.Foo` is known
     by that spelling, so `extension Foo.Nested` written where `Foo` is
-    ModA's does not reach it, and `deps --types` draws
-    `extension ModA.Foo: P` apart from ModA's `Foo`.
-  - `--merge-extensions` looks each extension up once. Finding a hidden
-    type's first extension used to look every extension up again for
-    each one: 300 files that each extend their own `fileprivate` type
-    of one shared name took 42 s, and now take 2 s.
+    ModA's does not reach it; a type outside the diagram, such as
+    Foundation's `Calendar`, does not keep a target named `Calendar`
+    from being read as a module in a file that imports both; and
+    `deps --types` draws `extension ModA.Foo: P` apart from ModA's
+    `Foo`.
+
+- **An edge to a hidden type ends on the extension that stands in for
+  it, however the edge spells the type** (#124, #153). When the diagram
+  hides a type and draws its extensions, an edge to the type ends on
+  one of them. Under `--merge-extensions` that is now always the box
+  the extensions merged into, which is the first that names the type
+  without a module qualifier, so `struct S: ModA.P` and `struct T: P`
+  both reach it, and so does a type nested in the hidden type. Drawn
+  apart, an edge looks first among extensions spelled the way it is,
+  as before, then among those spelled with the type's own name, then
+  among those spelled through its module. So `struct S: Alias`, after
+  `typealias Alias = Real` with only `extension Real` drawn, now ends
+  on that box in SVG, as it already did in PlantUML, Mermaid and
+  Nomnoml, and diagrams without module qualifiers gain such edges.
+
+- **`relationships.dependency.exclude` matches the type an extension
+  extends as that type is declared, and supertype excludes match a
+  name written through its module** (#124). `Foo.Inner` hides the
+  `ext` edge of `extension ModA.Foo.Inner`, and `Real` that of
+  `extension Alias` after `typealias Alias = Real`, in any mode.
+  `inheritance.exclude` and `realize.exclude` match a supertype written
+  through its module by the type or typealias it names, so `Q` hides
+  the edges of `extension ModA.Foo: ModA.Q` and `struct S: ModA.Q` in
+  every format.
+
+- **`--merge-extensions` looks each extension up once.** Finding a
+  hidden type's first extension used to look every extension up again
+  for each one: 300 files that each extend their own `fileprivate` type
+  of one shared name took 42 s, and now take 2 s.
 
 - **A member named with a keyword is the one a reference after a `.`
   names** (#130). A keyword must be escaped where a member is declared,

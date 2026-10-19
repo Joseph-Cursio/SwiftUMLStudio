@@ -39,17 +39,22 @@ final class SyntaxStructureBuilder: SyntaxVisitor {
     /// declaration so downstream layers can render module-qualified diagrams.
     private let module: String?
 
+    /// The modules the file imports, stamped onto each declaration with `module`.
+    private let imports: Set<String>?
+
     init(
         viewMode: SyntaxTreeViewMode = .sourceAccurate,
         typenameMap: [Int: String] = [:],
         filePath: String = "",
         locationConverter: SourceLocationConverter? = nil,
-        module: String? = nil
+        module: String? = nil,
+        imports: Set<String>? = nil
     ) {
         self.typenameMap = typenameMap
         self.filePath = filePath
         self.locationConverter = locationConverter
         self.module = module
+        self.imports = imports
         super.init(viewMode: viewMode)
     }
 
@@ -67,6 +72,7 @@ final class SyntaxStructureBuilder: SyntaxVisitor {
             )
         }
         structure.module = module
+        structure.imports = imports
     }
 
     // MARK: - Type stack

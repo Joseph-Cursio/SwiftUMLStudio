@@ -174,10 +174,11 @@ extension ElementKind: Comparable {
 /// extension's. A type the diagram hides has no box to merge into either: its first drawn
 /// extension, one whose own lookup finds that same type, stands in for it, and the rest merge
 /// there (#153). One that names the type without a module qualifier comes before one that names
-/// it through its module (`extension ModA.Foo`, #124), as `EdgeEndIds.standIn` looks for them, so
-/// the box keeps the type's own name, which the text formats' supertype edges end on. Extensions
-/// are matched by the type their names come to, not by spelling, so `extension Alias` and
-/// `extension Real` share a box after `typealias Alias = Real`, and so do `extension JSON` and
+/// it through its module (`extension ModA.Foo`, #124), so the box keeps the type's own name, which
+/// the text formats' supertype edges end on. That extension records the type in `standsInFor`,
+/// so every edge to the hidden type ends on its box (`EdgeEndIds.standIn`). Extensions are matched
+/// by the type their names come to, not by spelling, so `extension Alias` and `extension Real`
+/// share a box after `typealias Alias = Real`, and so do `extension JSON` and
 /// `extension [String: Int]` after `typealias JSON = [String: Int]` (#125).
 ///
 /// Each extension is looked up once: finding a hidden type's first extension by looking up every
@@ -219,6 +220,9 @@ private struct MergeTargets {
         }
         for (item, type) in hiddenTypeOfExtension {
             targetForExtension[ObjectIdentifier(item)] = plainHost[type] ?? qualifiedHost[type]
+        }
+        for (type, host) in qualifiedHost.merging(plainHost, uniquingKeysWith: { $1 }) {
+            host.standsInFor = typeForDeclaration[type]
         }
     }
 

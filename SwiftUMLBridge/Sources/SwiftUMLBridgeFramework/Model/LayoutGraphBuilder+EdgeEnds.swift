@@ -36,9 +36,6 @@ extension LayoutGraphBuilder {
         let extended: (name: String, scope: Scope)?
         /// For a typealias, the name of the type it aliases, looked up from its own scope (#125).
         let aliasTarget: String?
-        /// The names of the types and typealiases declared directly in the declaration, as its
-        /// substructure lists them when nested types are not flattened out of it.
-        let memberTypeNames: Set<String>
 
         /// `container` is the declaration `item` is a member of, when `item.parent` is not set:
         /// a typealias is never flattened out of its type's members.
@@ -47,11 +44,6 @@ extension LayoutGraphBuilder {
             declaration = ObjectIdentifier(item)
             isExtension = kind == .extension
             aliasTarget = kind == .typealias ? item.typename : nil
-            memberTypeNames = Set((item.substructure ?? []).compactMap { member in
-                guard let kind = member.kind, kind == .typealias || kind != .extension
-                        && ElementKind.processable.contains(kind) else { return nil }
-                return member.name
-            })
             scope = Scope(of: item, in: container)
             // Extensions are top level, so a chain holds at most one, last.
             let chain = Array(sequence(first: item) { $0 === item ? container ?? $0.parent : $0.parent })
@@ -234,6 +226,8 @@ extension LayoutGraphBuilder {
         private var lookup = TypeLookup()
         private var idForDeclaration: [ObjectIdentifier: String] = [:]
         private var hiddenDeclarations: Set<ObjectIdentifier> = []
+        /// The drawn extension `mergeExtensions` merged each hidden type's extensions into.
+        private var hostForDeclaration: [ObjectIdentifier: String] = [:]
         /// `standIn` and `fallback` for each name, worked out once: searching per edge end made a
         /// diagram of many files that each hide a same-named type cubic in their number.
         private var extensionEnds = ExtensionEnds()
@@ -241,6 +235,9 @@ extension LayoutGraphBuilder {
         mutating func record(_ nodeId: String, for entry: DiagramItem) {
             lookup.record(Declared(entry.item, kind: entry.kind, nodeId: nodeId), named: entry.name)
             idForDeclaration[ObjectIdentifier(entry.item)] = nodeId
+            if let hidden = entry.item.standsInFor {
+                hostForDeclaration[ObjectIdentifier(hidden)] = nodeId
+            }
             extensionEnds = ExtensionEnds()
         }
 
@@ -292,14 +289,19 @@ extension LayoutGraphBuilder {
             type.nodeId ?? standIn(for: type.declaration, named: name)
         }
 
-        /// A drawn extension of the hidden type `declaration`, or `nil` to drop the edge: the first
+        /// A drawn extension of the hidden type `declaration`, or `nil` to drop the edge: the one
+        /// `mergeExtensions` merged its extensions into, when it did (#153); else the first
         /// recorded under the edge's own name, `name`, whose own lookup finds it, as before #124;
-        /// failing that, the first spelled with its name qualified by a module
-        /// (`ExtensionEnds.qualifiedStandIns`). The access-level filter passes extensions, so an
-        /// extension can be drawn while its type is hidden.
+        /// else one recorded under the type's own name, then one spelled with that name qualified
+        /// by a module (`ExtensionEnds.qualifiedStandIns`). The access-level filter passes
+        /// extensions, so an extension can be drawn while its type is hidden.
         private func standIn(for declaration: ObjectIdentifier, named name: String) -> String? {
+            if let host = hostForDeclaration[declaration] { return host }
             if let standIn = extensionEnds.ends(named: name, in: lookup).standIns[declaration] { return standIn }
             guard let recorded = lookup.recordForDeclaration[declaration]?.name else { return nil }
+            if recorded != name, let standIn = extensionEnds.ends(named: recorded, in: lookup).standIns[declaration] {
+                return standIn
+            }
             return extensionEnds.qualifiedStandIns(spelling: recorded, in: lookup)[declaration]
         }
 
