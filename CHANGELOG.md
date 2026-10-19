@@ -115,13 +115,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   `--merge-extensions` left the members in a box of their own, and a
   type nested in the extension hung off that box. A name whose first
   component is a target of the package now means the rest of the name
-  in that target, in every format.
+  in that target, for the `ext` edges and nesting edges of every format,
+  for `--merge-extensions`, and for SVG's supertype edges.
   - Swift reads a type before a module of its name, so the full name is
     tried first (`Networking.Request` is still a `Request` nested in
-    `enum Networking`), and a type named like the qualifier, in the
-    writer's own module or the module named, keeps the qualifier a
-    type. Imports are not tracked, so such a type in any other module
-    is taken to be one the file does not import.
+    `enum Networking`), and a visible type named like the qualifier
+    keeps it a type when it is in the writer's own module or the module
+    named, or, since imports are not tracked, when it is in another
+    module and declares a member of the next name. A namespace
+    `enum Analytics` in a module the file does not import leaves
+    `Analytics.Event` to the module Analytics.
   - A target is matched by the name Swift code writes for it, as
     SwiftPM derives it: `my_lib.Foo` reaches the target `my-lib`, and
     `_D.Foo` the target `2D`. Beyond ASCII the derivation keeps Unicode
@@ -129,28 +132,38 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   - `ModA.Foo.Nested` also reaches a `Nested` another module adds to
     ModA's `Foo` in an extension. A module's `internal` types are still
     not reached from another module, a qualified typealias means the
-    type it aliases, and a module may qualify its own types.
+    type it aliases, and a module may qualify its own types. In
+    `extension ModA.Foo`, a supertype is looked for among `Foo`'s
+    members, as Swift does; in an extension of a type that merely
+    shares a target's name, it is not looked for in that target.
   - A qualifier that names no target, such as `Swift` in
     `extension Swift.String`, and every qualifier without `--package`,
     is kept as part of the name.
   - A drawn `extension ModA.Foo` stands in for ModA's `Foo` when the
-    diagram hides it, as `extension Foo` does, so a type nested in
-    `Foo` hangs off it, as `--merge-extensions` already chose.
+    diagram hides it, after any extension spelled the way the edge is,
+    as before. `--merge-extensions` merges into the same box, the first
+    extension that names the type without a module if there is one.
   - `relationships.dependency.exclude` now also matches the type an
     extension extends as that type is declared, so `Foo.Inner` hides
-    the edge of `extension ModA.Foo.Inner`; `inheritance.exclude` and
-    `realize.exclude` match a supertype written through its module, so
-    `Q` hides the edges of `extension ModA.Foo: ModA.Q` and
-    `struct S: ModA.Q` in every format.
+    the edge of `extension ModA.Foo.Inner`, and `Real` that of
+    `extension Alias` after `typealias Alias = Real`. `inheritance` and
+    `realize.exclude` match a supertype written through its module, by
+    the type or typealias it names, so `Q` hides the edges of
+    `extension ModA.Foo: ModA.Q` and `struct S: ModA.Q` in every format.
   - Supertype edges in PlantUML, Mermaid and Nomnoml end on a name, the
     first box of that name, which cannot tell ModA's `Q` from another
     module's, so they read no module qualifier and are drawn as before:
-    `struct S: ModA.Q` still ends on `ModA.Q`. SVG ends it on ModA's
-    `Q`.
+    `struct S: ModA.Q` still ends on `ModA.Q`, and a supertype inside
+    `extension ModA.Foo` is not looked for among `Foo`'s members. SVG
+    ends both on the type they mean.
   - Still unread: a type declared inside `extension ModA.Foo` is known
     by that spelling, so `extension Foo.Nested` written where `Foo` is
     ModA's does not reach it, and `deps --types` draws
     `extension ModA.Foo: P` apart from ModA's `Foo`.
+  - `--merge-extensions` looks each extension up once. Finding a hidden
+    type's first extension used to look every extension up again for
+    each one: 300 files that each extend their own `fileprivate` type
+    of one shared name took 42 s, and now take 2 s.
 
 - **A member named with a keyword is the one a reference after a `.`
   names** (#130). A keyword must be escaped where a member is declared,

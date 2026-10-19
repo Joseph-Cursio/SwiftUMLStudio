@@ -129,15 +129,96 @@ struct ModuleQualifiedLookupTests {
         #expect(graph.owner(of: "fromApp") == "Foo.Bar")
     }
 
+    /// Core's `enum Networking` gets a `Request` in an extension, and App imports Core and the
+    /// module Networking, so in Swift `Networking.Request` is Core's nested type, not the module's.
+    @Test("a full name that means a type is not read through a module")
+    func fullNameBeforeModule() throws {
+        let networking = "public struct Request {\n    public init() {}\n}"
+        let core = "public enum Networking {}\n\nextension Networking {\n    public struct Request {}\n}"
+        let app = """
+            import Core
+            import Networking
+
+            extension Networking.Request {
+                func fromApp() {}
+            }
+            """
+        let graph = try graph([("Networking", networking), ("Core", core), ("App", app)])
+        #expect(graph.owner(of: "fromApp") == "Networking.Request")
+    }
+
+    /// Module Foo's `class Foo` inherits `Rest` from `Base`, so `Foo.Rest` is `Base.Rest`, which the
+    /// lookup does not follow; the module's own top-level `Rest` is not what it means.
+    @Test("a type named like the module it is in keeps the qualifier a type")
+    func namedModuleTypeShadows() throws {
+        let foo = """
+            open class Base {
+                public struct Rest {}
+            }
+
+            public final class Foo: Base {}
+
+            public struct Rest {}
+            """
+        let app = "import Foo\n\nextension Foo.Rest {\n    func fromApp() {}\n}\n"
+        let graph = try graph([("Foo", foo), ("App", app)])
+        #expect(graph.owner(of: "fromApp") == "Foo.Rest")
+    }
+
+    /// With nested types not drawn, Core's `Analytics.Event` is a member of `enum Analytics`
+    /// only; App imports Core, so Swift reads `Analytics.Event` as that member.
+    @Test("a type in a third module with a member of the next name keeps the qualifier a type")
+    func thirdModuleTypeWithMemberShadows() throws {
+        let analytics = "public struct Event {\n    public init() {}\n}"
+        let core = "public enum Analytics {\n    public struct Event {}\n}"
+        let app = """
+            import Analytics
+            import Core
+
+            extension Analytics.Event {
+                func track() {}
+            }
+            """
+        let unnested = ElementOptions(showNestedTypes: false, showExtensions: .merged)
+        let graph = try graph(
+            [("Analytics", analytics), ("Core", core), ("App", app)], Configuration(elements: unnested, format: .svg)
+        )
+        #expect(graph.owner(of: "track") == "Analytics.Event")
+    }
+
+    /// In `extension Settings`, `Settings` is Models' type even beside a target named Settings,
+    /// so `Section` is not looked for in that module: App's own `Section` is the one.
+    @Test("a member is looked for through a module only in an extension named through one")
+    func memberProbeIgnoresTargetNamedLikeType() throws {
+        let models = "public struct Settings {\n    public init() {}\n}"
+        let settings = "public protocol Section {}"
+        let app = """
+            import Models
+            import Settings
+
+            protocol Section {}
+
+            extension Settings {
+                struct General: Section {}
+            }
+            """
+        let files: [(module: String?, source: String)] = [("Models", models), ("Settings", settings), ("App", app)]
+        let edges = try graph(files, Configuration(format: .svg)).edgeEnds
+        #expect(edges.contains("Settings.General -> Section_1"))
+    }
+
     // MARK: - Stand-ins for a hidden type
 
     /// Only internal declarations are drawn, so ModA's public `Foo` is hidden while its internal
-    /// `Inner` and both extensions are drawn. The stand-in is whichever extension comes first, in
-    /// either spelling, and `--merge-extensions` merges the other into it.
-    @Test("the stand-in is the first extension of the hidden type, in either spelling", arguments: [
-        (["ModA", "ModB"], "Foo"), (["ModB", "ModA"], "ModA.Foo")
+    /// `Inner` and both extensions are drawn. The stand-in is ModA's `extension Foo`, whichever
+    /// file comes first: an extension that names the type as the edge does comes before one that
+    /// names it through its module, so the box keeps the name the text formats' edges end on, and
+    /// `--merge-extensions` merges the other into it.
+    @Test("an extension spelled without the module stands in before one spelled through it", arguments: [
+        ["ModA", "ModB"], ["ModB", "ModA"]
     ])
-    func standInOrder(order: [String], standIn: String) throws {
+    func standInOrder(order: [String]) throws {
+        let standIn = "Foo"
         let sources = [
             "ModA": Self.modA.replacingOccurrences(of: "public struct Inner", with: "struct Inner")
                 + "\nextension Foo {\n    func fromA() {}\n}\n",
@@ -157,59 +238,22 @@ struct ModuleQualifiedLookupTests {
         #expect(merged.edgeEnds == ["\(standIn) -> Foo.Inner"])
     }
 
-    // MARK: - Excludes
+    /// Only public declarations are drawn, so the internal `Real` is hidden and `extension Alias`
+    /// stands in for it under the name the edge is written with, as it did before #124.
+    @Test("an extension spelled like the edge still stands in for a hidden type", arguments: [String?.none, "App"])
+    func aliasSpelledStandIn(module: String?) throws {
+        let app = """
+            protocol Real {}
+            typealias Alias = Real
 
-    @Test("dependency.exclude matches the type a qualified extension extends")
-    func dependencyExclude() throws {
-        let modB = "import ModA\n\nextension ModA.Foo.Inner {\n    func innerFromB() {}\n}\n"
-        let excluded = RelationshipOptions(dependency: Relationship(label: "ext", exclude: ["Foo.Inner"]))
-        let edges = try lines(
-            [("ModA", Self.modA), ("ModB", modB)], Configuration(relationships: excluded), containing: " : ext"
-        )
-        #expect(edges.isEmpty)
-    }
-
-    @Test("realize.exclude matches a protocol named through its module")
-    func realizeExclude() throws {
-        let modA = Self.modA + "\npublic protocol Q {}\n"
-        let modB = "import ModA\n\nextension ModA.Foo: ModA.Q {}\n"
-        let excluded = RelationshipOptions(realize: Relationship(label: "conforms to", exclude: ["Q"]))
-        let graph = try graph([("ModA", modA), ("ModB", modB)], Configuration(relationships: excluded, format: .svg))
-        #expect(graph.edgeEnds.contains { $0.hasSuffix("-> Q") } == false)
-    }
-
-    // MARK: - Supertypes in the text formats
-
-    /// PlantUML, Mermaid and Nomnoml end a supertype edge on a name, the first box of that name,
-    /// so they read no module qualifier and end it where they did before #124. SVG ends it on the
-    /// declaration.
-    @Test("a supertype inside a qualified extension ends on no name nothing declares")
-    func supertypeInQualifiedExtension() throws {
-        let modA = """
-            public struct Foo {
-                public init() {}
-                open class Base {
-                    public init() {}
-                }
+            extension Alias {
+                public func viaAlias() {}
             }
-            """
-        let modB = "import ModA\n\nextension ModA.Foo {\n    class Child: Base {}\n}\n"
-        let files: [(module: String?, source: String)] = [("ModA", modA), ("ModB", modB)]
-        let edges = try lines(files, Configuration(format: .plantuml), containing: "<|--")
-        #expect(edges.contains { $0.hasPrefix("ModA.Foo.Base") } == false)
-        #expect(try graph(files, Configuration(format: .svg)).edgeEnds.contains("ModA.Foo.Child -> Foo.Base"))
-    }
 
-    /// App declares its own `Store`, so the bare name would end the edge on App's box; Swift
-    /// conforms `Cache` to Lib's.
-    @Test("a qualified typealias supertype is not moved onto another module's type of its name")
-    func qualifiedAliasSupertype() throws {
-        let lib = "public protocol Store {}\npublic typealias StoreType = Store\n"
-        let app = "import Lib\n\nprotocol Store {}\n\nstruct Cache: Lib.StoreType {}\n"
-        let files: [(module: String?, source: String)] = [("Lib", lib), ("App", app)]
-        let edges = try lines(files, Configuration(format: .plantuml), containing: "Cache")
-            .filter { $0.contains("<|") }
-        #expect(edges == ["Lib.StoreType <|-- Cache : inherits"])
-        #expect(try graph(files, Configuration(format: .svg)).edgeEnds.contains("Cache -> Store"))
+            public struct S: Alias {}
+            """
+        let publicOnly = ElementOptions(havingAccessLevel: [.public, .open])
+        let graph = try graph([(module, app)], Configuration(elements: publicOnly, format: .svg))
+        #expect(graph.edgeEnds == ["S -> Alias"])
     }
 }

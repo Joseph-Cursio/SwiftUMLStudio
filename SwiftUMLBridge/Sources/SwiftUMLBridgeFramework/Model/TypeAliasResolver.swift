@@ -64,8 +64,10 @@ struct TypeAliasResolver {
 
     /// Whether `patterns` exclude the supertype edge to `supertype`, written in `scope`: by the
     /// name as written, as before, or by the type it comes to, so excluding `Proto` also hides
-    /// `struct S: Q` after `typealias Q = Proto`, excluding `Outer.Base` hides `class Near:
-    /// Base` in `enum Outer`, and excluding `Q` hides `extension ModA.Foo: ModA.Q` (#124).
+    /// `struct S: Q` after `typealias Q = Proto`, and excluding `Outer.Base` hides `class Near:
+    /// Base` in `enum Outer`. A module qualifier is read here (#124), as SVG reads it, so
+    /// excluding `Q` hides `struct S: ModA.Q`, and excluding `StoreType` or `Store` hides
+    /// `struct S: Lib.StoreType` after Lib's `typealias StoreType = Store`.
     func isExcluded(
         _ supertype: SyntaxStructure, from scope: DeclarationScope, byPatterns patterns: [String]?
     ) -> Bool {
@@ -73,9 +75,11 @@ struct TypeAliasResolver {
         guard let lookup, patterns != nil, let name = supertype.name?.removeAngleBracketsWithContent() else {
             return false
         }
+        let qualified = lookup.qualifiedName(ofWritten: name, from: scope)
         let resolved = [
             resolve(name, from: scope),
-            lookup.resolvedName(of: lookup.qualifiedName(ofWritten: name, from: scope), from: scope)
+            lookup.recordedName(of: qualified, from: scope) ?? qualified,
+            lookup.resolvedName(of: qualified, from: scope)
         ]
         return resolved.contains { $0 != name && SyntaxStructure(name: $0).isExcluded(byPatterns: patterns) }
     }

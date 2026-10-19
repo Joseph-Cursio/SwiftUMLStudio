@@ -12,23 +12,21 @@ struct ModuleQualifiers {
         modulesForQualifier[Self.c99Name(of: module), default: []].insert(module)
     }
 
+    /// Every name a qualifier can name a module by, in a fixed order.
+    var qualifiers: [String] { modulesForQualifier.keys.sorted() }
+
     /// The modules `qualifier` can name; empty when it names none the diagram has seen.
     func modules(namedBy qualifier: String) -> Set<String> {
         modulesForQualifier[qualifier] ?? []
     }
 
-    /// The qualifiers that name `module`: its own name and its C99 name.
-    static func spellings(of module: String) -> Set<String> {
-        [module, c99Name(of: module)]
-    }
-
     /// The name Swift code writes for the module of the target `name`, as SwiftPM derives a
-    /// target's `c99name`: after canonical composition, each character that cannot be in an
-    /// identifier becomes `_`, and so does a leading digit, so `my-lib` is `my_lib` and `2D` is
-    /// `_D`. ASCII follows SwiftPM exactly; beyond it, a Unicode letter or decimal digit is kept
-    /// where SwiftPM keeps C99's Annex D ranges, which differ for a few symbols.
+    /// target's `c99name`: each character that cannot be in an identifier becomes `_`, and so
+    /// does a leading digit, so `my-lib` is `my_lib` and `2D` is `_D`. ASCII follows SwiftPM
+    /// exactly; beyond it, a Unicode letter or decimal digit is kept where SwiftPM keeps C99's
+    /// Annex D ranges, which differ for a few symbols.
     static func c99Name(of name: String) -> String {
-        var scalars = name.precomposedStringWithCanonicalMapping.unicodeScalars.map { scalar -> Unicode.Scalar in
+        var scalars = name.unicodeScalars.map { scalar -> Unicode.Scalar in
             let isIdentifier = scalar == "_" || scalar.properties.isAlphabetic
                 || scalar.properties.numericType == .decimal
             return isIdentifier ? scalar : "_"

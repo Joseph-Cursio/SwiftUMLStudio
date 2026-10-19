@@ -43,12 +43,11 @@ extension Array where Element == SyntaxStructure {
         mergedMemberIndicator: String? = "<&bolt>", isDrawn: (SyntaxStructure) -> Bool = { _ in true }
     ) -> [SyntaxStructure] {
         var processedItems = self
-        // Built before any merge, from the declarations as the sources wrote them.
-        let lookup = LayoutGraphBuilder.TypeLookup(of: self)
+        // Worked out before any merge, from the declarations as the sources wrote them.
+        let targets = MergeTargets(of: self, isDrawn: isDrawn)
 
         for structure in self where structure.kind == .extension {
-            guard let parent = processedItems.mergeTarget(for: structure, lookup: lookup, isDrawn: isDrawn),
-                  structure != parent else {
+            guard let parent = targets.target(of: structure), structure != parent else {
                 continue
             }
             processedItems.removeAll(where: { $0 == structure })
@@ -74,40 +73,6 @@ extension Array where Element == SyntaxStructure {
             parent.substructure?.append(contentsOf: members)
         }
         return processedItems
-    }
-
-    /// The item `anExtension` merges into: the type its name means where it is written, by the
-    /// lookup `LayoutGraphBuilder` resolves edges by — the nearest type Swift's access control
-    /// lets it see. With no such type it extends one outside the diagram, and merges into the
-    /// first extension that sees none either, so that type gets one box, its first extension's.
-    /// A type the diagram hides has no box to merge into either: its first drawn extension, one
-    /// whose own lookup finds that same type, stands in for it, as `EdgeEndIds.standIn` has it
-    /// when extensions are drawn apart, and the rest merge there (#153). Extensions are matched
-    /// by the type their names come to, not by spelling, so `extension Alias` and `extension Real`
-    /// share a box after `typealias Alias = Real`, and so do `extension JSON` and
-    /// `extension [String: Int]` after `typealias JSON = [String: Int]` (#125).
-    private func mergeTarget(
-        for anExtension: SyntaxStructure, lookup: LayoutGraphBuilder.TypeLookup,
-        isDrawn: (SyntaxStructure) -> Bool
-    ) -> SyntaxStructure? {
-        guard let name = anExtension.fullName else { return nil }
-        let scope = DeclarationScope(of: anExtension)
-        if let type = lookup.type(named: name, from: scope) {
-            if let declared = first(where: { ObjectIdentifier($0) == type.declaration }), isDrawn(declared) {
-                return declared
-            }
-            return first { item in
-                guard item.kind == .extension, isDrawn(item), let itemName = item.fullName else { return false }
-                return lookup.type(named: itemName, from: DeclarationScope(of: item))?.declaration == type.declaration
-            }
-        }
-        let resolvedName = lookup.resolvedName(of: name, from: scope)
-        return first { item in
-            guard item.kind == .extension, let itemName = item.fullName else { return false }
-            let itemScope = DeclarationScope(of: item)
-            return lookup.resolvedName(of: itemName, from: itemScope) == resolvedName
-                && lookup.type(named: itemName, from: itemScope) == nil
-        }
     }
 
     /// Flattens nested types into the list, setting each one's `parent` in place. Diagram code
@@ -199,5 +164,65 @@ extension ElementKind: Comparable {
 
     static func < (lhs: ElementKind, rhs: ElementKind) -> Bool {
         lhs.sortOrder < rhs.sortOrder
+    }
+}
+
+/// The item each extension merges into, under `mergeExtensions`: the type its name means where it
+/// is written, by the lookup `LayoutGraphBuilder` resolves edges by — the nearest type Swift's
+/// access control lets it see. With no such type it extends one outside the diagram, and merges
+/// into the first extension that sees none either, so that type gets one box, its first
+/// extension's. A type the diagram hides has no box to merge into either: its first drawn
+/// extension, one whose own lookup finds that same type, stands in for it, and the rest merge
+/// there (#153). One that names the type without a module qualifier comes before one that names
+/// it through its module (`extension ModA.Foo`, #124), as `EdgeEndIds.standIn` looks for them, so
+/// the box keeps the type's own name, which the text formats' supertype edges end on. Extensions
+/// are matched by the type their names come to, not by spelling, so `extension Alias` and
+/// `extension Real` share a box after `typealias Alias = Real`, and so do `extension JSON` and
+/// `extension [String: Int]` after `typealias JSON = [String: Int]` (#125).
+///
+/// Each extension is looked up once: finding a hidden type's first extension by looking up every
+/// extension again, for each extension, was cubic on many files that each hide a same-named type.
+private struct MergeTargets {
+    private var targetForExtension: [ObjectIdentifier: SyntaxStructure] = [:]
+
+    init(of items: [SyntaxStructure], isDrawn: (SyntaxStructure) -> Bool) {
+        let lookup = LayoutGraphBuilder.TypeLookup(of: items)
+        var typeForDeclaration: [ObjectIdentifier: SyntaxStructure] = [:]
+        for item in items where item.kind != .extension {
+            typeForDeclaration[ObjectIdentifier(item)] = item
+        }
+        var hiddenTypeOfExtension: [(item: SyntaxStructure, type: ObjectIdentifier)] = []
+        var plainHost: [ObjectIdentifier: SyntaxStructure] = [:]
+        var qualifiedHost: [ObjectIdentifier: SyntaxStructure] = [:]
+        var outsideHost: [String: SyntaxStructure] = [:]
+        for item in items where item.kind == .extension {
+            guard let name = item.fullName else { continue }
+            let scope = DeclarationScope(of: item)
+            guard let type = lookup.type(named: name, from: scope) else {
+                let resolvedName = lookup.resolvedName(of: name, from: scope)
+                let host = outsideHost[resolvedName] ?? item
+                outsideHost[resolvedName] = host
+                targetForExtension[ObjectIdentifier(item)] = host
+                continue
+            }
+            if let declared = typeForDeclaration[type.declaration], isDrawn(declared) {
+                targetForExtension[ObjectIdentifier(item)] = declared
+                continue
+            }
+            hiddenTypeOfExtension.append((item, type.declaration))
+            guard isDrawn(item) else { continue }
+            if lookup.readsModule(name, from: scope) {
+                qualifiedHost[type.declaration] = qualifiedHost[type.declaration] ?? item
+            } else {
+                plainHost[type.declaration] = plainHost[type.declaration] ?? item
+            }
+        }
+        for (item, type) in hiddenTypeOfExtension {
+            targetForExtension[ObjectIdentifier(item)] = plainHost[type] ?? qualifiedHost[type]
+        }
+    }
+
+    func target(of anExtension: SyntaxStructure) -> SyntaxStructure? {
+        targetForExtension[ObjectIdentifier(anExtension)]
     }
 }
