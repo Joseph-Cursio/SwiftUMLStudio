@@ -170,6 +170,31 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
     (#66).
   - An extension's id and label are unchanged.
 
+- **A supertype named in a sugared extension is looked up in Swift's
+  type** (follows #126). Inside `extension [Int]`, Swift looks a name up
+  among the members of Swift's `Array`, then at the top level. The type
+  lookup also tried a type nested in a project `struct Array`, since
+  both are recorded as `Array.Base`. So
+  `extension [Int] { class Sub: Base {} }` drew `Sub` inheriting the
+  project's `Array.Base` rather than a top-level `Base`, in every
+  format, and so did a type a level deeper and a typealias declared in
+  the extension. The mirror went wrong too: inside a project
+  `struct Array`, `Base` could reach the one `extension [Int]` declares,
+  and a written `Array.Base` reached whichever was declared first.
+  - A name built on the types around a declaration now takes only a
+    member of the type they start at: Swift's `Array` for
+    `extension [Int]`, the project's for a `struct Array`, or for a bare
+    `extension Array` beside one.
+  - A dotted name as written means the type its first component means
+    there, so `Array.Base` is the project's unless a nearer `Array`,
+    such as an enclosing type's `typealias Array = [Int]`, shadows it.
+    Only a name two such types share is told apart.
+  - `relationships.inheritance.exclude` matches the supertype the name
+    now means.
+  - PlantUML, Mermaid and Nomnoml write a supertype by its name, so
+    when both `Array.Base` boxes are drawn, they still end the edge on
+    the first. SVG and Studio's canvas reach the right one.
+
 - **A chain of nested `[` no longer takes time that doubles with each
   `[`** (#148). Since swift-syntax 602, SwiftParser reads the element
   after each `[` twice, once to look for InlineArray sugar

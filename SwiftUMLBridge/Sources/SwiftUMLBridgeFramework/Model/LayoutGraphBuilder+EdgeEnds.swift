@@ -87,6 +87,9 @@ extension LayoutGraphBuilder {
     /// that shows an extension's members is the box its nested types hang off (#107).
     struct TypeLookup {
         private var declaredForName: [String: [Declared]] = [:]
+        /// `declaredForName` without its extensions, which a name never means. A name is looked
+        /// up among these, so a namespace's thousand extensions do not slow a lookup of its name.
+        private var typesForName: [String: [Declared]] = [:]
 
         /// A lookup of every type, extension and typealias in `items`, none of them drawn.
         init(of items: [SyntaxStructure] = []) {
@@ -100,6 +103,9 @@ extension LayoutGraphBuilder {
 
         mutating func record(_ declared: Declared, named name: String) {
             declaredForName[name, default: []].append(declared)
+            if !declared.isExtension {
+                typesForName[name, default: []].append(declared)
+            }
         }
 
         /// Records the typealiases among `items` and among their members, a member as
@@ -135,7 +141,13 @@ extension LayoutGraphBuilder {
         /// (#125). A name is never matched against node ids: an undeclared `Foo_1` must not land
         /// on the node issued `Foo_1` as the second declaration of `Foo`.
         func type(named name: String, from scope: Scope, depth: Int = 0) -> Declared? {
-            nearestDeclaration(named: name, from: scope, depth: depth).flatMap { aliased($0, depth: depth) }
+            type(QualifiedName(name: name, root: .asWritten), from: scope, depth: depth)
+        }
+
+        /// `type(named:from:depth:)` for a name whose root is known
+        /// (`qualifiedName(ofWritten:from:)`).
+        func type(_ name: QualifiedName, from scope: Scope, depth: Int = 0) -> Declared? {
+            nearestDeclaration(name, from: scope, depth: depth).flatMap { aliased($0, depth: depth) }
         }
 
         /// `declared` itself, or for a typealias the type it aliases, as seen from the alias. An
@@ -149,56 +161,8 @@ extension LayoutGraphBuilder {
             if declared.isSugared {
                 return extendedType(named: target, from: declared.scope, isSugared: true, depth: depth + 1)
             }
-            let targetName = qualifiedName(ofWritten: target, from: declared.scope)
-            return type(named: targetName, from: declared.scope, depth: depth + 1)
-        }
-
-        /// The type the extension `anExtension` extends
-        /// (`extendedType(named:from:isSugared:depth:)`), as seen from where it is written.
-        func extendedType(of anExtension: SyntaxStructure) -> Declared? {
-            guard let name = anExtension.fullName else { return nil }
-            return extendedType(named: name, from: Scope(of: anExtension), isSugared: anExtension.isSugared)
-        }
-
-        /// The type an extension that writes its type as `name` in `scope` extends: the one the
-        /// name means there (`type(named:from:depth:)`), or `nil` for a type outside the diagram.
-        /// Sugar (`isSugared`) always means the standard library's type: `[Int]`, `[String: Int]`
-        /// and `Int?` are Swift's `Array`, `Dictionary` and `Optional`, outside the diagram even
-        /// beside a project's own type of that name, which a bare `Array` would mean (#126). A
-        /// member path past the sugar, `Array.Stats` for `[Int].Stats`, names a member of that
-        /// type, which the project may declare (`memberOfOutsideType(named:from:depth:)`).
-        /// `mergeExtensions`, the `ext` edge, the edges of the types nested in an extension, its
-        /// stand-ins and the access cap on those nested types all ask this, so they agree.
-        func extendedType(named name: String, from scope: Scope, isSugared: Bool, depth: Int = 0) -> Declared? {
-            guard isSugared else { return type(named: name, from: scope, depth: depth) }
-            // The sugared base is one name, `Array`; a member is joined on with a `.`.
-            return name.contains(".") ? memberOfOutsideType(named: name, from: scope, depth: depth) : nil
-        }
-
-        /// The type a member path past sugar means, `Array.Stats` for `[Int].Stats`. Only its base
-        /// is the standard library's type, so it is a member the project declares in an extension
-        /// of a type outside the diagram (`isInExtensionOfOutsideType(_:depth:)`), as
-        /// `extension [Int] { struct Stats {} }` does, or `extension Array { … }` with no project
-        /// `Array`, and never one nested in a project `struct Array`. `nil` when the project
-        /// declares none, as for Swift's own `[Int].Index`.
-        private func memberOfOutsideType(named name: String, from scope: Scope, depth: Int) -> Declared? {
-            guard depth < 8 else { return nil }
-            let candidates = declarations(named: name).filter {
-                !$0.isExtension && isVisible($0, from: scope, depth: depth)
-                    && isInExtensionOfOutsideType($0, depth: depth)
-            }
-            return scope.nearest(among: candidates, scope: \.scope).flatMap { aliased($0, depth: depth) }
-        }
-
-        /// Whether `declared` is declared in an extension of a type outside the diagram, or in an
-        /// extension of a member the project declares in one, however deep: `Stats` in
-        /// `extension [Int]`, and `Bucket` in `extension [Int].Stats`.
-        private func isInExtensionOfOutsideType(_ declared: Declared, depth: Int) -> Bool {
-            guard let extended = declared.extended, depth < 8 else { return false }
-            guard let type = extendedType(
-                named: extended.name, from: extended.scope, isSugared: extended.isSugared, depth: depth + 1
-            ) else { return true }
-            return isInExtensionOfOutsideType(type, depth: depth + 1)
+            let targetName = qualifiedName(ofWritten: target, from: declared.scope, depth: depth + 1)
+            return type(targetName, from: declared.scope, depth: depth + 1)
         }
 
         /// The name `name` comes to where it is written once every typealias it goes through is
@@ -206,12 +170,18 @@ extension LayoutGraphBuilder {
         /// itself when the declaration it means is no typealias. Two extensions of one type
         /// outside the diagram share this name however each spells the type.
         func resolvedName(of name: String, from scope: Scope, depth: Int = 0) -> String {
-            guard depth < 8, let nearest = nearestDeclaration(named: name, from: scope, depth: depth),
-                  let target = nearest.aliasTarget else { return name }
+            resolvedName(of: QualifiedName(name: name, root: .asWritten), from: scope, depth: depth)
+        }
+
+        /// `resolvedName(of:from:depth:)` for a name whose root is known
+        /// (`qualifiedName(ofWritten:from:)`).
+        func resolvedName(of name: QualifiedName, from scope: Scope, depth: Int = 0) -> String {
+            guard depth < 8, let nearest = nearestDeclaration(name, from: scope, depth: depth),
+                  let target = nearest.aliasTarget else { return name.name }
             // Sugar names the standard library's type, which no project type or alias shadows, or a
             // member path past it, kept as written (#126).
             guard !nearest.isSugared else { return target }
-            let targetName = qualifiedName(ofWritten: target, from: nearest.scope)
+            let targetName = qualifiedName(ofWritten: target, from: nearest.scope, depth: depth + 1)
             return resolvedName(of: targetName, from: nearest.scope, depth: depth + 1)
         }
 
@@ -228,18 +198,28 @@ extension LayoutGraphBuilder {
         /// such a member (`DeclarationScope.enclosingTypes`), as Swift looks a name up, and
         /// `name` itself when none does. So `class Near: Base` in `enum Outer` means
         /// `Outer.Base`, even beside a top-level `Base` (#157). An enclosing class's inherited
-        /// members are not looked in.
-        func qualifiedName(ofWritten name: String, from scope: Scope) -> String {
-            scope.enclosingTypes.lazy.map { "\($0).\(name)" }
-                .first { nearestDeclaration(named: $0, from: scope, depth: 0) != nil } ?? name
+        /// members are not looked in. Such a member is one of the enclosing types' root
+        /// (`enclosingRoot(of:depth:)`): in `extension [Int]`, `Base` is a member of Swift's
+        /// `Array` or a top-level `Base`, never one nested in a project `struct Array`. `depth`
+        /// is the lookup's own, so a cycle of aliases through an extension ends at the guards of
+        /// the lookups it goes through.
+        func qualifiedName(ofWritten name: String, from scope: Scope, depth: Int = 0) -> QualifiedName {
+            let asWritten = QualifiedName(name: name, root: .asWritten)
+            let names = scope.enclosingTypes.map { "\($0).\(name)" }
+            // Most supertypes, `Encodable` say, are no enclosing type's member. Working the root
+            // out takes a lookup of the enclosing extension's type, so it waits for a name a type
+            // is recorded under.
+            guard names.contains(where: { typesForName[$0] != nil }) else { return asWritten }
+            let root = enclosingRoot(of: scope, depth: depth)
+            return names.lazy.map { QualifiedName(name: $0, root: root) }
+                .first { nearestDeclaration($0, from: scope, depth: depth) != nil } ?? asWritten
         }
 
-        /// The nearest of the types and typealiases named `name` that are visible from `scope`.
-        private func nearestDeclaration(named name: String, from scope: Scope, depth: Int) -> Declared? {
-            let candidates = declarations(named: name).filter {
-                !$0.isExtension && isVisible($0, from: scope, depth: depth)
-            }
-            return scope.nearest(among: candidates, scope: \.scope)
+        /// The nearest of the types and typealiases recorded under `name` that are visible from
+        /// `scope` and that it can mean there (`fitting(_:for:from:depth:)`).
+        private func nearestDeclaration(_ name: QualifiedName, from scope: Scope, depth: Int) -> Declared? {
+            let candidates = (typesForName[name.name] ?? []).filter { isVisible($0, from: scope, depth: depth) }
+            return scope.nearest(among: fitting(candidates, for: name, from: scope, depth: depth), scope: \.scope)
         }
 
         /// Whether a name written in `lookup` can mean `declared`, as Swift's access control
@@ -308,10 +288,10 @@ extension LayoutGraphBuilder {
                 return nodeId
             case .named(let written, let scope):
                 let name = lookup.qualifiedName(ofWritten: written, from: scope)
-                guard let type = lookup.type(named: name, from: scope) else {
-                    return fallback(named: name)
+                guard let type = lookup.type(name, from: scope) else {
+                    return fallback(named: name.name)
                 }
-                return node(for: type, named: name)
+                return node(for: type, named: name.name)
             case .declaration(let declaration, let name, let scope):
                 if let nodeId = idForDeclaration[declaration] { return nodeId }
                 if hiddenDeclarations.contains(declaration) { return standIn(for: declaration, named: name) }

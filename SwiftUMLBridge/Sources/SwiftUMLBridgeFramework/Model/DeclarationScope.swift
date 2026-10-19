@@ -13,32 +13,41 @@ struct DeclarationScope {
     /// type an enclosing extension extends, which sees no further out. Empty for a top-level
     /// declaration and for an extension, whose clause Swift reads at file scope (#157).
     let enclosingTypes: [String]
+    /// The extension `enclosingTypes` ends at, when they reach one, with its name and its
+    /// `SyntaxStructure.isSugared`. Its type decides which type those names are members of: for
+    /// `extension [Int]`, Swift's `Array`, not a project `Array` (`TypeLookup.enclosingRoot(of:depth:)`).
+    let enclosingExtension: (name: String, isSugared: Bool)?
 
     /// The scope of `item`, a member of `container` when `item.parent` is not set: a typealias
     /// is never flattened out of its type's members.
     init(of item: SyntaxStructure, in container: SyntaxStructure? = nil) {
         filePath = item.sourceLocation?.filePath ?? container?.sourceLocation?.filePath
         module = item.module ?? container?.module
-        enclosingTypes = item.kind == .extension ? [] : Self.enclosingTypes(from: container ?? item.parent)
+        let enclosing = item.kind == .extension ? [] : Self.enclosingTypes(from: container ?? item.parent)
+        enclosingTypes = enclosing.compactMap { $0.fullName ?? $0.name }
+        enclosingExtension = enclosing.last.flatMap { outermost in
+            outermost.kind == .extension ? outermost.name.map { ($0, outermost.isSugared) } : nil
+        }
     }
 
     init(filePath: String?, module: String?) {
         self.filePath = filePath
         self.module = module
         enclosingTypes = []
+        enclosingExtension = nil
     }
 
-    /// The full names of `context` and the types around it, innermost first, stopping after an
-    /// extension: its body sees the members of the type it extends, not of the types around that.
-    private static func enclosingTypes(from context: SyntaxStructure?) -> [String] {
-        var names: [String] = []
+    /// `context` and the types around it, innermost first, stopping after an extension: its body
+    /// sees the members of the type it extends, not of the types around that.
+    private static func enclosingTypes(from context: SyntaxStructure?) -> [SyntaxStructure] {
+        var types: [SyntaxStructure] = []
         var current = context
-        while let type = current, let name = type.fullName ?? type.name {
-            names.append(name)
+        while let type = current, (type.fullName ?? type.name) != nil {
+            types.append(type)
             if type.kind == .extension { break }
             current = type.parent
         }
-        return names
+        return types
     }
 
     /// The candidate a name means where this scope writes it, close to how Swift looks it up: the

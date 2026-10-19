@@ -204,6 +204,17 @@ struct TypealiasExtensionTests {
         #expect(declaredIds(script(source, .plantuml, .merged), .plantuml).count == 2)
     }
 
+    /// Following `X` reaches `X.Y`, a member of `extension X`, whose own name is looked up from
+    /// inside that extension, which needs `X` again. The lookup used to start that over at depth
+    /// 0, and overflowed the stack.
+    @Test("an alias that cycles through its extension's member ends",
+          arguments: [DiagramFormat.plantuml, .mermaid, .nomnoml, .svg], [ExtensionVisualization.all, .merged, .none])
+    func aliasCycleThroughExtensionMember(format: DiagramFormat, mode: ExtensionVisualization) {
+        // Swift rejects this; the lookup still has to end.
+        let source = "typealias X = X.Y\nextension X {\n    typealias Y = Int\n    class Sub: Base {}\n}\nclass Base {}"
+        #expect(!script(source, format, mode).isEmpty)
+    }
+
     // MARK: - Access
 
     /// A `fileprivate` alias names its type only in its own file, so an extension in another
