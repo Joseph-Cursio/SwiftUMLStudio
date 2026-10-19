@@ -207,7 +207,11 @@ private struct MergeTargets {
                 continue
             }
             if let declared = typeForDeclaration[type.declaration], isDrawn(declared) {
-                targetForExtension[ObjectIdentifier(item)] = declared
+                // An extension `elements.exclude` hides, spelled through a module, stays hidden, as
+                // it did when that spelling found no type.
+                if isDrawn(item) || lookup.readsModule(name, from: scope) == false {
+                    targetForExtension[ObjectIdentifier(item)] = declared
+                }
                 continue
             }
             hiddenTypeOfExtension.append((item, type.declaration))

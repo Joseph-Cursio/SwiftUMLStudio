@@ -20,6 +20,8 @@ class DiagramContext {
     /// `P`'s. `addLinking` draws an edge to a protocol the diagram declares with the realization
     /// arrow instead.
     private var linkTypeForElement: [SyntaxStructure: String] = [:]
+    /// The relationship `uniqName` named each element with, for an edge that ends on it.
+    private var relationshipForElement: [SyntaxStructure: String] = [:]
 
     var uniqElementNames: [String] = []
     var uniqElementAndTypes: [String: String] = [:]
@@ -44,8 +46,9 @@ class DiagramContext {
     /// The drawn elements, by declaration, that a supertype's name resolves to as SVG resolves it,
     /// set by `reserveIdentifiers(drawing:among:)`; nil until then.
     private var edgeEnds: DrawnEdgeEnds?
-    /// The names of the drawn elements that declare an id, the first of each keeping it as its alias.
-    private var drawnNames: Set<String> = []
+    /// The first drawn element of each name that declares an id: the one that keeps the name as
+    /// its alias, so the box an edge to that name ends on.
+    private var firstDrawnForName: [String: SyntaxStructure] = [:]
 
     /// The supertype and nesting edges, in the order they were added.
     var connections: [String] {
@@ -115,15 +118,23 @@ class DiagramContext {
         let scope = scope ?? DeclarationScope(of: item)
         guard let linkTo = linkTarget(for: parent, from: scope), let fullName = item.fullName else { return }
         var target: SyntaxStructure?
-        if !drawnNames.contains(linkTo), !linkTo.hasPrefix("\""), let edgeEnds,
-           let written = parent.name?.removeAngleBracketsWithContent() {
-            target = edgeEnds.element(at: .named(written, from: scope))
+        if !linkTo.hasPrefix("\""), let edgeEnds, let written = parent.name?.removeAngleBracketsWithContent() {
+            // The box of that name, unless it is only `extension ModA.Base`, named as written but
+            // an extension of the type the name means (#124).
+            let box = firstDrawnForName[linkTo]
+            if box == nil || box.map(edgeEnds.isExtensionOfDrawnType) == true {
+                target = edgeEnds.element(at: .named(written, from: scope)).flatMap { $0 === box ? nil : $0 }
+            }
         }
-        // The arrow and label are those of the name the edge ends on, as known when it is added.
-        let key = target?.fullName ?? linkTo
+        // The arrow and label are those of the box the edge ends on, as known when it is added: a
+        // resolved type's own, and an extension standing in for a hidden type's as inheritance.
+        let namedConnection = target.map { target in
+            target.kind == .extension ? "inherits" : relationshipForElement[target]
+                ?? (target.kind == .protocol ? "conforms to" : "inherits")
+        } ?? uniqElementAndTypes[linkTo] ?? "inherits"
         let link = SupertypeLink(
             child: uniqueNameForElement[item] ?? fullName, item: item, linkTo: linkTo, target: target,
-            namedConnection: uniqElementAndTypes[key] ?? "inherits"
+            namedConnection: namedConnection
         )
         connectionEntries.append(target == nil ? .written(supertypeEdge(link)) : .resolved(link))
     }
@@ -238,7 +249,9 @@ class DiagramContext {
     func reserveIdentifiers(drawing items: [SyntaxStructure], among prepared: [SyntaxStructure]? = nil) {
         let edgeEnds = DrawnEdgeEnds(drawing: Set(items), among: prepared ?? items)
         self.edgeEnds = edgeEnds
-        drawnNames = Set(items.filter(declaresIdentifier(of:)).compactMap(\.fullName))
+        for item in items where declaresIdentifier(of: item) {
+            if let name = item.fullName, firstDrawnForName[name] == nil { firstDrawnForName[name] = item }
+        }
         aliases = TypeAliasResolver(flattened: prepared ?? items)
         if drawsNestedTypeConnections {
             hiddenParentEnds = HiddenParentEnd.ends(
@@ -281,6 +294,7 @@ class DiagramContext {
         }
         uniqueNameForElement[item] = newName
         linkTypeForElement[item] = linkType(for: relationship)
+        relationshipForElement[item] = relationship
         return newName
     }
 

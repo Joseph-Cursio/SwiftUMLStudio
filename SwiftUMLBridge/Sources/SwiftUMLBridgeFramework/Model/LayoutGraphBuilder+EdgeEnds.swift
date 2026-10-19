@@ -38,6 +38,9 @@ extension LayoutGraphBuilder {
         let extended: (name: String, scope: Scope)?
         /// For a typealias, the name of the type it aliases, looked up from its own scope (#125).
         let aliasTarget: String?
+        /// The module of the outermost type around the declaration, before any extension: its
+        /// container's for a member `mergeExtensions` moved into a type of another module.
+        let outermostModule: String?
 
         /// `container` is the declaration `item` is a member of, when `item.parent` is not set:
         /// a typealias is never flattened out of its type's members.
@@ -62,6 +65,7 @@ extension LayoutGraphBuilder {
                 }
             }
             ownAccess = levels.min() ?? .internal
+            outermostModule = declared.last?.module ?? scope.module
             extended = chain.first { $0.kind == .extension && $0 !== item }
                 .flatMap { enclosing in enclosing.name.map { ($0, Scope(of: enclosing)) } }
         }
@@ -82,6 +86,8 @@ extension LayoutGraphBuilder {
         private var declaredForName: [String: [Declared]] = [:]
         /// Each declaration as recorded, by its identity.
         private(set) var recordForDeclaration: [ObjectIdentifier: RecordedDeclaration] = [:]
+        /// The names typealiases are recorded under.
+        private(set) var aliasNames: Set<String> = []
         /// A qualifier must name one of these modules to be read as a module (#124).
         private(set) var modules = ModuleQualifiers()
 
@@ -97,6 +103,9 @@ extension LayoutGraphBuilder {
 
         mutating func record(_ declared: Declared, named name: String) {
             declaredForName[name, default: []].append(declared)
+            if declared.aliasTarget != nil {
+                aliasNames.insert(name)
+            }
             recordForDeclaration[declared.declaration] = RecordedDeclaration(
                 name: name, order: recordForDeclaration.count, declared: declared
             )
@@ -303,16 +312,19 @@ extension LayoutGraphBuilder {
         /// `mergeExtensions` merged its extensions into, when it did (#153); else the first
         /// recorded under the edge's own name, `name`, whose own lookup finds it, as before #124;
         /// else one recorded under the type's own name, then one spelled with that name qualified
-        /// by a module (`ExtensionEnds.qualifiedStandIns`). The access-level filter passes
-        /// extensions, so an extension can be drawn while its type is hidden.
+        /// by a module (`ExtensionEnds.qualifiedStandIns`), then one spelled through a typealias.
+        /// The access-level filter passes extensions, so an extension can be drawn while its type
+        /// is hidden.
         private func standIn(for declaration: ObjectIdentifier, named name: String) -> String? {
             if let host = hostForDeclaration[declaration] { return host }
             if let standIn = extensionEnds.ends(named: name, in: lookup).standIns[declaration] { return standIn }
             guard let recorded = lookup.recordForDeclaration[declaration]?.name else { return nil }
-            if recorded != name, let standIn = extensionEnds.ends(named: recorded, in: lookup).standIns[declaration] {
+            if recorded != name,
+               let standIn = extensionEnds.ends(named: recorded, in: lookup).standIns[declaration] {
                 return standIn
             }
             return extensionEnds.qualifiedStandIns(spelling: recorded, in: lookup)[declaration]
+                ?? extensionEnds.aliasStandIns(in: lookup)[declaration]
         }
 
         /// The end for a name no visible type takes, so a type outside the diagram, such as

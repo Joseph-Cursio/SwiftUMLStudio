@@ -79,7 +79,7 @@ extension LayoutGraphBuilder.TypeLookup {
     /// The module of the outermost type `declared` belongs to: its own, or for a declaration
     /// in an extension, that of the type the extension extends, as the extension finds it.
     func owningModule(of declared: Declared, depth: Int) -> String? {
-        guard let extended = declared.extended else { return declared.scope.module }
+        guard let extended = declared.extended else { return declared.outermostModule }
         guard depth < 8, let type = type(named: extended.name, from: extended.scope, depth: depth + 1) else {
             return nil
         }

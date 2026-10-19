@@ -139,6 +139,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   - A qualifier that names no target, such as `Swift` in
     `extension Swift.String`, and every qualifier without `--package`,
     is kept as part of the name.
+  - An extension that `elements.exclude` hides by its spelling through a
+    module, such as `ModA.Foo`, is not merged into the type either, so
+    its members stay hidden, as they did when the spelling found no
+    type.
   - PlantUML, Mermaid and Nomnoml end a supertype edge on the first box
     with the name as written, so a name some box already has still ends
     there, as before, even where Swift means another type of that name:
@@ -147,7 +151,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
     ModA's `Foo.Base`. A name no box has used to give the edge an
     undeclared node of its own; it now ends on the box of the type the
     name means, as in SVG, so `struct S: ModA.Q` ends on ModA's `Q`, and
-    `struct S: Lib.StoreType` on Lib's `Store`.
+    `struct S: Lib.StoreType` on Lib's `Store`. So does a name only the
+    box of `extension ModA.Base` has, since that box is not the class:
+    `class Sub: ModA.Base` ends on `Base`. Such an edge takes the arrow
+    of the box it ends on, a conformance to a protocol and an
+    inheritance otherwise.
   - Still unread: a type declared inside `extension ModA.Foo` is known
     by that spelling, so `extension Foo.Nested` written where `Foo` is
     ModA's does not reach it. A type outside the diagram, such as
@@ -173,10 +181,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   both reach it, and so does a type nested in the hidden type. Drawn
   apart, an edge looks first among extensions spelled the way it is,
   as before, then among those spelled with the type's own name, then
-  among those spelled through its module. So `struct S: Alias`, after
-  `typealias Alias = Real` with only `extension Real` drawn, now ends
-  on that box in SVG, as it already did in PlantUML, Mermaid and
-  Nomnoml, and diagrams without module qualifiers gain such edges.
+  through its module, then through a typealias. So `struct S: Alias`,
+  after `typealias Alias = Real` with only `extension Real` drawn, now
+  ends on that box in SVG, as it already did in PlantUML, Mermaid and
+  Nomnoml, and `struct A: Real` with only `extension Alias` drawn ends
+  on that one in every format, where it had no edge in SVG and an
+  undeclared node in the others. Diagrams without module qualifiers
+  gain such edges.
 
 - **`relationships.dependency.exclude` matches the type an extension
   extends as that type is declared, and supertype excludes match a

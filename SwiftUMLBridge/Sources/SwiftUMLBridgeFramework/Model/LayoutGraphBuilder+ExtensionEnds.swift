@@ -20,6 +20,7 @@ extension LayoutGraphBuilder {
     final class ExtensionEnds {
         private var endsForName: [String: NameEnds] = [:]
         private var qualifiedStandInsForName: [String: [ObjectIdentifier: String]] = [:]
+        private var aliasStandIns: [ObjectIdentifier: String]?
 
         func ends(named name: String, in lookup: TypeLookup) -> NameEnds {
             if let known = endsForName[name] { return known }
@@ -47,6 +48,20 @@ extension LayoutGraphBuilder {
                 standIns[type.declaration] = nodeId
             }
             qualifiedStandInsForName[name] = standIns
+            return standIns
+        }
+
+        /// For each type they find, the first drawn extension spelled through a typealias, such as
+        /// `extension HA` after `typealias HA = Hidden`, in recording order, worked out in one pass.
+        func aliasStandIns(in lookup: TypeLookup) -> [ObjectIdentifier: String] {
+            if let aliasStandIns { return aliasStandIns }
+            var standIns: [ObjectIdentifier: String] = [:]
+            for (spelled, candidate) in lookup.extensions(named: lookup.aliasNames.sorted()) {
+                guard let nodeId = candidate.nodeId, let type = lookup.type(named: spelled, from: candidate.scope),
+                      standIns[type.declaration] == nil else { continue }
+                standIns[type.declaration] = nodeId
+            }
+            aliasStandIns = standIns
             return standIns
         }
 
