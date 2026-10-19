@@ -79,10 +79,10 @@ struct ModuleQualifiedFormatTests {
         #expect(try graph(files, Configuration(format: .svg)).edgeEnds.contains("ModA.Foo.Child -> Foo.Base"))
     }
 
-    /// ModB declares its own `Base`, so a box has that name, and the text formats end the edge
-    /// on it, as they always have, though Swift means ModA's `Foo.Base`, where SVG ends it.
-    @Test("a supertype named like a drawn box still ends on that box in the text formats")
-    func nameOfADrawnBoxWins() throws {
+    /// ModB declares its own `Base`, but inside `extension ModA.Foo` Swift looks `Base` up among
+    /// `Foo`'s members first, so the text formats end the edge on ModA's `Foo.Base`, as SVG does.
+    @Test("a member of a qualified extension is found before a box of its short name")
+    func memberBeforeShortName() throws {
         let modA = """
             public struct Foo {
                 public init() {}
@@ -94,8 +94,22 @@ struct ModuleQualifiedFormatTests {
         let modB = "import ModA\n\nfinal class Base {}\n\nextension ModA.Foo {\n    class Child: Base {}\n}\n"
         let files: [(module: String?, source: String)] = [("ModA", modA), ("ModB", modB)]
         let edges = try lines(files, Configuration(format: .plantuml), containing: "<|--")
-        #expect(edges == ["Base <|-- ModA.Foo.Child : inherits"])
+        #expect(edges == ["Foo.Base <|-- ModA.Foo.Child : inherits"])
         #expect(try graph(files, Configuration(format: .svg)).edgeEnds.contains("ModA.Foo.Child -> Foo.Base"))
+    }
+
+    /// App's own `Store` is the first box named `Store`. `StoreType` is Lib's alias of Lib's
+    /// `Store`, but the text formats end the edge on the name it comes to, as they did before;
+    /// SVG ends it on Lib's.
+    @Test("a supertype whose name some box has still ends on that box in the text formats")
+    func nameOfADrawnBoxWins() throws {
+        let app = "import Lib\n\nprotocol Store {}\n\nstruct Cache: StoreType {}\n"
+        let lib = "public protocol Store {}\npublic typealias StoreType = Store\n"
+        let files: [(module: String?, source: String)] = [("App", app), ("Lib", lib)]
+        let edges = try lines(files, Configuration(format: .plantuml), containing: "Cache")
+            .filter { $0.contains("<|") }
+        #expect(edges == ["Store <|.. Cache : conforms to"])
+        #expect(try graph(files, Configuration(format: .svg)).edgeEnds.contains("Cache -> Store_1"))
     }
 
     /// App declares its own `Store`, so a bare `Store` would end the edge on App's box; Swift

@@ -21,56 +21,6 @@ extension LayoutGraphBuilder {
         case extended(ObjectIdentifier, name: String, scope: Scope)
     }
 
-    /// A declaration, as `TypeLookup` needs it to choose among same-named types. A class, since
-    /// every lookup filters and passes them along: a copy of the struct it was retained each of
-    /// its strings, its two scopes and their imports.
-    final class Declared: Sendable {
-        /// `nil` for a type the diagram hides: it has no node, but still takes its name's lookup.
-        let nodeId: String?
-        let declaration: ObjectIdentifier
-        let isExtension: Bool
-        let scope: Scope
-        /// The most restrictive access level of the declaration and the declarations enclosing
-        /// it, with an enclosing extension's modifier applied. `TypeLookup.access(of:)` also caps
-        /// it by the type that extension extends.
-        let ownAccess: ElementAccessibility
-        /// The type the enclosing extension extends, as written there, when there is one.
-        let extended: (name: String, scope: Scope)?
-        /// For a typealias, the name of the type it aliases, looked up from its own scope (#125).
-        let aliasTarget: String?
-        /// The module of the outermost type around the declaration, before any extension: its
-        /// container's for a member `mergeExtensions` moved into a type of another module.
-        let outermostModule: String?
-
-        /// `container` is the declaration `item` is a member of, when `item.parent` is not set:
-        /// a typealias is never flattened out of its type's members.
-        init(_ item: SyntaxStructure, kind: ElementKind, nodeId: String?, in container: SyntaxStructure? = nil) {
-            self.nodeId = nodeId
-            declaration = ObjectIdentifier(item)
-            isExtension = kind == .extension
-            aliasTarget = kind == .typealias ? item.typename : nil
-            scope = Scope(of: item, in: container)
-            // Extensions are top level, so a chain holds at most one, last.
-            let chain = Array(sequence(first: item) { $0 === item ? container ?? $0.parent : $0.parent })
-            let declared = chain.prefix { $0.kind != .extension }
-            var levels = declared.map { $0.accessibility.flatMap { $0 == .other ? nil : $0 } ?? .internal }
-            if let enclosing = chain.first(where: { $0.kind == .extension }), !levels.isEmpty,
-               let modifier = enclosing.accessibility {
-                // `private extension` and `fileprivate extension` cap what they hold; `public` and
-                // `package` ones set their members' default, which the parser reports as internal.
-                if modifier == .private || modifier == .fileprivate {
-                    levels.append(modifier)
-                } else if modifier >= .package, levels[levels.count - 1] == .internal {
-                    levels[levels.count - 1] = min(modifier, .public)
-                }
-            }
-            ownAccess = levels.min() ?? .internal
-            outermostModule = declared.last?.module ?? scope.module
-            extended = chain.first { $0.kind == .extension && $0 !== item }
-                .flatMap { enclosing in enclosing.name.map { ($0, Scope(of: enclosing)) } }
-        }
-    }
-
     /// A declaration as `TypeLookup` recorded it: the name it is recorded under, and its place
     /// in recording order.
     struct RecordedDeclaration {
@@ -125,15 +75,19 @@ extension LayoutGraphBuilder {
                 }
                 guard let kind = item.kind, ElementKind.processable.contains(kind),
                       let containerName = item.fullName ?? item.name else { continue }
-                // An alias in `extension ModA.Foo` is also `Foo.Alias`, the name it has once merged.
-                let canonical = kind == .extension && readsModule(containerName, from: Scope(of: item))
-                    ? recordedName(of: containerName, from: Scope(of: item)) : nil
+                // An alias in `extension ModA.Foo` is also `Foo.Alias`, the name it has once merged,
+                // ranked as a member of ModA's `Foo`, where a lookup of `Foo` finds it.
+                let extended = kind == .extension && readsModule(containerName, from: Scope(of: item))
+                    ? type(named: containerName, from: Scope(of: item)) : nil
+                let canonical = extended.flatMap { _ in recordedName(of: containerName, from: Scope(of: item)) }
                 for member in item.substructure ?? [] where member.kind == .typealias {
                     guard let name = member.name else { continue }
-                    let declared = Declared(member, kind: .typealias, nodeId: nil, in: item)
-                    record(declared, named: "\(containerName).\(name)")
-                    if let canonical, canonical != containerName {
-                        record(declared, named: "\(canonical).\(name)")
+                    record(Declared(member, kind: .typealias, nodeId: nil, in: item), named: "\(containerName).\(name)")
+                    if let canonical, let extended, canonical != containerName {
+                        let ranked = Declared(
+                            member, kind: .typealias, nodeId: nil, in: item, rankedAs: extended.scope
+                        )
+                        record(ranked, named: "\(canonical).\(name)")
                     }
                 }
             }
@@ -153,13 +107,20 @@ extension LayoutGraphBuilder {
         /// an imported type of its name, as in Swift (#125). A name is never matched against
         /// node ids: an undeclared `Foo_1` must not land on the node issued `Foo_1` as the second
         /// declaration of `Foo`.
-        func type(named name: String, from scope: Scope, depth: Int = 0) -> Declared? {
-            guard let nearest = nearestMatch(named: name, from: scope, depth: depth)?.declared else { return nil }
+        func type(named name: String, from scope: Scope, depth: Int = 0, readingModules: Bool = true) -> Declared? {
+            guard let nearest = nearestMatch(named: name, from: scope, depth: depth, readingModules: readingModules)?
+                .declared else { return nil }
             guard let target = nearest.aliasTarget else { return nearest }
             // Each step follows one alias; Swift rejects a cycle, and the guard is a backstop.
             guard depth < 8 else { return nil }
-            let targetName = qualifiedName(ofWritten: target, from: nearest.scope)
-            return type(named: targetName, from: nearest.scope, depth: depth + 1)
+            let targetName = qualifiedName(ofWritten: target, from: nearest.scope, readingModules: readingModules)
+            return type(named: targetName, from: nearest.scope, depth: depth + 1, readingModules: readingModules)
+        }
+
+        /// Whether `name`, written in `scope`, means a type only by reading a module on the way:
+        /// `ModA.Foo`, or `FA` after `typealias FA = ModA.Foo`.
+        func resolvesOnlyThroughModule(_ name: String, from scope: Scope) -> Bool {
+            type(named: name, from: scope, readingModules: false) == nil && type(named: name, from: scope) != nil
         }
 
         /// The name `name` comes to where it is written once every typealias it goes through is
@@ -206,7 +167,7 @@ extension LayoutGraphBuilder {
             let candidates = declarations(named: name).filter {
                 !$0.isExtension && isVisible($0, from: scope, depth: depth)
             }
-            if let nearest = scope.nearest(among: candidates, scope: \.scope) {
+            if let nearest = scope.nearest(among: candidates, scope: \.rankScope) {
                 return Match(declared: nearest, name: name)
             }
             return readingModules ? moduleMatch(named: name, from: scope, depth: depth) : nil

@@ -192,9 +192,7 @@ private struct MergeTargets {
         for item in items where item.kind != .extension {
             typeForDeclaration[ObjectIdentifier(item)] = item
         }
-        var hiddenTypeOfExtension: [(item: SyntaxStructure, type: ObjectIdentifier)] = []
-        var plainHost: [ObjectIdentifier: SyntaxStructure] = [:]
-        var qualifiedHost: [ObjectIdentifier: SyntaxStructure] = [:]
+        var hidden = HiddenTypeHosts()
         var outsideHost: [String: SyntaxStructure] = [:]
         for item in items where item.kind == .extension {
             guard let name = item.fullName else { continue }
@@ -206,34 +204,65 @@ private struct MergeTargets {
                 targetForExtension[ObjectIdentifier(item)] = host
                 continue
             }
+            // A name that finds its type only through a module found none before #124.
+            let throughModule = lookup.resolvesOnlyThroughModule(name, from: scope)
             if let declared = typeForDeclaration[type.declaration], isDrawn(declared) {
                 // An extension `elements.exclude` hides, spelled through a module, stays hidden, as
                 // it did when that spelling found no type.
-                if isDrawn(item) || lookup.readsModule(name, from: scope) == false {
+                if isDrawn(item) || throughModule == false {
                     targetForExtension[ObjectIdentifier(item)] = declared
                 }
                 continue
             }
-            hiddenTypeOfExtension.append((item, type.declaration))
-            guard isDrawn(item) else { continue }
-            if lookup.readsModule(name, from: scope) {
-                qualifiedHost[type.declaration] = qualifiedHost[type.declaration] ?? item
-            } else {
-                plainHost[type.declaration] = plainHost[type.declaration] ?? item
-            }
+            hidden.add(item, of: type.declaration, drawn: isDrawn(item), throughModule: throughModule)
         }
-        for (item, type) in hiddenTypeOfExtension {
-            // An extension the diagram does not draw, such as one `elements.exclude` names, joins
-            // only a host that names the type as it could before #124, so its members stay hidden.
-            targetForExtension[ObjectIdentifier(item)] = isDrawn(item)
-                ? plainHost[type] ?? qualifiedHost[type] : plainHost[type]
+        for (item, host) in hidden.targets() {
+            targetForExtension[ObjectIdentifier(item)] = host
         }
-        for (type, host) in qualifiedHost.merging(plainHost, uniquingKeysWith: { $1 }) {
+        for (type, host) in hidden.hosts {
             host.standsInFor = typeForDeclaration[type]
         }
     }
 
     func target(of anExtension: SyntaxStructure) -> SyntaxStructure? {
         targetForExtension[ObjectIdentifier(anExtension)]
+    }
+}
+
+/// The extensions of the types the diagram hides, and the drawn one each type's extensions
+/// merge into: the first that names it without a module, else the first that names it through
+/// one. An extension the diagram does not draw, such as one `elements.exclude` names, joins
+/// only a host that names the type as it could before #124, and one that names the type only
+/// through a module joins none, so its members stay hidden.
+private struct HiddenTypeHosts {
+    private struct Entry {
+        let item: SyntaxStructure
+        let type: ObjectIdentifier
+        let drawn: Bool
+    }
+
+    private var extensions: [Entry] = []
+    private var plainHost: [ObjectIdentifier: SyntaxStructure] = [:]
+    private var qualifiedHost: [ObjectIdentifier: SyntaxStructure] = [:]
+
+    mutating func add(_ item: SyntaxStructure, of type: ObjectIdentifier, drawn: Bool, throughModule: Bool) {
+        guard drawn || throughModule == false else { return }
+        extensions.append(Entry(item: item, type: type, drawn: drawn))
+        guard drawn else { return }
+        if throughModule {
+            qualifiedHost[type] = qualifiedHost[type] ?? item
+        } else {
+            plainHost[type] = plainHost[type] ?? item
+        }
+    }
+
+    /// Each hidden type's host.
+    var hosts: [ObjectIdentifier: SyntaxStructure] {
+        qualifiedHost.merging(plainHost) { $1 }
+    }
+
+    /// Each extension, with the host it merges into.
+    func targets() -> [(SyntaxStructure, SyntaxStructure?)] {
+        extensions.map { ($0.item, $0.drawn ? plainHost[$0.type] ?? qualifiedHost[$0.type] : plainHost[$0.type]) }
     }
 }

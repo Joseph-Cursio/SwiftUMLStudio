@@ -33,7 +33,7 @@ extension LayoutGraphBuilder.TypeLookup {
         let candidates = declared.filter {
             isVisible($0, from: scope, depth: depth) && owningModule(of: $0, depth: depth).map(named.contains) == true
         }
-        return scope.nearest(among: candidates, scope: \.scope).map { Match(declared: $0, name: rest) }
+        return scope.nearest(among: candidates, scope: \.rankScope).map { Match(declared: $0, name: rest) }
     }
 
     /// Whether a file in `scope` can write `qualifier` for one of `modules`: the file is in that

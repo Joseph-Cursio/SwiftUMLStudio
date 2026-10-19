@@ -51,11 +51,18 @@ class DiagramContext {
     private var firstDrawnForName: [String: SyntaxStructure] = [:]
 
     /// The supertype and nesting edges, in the order they were added.
+    /// A resolved edge that repeats one already drawn is dropped, as SVG drops a carried one: `P` in
+    /// `Foo`'s clause and `ModA.P` carried by a merged `extension ModA.Foo` are one conformance.
     var connections: [String] {
-        connectionEntries.map { entry in
+        var drawn = Set<String>()
+        return connectionEntries.compactMap { entry in
             switch entry {
-            case .written(let text): text
-            case .resolved(let link): supertypeEdge(link)
+            case .written(let text):
+                drawn.insert(text)
+                return text
+            case .resolved(let link):
+                let text = supertypeEdge(link)
+                return drawn.insert(text).inserted ? text : nil
             }
         }
     }

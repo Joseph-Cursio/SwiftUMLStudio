@@ -56,10 +56,12 @@ struct TypeAliasResolver {
     /// (`TypeLookup.qualifiedName(ofWritten:from:)`, #157), then through every typealias. A module
     /// qualifier is not read: the name ends an edge on the first box of that name, which for a
     /// bare `Foo` could be another module's `Foo`, so `ModA.Foo` stays as written, and
-    /// `DiagramContext.addLinking` ends it on the declaration's box when no box has it (#124).
+    /// `DiagramContext.addLinking` ends it on the declaration's box when no box has it (#124). A
+    /// member of `extension ModA.Foo` is still looked for in ModA's `Foo` first, and found as
+    /// `ModA.Foo.Base`, a name no box has, so `addLinking` ends it on `Foo.Base`.
     func resolve(_ name: String, from scope: DeclarationScope) -> String {
         guard let lookup else { return name }
-        let qualified = lookup.qualifiedName(ofWritten: name, from: scope, readingModules: false)
+        let qualified = lookup.qualifiedName(ofWritten: name, from: scope)
         return lookup.resolvedName(of: qualified, from: scope, readingModules: false)
     }
 
@@ -77,11 +79,10 @@ struct TypeAliasResolver {
             return false
         }
         let qualified = lookup.qualifiedName(ofWritten: name, from: scope)
-        let resolved = [
-            resolve(name, from: scope),
-            lookup.recordedName(of: qualified, from: scope) ?? qualified,
-            lookup.resolvedName(of: qualified, from: scope)
-        ]
+        var resolved = [resolve(name, from: scope), lookup.resolvedName(of: qualified, from: scope)]
+        if lookup.readsModule(qualified, from: scope), let recorded = lookup.recordedName(of: qualified, from: scope) {
+            resolved.append(recorded)
+        }
         return resolved.contains { $0 != name && SyntaxStructure(name: $0).isExcluded(byPatterns: patterns) }
     }
 }

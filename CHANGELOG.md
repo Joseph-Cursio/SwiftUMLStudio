@@ -143,19 +143,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
     module, such as `ModA.Foo`, is not merged into the type either, so
     its members stay hidden, as they did when the spelling found no
     type.
+  - In every format, a name written inside `extension ModA.Foo` is looked
+    for among `Foo`'s members first, as Swift does: `class Child: Base`
+    there means ModA's `Foo.Base`, even beside ModB's own `Base`.
   - PlantUML, Mermaid and Nomnoml end a supertype edge on the first box
-    with the name as written, so a name some box already has still ends
-    there, as before, even where Swift means another type of that name:
-    beside ModB's own `Base`, `class Child: Base` inside
-    `extension ModA.Foo` ends on ModB's `Base`, where SVG ends it on
-    ModA's `Foo.Base`. A name no box has used to give the edge an
-    undeclared node of its own; it now ends on the box of the type the
-    name means, as in SVG, so `struct S: ModA.Q` ends on ModA's `Q`, and
+    with the name it comes to, so a name some box already has still
+    ends there, as before, even where Swift means another type of that
+    name: after Lib's `typealias StoreType = Store`, `Cache: StoreType`
+    ends on App's own `Store` box when that comes first, where SVG ends
+    it on Lib's. A name no box has used to give the edge an undeclared
+    node of its own; it now ends on the box of the type the name means,
+    as in SVG, so `struct S: ModA.Q` ends on ModA's `Q`, and
     `struct S: Lib.StoreType` on Lib's `Store`. So does a name only the
     box of `extension ModA.Base` has, since that box is not the class:
     `class Sub: ModA.Base` ends on `Base`. Such an edge takes the arrow
     of the box it ends on, a conformance to a protocol and an
-    inheritance otherwise.
+    inheritance otherwise, and is drawn once when the same conformance
+    is also written without the module.
   - Still unread: a type declared inside `extension ModA.Foo` is known
     by that spelling, so `extension Foo.Nested` written where `Foo` is
     ModA's does not reach it. A type outside the diagram, such as
