@@ -237,6 +237,7 @@ final class SyntaxStructureBuilder: SyntaxVisitor {
         )
         if node.extendedType.extendedTypeName != nil {
             structure.boundGenericArguments = node.extendedType.boundGenericArguments
+            structure.isSugared = node.extendedType.isSugared
         }
         stampLocation(on: structure, at: node.extendedType.positionAfterSkippingLeadingTrivia)
         pushType(structure)
@@ -320,6 +321,7 @@ final class SyntaxStructureBuilder: SyntaxVisitor {
             name: node.name.canonicalName,
             typename: target
         )
+        structure.isSugared = node.initializer.value.isSugared
         stampLocation(on: structure, at: node.name.positionAfterSkippingLeadingTrivia)
         if typeStack.isEmpty {
             topLevelItems.append(structure)

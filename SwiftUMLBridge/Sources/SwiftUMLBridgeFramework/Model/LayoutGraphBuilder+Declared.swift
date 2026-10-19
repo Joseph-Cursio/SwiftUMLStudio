@@ -24,9 +24,12 @@ extension LayoutGraphBuilder {
         /// it by the type that extension extends.
         let ownAccess: ElementAccessibility
         /// The type the enclosing extension extends, as written there, when there is one.
-        let extended: (name: String, scope: Scope)?
+        let extended: ExtensionTarget?
         /// For a typealias, the name of the type it aliases, looked up from its own scope (#125).
         let aliasTarget: String?
+        /// For an extension or a typealias, `SyntaxStructure.isSugared`: its name, or its
+        /// `aliasTarget`, is a standard-library type's, whatever the project declares (#126).
+        let isSugared: Bool
         /// The module of the outermost type around the declaration, before any extension: its
         /// container's for a member `mergeExtensions` moved into a type of another module.
         let outermostModule: String?
@@ -42,6 +45,7 @@ extension LayoutGraphBuilder {
             declaration = ObjectIdentifier(item)
             isExtension = kind == .extension
             aliasTarget = kind == .typealias ? item.typename : nil
+            isSugared = item.isSugared
             scope = Scope(of: item, in: container)
             // Extensions are top level, so a chain holds at most one, last.
             let chain = Array(sequence(first: item) { $0 === item ? container ?? $0.parent : $0.parent })
@@ -60,8 +64,11 @@ extension LayoutGraphBuilder {
             ownAccess = levels.min() ?? .internal
             outermostModule = declared.last?.module ?? scope.module
             rankScope = rankedAs ?? declared.last.flatMap { $0 === item ? nil : Scope(of: $0) } ?? scope
-            extended = chain.first { $0.kind == .extension && $0 !== item }
-                .flatMap { enclosing in enclosing.name.map { ($0, Scope(of: enclosing)) } }
+            extended = chain.first { $0.kind == .extension && $0 !== item }.flatMap { enclosing in
+                enclosing.name.map {
+                    ExtensionTarget(name: $0, scope: Scope(of: enclosing), isSugared: enclosing.isSugared)
+                }
+            }
         }
     }
 }

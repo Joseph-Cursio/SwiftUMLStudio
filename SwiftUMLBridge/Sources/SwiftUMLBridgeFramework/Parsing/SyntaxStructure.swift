@@ -97,6 +97,15 @@ internal class SyntaxStructure: NSObject, Codable, @unchecked Sendable {
     /// linked, merged and excluded as one of that type; emitters only show these beside it (#66).
     internal var boundGenericArguments: String?
 
+    /// Whether an extension writes the type it extends with sugar, or a typealias the type it
+    /// aliases: `[Int]`, `[String: Int]`, `Int?` (`TypeSyntax.isSugared`). `name`, or a
+    /// typealias's `typename`, is then the standard-library type's (`Array`, `Dictionary`,
+    /// `Optional`), which the sugar always means, even where the project declares a type of that
+    /// name; past a member path (`Array.Stats` for `[Int].Stats`), only the base is.
+    /// `TypeLookup.extendedType(of:)` reads it, so a project's own `Array` is not the type
+    /// `extension [Int]` extends (#126).
+    internal var isSugared = false
+
     private enum CodingKeys: String, CodingKey {
         case accessibility = "key.accessibility"
         case attribute = "key.attribute"
@@ -130,6 +139,7 @@ internal class SyntaxStructure: NSObject, Codable, @unchecked Sendable {
         imports = original.imports
         carriedSupertypes = original.carriedSupertypes
         boundGenericArguments = original.boundGenericArguments
+        isSugared = original.isSugared
         super.init()
     }
 

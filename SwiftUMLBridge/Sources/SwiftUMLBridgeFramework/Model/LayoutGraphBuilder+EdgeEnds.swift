@@ -16,9 +16,19 @@ extension LayoutGraphBuilder {
         case named(String, from: Scope)
         /// A particular declaration, or its name as seen from its own scope when it is not drawn.
         case declaration(ObjectIdentifier, name: String, scope: Scope)
-        /// The type an extension extends, as seen from the extension's scope; the extension
-        /// itself when the diagram draws no such type.
-        case extended(ObjectIdentifier, name: String, scope: Scope)
+        /// The type an extension extends, as seen from the extension's scope
+        /// (`TypeLookup.extendedType(named:from:isSugared:depth:)`); the extension itself when the
+        /// diagram draws no such type.
+        case extended(ObjectIdentifier, name: String, scope: Scope, isSugared: Bool)
+    }
+
+    /// The type an extension extends, as the extension writes it: what
+    /// `TypeLookup.extendedType(named:from:isSugared:depth:)` looks up.
+    struct ExtensionTarget {
+        let name: String
+        let scope: Scope
+        /// The extension's `SyntaxStructure.isSugared`.
+        let isSugared: Bool
     }
 
     /// A declaration as `TypeLookup` recorded it: the name it is recorded under, and its place
@@ -78,7 +88,7 @@ extension LayoutGraphBuilder {
                 // An alias in `extension ModA.Foo` is also `Foo.Alias`, the name it has once merged,
                 // ranked as a member of ModA's `Foo`, where a lookup of `Foo` finds it.
                 let extended = kind == .extension && readsModule(containerName, from: Scope(of: item))
-                    ? type(named: containerName, from: Scope(of: item)) : nil
+                    ? extendedType(of: item) : nil
                 let canonical = extended.flatMap { _ in recordedName(of: containerName, from: Scope(of: item)) }
                 for member in item.substructure ?? [] where member.kind == .typealias {
                     guard let name = member.name else { continue }
@@ -103,24 +113,81 @@ extension LayoutGraphBuilder {
         /// (`DeclarationScope.nearest(among:scope:)`) of the types and typealiases visible there,
         /// drawn or hidden, and for a typealias the type it aliases, as seen from the alias;
         /// `nil` when there is none, only extensions or nothing, or when the alias names a type
-        /// outside the diagram. A typealias ranks with the types, so a module's own alias shadows
-        /// an imported type of its name, as in Swift (#125). A name is never matched against
-        /// node ids: an undeclared `Foo_1` must not land on the node issued `Foo_1` as the second
-        /// declaration of `Foo`.
+        /// outside the diagram, as an alias of `[Int]` always does (#126). A typealias ranks with
+        /// the types, so a module's own alias shadows an imported type of its name, as in Swift
+        /// (#125). A name is never matched against node ids: an undeclared `Foo_1` must not land
+        /// on the node issued `Foo_1` as the second declaration of `Foo`.
         func type(named name: String, from scope: Scope, depth: Int = 0, readingModules: Bool = true) -> Declared? {
-            guard let nearest = nearestMatch(named: name, from: scope, depth: depth, readingModules: readingModules)?
-                .declared else { return nil }
-            guard let target = nearest.aliasTarget else { return nearest }
-            // Each step follows one alias; Swift rejects a cycle, and the guard is a backstop.
-            guard depth < 8 else { return nil }
-            let targetName = qualifiedName(ofWritten: target, from: nearest.scope, readingModules: readingModules)
-            return type(named: targetName, from: nearest.scope, depth: depth + 1, readingModules: readingModules)
+            nearestMatch(named: name, from: scope, depth: depth, readingModules: readingModules)
+                .flatMap { aliased($0.declared, depth: depth, readingModules: readingModules) }
         }
 
         /// Whether `name`, written in `scope`, means a type only by reading a module on the way:
         /// `ModA.Foo`, or `FA` after `typealias FA = ModA.Foo`.
         func resolvesOnlyThroughModule(_ name: String, from scope: Scope) -> Bool {
             type(named: name, from: scope, readingModules: false) == nil && type(named: name, from: scope) != nil
+        }
+
+        /// `declared` itself, or for a typealias the type it aliases, as seen from the alias. An
+        /// alias of sugar means what an extension so written extends
+        /// (`extendedType(named:from:isSugared:depth:)`): Swift's `Array` for `[Int]`, which is
+        /// outside the diagram (#126). Each step follows one alias; Swift rejects a cycle, and the
+        /// depth guard is a backstop.
+        private func aliased(_ declared: Declared, depth: Int, readingModules: Bool = true) -> Declared? {
+            guard let target = declared.aliasTarget else { return declared }
+            guard depth < 8 else { return nil }
+            if declared.isSugared {
+                return extendedType(named: target, from: declared.scope, isSugared: true, depth: depth + 1)
+            }
+            let targetName = qualifiedName(ofWritten: target, from: declared.scope, readingModules: readingModules)
+            return type(named: targetName, from: declared.scope, depth: depth + 1, readingModules: readingModules)
+        }
+        /// The type the extension `anExtension` extends
+        /// (`extendedType(named:from:isSugared:depth:)`), as seen from where it is written.
+        func extendedType(of anExtension: SyntaxStructure) -> Declared? {
+            guard let name = anExtension.fullName else { return nil }
+            return extendedType(named: name, from: Scope(of: anExtension), isSugared: anExtension.isSugared)
+        }
+
+        /// The type an extension that writes its type as `name` in `scope` extends: the one the
+        /// name means there (`type(named:from:depth:)`), or `nil` for a type outside the diagram.
+        /// Sugar (`isSugared`) always means the standard library's type: `[Int]`, `[String: Int]`
+        /// and `Int?` are Swift's `Array`, `Dictionary` and `Optional`, outside the diagram even
+        /// beside a project's own type of that name, which a bare `Array` would mean (#126). A
+        /// member path past the sugar, `Array.Stats` for `[Int].Stats`, names a member of that
+        /// type, which the project may declare (`memberOfOutsideType(named:from:depth:)`).
+        /// `mergeExtensions`, the `ext` edge, the edges of the types nested in an extension, its
+        /// stand-ins and the access cap on those nested types all ask this, so they agree.
+        func extendedType(named name: String, from scope: Scope, isSugared: Bool, depth: Int = 0) -> Declared? {
+            guard isSugared else { return type(named: name, from: scope, depth: depth) }
+            // The sugared base is one name, `Array`; a member is joined on with a `.`.
+            return name.contains(".") ? memberOfOutsideType(named: name, from: scope, depth: depth) : nil
+        }
+
+        /// The type a member path past sugar means, `Array.Stats` for `[Int].Stats`. Only its base
+        /// is the standard library's type, so it is a member the project declares in an extension
+        /// of a type outside the diagram (`isInExtensionOfOutsideType(_:depth:)`), as
+        /// `extension [Int] { struct Stats {} }` does, or `extension Array { … }` with no project
+        /// `Array`, and never one nested in a project `struct Array`. `nil` when the project
+        /// declares none, as for Swift's own `[Int].Index`.
+        private func memberOfOutsideType(named name: String, from scope: Scope, depth: Int) -> Declared? {
+            guard depth < 8 else { return nil }
+            let candidates = declarations(named: name).filter {
+                !$0.isExtension && isVisible($0, from: scope, depth: depth)
+                    && isInExtensionOfOutsideType($0, depth: depth)
+            }
+            return scope.nearest(among: candidates, scope: \.rankScope).flatMap { aliased($0, depth: depth) }
+        }
+
+        /// Whether `declared` is declared in an extension of a type outside the diagram, or in an
+        /// extension of a member the project declares in one, however deep: `Stats` in
+        /// `extension [Int]`, and `Bucket` in `extension [Int].Stats`.
+        private func isInExtensionOfOutsideType(_ declared: Declared, depth: Int) -> Bool {
+            guard let extended = declared.extended, depth < 8 else { return false }
+            guard let type = extendedType(
+                named: extended.name, from: extended.scope, isSugared: extended.isSugared, depth: depth + 1
+            ) else { return true }
+            return isInExtensionOfOutsideType(type, depth: depth + 1)
         }
 
         /// The name `name` comes to where it is written once every typealias it goes through is
@@ -135,9 +202,20 @@ extension LayoutGraphBuilder {
                   let match = nearestMatch(named: name, from: scope, depth: depth, readingModules: readingModules)
             else { return name }
             guard let target = match.declared.aliasTarget else { return match.name }
+            // Sugar names the standard library's type, which no project type or alias shadows, or a
+            // member path past it, kept as written (#126).
+            guard !match.declared.isSugared else { return target }
             let scope = match.declared.scope
             let targetName = qualifiedName(ofWritten: target, from: scope, readingModules: readingModules)
             return resolvedName(of: targetName, from: scope, readingModules: readingModules, depth: depth + 1)
+        }
+
+        /// The name the type the extension `anExtension` extends comes to (`resolvedName(of:from:)`),
+        /// so two extensions of one type outside the diagram share it however each spells the
+        /// type. Written with sugar, it is the standard-library type's name as it stands (#126).
+        func resolvedExtendedName(of anExtension: SyntaxStructure) -> String? {
+            guard let name = anExtension.fullName else { return nil }
+            return anExtension.isSugared ? name : resolvedName(of: name, from: Scope(of: anExtension))
         }
 
         /// The name a type written as `name` in a declaration's inheritance clause is recorded
@@ -193,8 +271,9 @@ extension LayoutGraphBuilder {
         /// as that extension's own lookup finds it. Each step resolves a shorter name, so this
         /// ends; the depth guard is a backstop.
         private func access(of declared: Declared, depth: Int) -> ElementAccessibility {
-            guard let extended = declared.extended, depth < 8,
-                  let type = type(named: extended.name, from: extended.scope, depth: depth + 1) else {
+            guard let extended = declared.extended, depth < 8, let type = extendedType(
+                named: extended.name, from: extended.scope, isSugared: extended.isSugared, depth: depth + 1
+            ) else {
                 return declared.ownAccess
             }
             return min(declared.ownAccess, access(of: type, depth: depth + 1))
@@ -254,9 +333,9 @@ extension LayoutGraphBuilder {
                     return fallback(named: name)
                 }
                 return node(for: type, named: name)
-            case .extended(let declaration, let name, let scope):
+            case .extended(let declaration, let name, let scope, let isSugared):
                 // With no type of that name visible there, the extension stands for itself.
-                guard let type = lookup.type(named: name, from: scope) else {
+                guard let type = lookup.extendedType(named: name, from: scope, isSugared: isSugared) else {
                     return idForDeclaration[declaration] ?? fallback(named: name)
                 }
                 // For a hidden type, this very extension is its stand-in: its own lookup found it.
@@ -295,58 +374,6 @@ extension LayoutGraphBuilder {
         /// say, extends something else and never stands in.
         private func fallback(named name: String) -> String? {
             extensionEnds.fallback(named: name, in: lookup)
-        }
-    }
-
-    /// What a `PendingEdge` is, for telling a merged extension's repeated conformance from the rest.
-    enum EdgeRole {
-        /// An edge from a type's box to a supertype its own clause names.
-        case supertype
-        /// An edge from a type's box to a supertype a merged extension carried to it (#76).
-        case carriedSupertype
-        case other
-    }
-
-    /// An edge whose ends are resolved to node ids once every node exists.
-    struct PendingEdge {
-        let source: EdgeEnd
-        let target: EdgeEnd
-        let style: EdgeStyle
-        var role: EdgeRole = .other
-
-        /// The edge between the nodes its ends name, or `nil` when an end names an element the
-        /// diagram does not draw.
-        func resolved(through endIds: EdgeEndIds) -> LayoutEdge? {
-            guard let sourceId = endIds.id(of: source), let targetId = endIds.id(of: target) else { return nil }
-            return LayoutEdge(sourceId: sourceId, targetId: targetId, style: style)
-        }
-    }
-
-    /// Hands out node ids that are distinct within one diagram. The dagre layout keys nodes by
-    /// id, so two nodes sharing one are placed, sized and drawn as one.
-    ///
-    /// Every drawn element's name is reserved up front, so the first declaration of a name keeps
-    /// it and a later one's `_n` suffix never takes a name declared further on.
-    struct NodeIdAllocator {
-        private var taken: Set<String>
-        private var issuedNames: Set<String> = []
-
-        init(reserving names: [String]) {
-            taken = Set(names)
-        }
-
-        mutating func issue(for name: String) -> String {
-            var nodeId = name
-            if issuedNames.contains(name) {
-                var counter = 1
-                repeat {
-                    nodeId = "\(name)_\(counter)"
-                    counter += 1
-                } while taken.contains(nodeId)
-            }
-            issuedNames.insert(name)
-            taken.insert(nodeId)
-            return nodeId
         }
     }
 }

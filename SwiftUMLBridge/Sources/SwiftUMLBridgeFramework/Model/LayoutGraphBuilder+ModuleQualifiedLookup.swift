@@ -80,7 +80,9 @@ extension LayoutGraphBuilder.TypeLookup {
     /// in an extension, that of the type the extension extends, as the extension finds it.
     func owningModule(of declared: Declared, depth: Int) -> String? {
         guard let extended = declared.extended else { return declared.outermostModule }
-        guard depth < 8, let type = type(named: extended.name, from: extended.scope, depth: depth + 1) else {
+        guard depth < 8, let type = extendedType(
+            named: extended.name, from: extended.scope, isSugared: extended.isSugared, depth: depth + 1
+        ) else {
             return nil
         }
         return owningModule(of: type, depth: depth + 1)

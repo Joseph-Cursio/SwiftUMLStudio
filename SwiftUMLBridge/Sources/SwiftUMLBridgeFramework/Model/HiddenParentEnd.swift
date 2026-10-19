@@ -32,7 +32,7 @@ enum HiddenParentEnd {
                   let parentName = parent.fullName else { continue }
             let scope = DeclarationScope(of: parent)
             let end: LayoutGraphBuilder.EdgeEnd = parent.kind == .extension
-                ? .extended(ObjectIdentifier(parent), name: parentName, scope: scope)
+                ? .extended(ObjectIdentifier(parent), name: parentName, scope: scope, isSugared: parent.isSugared)
                 : .declaration(ObjectIdentifier(parent), name: parentName, scope: scope)
             if let element = edgeEnds.element(at: end) {
                 ends[ObjectIdentifier(item)] = .element(element)

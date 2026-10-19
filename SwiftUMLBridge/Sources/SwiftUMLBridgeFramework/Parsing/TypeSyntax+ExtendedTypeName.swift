@@ -28,6 +28,22 @@ extension TypeSyntax {
         }
     }
 
+    /// Whether `extendedTypeName` names this type after the standard-library type its sugar stands
+    /// for: `[Int]`, `[String: Int]`, `[3 of Int]`, `Int?`, `Int!`, a member of one (`[Int].Index`)
+    /// or one in parentheses. The sugar always means Swift's `Array`, `Dictionary`, `InlineArray`
+    /// or `Optional`, even where the project declares a type of that name, which a bare `Array`
+    /// would mean instead (#126). For a member, only the base is Swift's type: the member may be
+    /// one the project declares in an extension of it.
+    var isSugared: Bool {
+        switch self.as(TypeSyntaxEnum.self) {
+        case .arrayType, .dictionaryType, .inlineArrayType, .optionalType, .implicitlyUnwrappedOptionalType:
+            return true
+        case .memberType(let member): return member.baseType.isSugared
+        case .tupleType(let tuple): return tuple.parenthesizedType?.isSugared ?? false
+        default: return false
+        }
+    }
+
     /// The generic arguments this type binds on the type `extendedTypeName` names, as written but
     /// with each name canonical, joined with `", "`, for display beside that name: `Foo<Int>` →
     /// `Int`, `Outer<Int>.Inner<String>` → `String` (only the last component's), `[Int]` and

@@ -197,15 +197,15 @@ private struct MergeTargets {
         for item in items where item.kind == .extension {
             guard let name = item.fullName else { continue }
             let scope = DeclarationScope(of: item)
-            guard let type = lookup.type(named: name, from: scope) else {
-                let resolvedName = lookup.resolvedName(of: name, from: scope)
+            guard let type = lookup.extendedType(of: item) else {
+                let resolvedName = lookup.resolvedExtendedName(of: item) ?? name
                 let host = outsideHost[resolvedName] ?? item
                 outsideHost[resolvedName] = host
                 targetForExtension[ObjectIdentifier(item)] = host
                 continue
             }
             // A name that finds its type only through a module found none before #124.
-            let throughModule = lookup.resolvesOnlyThroughModule(name, from: scope)
+            let throughModule = item.isSugared == false && lookup.resolvesOnlyThroughModule(name, from: scope)
             if let declared = typeForDeclaration[type.declaration], isDrawn(declared) {
                 // An extension `elements.exclude` hides, spelled through a module, stays hidden, as
                 // it did when that spelling found no type.

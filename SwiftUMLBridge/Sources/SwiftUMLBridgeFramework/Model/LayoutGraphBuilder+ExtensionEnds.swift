@@ -27,7 +27,9 @@ extension LayoutGraphBuilder {
             var ends = NameEnds()
             for candidate in lookup.declarations(named: name) where candidate.isExtension {
                 guard let nodeId = candidate.nodeId else { continue }
-                if let type = lookup.type(named: name, from: candidate.scope) {
+                if let type = lookup.extendedType(
+                    named: name, from: candidate.scope, isSugared: candidate.isSugared
+                ) {
                     if ends.standIns[type.declaration] == nil { ends.standIns[type.declaration] = nodeId }
                 } else if ends.fallback == nil {
                     ends.fallback = nodeId
@@ -43,7 +45,8 @@ extension LayoutGraphBuilder {
             if let known = qualifiedStandInsForName[name] { return known }
             var standIns: [ObjectIdentifier: String] = [:]
             for (spelled, candidate) in lookup.extensions(named: lookup.moduleQualifiedNames(of: name)) {
-                guard let nodeId = candidate.nodeId, let type = lookup.type(named: spelled, from: candidate.scope),
+                guard let nodeId = candidate.nodeId,
+                      let type = lookup.extendedType(named: spelled, from: candidate.scope, isSugared: candidate.isSugared),
                       standIns[type.declaration] == nil else { continue }
                 standIns[type.declaration] = nodeId
             }
@@ -57,7 +60,8 @@ extension LayoutGraphBuilder {
             if let aliasStandIns { return aliasStandIns }
             var standIns: [ObjectIdentifier: String] = [:]
             for (spelled, candidate) in lookup.extensions(named: lookup.aliasNames.sorted()) {
-                guard let nodeId = candidate.nodeId, let type = lookup.type(named: spelled, from: candidate.scope),
+                guard let nodeId = candidate.nodeId,
+                      let type = lookup.extendedType(named: spelled, from: candidate.scope, isSugared: candidate.isSugared),
                       standIns[type.declaration] == nil else { continue }
                 standIns[type.declaration] = nodeId
             }
