@@ -573,13 +573,13 @@ Each Swift type appears as a node. Arrows indicate relationships:
 | Arrow | Meaning |
 |---|---|
 | Solid `<\|--` | Inheritance (`class Dog: Animal`) |
-| Dashed `<\|..` | Conformance to a protocol the diagram declares (`protocol Pet {}` and `struct Dog: Pet`) |
+| Dashed `<\|..` | Conformance to a protocol the sources declare, drawn or hidden (`protocol Pet {}` and `struct Dog: Pet`) |
 | Dotted `<..` | Extension dependency, and each supertype an extension adds (`Codable <.. User0`) |
 | `+--` (PlantUML only) | Nested type |
 
 These are the arrows PlantUML and Mermaid write. Nomnoml's are listed under [Relationship Arrows](reference.md#relationship-arrows) in the reference.
 
-A conformance to a protocol the diagram does not declare, such as `Codable`, is labelled `inherits` and drawn with the arrow of the declaration that lists it. So `struct User: Codable` gives `Codable <|-- User : inherits`, and `enum Role: Codable` gives `Codable -- Role : inherits`. The [reference](reference.md#relationship-arrows) gives each kind's arrow.
+A conformance to a protocol the sources do not declare, such as `Codable`, is labelled `inherits` and drawn with the arrow of the declaration that lists it. So `struct User: Codable` gives `Codable <|-- User : inherits`, and `enum Role: Codable` gives `Codable -- Role : inherits`. The [reference](reference.md#relationship-arrows) gives each kind's arrow, and the cases where a conformance to a protocol the sources declare is labelled `inherits` too.
 
 The SVG canvas draws a conformance like inheritance, with a solid line and a hollow triangle. The exception is a supertype that an extension adds, which is dashed with an open arrowhead. The canvas draws no edge to a type the diagram does not declare, so `struct User: Codable` alone is a lone `User` box.
 

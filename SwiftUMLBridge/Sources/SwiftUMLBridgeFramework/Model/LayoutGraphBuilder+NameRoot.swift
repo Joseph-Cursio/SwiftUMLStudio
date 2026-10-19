@@ -62,7 +62,9 @@ extension LayoutGraphBuilder.TypeLookup {
     /// extension of a member the project declares in one, however deep: `Stats` in
     /// `extension [Int]`, and `Bucket` in `extension [Int].Stats`.
     func isInExtensionOfOutsideType(_ declared: LayoutGraphBuilder.Declared, depth: Int) -> Bool {
-        declared.extended.map { extendsOutsideType($0, depth: depth) } ?? false
+        guard declared.extended != nil, depth < 8 else { return false }
+        guard let type = enclosingExtensionType(of: declared, depth: depth) else { return true }
+        return isInExtensionOfOutsideType(type, depth: depth + 1)
     }
 
     /// Whether the extension that writes its type as `target` extends a type outside the

@@ -36,6 +36,7 @@ extension LayoutGraphBuilder {
         /// `nil` for a type the diagram hides: it has no node, but still takes its name's lookup.
         let nodeId: String?
         let declaration: ObjectIdentifier
+        let kind: ElementKind
         let isExtension: Bool
         let scope: Scope
         /// The most restrictive access level of the declaration and the declarations enclosing
@@ -55,6 +56,7 @@ extension LayoutGraphBuilder {
         init(_ item: SyntaxStructure, kind: ElementKind, nodeId: String?, in container: SyntaxStructure? = nil) {
             self.nodeId = nodeId
             declaration = ObjectIdentifier(item)
+            self.kind = kind
             isExtension = kind == .extension
             aliasTarget = kind == .typealias ? item.typename : nil
             isSugared = item.isSugared
@@ -90,6 +92,15 @@ extension LayoutGraphBuilder {
         /// `declaredForName` without its extensions, which a name never means. A name is looked
         /// up among these, so a namespace's thousand extensions do not slow a lookup of its name.
         private var typesForName: [String: [Declared]] = [:]
+        /// `typesForName` by the file each was declared in, so a name with a candidate in the
+        /// writer's own file, which `DeclarationScope.nearest` always picks, is looked up there alone.
+        private var typesForNameInFile: [String: [String: [Declared]]] = [:]
+        /// The type each declaration's enclosing extension extends, once worked out
+        /// (`enclosingExtensionType(of:depth:)`); `record` starts a new one.
+        private var enclosingTypes = EnclosingTypes()
+        /// The names a type declared in an extension is recorded under, the only names a dotted
+        /// name as written can be told apart by (`fitsEachAlone(_:)`).
+        private var namesWithExtendedTypes: Set<String> = []
 
         /// A lookup of every type, extension and typealias in `items`, none of them drawn.
         init(of items: [SyntaxStructure] = []) {
@@ -105,7 +116,12 @@ extension LayoutGraphBuilder {
             declaredForName[name, default: []].append(declared)
             if !declared.isExtension {
                 typesForName[name, default: []].append(declared)
+                if let filePath = declared.scope.filePath {
+                    typesForNameInFile[name, default: [:]][filePath, default: []].append(declared)
+                }
+                if declared.extended != nil { namesWithExtendedTypes.insert(name) }
             }
+            enclosingTypes = EnclosingTypes()
         }
 
         /// Records the typealiases among `items` and among their members, a member as
@@ -218,8 +234,100 @@ extension LayoutGraphBuilder {
         /// The nearest of the types and typealiases recorded under `name` that are visible from
         /// `scope` and that it can mean there (`fitting(_:for:from:depth:)`).
         private func nearestDeclaration(_ name: QualifiedName, from scope: Scope, depth: Int) -> Declared? {
-            let candidates = (typesForName[name.name] ?? []).filter { isVisible($0, from: scope, depth: depth) }
-            return scope.nearest(among: fitting(candidates, for: name, from: scope, depth: depth), scope: \.scope)
+            if let local = localNearest(name, from: scope, depth: depth) { return local }
+            return scope.nearest(among: candidates(name, from: scope, depth: depth), scope: \.scope)
+        }
+
+        /// Whether `fitting(_:for:from:depth:)` takes or drops each candidate on its own, so the
+        /// candidates of one file fit as they do among the rest. A dotted name as written is fitted
+        /// by what the whole set holds, but only when a type declared in an extension is among them.
+        private func fitsEachAlone(_ name: QualifiedName) -> Bool {
+            !(name.root == .asWritten && name.name.contains(".")) || !namesWithExtendedTypes.contains(name.name)
+        }
+
+        /// The nearest candidate when one is in `scope`'s own file, found without the rest: one in
+        /// the same file is always visible, and `DeclarationScope.nearest` picks the first such.
+        private func localNearest(_ name: QualifiedName, from scope: Scope, depth: Int) -> Declared? {
+            guard let filePath = scope.filePath, fitsEachAlone(name),
+                  let local = typesForNameInFile[name.name]?[filePath] else { return nil }
+            return fitting(local, for: name, from: scope, depth: depth).first
+        }
+
+        private func candidates(_ name: QualifiedName, from scope: Scope, depth: Int) -> [Declared] {
+            let visible = (typesForName[name.name] ?? []).filter { isVisible($0, from: scope, depth: depth) }
+            return fitting(visible, for: name, from: scope, depth: depth)
+        }
+
+        /// `type(_:from:depth:)`, and, when that is a protocol, whether it surely is: the nearest
+        /// candidate is one in the writer's own file or module, or the only one, or every
+        /// candidate comes to a protocol, and a typealias on the way was as sure. Imports are not
+        /// tracked, so among same-named types of other modules the nearest is a guess, which may
+        /// be one the writer does not import. Only a protocol names an edge apart, so no other
+        /// kind costs a check. `kinds` keeps each typealias's kind once worked out, and the answer
+        /// for a writer with no candidate in its own file, which depends on its module alone:
+        /// without them, a name many same-named aliases share looked each alias's target up for
+        /// every edge, and every alias of a chain the next one's.
+        func typeWithSureKind(
+            _ name: QualifiedName, from scope: Scope, depth: Int = 0, kinds: AliasKinds
+        ) -> (type: Declared?, kindIsSure: Bool) {
+            // The writer's own candidate is the nearest, and surely the one it means.
+            if let local = localNearest(name, from: scope, depth: depth) {
+                let resolved = resolvedType(of: local, depth: depth, kinds: kinds)
+                guard resolved.type?.kind == .protocol else { return (resolved.type, true) }
+                return (resolved.type, resolved.isSure)
+            }
+            guard scope.filePath != nil, fitsEachAlone(name) else {
+                return uncachedTypeWithSureKind(name, from: scope, depth: depth, kinds: kinds)
+            }
+            let key = SharedLookupKey(name: name.name, root: name.root, module: scope.module, depth: depth)
+            if let known = kinds.shared[key] { return known }
+            let result = uncachedTypeWithSureKind(name, from: scope, depth: depth, kinds: kinds)
+            kinds.shared[key] = result
+            return result
+        }
+
+        private func uncachedTypeWithSureKind(
+            _ name: QualifiedName, from scope: Scope, depth: Int, kinds: AliasKinds
+        ) -> (type: Declared?, kindIsSure: Bool) {
+            let found = candidates(name, from: scope, depth: depth)
+            guard let nearest = scope.nearest(among: found, scope: \.scope) else { return (nil, true) }
+            let resolved = resolvedType(of: nearest, depth: depth, kinds: kinds)
+            let type = resolved.type
+            guard type?.kind == .protocol else { return (type, true) }
+            guard resolved.isSure else { return (type, false) }
+            let isOwn = scope.filePath.map { $0 == nearest.scope.filePath } == true
+                || scope.module.map { $0 == nearest.scope.module } == true
+            guard found.count > 1, !isOwn else { return (type, true) }
+            return (type, found.allSatisfy { resolvedKind(of: $0, depth: depth, kinds: kinds) == (.protocol, true) })
+        }
+
+        /// The kind `declared` comes to, through a typealias the kind of the type it aliases, or
+        /// `nil` for one outside the diagram, and whether that is sure (`typeWithSureKind`). Each
+        /// step follows one alias, as `aliased(_:depth:)` does, so a cycle of them ends at the
+        /// same depth guard, unsure.
+        private func resolvedKind(
+            of declared: Declared, depth: Int, kinds: AliasKinds
+        ) -> (kind: ElementKind?, isSure: Bool) {
+            if declared.aliasTarget != nil, declared.isSugared { return (nil, true) }
+            let resolved = resolvedType(of: declared, depth: depth, kinds: kinds)
+            return (resolved.type?.kind, resolved.isSure)
+        }
+
+        /// `aliased(_:depth:)`, and whether the kind of what it comes to is sure, kept in `kinds`
+        /// for each typealias: the type is the one `typeWithSureKind` finds for the alias's
+        /// target, so a chain's last link, in another file, is looked up once for the writer's
+        /// module, not once per alias.
+        private func resolvedType(
+            of declared: Declared, depth: Int, kinds: AliasKinds
+        ) -> (type: Declared?, isSure: Bool) {
+            guard let target = declared.aliasTarget else { return (declared, true) }
+            if declared.isSugared { return (aliased(declared, depth: depth), true) }
+            guard depth < 8 else { return (nil, false) }
+            if let known = kinds[declared.declaration, depth] { return known }
+            let targetName = qualifiedName(ofWritten: target, from: declared.scope, depth: depth + 1)
+            let (type, isSure) = typeWithSureKind(targetName, from: declared.scope, depth: depth + 1, kinds: kinds)
+            kinds[declared.declaration, depth] = (type, isSure)
+            return (type, isSure)
         }
 
         /// Whether a name written in `lookup` can mean `declared`, as Swift's access control
@@ -242,122 +350,23 @@ extension LayoutGraphBuilder {
         /// as that extension's own lookup finds it. Each step resolves a shorter name, so this
         /// ends; the depth guard is a backstop.
         private func access(of declared: Declared, depth: Int) -> ElementAccessibility {
-            guard let extended = declared.extended, depth < 8, let type = extendedType(
-                named: extended.name, from: extended.scope, isSugared: extended.isSugared, depth: depth + 1
-            ) else {
+            guard depth < 8, let type = enclosingExtensionType(of: declared, depth: depth) else {
                 return declared.ownAccess
             }
             return min(declared.ownAccess, access(of: type, depth: depth + 1))
         }
-    }
 
-    /// The node ids an `EdgeEnd` can resolve to, gathered while the nodes are built.
-    struct EdgeEndIds {
-        private var lookup = TypeLookup()
-        private var idForDeclaration: [ObjectIdentifier: String] = [:]
-        private var hiddenDeclarations: Set<ObjectIdentifier> = []
-        /// `standIn` and `fallback` for each name, worked out once: searching per edge end made a
-        /// diagram of many files that each hide a same-named type cubic in their number.
-        private var extensionEnds = ExtensionEnds()
-
-        mutating func record(_ nodeId: String, for entry: DiagramItem) {
-            lookup.record(Declared(entry.item, kind: entry.kind, nodeId: nodeId), named: entry.name)
-            idForDeclaration[ObjectIdentifier(entry.item)] = nodeId
-            extensionEnds = ExtensionEnds()
-        }
-
-        /// Records a type the diagram hides. A hidden extension is simply gone: only a type can
-        /// be what a name means.
-        mutating func recordHidden(_ entry: DiagramItem) {
-            guard entry.kind != .extension else { return }
-            lookup.record(Declared(entry.item, kind: entry.kind, nodeId: nil), named: entry.name)
-            hiddenDeclarations.insert(ObjectIdentifier(entry.item))
-            extensionEnds = ExtensionEnds()
-        }
-
-        /// Records the typealiases among `items`, the items the diagram was built from, once
-        /// every type is recorded (`TypeLookup.recordAliases(in:)`).
-        mutating func recordAliases(in items: [SyntaxStructure]) {
-            lookup.recordAliases(in: items)
-            extensionEnds = ExtensionEnds()
-        }
-
-        func id(of end: EdgeEnd) -> String? {
-            switch end {
-            case .node(let nodeId):
-                return nodeId
-            case .named(let written, let scope):
-                let name = lookup.qualifiedName(ofWritten: written, from: scope)
-                guard let type = lookup.type(name, from: scope) else {
-                    return fallback(named: name.name)
-                }
-                return node(for: type, named: name.name)
-            case .declaration(let declaration, let name, let scope):
-                if let nodeId = idForDeclaration[declaration] { return nodeId }
-                if hiddenDeclarations.contains(declaration) { return standIn(for: declaration, named: name) }
-                guard let type = lookup.type(named: name, from: scope) else {
-                    return fallback(named: name)
-                }
-                return node(for: type, named: name)
-            case .extended(let declaration, let name, let scope, let isSugared):
-                // With no type of that name visible there, the extension stands for itself.
-                guard let type = lookup.extendedType(named: name, from: scope, isSugared: isSugared) else {
-                    return idForDeclaration[declaration] ?? fallback(named: name)
-                }
-                // For a hidden type, this very extension is its stand-in: its own lookup found it.
-                return type.nodeId ?? idForDeclaration[declaration] ?? standIn(for: type.declaration, named: name)
+        /// The type `declared`'s enclosing extension extends, as that extension's own lookup finds
+        /// it at `depth + 1`, or `nil` for none. It depends on the declaration alone, so it is
+        /// worked out once: `access(of:depth:)` and `isInExtensionOfOutsideType(_:depth:)` ask it
+        /// of every candidate of a name, and each answer is a lookup of its own.
+        func enclosingExtensionType(of declared: Declared, depth: Int) -> Declared? {
+            guard let extended = declared.extended else { return nil }
+            return enclosingTypes.type(of: declared.declaration, depth: depth) {
+                extendedType(
+                    named: extended.name, from: extended.scope, isSugared: extended.isSugared, depth: depth + 1
+                )
             }
-        }
-
-        /// The node an edge to `type` ends on: its own, or for a hidden type its stand-in.
-        private func node(for type: Declared, named name: String) -> String? {
-            type.nodeId ?? standIn(for: type.declaration, named: name)
-        }
-
-        /// A drawn extension of the hidden type `declaration`, one whose own lookup of `name`
-        /// finds it, or `nil` to drop the edge. The access-level filter passes extensions, so an
-        /// extension can be drawn while its type is hidden.
-        private func standIn(for declaration: ObjectIdentifier, named name: String) -> String? {
-            extensionEnds.ends(named: name, in: lookup).standIns[declaration]
-        }
-
-        /// The end for a name no visible type takes, so a type outside the diagram, such as
-        /// `String`: the first drawn extension of that same outside type, one whose own lookup
-        /// finds no visible type of the name either (#55 pins the first), or `nil` when there is
-        /// none. An extension of a type the reference cannot see, a hidden `fileprivate` one,
-        /// say, extends something else and never stands in.
-        private func fallback(named name: String) -> String? {
-            extensionEnds.ends(named: name, in: lookup).fallback
-        }
-    }
-
-    /// Where the drawn extensions of one name end edges: for each type their own lookups find,
-    /// the first such extension (`EdgeEndIds.standIn`), and the first that finds none
-    /// (`EdgeEndIds.fallback`), each the node id of a drawn extension.
-    struct NameEnds {
-        var standIns: [ObjectIdentifier: String] = [:]
-        var fallback: String?
-    }
-
-    /// `NameEnds` for each name, filled the first time an edge end asks for it. A class, so
-    /// `EdgeEndIds.id(of:)` can fill it without being mutating; `EdgeEndIds` starts a new one
-    /// whenever it records a declaration, so no entry outlives what it was worked out from.
-    final class ExtensionEnds {
-        private var endsForName: [String: NameEnds] = [:]
-
-        func ends(named name: String, in lookup: TypeLookup) -> NameEnds {
-            if let known = endsForName[name] { return known }
-            var ends = NameEnds()
-            for candidate in lookup.declarations(named: name) where candidate.isExtension {
-                guard let nodeId = candidate.nodeId else { continue }
-                if let type = lookup.extendedType(named: name, from: candidate.scope, isSugared: candidate.isSugared) {
-                    if ends.standIns[type.declaration] == nil { ends.standIns[type.declaration] = nodeId }
-                } else if ends.fallback == nil {
-                    ends.fallback = nodeId
-                }
-            }
-            endsForName[name] = ends
-            return ends
         }
     }
 }

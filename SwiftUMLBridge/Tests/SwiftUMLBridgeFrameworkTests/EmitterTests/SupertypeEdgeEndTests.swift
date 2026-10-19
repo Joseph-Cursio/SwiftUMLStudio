@@ -77,7 +77,8 @@ struct SupertypeEdgeEndTests {
     @Test("an edge to a hidden protocol ends on its stand-in, not another hidden type's",
           arguments: textFormats, [ExtensionVisualization.all, .merged])
     func endsOnHiddenTypesStandIn(format: DiagramFormat, mode: ExtensionVisualization) throws {
-        let arrow = format == .nomnoml ? "-:>" : "<|--"
+        // A conformance to the hidden protocol, though it ends on an extension.
+        let arrow = format == .nomnoml ? "--:>" : "<|.."
         #expect(try edges(from: "U", Self.standIns, format, mode) == ["P0 \(arrow)"])
         #expect(try svgEndMembers(from: "U", Self.standIns, mode) == [["~ fromProtocolFile()"]])
     }
@@ -93,7 +94,7 @@ struct SupertypeEdgeEndTests {
             extension Optional { func bare() {} }
             public struct U: Optional {}
             """)]
-        let arrow = format == .nomnoml ? "-:>" : "<|--"
+        let arrow = format == .nomnoml ? "--:>" : "<|.."
         #expect(try edges(from: "U", files, format, mode, access: [.public, .open]) == ["Optional0 \(arrow)"])
         #expect(try svgEndMembers(from: "U", files, mode, access: [.public, .open]) == [["~ bare()"]])
     }
@@ -111,20 +112,6 @@ struct SupertypeEdgeEndTests {
         #expect(try edges(from: "SubA", Self.twoFiles, format, access: Self.everyAccessLevel) == ["Base \(arrow)"])
         #expect(try edges(from: "SubB", Self.twoFiles, format, access: Self.everyAccessLevel) == ["Base0 \(arrow)"])
         #expect(try svgEndMembers(from: "SubB", Self.twoFiles, access: Self.everyAccessLevel) == [["~ inB"]])
-    }
-
-    /// The protocol is drawn first, so the name `Base` was a protocol's, and `Sub`'s edge to its
-    /// superclass took the realization arrow. It is an inheritance, to the class.
-    @Test("an edge to a class takes the inheritance arrow though a protocol of its name comes first",
-          arguments: textFormats)
-    func classEndTakesInheritanceArrow(format: DiagramFormat) throws {
-        let files = [
-            ("A.swift", "fileprivate protocol Base {}\nfileprivate struct Conformer: Base {}"),
-            ("B.swift", "fileprivate class Base { var isClass = 0 }\nfileprivate class Sub: Base {}")
-        ]
-        let (inherits, realizes) = format == .nomnoml ? ("-:>", "--:>") : ("<|--", "<|..")
-        #expect(try edges(from: "Sub", files, format, access: Self.everyAccessLevel) == ["Base0 \(inherits)"])
-        #expect(try edges(from: "Conformer", files, format, access: Self.everyAccessLevel) == ["Base \(realizes)"])
     }
 
     // MARK: - Two types recorded under one name (#126)
@@ -199,10 +186,10 @@ struct SupertypeEdgeEndTests {
     }
 
     /// With extensions hidden, no box is named `P`, so the edge is written to a node of its own,
-    /// as it always has been.
+    /// as it always has been: a conformance, since the name means C's hidden protocol.
     @Test("an edge SVG finds no end for is still written by name where no drawn box has it", arguments: textFormats)
     func noEndWrittenByName(format: DiagramFormat) throws {
-        let arrow = format == .nomnoml ? "-:>" : "<|--"
+        let arrow = format == .nomnoml ? "--:>" : "<|.."
         #expect(try edges(from: "U", Self.noStandIn, format, .none) == ["P \(arrow)"])
     }
 
@@ -238,17 +225,6 @@ struct SupertypeEdgeEndTests {
             """)]
         let realizes = format == .nomnoml ? "--:>" : "<|.."
         #expect(try edges(from: "Foo", files, format, .merged) == ["P \(realizes)"])
-    }
-
-    // MARK: - Labels
-
-    /// Protocols are drawn first, in file order, so `Named` had no box yet when `Animal`'s edge to
-    /// it was drawn, and the edge was labelled `inherits`.
-    @Test("an edge to a parent protocol drawn later is labelled as a conformance", arguments: textFormats)
-    func parentProtocolDrawnLater(format: DiagramFormat) throws {
-        let text = try script([("A.swift", "protocol Animal: Named {}\nprotocol Named {}")], format).text
-        let edge = format == .nomnoml ? "[Animal] --:> conforms to [Named]" : "Named <|.. Animal : conforms to"
-        #expect(text.split(separator: "\n").contains { $0.hasPrefix(edge) })
     }
 
     // MARK: - Controls

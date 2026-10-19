@@ -229,9 +229,39 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   - an edge from a protocol to a parent protocol drawn after it was
     labelled `inherits`.
 
-  An edge that ends on a stand-in, another extension or no drawn box
-  still follows the first box of its name drawn so far, which can be
-  another file's type of that name.
+  An edge to a hidden type follows that type too (see the next entry).
+
+- **A conformance to a hidden protocol is drawn as a conformance**. In
+  PlantUML, Mermaid and Nomnoml, an edge to a type the diagram hides,
+  ending on its stand-in (#153) or written to its name, was labelled,
+  styled and given its arrow from the first box of that name drawn so
+  far. That box was often another file's type, or there was none, which
+  gave `inherits`. So `struct U: P` with B.swift's
+  `fileprivate protocol P` drew `P0 <|-- U : inherits`. With another
+  file's `private protocol P` drawn first it was right by accident, and
+  with a `private class P` there it was wrong again. The edge is now
+  named after the type the name means, drawn or hidden: `conforms to`,
+  with the realization arrow, for a protocol, and `inherits` for
+  anything else. Two other cases took their name from the first box
+  the same way and now inherit too:
+  - an enum's raw type beside a protocol of its name drawn first, as
+    in `Code0 <|.. Kind : conforms to`;
+  - a type outside the diagram, whose kind the diagram does not know.
+    `extension Foo: Encodable` beside `extension Encodable {}` was
+    labelled `ext`, and a subclass of Foundation's `NSObject` beside
+    another file's `private protocol NSObject` was a conformance.
+
+  Imports are not tracked, so when other modules declare the name as
+  different kinds, the lookup cannot tell which one the writer imports.
+  If the edge then ends on no protocol's own box, it is named
+  `inherits`, not after whichever module came first. This holds through
+  a typealias, the writer's own included, and when the other module's
+  type is a typealias of a type outside the diagram. An edge that ends
+  on a drawn protocol's box stays a conformance, as the box's shape
+  says. With `showNestedTypes: false`, nested types are not looked up,
+  so a conformance to a nested protocol is still named `inherits`. The
+  reference, the user guide and the Studio guide now say a
+  protocol the sources declare, drawn or hidden, takes realization.
 
 - **A chain of nested `[` no longer takes time that doubles with each
   `[`** (#148). Since swift-syntax 602, SwiftParser reads the element

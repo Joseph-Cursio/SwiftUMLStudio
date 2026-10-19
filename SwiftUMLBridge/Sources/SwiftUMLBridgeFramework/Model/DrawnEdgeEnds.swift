@@ -32,6 +32,17 @@ struct DrawnEdgeEnds {
         endIds.id(of: end).flatMap { elementForKey[$0] }
     }
 
+    /// The drawn element an edge to the supertype written `name` in `scope` ends on, and whether
+    /// the edge is a realization, the type the name means, drawn or hidden, being a protocol: a
+    /// hidden protocol's edge is one even where it ends on its stand-in
+    /// (`EdgeEndIds.supertype(named:from:)`).
+    func supertype(
+        named name: String, from scope: DeclarationScope
+    ) -> (element: SyntaxStructure?, isProtocol: Bool) {
+        let end = endIds.supertype(named: name, from: scope)
+        return (end.id.flatMap { elementForKey[$0] }, end.isProtocol)
+    }
+
     /// The drawn type the drawn extension `anExtension` extends: the one its name means where it
     /// is written, as `mergeExtensions` merges it into (#107). `nil` when that type is hidden, or
     /// when no type of the name is visible there, as for an extension of `String`, or of `[Int]`

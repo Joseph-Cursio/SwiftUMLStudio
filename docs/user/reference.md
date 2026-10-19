@@ -692,9 +692,9 @@ relationships:
       textColor: DarkGray
 
   realize:
-    # Dashed arrow (<|..) for conformance to a protocol the diagram declares.
-    # A conformance to one it does not declare, such as Codable, is labelled
-    # and styled as inheritance.
+    # Dashed arrow (<|..) for conformance to a protocol the sources declare,
+    # drawn or hidden. A conformance to one they do not declare, such as
+    # Codable, is labelled and styled as inheritance.
     label: "conforms to"
     exclude:
       # Pooled with inheritance.exclude (see above).
@@ -1071,9 +1071,9 @@ A supertype edge goes to the type its name means where the type's clause is writ
 
 Nomnoml writes the same edges child first, with its own arrows: `[Child] -:> [Parent]`, `[Type] --:> [Protocol]`, `[Extension] --> [Type]` and `[Outer] +- [Outer.Inner]`. An enum's or actor's supertypes use `-`, as in `[Suit] - [String]`. nomnoml reads a label only beside the arrow, so that is where it goes: `[Dog] -:> inherits [Animal]`. Each node is declared under the id its edges use, with the type's header as its title, as in `[<extension id=Dog0> Dog|~bark()]`.
 
-A conformance is labelled and styled as realization only when the diagram declares the protocol. A conformance to one it does not declare, such as `Codable`, is labelled and styled as inheritance: `struct User: Codable` gives `Codable <|-- User : inherits`. SVG class diagrams honour `relationships.inheritance.exclude` and `relationships.realize.exclude`, but not relationship labels, styles or `dependency.exclude`.
+A conformance is labelled and styled as realization only when the sources declare the protocol, whether the diagram draws it or hides it: an edge to a hidden protocol, ending on its stand-in or on its name, is a conformance too. Where the diagram cannot tell what the name means, the edge is labelled and styled as inheritance, unless it ends on a protocol's own box. Imports are not tracked, for example, so when other modules declare the name as different kinds, the diagram cannot tell which one is meant. With `elements.showNestedTypes: false`, nested types are not looked up at all. And some names are not followed: a module-qualified one such as `MyModule.P`, a typealias of a composition such as `typealias PR = P & R`, and a chain of more than eight typealiases. A conformance to one the sources do not declare, such as `Codable`, is labelled and styled as inheritance: `struct User: Codable` gives `Codable <|-- User : inherits`. SVG class diagrams honour `relationships.inheritance.exclude` and `relationships.realize.exclude`, but not relationship labels, styles or `dependency.exclude`.
 
-Each declaration draws its supertype edges from its own box, with its own kind's arrow: `<|--` from a class or struct, `<|..` from a protocol, `<..` from an extension and `--` from an enum or actor. A supertype the diagram declares as a protocol takes `<|..` from any of them. So `struct User {}` with `extension User: Codable {}` gives `Codable <.. User0 : inherits`, from the extension's box, and when two `#if` branches each declare `class PlatformView`, each box draws its own superclass. Nomnoml's arrows for the same are `-:>`, `--:>`, `-->` and `-`.
+Each declaration draws its supertype edges from its own box, with its own kind's arrow: `<|--` from a class or struct, `<|..` from a protocol, `<..` from an extension and `--` from an enum or actor. A supertype the sources declare as a protocol takes `<|..` from any of them. So `struct User {}` with `extension User: Codable {}` gives `Codable <.. User0 : inherits`, from the extension's box, and when two `#if` branches each declare `class PlatformView`, each box draws its own superclass. Nomnoml's arrows for the same are `-:>`, `--:>`, `-->` and `-`.
 
 A type also draws the conformances its macro adds, unless its clause already names them: `@Observable` adds `Observable`, and SwiftData's `@Model` adds `Observable` and `PersistentModel`. So `@Model final class Item {}` gives `Observable <|-- Item : inherits` and `PersistentModel <|-- Item : inherits`, in PlantUML, Mermaid and Nomnoml but not SVG. Each macro may be written with its module, as `@Observation.Observable` or `@SwiftData.Model`; a macro of the same name from another module adds nothing. The macro's name, as written, is also the type's stereotype, such as `<<SwiftData.Model>>`.
 
