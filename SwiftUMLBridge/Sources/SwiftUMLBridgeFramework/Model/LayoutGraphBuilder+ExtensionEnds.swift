@@ -35,15 +35,19 @@ extension LayoutGraphBuilder {
         private var qualifiedStandInsForName: [String: [ObjectIdentifier: String]] = [:]
         private var aliasSpelledEnds: AliasSpelledEnds?
 
-        /// One pass over the drawn extensions written through a typealias, in recording order. An
+        /// One pass over the drawn extensions written through a typealias, its module first or not
+        /// (`extension MyModule.Describable`), in recording order. An
         /// extension whose type's name is not sure (`TypeLookup.sureResolvedName(of:from:depth:)`)
         /// is no other spelling's fallback.
         func aliasSpelled(in lookup: TypeLookup) -> AliasSpelledEnds {
             if let aliasSpelledEnds { return aliasSpelledEnds }
             var ends = AliasSpelledEnds()
-            for (name, candidate) in lookup.recordedExtensions where lookup.namesTypealias(name) {
+            for (name, candidate) in lookup.recordedExtensions {
                 guard let nodeId = candidate.nodeId else { continue }
                 let scope = candidate.scope
+                guard lookup.namesTypealias(name) || lookup.spellsTypealiasThroughModule(name, from: scope) else {
+                    continue
+                }
                 if let type = lookup.extendedType(named: name, from: scope, isSugared: candidate.isSugared) {
                     if ends.standIns[type.declaration] == nil { ends.standIns[type.declaration] = nodeId }
                 } else if let resolved = lookup.resolvedExtendedName(

@@ -131,7 +131,9 @@ extension LayoutGraphBuilder {
         /// something else and never stands in.
         private func fallback(named name: String, resolving resolved: @autoclosure () -> String?) -> String? {
             if let fallback = extensionEnds.ends(named: name, in: lookup).fallback { return fallback }
-            guard lookup.namesTypealias(name) else { return extensionEnds.aliasSpelled(in: lookup).fallbacks[name] }
+            guard lookup.namesTypealias(name) || lookup.mayReadModule(name) else {
+                return extensionEnds.aliasSpelled(in: lookup).fallbacks[name]
+            }
             guard let resolved = resolved() else { return nil }
             if resolved != name, let fallback = extensionEnds.ends(named: resolved, in: lookup).fallback {
                 return fallback

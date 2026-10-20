@@ -381,9 +381,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   Such an edge now ends on an extension of its own spelling when there
   is one, as before. Otherwise it ends on an extension spelled with the
   name the type comes to, and failing that on the first drawn extension
-  written through a typealias that comes to it. A type nested in an
-  extension the diagram hides hangs off its type's other extension in
-  the same way.
+  written through a typealias that comes to it, its module first or
+  not: under `--package`, `extension MyModule.Describable` or, in
+  another target, `extension Lib.Describable` counts, and so does an
+  edge written `Lib.Describable`. A type nested in an extension the
+  diagram hides hangs off its type's other extension in the same way.
   - A name written inside an extension of a type outside the diagram
     may be one of that type's members, which the diagram cannot see.
     So `extension Date { typealias Style = FormatStyle }` means
