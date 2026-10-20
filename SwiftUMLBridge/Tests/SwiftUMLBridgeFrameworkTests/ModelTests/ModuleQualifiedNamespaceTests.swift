@@ -86,6 +86,35 @@ struct ModuleQualifiedNamespaceTests {
         #expect(try lines(files, Configuration(format: .plantuml), containing: ": ext") == [extEdge])
     }
 
+    /// A scoped import finds its declaration through the module's re-exports, as Swift does:
+    /// `import enum Mid.Analytics` shows Core's namespace where Mid re-exports Core, directly, down
+    /// a chain, or with `@_exported import enum Core.Analytics`, so `Analytics.Event` and `Inner`
+    /// in it are Core's. `import struct Mid.Thing` shows only `Thing`.
+    @Test("a scoped import shows a namespace its module re-exports", arguments: [
+        ([("Mid", "@_exported import Core\n")] as [(module: String?, source: String)],
+         "import enum Mid.Analytics\n", "Analytics.Event"),
+        ([("Bridge", "@_exported import Core\n"), ("Mid", "@_exported import Bridge\n")],
+         "import enum Mid.Analytics\n", "Analytics.Event"),
+        ([("Mid", "@_exported import enum Core.Analytics\n")], "import enum Mid.Analytics\n", "Analytics.Event"),
+        ([("Mid", "@_exported import Core\n")], "import struct Mid.Thing\n", "Event")
+    ])
+    func scopedImportThroughReexport(
+        others: [(module: String?, source: String)], scoped: String, owner: String
+    ) throws {
+        let analytics = "public struct Event {\n    public init() {}\n    open class Inner {\n"
+            + "        public init() {}\n    }\n}"
+        let core = "public enum Analytics {\n    public struct Event {\n        open class Inner {\n"
+            + "            public init() {}\n        }\n    }\n}\npublic struct Thing {}"
+        let written = "import Analytics\n" + scoped
+            + "\nextension Analytics.Event {\n    func track() {}\n    final class Child: Inner {}\n}\n"
+        let files = [("Analytics", analytics), ("Core", core)] + others + [("App", written)]
+        #expect(try graph(files).owner(of: "track") == owner)
+        #expect(try lines(files, Configuration(format: .plantuml), containing: ": ext")
+            == ["\(owner) <.. Analytics.Event0 : ext"])
+        #expect(try lines(files, Configuration(format: .plantuml), containing: ": inherits")
+            == ["\(owner).Inner <|-- Analytics.Event.Child : inherits"])
+    }
+
     /// A supertype is read as an extended type is: Core's `Analytics.Base`, re-exported.
     @Test("a re-exported namespace keeps a supertype's qualifier a type")
     func reexportedNamespaceKeepsSupertype() throws {

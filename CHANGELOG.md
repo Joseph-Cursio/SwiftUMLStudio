@@ -132,7 +132,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
     that re-exports it and by every file that imports that module, down
     a chain of re-exports, so a namespace that Analytics re-exports from
     Core keeps the name a type, as in Swift. A scoped import,
-    `import struct Core.Thing`, shows only the declaration it names.
+    `import struct Core.Thing`, shows only the declaration it names,
+    in the module or in one it re-exports.
   - A target is matched by the name Swift code writes for it, as
     SwiftPM derives it: `my_lib.Foo` reaches the target `my-lib`, and
     `_D.Foo` the target `2D`. Beyond ASCII the derivation keeps Unicode
