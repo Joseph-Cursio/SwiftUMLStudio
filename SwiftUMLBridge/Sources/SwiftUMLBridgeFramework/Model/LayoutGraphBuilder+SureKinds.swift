@@ -35,7 +35,8 @@ extension LayoutGraphBuilder.TypeLookup {
             return uncachedTypeWithSureKind(name, from: scope, depth: depth, kinds: kinds)
         }
         let key = LayoutGraphBuilder.SharedLookupKey(
-            name: name.name, root: name.root, module: scope.module, imports: scope.imports, depth: depth
+            name: name.name, root: name.root, isRecorded: name.isRecorded, module: scope.module,
+            imports: scope.imports, depth: depth
         )
         if let known = kinds.shared[key] { return known }
         let result = uncachedTypeWithSureKind(name, from: scope, depth: depth, kinds: kinds)

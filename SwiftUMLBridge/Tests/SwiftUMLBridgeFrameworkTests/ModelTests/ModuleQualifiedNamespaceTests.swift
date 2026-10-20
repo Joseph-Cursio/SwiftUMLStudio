@@ -96,4 +96,40 @@ struct ModuleQualifiedNamespaceTests {
         #expect(try lines(files, Configuration(format: .plantuml), containing: ": inherits")
             == ["Analytics.Base <|-- Sub : inherits"])
     }
+
+    /// Inside `extension Analytics.Event`, Swift looks `Inner` up among the members of the type
+    /// the extension extends: where the qualifier is the module Analytics, that is the target's
+    /// `Event.Inner`, not the one Core's unimported namespace nests, in App and in Analytics
+    /// itself. Importing Core keeps the qualifier a type, and `Inner` Core's.
+    @Test("a name in an extension named through a module is no member of an unimported namespace", arguments: [
+        ("App", "import Analytics\n", "Event.Inner <|-- Analytics.Event.Child : inherits"),
+        ("Analytics", "", "Event.Inner <|-- Analytics.Event.Child : inherits"),
+        ("App", "import Analytics\nimport Core\n", "Analytics.Event.Inner <|-- Analytics.Event.Child : inherits")
+    ])
+    func unimportedNamespaceMemberInExtension(writer: String, imports: String, inherits: String) throws {
+        let analytics = "public enum Event {\n    open class Inner {\n        public init() {}\n    }\n}"
+        let core = "public enum Analytics {\n    public enum Event {\n        open class Inner {\n"
+            + "            public init() {}\n        }\n    }\n}"
+        let written = imports + "\nextension Analytics.Event {\n    final class Child: Inner {}\n}\n"
+        let files: [(module: String?, source: String)] = [("Analytics", analytics), ("Core", core), (writer, written)]
+        #expect(try lines(files, Configuration(format: .plantuml), containing: "inherits") == [inherits])
+    }
+
+    /// `extension OEvent`, after Mid's `typealias OEvent = Core.Analytics.Event`, extends Core's
+    /// namespace `Event`, so `Inner` in it is Core's, though App does not import Core: the name
+    /// `Analytics.Event` it is looked up under is the one the type is recorded under, whose
+    /// first component no module qualifier is.
+    @Test("a name in an extension spelled through a typealias is a member of the aliased namespace")
+    func aliasedNamespaceMemberInExtension() throws {
+        let analytics = "public enum Event {\n    open class Inner {\n        public init() {}\n    }\n}"
+        let core = "public enum Analytics {\n    public enum Event {\n        open class Inner {\n"
+            + "            public init() {}\n        }\n    }\n}"
+        let mid = "import Core\n\npublic typealias OEvent = Core.Analytics.Event\n"
+        let app = "import Analytics\nimport Mid\n\nextension OEvent {\n    final class Child: Inner {}\n}\n"
+        let files: [(module: String?, source: String)] = [
+            ("Analytics", analytics), ("Core", core), ("Mid", mid), ("App", app)
+        ]
+        #expect(try lines(files, Configuration(format: .plantuml), containing: "inherits")
+            == ["Analytics.Event.Inner <|-- OEvent.Child : inherits"])
+    }
 }

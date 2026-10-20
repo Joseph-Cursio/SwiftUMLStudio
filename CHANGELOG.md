@@ -125,7 +125,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
     file's imports are read for this, `#if` branches included, so a
     namespace `enum Analytics` in a module the file does not import
     leaves `Analytics.Event` to the target Analytics, even when the
-    namespace declares an `Event` of its own. A module re-exported with
+    namespace declares an `Event` of its own, and a name inside
+    `extension Analytics.Event` there is one of the target's `Event`'s
+    members, not the namespace's. A module re-exported with
     `@_exported import` counts as imported by every file of the module
     that re-exports it and by every file that imports that module, down
     a chain of re-exports, so a namespace that Analytics re-exports from

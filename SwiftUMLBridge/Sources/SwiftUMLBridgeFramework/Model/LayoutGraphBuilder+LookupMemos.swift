@@ -30,6 +30,7 @@ extension LayoutGraphBuilder {
     struct SharedLookupKey: Hashable {
         let name: String
         let root: NameRoot
+        let isRecorded: Bool
         let module: String?
         let imports: Set<String>?
         let depth: Int
