@@ -223,7 +223,9 @@ extension LayoutGraphBuilder {
                 .map { probe in (probe, QualifiedName(name: probe.name, root: root, isRecorded: probe.isRecorded)) }
                 .first { probe, qualified in
                     if nearestDeclaration(qualified, from: scope, depth: depth) != nil { return true }
-                    guard throughModule(probe.name), readsModule(probe.enclosing, from: scope) else { return false }
+                    // A recorded name's first component is a type, never a module qualifier.
+                    guard !probe.isRecorded, throughModule(probe.name), readsModule(probe.enclosing, from: scope)
+                    else { return false }
                     return moduleMatch(named: probe.name, from: scope, depth: depth) != nil
                 }?.1 ?? asWritten
         }

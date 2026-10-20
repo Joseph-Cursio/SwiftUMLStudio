@@ -178,4 +178,21 @@ struct ModuleQualifiedNamespaceTests {
         #expect(try lines(files, Configuration(format: .plantuml), containing: "inherits")
             == ["Analytics.Event.Inner <|-- OEvent.Child : inherits"])
     }
+
+    /// Where Core's namespace `Event` nests no `Inner`, Swift looks `Inner` in `extension OEvent`
+    /// up past it, at App's top-level `Inner`: the recorded name `Analytics.Event.Inner` starts at
+    /// Core's enum `Analytics`, not the module, so it is not the target's `Event.Inner`.
+    @Test("a name in an extension spelled through a typealias is not read through a module")
+    func aliasedNamespaceNameNotReadThroughModule() throws {
+        let analytics = "public enum Event {\n    open class Inner {\n        public init() {}\n    }\n}"
+        let core = "public enum Analytics {\n    public enum Event {}\n}"
+        let mid = "import Core\n\npublic typealias OEvent = Core.Analytics.Event\n"
+        let inner = "class Inner {\n    init() {}\n}\n"
+        let app = "import Analytics\nimport Mid\n\nextension OEvent {\n    final class Child: Inner {}\n}\n"
+        let files: [(module: String?, source: String)] = [
+            ("Analytics", analytics), ("Core", core), ("Mid", mid), ("App", inner), ("App", app)
+        ]
+        #expect(try lines(files, Configuration(format: .plantuml), containing: "inherits")
+            == ["Inner <|-- OEvent.Child : inherits"])
+    }
 }
