@@ -21,12 +21,17 @@ extension LayoutGraphBuilder.TypeLookup {
         kinds: LayoutGraphBuilder.AliasKinds
     ) -> (type: LayoutGraphBuilder.Declared?, kindIsSure: Bool) {
         // The writer's own candidate is the nearest, and surely the one it means.
-        if let local = localNearest(name, from: scope, depth: depth) {
+        if let local = localNearest(name, from: scope, depth: depth),
+           !unlistedMemberShadows(local, named: name, from: scope, depth: depth) {
             let resolved = resolvedType(of: local, depth: depth, kinds: kinds)
             guard resolved.type?.kind == .protocol else { return (resolved.type, true) }
             return (resolved.type, resolved.isSure)
         }
-        guard scope.filePath != nil, fitsEachAlone(name) else {
+        // A hidden nested type in the writer's own file ranks there alone, so its answer is not shared.
+        let ownUnlisted = unlistedMembers[name.name]?.contains {
+            $0.scope.filePath == scope.filePath || $0.rankScope.filePath == scope.filePath
+        } == true
+        guard scope.filePath != nil, fitsEachAlone(name), !ownUnlisted else {
             return uncachedTypeWithSureKind(name, from: scope, depth: depth, kinds: kinds)
         }
         let key = LayoutGraphBuilder.SharedLookupKey(
@@ -43,7 +48,8 @@ extension LayoutGraphBuilder.TypeLookup {
         kinds: LayoutGraphBuilder.AliasKinds
     ) -> (type: LayoutGraphBuilder.Declared?, kindIsSure: Bool) {
         let found = candidates(name, from: scope, depth: depth)
-        guard let nearest = scope.nearest(among: found, scope: \.rankScope) else {
+        guard let nearest = scope.nearest(among: found, scope: \.rankScope),
+              !unlistedMemberShadows(nearest, named: name, from: scope, depth: depth) else {
             guard name.root != .outsideType, let match = moduleMatch(named: name.name, from: scope, depth: depth)
             else { return (nil, true) }
             let resolved = resolvedType(of: match.declared, depth: depth, kinds: kinds)

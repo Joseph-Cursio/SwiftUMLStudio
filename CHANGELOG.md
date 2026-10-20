@@ -134,7 +134,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
     ModA's `Foo`, in `extension ModA.Foo` or through a typealias of
     `Foo`, ranks in that module, merged or drawn apart, so in ModA,
     `Foo.X` still means ModA's own `X`, even in the file that declares
-    `Foo`. A module's `internal` types are still
+    `Foo`. In ModB, a `Foo.X` nested in ModB's own `Foo` comes first,
+    and still does with nested types hidden, though it is not drawn:
+    the edge then finds no end, rather than one on ModA's `Foo` alias. A module's `internal` types are still
     not reached from another module, a qualified typealias means the
     type it aliases, and a module may qualify its own types. In
     `extension ModA.Foo`, a supertype is looked for among `Foo`'s

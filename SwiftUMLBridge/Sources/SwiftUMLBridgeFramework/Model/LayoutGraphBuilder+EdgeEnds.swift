@@ -252,10 +252,15 @@ extension LayoutGraphBuilder {
         }
 
         /// The nearest of the types and typealiases recorded under `name` that are visible from
-        /// `scope` and that it can mean there (`fitting(_:for:from:depth:)`).
+        /// `scope` and that it can mean there (`fitting(_:for:from:depth:)`), unless a nested type
+        /// the items do not list ranks nearer (`unlistedMemberShadows(_:named:from:depth:)`).
         func nearestDeclaration(_ name: QualifiedName, from scope: Scope, depth: Int) -> Declared? {
-            if let local = localNearest(name, from: scope, depth: depth) { return local }
-            return scope.nearest(among: candidates(name, from: scope, depth: depth), scope: \.rankScope)
+            let nearest = localNearest(name, from: scope, depth: depth)
+                ?? scope.nearest(among: candidates(name, from: scope, depth: depth), scope: \.rankScope)
+            guard let nearest, !unlistedMemberShadows(nearest, named: name, from: scope, depth: depth) else {
+                return nil
+            }
+            return nearest
         }
 
         /// Whether `fitting(_:for:from:depth:)` takes or drops each candidate on its own, so the

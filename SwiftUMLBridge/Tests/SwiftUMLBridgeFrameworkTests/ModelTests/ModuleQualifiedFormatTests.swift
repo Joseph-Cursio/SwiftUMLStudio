@@ -127,4 +127,31 @@ struct ModuleQualifiedFormatTests {
         #expect(swapped == ["Store0 <|.. Cache : conforms to"])
         #expect(try graph(files, Configuration(format: .svg)).edgeEnds.contains("Cache -> Store"))
     }
+
+    // MARK: - Hidden nested types
+
+    /// With nested types hidden ModB's own `Foo.V` is not drawn, but it is what `Foo.V` means in
+    /// ModB, never the `typealias V` ModB's extension of ModA's `Foo` declares, however that
+    /// extension spells the type: the edge finds no end, as when there is no such alias.
+    @Test("a hidden nested type is what its name means, not another module's member typealias", arguments: [
+        "typealias FA = ModA.Foo\n\nextension FA {\n    typealias V = ModA.Base\n}\n",
+        "extension ModA.Foo {\n    typealias V = ModA.Base\n}\n"
+    ])
+    func hiddenNestedTypeBeforeMemberAlias(spelling: String) throws {
+        let modA = "public struct Foo {\n    public init() {}\n}\n\nopen class Base {\n    public init() {}\n}\n"
+        let modB = "import ModA\n\nstruct Foo {\n    class V {}\n}\n\n\(spelling)\nfinal class C11: Foo.V {}\n"
+        let files: [(module: String?, source: String)] = [("ModA", modA), ("ModB", modB)]
+        for mode in [ExtensionVisualization.all, .merged] {
+            let elements = ElementOptions(showNestedTypes: false, showExtensions: mode)
+            for format in [DiagramFormat.plantuml, .mermaid] {
+                let edges = try lines(files, Configuration(elements: elements, format: format), containing: "<|--")
+                #expect(edges.map { $0.trimmingCharacters(in: .whitespaces) } == ["Foo.V <|-- C11 : inherits"],
+                        "\(mode) \(format)")
+            }
+            let nomnoml = try lines(files, Configuration(elements: elements, format: .nomnoml), containing: "-:>")
+            #expect(nomnoml == ["[C11] -:> inherits [Foo.V]"], "\(mode)")
+            let svg = try graph(files, Configuration(elements: elements, format: .svg))
+            #expect(svg.edges.filter { $0.sourceId == "C11" }.isEmpty, "\(mode)")
+        }
+    }
 }

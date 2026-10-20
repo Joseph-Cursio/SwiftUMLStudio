@@ -94,6 +94,26 @@ extension LayoutGraphBuilder.TypeLookup {
         return startsAtProjectType(rest, from: deciding.scope, depth: depth + 1)
     }
 
+    /// Whether a nested type the items do not list (`unlistedMembers`), as while nested types are
+    /// hidden, is what `name` means from `scope` rather than `nearest`: it ranks nearer, as it
+    /// would were it recorded, a type before a typealias among equals, as recording types first
+    /// makes it. Such a name finds no end, as one with no candidate does: in ModB, `Foo.V` is
+    /// ModB's own hidden `struct Foo { class V {} }`, never `typealias V = Base` in ModB's
+    /// `extension ModA.Foo`, which the lookup also records as `Foo.V`.
+    func unlistedMemberShadows(
+        _ nearest: LayoutGraphBuilder.Declared, named name: LayoutGraphBuilder.QualifiedName,
+        from scope: LayoutGraphBuilder.Scope, depth: Int
+    ) -> Bool {
+        guard name.root != .outsideType, let unlisted = unlistedMembers[name.name] else { return false }
+        let visible = unlisted.filter {
+            $0.declaration != nearest.declaration && isVisible($0, from: scope, depth: depth)
+        }
+        let rivals = fitting(visible, for: name, from: scope, depth: depth)
+        guard !rivals.isEmpty else { return false }
+        let ranked = nearest.aliasTarget == nil ? [nearest] + rivals : rivals + [nearest]
+        return scope.nearest(among: ranked, scope: \.rankScope)?.declaration != nearest.declaration
+    }
+
     /// `target`, written in the container `container` names, as the full name of an unlisted
     /// member (`unlistedMembers`) of that container or of a type around it, innermost first.
     private func unlistedTarget(_ target: String, around container: [String]) -> String? {
