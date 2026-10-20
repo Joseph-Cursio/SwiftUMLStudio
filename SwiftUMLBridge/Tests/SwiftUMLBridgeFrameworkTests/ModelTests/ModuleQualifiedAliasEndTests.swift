@@ -83,4 +83,30 @@ struct ModuleQualifiedAliasEndTests {
         let plainBox = try #require(plainGraph.owner(of: "shout"))
         #expect(plainGraph.edgeEnds.contains("R -> \(plainBox)"))
     }
+
+    /// `App.Stamp.Desc` names a typealias an extension of `typealias Stamp = Date` adds, which
+    /// the lookup cannot read through its module, so `extension D2` after `typealias D2 =
+    /// App.Stamp.Desc` ends edges written with that same spelling as written. One written inside
+    /// an extension of a type outside the diagram ends there too, as it did before the lookup
+    /// read a module-first name: it is the same type, whichever scope spells it.
+    @Test("an unresolved module-first spelling ends alike in an extension of an outside type",
+          arguments: [ExtensionVisualization.all, .merged])
+    func unresolvedModuleFirstSpellingInOutsideExtension(mode: ExtensionVisualization) throws {
+        let source = """
+            import Foundation
+            typealias Stamp = Date
+            extension Stamp { typealias Desc = CustomStringConvertible }
+            typealias D2 = App.Stamp.Desc
+            extension D2 { func viaD2() {} }
+            struct S1: App.Stamp.Desc { var description: String { "" } }
+            extension Date { struct S2: App.Stamp.Desc { var description: String { "" } } }
+            """
+        let files: [(module: String?, source: String)] = [("App", source)]
+        let drawn = try graph(files, mode)
+        let box = try #require(drawn.owner(of: "viaD2"))
+        #expect(drawn.edgeEnds.contains("S1 -> \(box)"))
+        #expect(drawn.edgeEnds.contains("Date.S2 -> \(box)"))
+        #expect(try lines(files, mode, containing: "<|--")
+            == ["D2 <|-- S1 : inherits", "D2 <|-- Date.S2 : inherits"])
+    }
 }

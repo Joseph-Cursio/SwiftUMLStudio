@@ -125,16 +125,19 @@ extension LayoutGraphBuilder {
         /// `struct T: CustomStringConvertible` ends on `extension Describable` after
         /// `typealias Describable = CustomStringConvertible` (#125). A name no typealias takes is
         /// trusted as written, as the first step trusts it, so `resolved` is worked out only for
-        /// one a typealias takes; with no sure name for it, as written in an extension of a type
-        /// outside the diagram, where it may be that type's member, only `name` counts. An
-        /// extension of a type the reference cannot see, a hidden `fileprivate` one, say, extends
-        /// something else and never stands in.
+        /// one a typealias takes or one that may read a module. With no sure name for it, as
+        /// written in an extension of a type outside the diagram, where it may be that type's
+        /// member, a name a typealias takes ends nowhere, and a module-first name is trusted as
+        /// written, as it is anywhere else. An extension of a type the reference cannot
+        /// see, a hidden `fileprivate` one, say, extends something else and never stands in.
         private func fallback(named name: String, resolving resolved: @autoclosure () -> String?) -> String? {
             if let fallback = extensionEnds.ends(named: name, in: lookup).fallback { return fallback }
             guard lookup.namesTypealias(name) || lookup.mayReadModule(name) else {
                 return extensionEnds.aliasSpelled(in: lookup).fallbacks[name]
             }
-            guard let resolved = resolved() else { return nil }
+            guard let resolved = resolved() else {
+                return lookup.namesTypealias(name) ? nil : extensionEnds.aliasSpelled(in: lookup).fallbacks[name]
+            }
             if resolved != name, let fallback = extensionEnds.ends(named: resolved, in: lookup).fallback {
                 return fallback
             }
