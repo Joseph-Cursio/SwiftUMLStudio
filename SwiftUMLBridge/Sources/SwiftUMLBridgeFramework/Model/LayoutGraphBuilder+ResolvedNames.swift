@@ -99,7 +99,10 @@ extension LayoutGraphBuilder.TypeLookup {
     /// would were it recorded, a type before a typealias among equals, as recording types first
     /// makes it. Such a name finds no end, as one with no candidate does: in ModB, `Foo.V` is
     /// ModB's own hidden `struct Foo { class V {} }`, never `typealias V = Base` in ModB's
-    /// `extension ModA.Foo`, which the lookup also records as `Foo.V`.
+    /// `extension ModA.Foo`, which the lookup also records as `Foo.V`. The rivals are fitted
+    /// beside `nearest`, as recorded they would be: `Array.Box` after a project
+    /// `struct Array { typealias Box = Base }` never means a `class Box` hidden in
+    /// `extension [Int]`, and `nearest` is passed over when it is of the root the name does not mean.
     func unlistedMemberShadows(
         _ nearest: LayoutGraphBuilder.Declared, named name: LayoutGraphBuilder.QualifiedName,
         from scope: LayoutGraphBuilder.Scope, depth: Int
@@ -108,8 +111,11 @@ extension LayoutGraphBuilder.TypeLookup {
         let visible = unlisted.filter {
             $0.declaration != nearest.declaration && isVisible($0, from: scope, depth: depth)
         }
-        let rivals = fitting(visible, for: name, from: scope, depth: depth)
+        guard !visible.isEmpty else { return false }
+        let fitted = fitting([nearest] + visible, for: name, from: scope, depth: depth)
+        let rivals = fitted.filter { $0.declaration != nearest.declaration }
         guard !rivals.isEmpty else { return false }
+        guard rivals.count < fitted.count else { return true }
         let ranked = nearest.aliasTarget == nil ? [nearest] + rivals : rivals + [nearest]
         return scope.nearest(among: ranked, scope: \.rankScope)?.declaration != nearest.declaration
     }

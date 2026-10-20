@@ -181,4 +181,26 @@ struct ModuleQualifiedFormatTests {
             #expect(svg.edgeEnds.contains("UseA -> Base"), "\(mode)")
         }
     }
+
+    /// Compiles (`swiftc -typecheck`): `Array.Box` starts at the project's `struct Array`, while
+    /// `[Int]` is Swift's. A hidden `Box` in `extension [Int]` is no member of the project's
+    /// `Array`, so it shadows the project's `typealias Box = Base` no more than it would drawn;
+    /// a hidden `Box` nested in the project's `Array` still shadows `extension [Int]`'s alias.
+    @Test("a hidden nested type shadows an alias only when its name can mean it", arguments: [
+        ("struct Array {\n    typealias Box = Base\n}\n", "extension [Int] {\n    class Box {}\n}\n", "Base"),
+        ("struct Array {\n    class Box {}\n}\n", "extension [Int] {\n    typealias Box = Base\n}\n", nil)
+    ])
+    func hiddenNestedTypeOfOtherRoot(project: String, sugared: String, end: String?) throws {
+        let files: [(module: String?, source: String)] = [
+            (nil, "class Base {}\n\n" + project), (nil, sugared), (nil, "final class C: Array.Box {}\n")
+        ]
+        for mode in [ExtensionVisualization.all, .merged] {
+            let elements = ElementOptions(showNestedTypes: false, showExtensions: mode)
+            let edges = try lines(files, Configuration(elements: elements, format: .plantuml), containing: "<|--")
+            let edge = "\(end ?? "Array.Box") <|-- C : inherits"
+            #expect(edges.map { $0.trimmingCharacters(in: .whitespaces) } == [edge], "\(mode)")
+            let svg = try graph(files, Configuration(elements: elements, format: .svg))
+            #expect(svg.edgeEnds.filter { $0.hasPrefix("C -> ") } == (end.map { ["C -> \($0)"] } ?? []), "\(mode)")
+        }
+    }
 }
