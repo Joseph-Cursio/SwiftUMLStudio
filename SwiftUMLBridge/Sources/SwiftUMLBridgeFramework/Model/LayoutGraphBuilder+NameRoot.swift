@@ -105,6 +105,7 @@ extension LayoutGraphBuilder.TypeLookup {
         case .outsideType:
             return candidates.filter { isInExtensionOfOutsideType($0, depth: depth) }
         case .asWritten:
+            let candidates = seenWhenQualifierIsModule(candidates, named: name.name, from: scope, depth: depth)
             guard candidates.count > 1, let dot = name.name.firstIndex(of: "."),
                   candidates.contains(where: { $0.extended != nil }) else {
                 return candidates

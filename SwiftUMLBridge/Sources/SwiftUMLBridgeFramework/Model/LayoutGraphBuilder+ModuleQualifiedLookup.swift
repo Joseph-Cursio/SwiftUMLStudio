@@ -36,6 +36,35 @@ extension LayoutGraphBuilder.TypeLookup {
         return scope.nearest(among: candidates, scope: \.rankScope).map { Match(declared: $0, name: rest) }
     }
 
+    /// The `candidates` recorded under `name` that Swift can read it as from `scope` when its
+    /// first component names a module the file can write (`canName`) and no type of that name the
+    /// file sees keeps it a type (`shadows`): then the qualifier is the module, and a type nested
+    /// in a namespace of a module the file does not import is not what the name means, so
+    /// `Event` in an `enum Analytics` of such a module leaves `Analytics.Event` to the module
+    /// Analytics (`moduleMatch`). A candidate whose outermost type the diagram does not declare,
+    /// one in `extension Calendar` for Foundation's `Calendar`, is kept.
+    func seenWhenQualifierIsModule(
+        _ candidates: [Declared], named name: String, from scope: Scope, depth: Int
+    ) -> [Declared] {
+        guard !candidates.isEmpty, scope.imports != nil, let dot = name.firstIndex(of: ".") else { return candidates }
+        let qualifier = String(name[..<dot])
+        let named = modules.modules(namedBy: qualifier)
+        guard !named.isEmpty, canName(qualifier, modules: named, from: scope),
+              !shadows(qualifier, from: scope, depth: depth) else {
+            return candidates
+        }
+        return candidates.filter { candidate in
+            owningModule(of: candidate, depth: depth).map { sees($0, from: scope) } ?? true
+        }
+    }
+
+    /// Whether a file in `scope` sees the declarations of `module`: it is in it or imports it,
+    /// or its imports are unknown.
+    private func sees(_ module: String, from scope: Scope) -> Bool {
+        guard let imports = scope.imports, module != scope.module else { return true }
+        return imports.contains(module) || imports.contains(ModuleQualifiers.c99Name(of: module))
+    }
+
     /// Whether a file in `scope` can write `qualifier` for one of `modules`: the file is in that
     /// module or imports it. With the file's imports unknown, it can.
     private func canName(_ qualifier: String, modules named: Set<String>, from scope: Scope) -> Bool {
@@ -50,10 +79,7 @@ extension LayoutGraphBuilder.TypeLookup {
     private func shadows(_ qualifier: String, from scope: Scope, depth: Int) -> Bool {
         declarations(named: qualifier).contains { declared in
             guard !declared.isExtension else { return false }
-            if let imports = scope.imports, let module = declared.scope.module, module != scope.module,
-               !imports.contains(module), !imports.contains(ModuleQualifiers.c99Name(of: module)) {
-                return false
-            }
+            if let module = declared.scope.module, !sees(module, from: scope) { return false }
             return isVisible(declared, from: scope, depth: depth)
         }
     }

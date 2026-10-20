@@ -186,6 +186,24 @@ struct ModuleQualifiedLookupTests {
         #expect(graph.owner(of: "track") == "Analytics.Event")
     }
 
+    /// Core's `enum Analytics` declares an `Event` too, but a file that does not import Core does
+    /// not see that namespace, so there `Analytics.Event` is still the module Analytics's
+    /// `Event`, in App and in Analytics itself. Importing Core makes the namespace a type the file
+    /// sees, which keeps the qualifier a type, as Swift reads it.
+    @Test("a namespace in a module the file does not import does not keep the qualifier a type", arguments: [
+        ("App", "import Analytics\n", "Event", "Event <.. Analytics.Event0 : ext"),
+        ("Analytics", "", "Event", "Event <.. Analytics.Event0 : ext"),
+        ("App", "import Analytics\nimport Core\n", "Analytics.Event", "Analytics.Event <.. Analytics.Event0 : ext")
+    ])
+    func unimportedNamespaceDoesNotShadow(writer: String, imports: String, owner: String, extEdge: String) throws {
+        let analytics = "public struct Event {\n    public init() {}\n}"
+        let core = "public enum Analytics {\n    public struct Event {}\n}"
+        let written = imports + "\nextension Analytics.Event {\n    func track() {}\n}\n"
+        let files: [(module: String?, source: String)] = [("Analytics", analytics), ("Core", core), (writer, written)]
+        #expect(try graph(files).owner(of: "track") == owner)
+        #expect(try lines(files, Configuration(format: .plantuml), containing: ": ext") == [extEdge])
+    }
+
     /// In `extension Settings`, `Settings` is Models' type even beside a target named Settings,
     /// so `Section` is not looked for in that module: App's own `Section` is the one.
     @Test("a member is looked for through a module only in an extension named through one")
