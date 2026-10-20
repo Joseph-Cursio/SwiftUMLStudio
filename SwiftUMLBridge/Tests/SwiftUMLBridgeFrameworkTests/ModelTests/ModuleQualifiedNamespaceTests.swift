@@ -161,6 +161,30 @@ struct ModuleQualifiedNamespaceTests {
         ])
     }
 
+    /// The module Analytics declares an `enum Analytics` with an `Event` in it beside its
+    /// top-level `Event`. `import struct Analytics.Event` shows the top-level `Event` alone, so
+    /// there `Analytics.Event.Inner`, and `Inner` in `extension Analytics.Event`, are that
+    /// `Event`'s `Inner`, not the one in the enum the file does not see; `import Analytics` and
+    /// `import enum Analytics.Analytics` show the enum, which keeps the qualifier a type.
+    @Test("a scoped import of the qualifier module's type does not show its namesake namespace", arguments: [
+        ("import struct Analytics.Event\n", "Event"),
+        ("import Analytics\n", "Analytics.Event"),
+        ("import enum Analytics.Analytics\n", "Analytics.Event")
+    ])
+    func scopedImportOfQualifierModuleTypeBesideNamesake(imports: String, event: String) throws {
+        let analytics = "public enum Analytics {\n    public struct Event {\n        open class Inner {}\n    }\n}\n"
+            + "public struct Event {\n    open class Inner {}\n}"
+        let writer = imports + "\nfinal class Child: Analytics.Event.Inner {}\n\n"
+            + "extension Analytics.Event {\n    final class Nested: Inner {}\n}\n"
+        let files: [(module: String?, source: String)] = [("Analytics", analytics), ("App", writer)]
+        #expect(try lines(files, Configuration(format: .plantuml), containing: "inherits").sorted() == [
+            "\(event).Inner <|-- Analytics.Event.Nested : inherits", "\(event).Inner <|-- Child : inherits"
+        ])
+        #expect(try lines(files, Configuration(format: .plantuml), containing: ": ext") == [
+            "\(event) <.. Analytics.Event0 : ext"
+        ])
+    }
+
     /// `extension OEvent`, after Mid's `typealias OEvent = Core.Analytics.Event`, extends Core's
     /// namespace `Event`, so `Inner` in it is Core's, though App does not import Core: the name
     /// `Analytics.Event` it is looked up under is the one the type is recorded under, whose
