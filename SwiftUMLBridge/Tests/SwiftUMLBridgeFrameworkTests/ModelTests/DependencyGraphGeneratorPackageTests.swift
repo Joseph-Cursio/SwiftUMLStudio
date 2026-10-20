@@ -139,4 +139,39 @@ struct DependencyGraphGeneratorPackageTests {
         #expect(script.text.contains("class \"Service\" as Service <<Core>>"))
     }
 
+    /// Analytics re-exports Core, whose `enum Analytics` shadows the module name in App, so Swift
+    /// reads `Analytics.Base` there as Core's alias of `CoreBase`, not the target's `Base` (#124).
+    @Test("types mode counts a module an imported module re-exports as imported")
+    func typesModeReadsReexportedNamespace() throws {
+        let temp = FileManager.default.temporaryDirectory
+            .appendingPathComponent("DepsPkgTests-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+        let sources: [String: String] = [
+            "Core/Core.swift": """
+            open class CoreBase { public init() {} }
+            public enum Analytics { public typealias Base = CoreBase }
+            """,
+            "Analytics/Exports.swift": "@_exported import Core\n",
+            "Analytics/Base.swift": "open class Base { public init() {} }\n",
+            "App/Sub.swift": "import Analytics\nclass Sub: Analytics.Base {}\n"
+        ]
+        for (path, source) in sources {
+            let url = temp.appendingPathComponent("Sources/\(path)")
+            try FileManager.default.createDirectory(
+                at: url.deletingLastPathComponent(), withIntermediateDirectories: true
+            )
+            try source.write(to: url, atomically: true, encoding: .utf8)
+        }
+        let package = makePackage(targets: [
+            target("Core", sources: ["Core.swift"]),
+            target("Analytics", dependencies: ["Core"], sources: ["Exports.swift", "Base.swift"]),
+            target("App", dependencies: ["Analytics"], sources: ["Sub.swift"])
+        ])
+
+        let script = generator.generateScript(forPackage: package, packageRoot: temp, mode: .types)
+
+        #expect(script.text.contains("Sub --> CoreBase : inherits"))
+        #expect(!script.text.contains("Analytics.Base"))
+    }
+
 }
