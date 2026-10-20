@@ -61,8 +61,11 @@ struct DeclarationScope {
     }
 
     /// The candidate a name means where this scope writes it, close to how Swift looks it up: the
-    /// first declared in the same file, then in the same module, then the first of all; `nil`
-    /// only when there are no candidates.
+    /// first declared in the same file, then in the same module, one ranked in a file before one
+    /// ranked in none, then the first of all; `nil` only when there are no candidates. A
+    /// typealias ModB's extension adds to ModA's `Foo` ranks in ModB and no file
+    /// (`TypeLookup.memberRank`), so in ModB, ModB's own `Foo.X` still comes first, whichever
+    /// was recorded first: there, `Foo` is ModB's own `Foo`.
     func nearest<Candidate>(
         among candidates: [Candidate], scope: (Candidate) -> DeclarationScope
     ) -> Candidate? {
@@ -70,8 +73,15 @@ struct DeclarationScope {
         if let filePath, let local = candidates.first(where: { scope($0).filePath == filePath }) {
             return local
         }
-        if let module, let sibling = candidates.first(where: { scope($0).module == module }) {
-            return sibling
+        if let module {
+            var fileless: Candidate?
+            for candidate in candidates {
+                let candidateScope = scope(candidate)
+                guard candidateScope.module == module else { continue }
+                if candidateScope.filePath != nil { return candidate }
+                if fileless == nil { fileless = candidate }
+            }
+            if let fileless { return fileless }
         }
         return first
     }
