@@ -36,11 +36,62 @@ extension LayoutGraphBuilder.TypeLookup {
         return scope.nearest(among: candidates, scope: \.rankScope).map { Match(declared: $0, name: rest) }
     }
 
+    /// The `candidates` recorded under `name` that Swift can read it as from `scope` when its
+    /// first component names a module the file can write (`canName`) and no type of that name the
+    /// file sees keeps it a type (`shadows`): then the qualifier is the module, and a type nested
+    /// in a namespace of a module the file does not import is not what the name means, so
+    /// `Event` in an `enum Analytics` of such a module leaves `Analytics.Event` to the module
+    /// Analytics (`moduleMatch`). A candidate whose outermost type the diagram does not declare,
+    /// one in `extension Calendar` for Foundation's `Calendar`, is kept.
+    func seenWhenQualifierIsModule(
+        _ candidates: [Declared], named name: String, from scope: Scope, depth: Int
+    ) -> [Declared] {
+        guard !candidates.isEmpty, scope.imports != nil, let dot = name.firstIndex(of: ".") else { return candidates }
+        let qualifier = String(name[..<dot])
+        let named = modules.modules(namedBy: qualifier)
+        guard !named.isEmpty, canName(qualifier, modules: named, from: scope),
+              !shadows(qualifier, from: scope, depth: depth) else {
+            return candidates
+        }
+        // A candidate of a module the qualifier names is reached through that module's top-level
+        // type the rest of the name starts with, `Event` for `Analytics.Event.Base`, which a scoped
+        // `import struct Analytics.Event` shows, unless it is declared in a type of its own
+        // (`outermostTypeName`); one of another module, through its namespace.
+        let topLevel = String(name[name.index(after: dot)...].prefix { $0 != "." })
+        return candidates.filter { candidate in
+            owningModule(of: candidate, depth: depth).map { owner in
+                let reachedThrough = named.contains(owner) ? outermostTypeName(of: candidate) ?? topLevel : qualifier
+                return sees(reachedThrough, in: owner, from: scope)
+            } ?? true
+        }
+    }
+
+    /// The top-level type a declaration declared in it, not in an extension, is reached through:
+    /// `Analytics` for an `Event` nested in the module Analytics's own `enum Analytics`, so
+    /// `import struct Analytics.Event`, which shows the top-level `Event` alone, does not show it.
+    /// `nil` for a top-level declaration and for one an extension adds.
+    private func outermostTypeName(of declared: Declared) -> String? {
+        guard declared.extended == nil, let outermost = declared.scope.enclosingTypes.last else { return nil }
+        return String(outermost.prefix { $0 != "." })
+    }
+
+    /// Whether a file in `scope` sees `module`'s top-level declaration `name`: it is in that
+    /// module, imports it, or imports `name` from it alone (`import enum Module.Name`), or its
+    /// imports are unknown. `import struct Module.Other` makes only `Other` visible.
+    private func sees(_ name: String, in module: String, from scope: Scope) -> Bool {
+        guard let imports = scope.imports, module != scope.module else { return true }
+        return [module, ModuleQualifiers.c99Name(of: module)].contains { written in
+            imports.contains(written) || imports.contains("\(written).\(name)")
+        }
+    }
+
     /// Whether a file in `scope` can write `qualifier` for one of `modules`: the file is in that
-    /// module or imports it. With the file's imports unknown, it can.
+    /// module or imports it, all of it or a declaration of it. With the file's imports unknown,
+    /// it can.
     private func canName(_ qualifier: String, modules named: Set<String>, from scope: Scope) -> Bool {
         guard let imports = scope.imports else { return true }
-        return imports.contains(qualifier) || scope.module.map(named.contains) == true
+        return imports.contains(qualifier) || imports.contains { $0.hasPrefix("\(qualifier).") }
+            || scope.module.map(named.contains) == true
     }
 
     /// Whether a type or typealias named `qualifier`, visible from `scope`, keeps it from being
@@ -50,10 +101,7 @@ extension LayoutGraphBuilder.TypeLookup {
     private func shadows(_ qualifier: String, from scope: Scope, depth: Int) -> Bool {
         declarations(named: qualifier).contains { declared in
             guard !declared.isExtension else { return false }
-            if let imports = scope.imports, let module = declared.scope.module, module != scope.module,
-               !imports.contains(module), !imports.contains(ModuleQualifiers.c99Name(of: module)) {
-                return false
-            }
+            if let module = declared.scope.module, !sees(qualifier, in: module, from: scope) { return false }
             return isVisible(declared, from: scope, depth: depth)
         }
     }

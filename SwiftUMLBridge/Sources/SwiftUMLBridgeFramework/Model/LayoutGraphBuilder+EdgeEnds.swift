@@ -205,26 +205,27 @@ extension LayoutGraphBuilder {
             ofWritten name: String, from scope: Scope, depth: Int = 0, readingModules: Bool = true
         ) -> QualifiedName {
             let asWritten = QualifiedName(name: name, root: .asWritten)
-            var probes = scope.enclosingTypes.map { (enclosing: $0, name: "\($0).\(name)") }
+            var probes = scope.enclosingTypes.map { (enclosing: $0, name: "\($0).\(name)", isRecorded: false) }
             // An extension written through a typealias, `extension Crate` after
             // `typealias Crate = Outer`, sees the members recorded under its type's own name too.
             if let typeName = extendedTypeName(around: scope, depth: depth) {
-                probes.append((typeName, "\(typeName).\(name)"))
+                probes.append((typeName, "\(typeName).\(name)", true))
             }
             // Most supertypes, `Encodable` say, are no enclosing type's member. Working the root
             // out takes a lookup of the enclosing extension's type, so it waits for a name a type
             // is recorded under, or one a module may be read in.
-            let throughModule = { (probe: (enclosing: String, name: String)) in
-                readingModules && self.mayReadModule(probe.name)
-            }
-            guard probes.contains(where: { typesForName[$0.name] != nil || throughModule($0) }) else {
+            let throughModule = { (probeName: String) in readingModules && self.mayReadModule(probeName) }
+            guard probes.contains(where: { typesForName[$0.name] != nil || throughModule($0.name) }) else {
                 return asWritten
             }
             let root = enclosingRoot(of: scope, depth: depth)
-            return probes.lazy.map { probe in (probe, QualifiedName(name: probe.name, root: root)) }
+            return probes.lazy
+                .map { probe in (probe, QualifiedName(name: probe.name, root: root, isRecorded: probe.isRecorded)) }
                 .first { probe, qualified in
                     if nearestDeclaration(qualified, from: scope, depth: depth) != nil { return true }
-                    guard throughModule(probe), readsModule(probe.enclosing, from: scope) else { return false }
+                    // A recorded name's first component is a type, never a module qualifier.
+                    guard !probe.isRecorded, throughModule(probe.name), readsModule(probe.enclosing, from: scope)
+                    else { return false }
                     return moduleMatch(named: probe.name, from: scope, depth: depth) != nil
                 }?.1 ?? asWritten
         }

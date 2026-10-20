@@ -185,18 +185,16 @@ public struct DependencyGraphGenerator: DependencyGraphGenerating, Sendable {
         sdkPath: String?
     ) -> [DependencyEdge] {
         // First pass: record the module of every type the package declares or
-        // extends, so each edge can carry the module of both its ends.
+        // extends, so each edge can carry the module of both its ends. The
+        // declarations' imports are widened with `@_exported` re-exports, as
+        // the class diagram reads them.
         var owners = PackageTypeOwners()
-        var parsedItems: [SyntaxStructure] = []
-        for (path, module) in description.sourceFilesInPathOrder(packageRoot: packageRoot) {
-            let url = URL(fileURLWithPath: path)
-            guard let items = SyntaxStructure
-                .create(from: url, sdkPath: sdkPath, module: module)?.substructure
-            else { continue }
-            for item in items {
-                owners.record(item, in: module)
-                parsedItems.append(item)
-            }
+        let files = description.sourceFilesInPathOrder(packageRoot: packageRoot).map { file in
+            (url: URL(fileURLWithPath: file.path), module: Optional(file.module))
+        }
+        let parsedItems = SyntaxStructure.declarations(inPackageFiles: files, sdkPath: sdkPath)
+        for item in parsedItems {
+            if let module = item.module { owners.record(item, in: module) }
         }
 
         let aliases = TypeAliasResolver(items: parsedItems)

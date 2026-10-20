@@ -71,9 +71,10 @@ internal class SyntaxStructure: NSObject, Codable, @unchecked Sendable {
     internal var module: String?
 
     /// The modules the declaration's file imports, first path component only (`Foundation` for
-    /// `import Foundation.NSString`). Stamped by `SyntaxStructureBuilder`; nil when unknown, as
-    /// for a hand-built or decoded structure. A module qualifier in the file can name only these
-    /// and its own module (#124).
+    /// `import Foundation.NSString`), or with the declaration a scoped import names (`ModA.Foo`
+    /// for `import struct ModA.Foo`, `ImportExtractor.importedModules`). Stamped by
+    /// `SyntaxStructureBuilder`; nil when unknown, as for a hand-built or decoded structure. A
+    /// module qualifier in the file can name only these and its own module (#124).
     internal var imports: Set<String>?
 
     /// Set by `mergeExtensions` on an extension it merges away: the item that now shows its

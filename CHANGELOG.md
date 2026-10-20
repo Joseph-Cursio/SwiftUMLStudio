@@ -124,7 +124,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
     in the file's own module, or in a module the file imports. Each
     file's imports are read for this, `#if` branches included, so a
     namespace `enum Analytics` in a module the file does not import
-    leaves `Analytics.Event` to the target Analytics.
+    leaves `Analytics.Event` to the target Analytics, even when the
+    namespace declares an `Event` of its own, and a name inside
+    `extension Analytics.Event` there is one of the target's `Event`'s
+    members, not the namespace's. A module re-exported with
+    `@_exported import` counts as imported by every file of the module
+    that re-exports it and by every file that imports that module, down
+    a chain of re-exports, so a namespace that Analytics re-exports from
+    Core keeps the name a type, as in Swift. A scoped import,
+    `import struct Core.Thing`, shows only the declaration it names,
+    in the module or in one it re-exports.
   - A target is matched by the name Swift code writes for it, as
     SwiftPM derives it: `my_lib.Foo` reaches the target `my-lib`, and
     `_D.Foo` the target `2D`. Beyond ASCII the derivation keeps Unicode

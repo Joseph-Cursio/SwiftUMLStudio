@@ -13,13 +13,13 @@ func moduleQualifiedItems(_ files: [(module: String?, source: String)]) throws -
     let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
     try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
     defer { try? FileManager.default.removeItem(at: directory) }
-    var items: [SyntaxStructure] = []
+    var urls: [(url: URL, module: String?)] = []
     for (index, file) in files.enumerated() {
         let url = directory.appendingPathComponent("\(file.module ?? "File")\(index).swift")
         try file.source.write(to: url, atomically: true, encoding: .utf8)
-        items += try #require(SyntaxStructure.create(from: url, module: file.module)?.substructure)
+        urls.append((url, file.module))
     }
-    return items
+    return SyntaxStructure.declarations(inPackageFiles: urls)
 }
 
 extension LayoutGraph {

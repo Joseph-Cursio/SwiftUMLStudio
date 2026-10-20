@@ -13,29 +13,53 @@ internal extension SyntaxStructure {
         sdkPath: String? = nil,
         module: String? = nil
     ) -> SyntaxStructure? {
+        parsed(fileOnDisk, sdkPath: sdkPath, module: module)?.structure
+    }
+
+    /// The declarations of a package's `files`, each parsed under its module as
+    /// `create(from:sdkPath:module:)` parses it, in the order given, with each declaration's
+    /// `imports` widened to every module its file sees through an `@_exported import`
+    /// (`ModuleReexports`), in a file of its own module or of a module it imports.
+    static func declarations(
+        inPackageFiles files: [(url: URL, module: String?)], sdkPath: String? = nil
+    ) -> [SyntaxStructure] {
+        var items: [SyntaxStructure] = []
+        var reexports = ModuleReexports()
+        for file in files {
+            guard let parsed = parsed(file.url, sdkPath: sdkPath, module: file.module) else { continue }
+            if let module = file.module { reexports.record(parsed.reexports, from: module) }
+            items += parsed.structure?.substructure ?? []
+        }
+        reexports.widenImports(of: items)
+        return items
+    }
+
+    private static func parsed(
+        _ fileOnDisk: URL, sdkPath: String?, module: String?
+    ) -> (structure: SyntaxStructure?, reexports: Set<String>)? {
         let methodStart = ContinuousClock.now
         guard let source = try? String(contentsOf: fileOnDisk, encoding: .utf8) else {
             BridgeLogger.shared.error("not able to read contents of file \(fileOnDisk)")
             return nil
         }
-        let structure = build(from: source, sdkPath: sdkPath, fileURL: fileOnDisk, module: module)
+        let parsed = build(from: source, sdkPath: sdkPath, fileURL: fileOnDisk, module: module)
         let elapsed = (ContinuousClock.now - methodStart).seconds
         let sdkLabel = (sdkPath != nil && !sdkPath!.isEmpty) ? "parsing with SDK" : ""
         BridgeLogger.shared.debug("read \(fileOnDisk) \(sdkLabel) in \(elapsed)")
-        return structure
+        return parsed
     }
 
     /// Parse Swift source from an in-memory string. Runs a SourceKit typename
     /// supplement (without SDK) to resolve inferred variable types.
     static func create(from contents: String, module: String? = nil) -> SyntaxStructure? {
-        build(from: contents, sdkPath: nil, fileURL: nil, module: module)
+        build(from: contents, sdkPath: nil, fileURL: nil, module: module).structure
     }
 
     /// Parse `source`, read from `file`, with SwiftSyntax alone: declarations, names and source
     /// locations, but no inferred variable types, which only the SourceKit pass supplies. For
     /// passes that need the declarations and none of the members' types.
     static func declarations(in source: String, file: URL) -> SyntaxStructure? {
-        build(from: source, sdkPath: nil, fileURL: file, supplementsTypenames: false)
+        build(from: source, sdkPath: nil, fileURL: file, supplementsTypenames: false).structure
     }
 
     // MARK: - Core build pipeline
@@ -46,7 +70,7 @@ internal extension SyntaxStructure {
         fileURL: URL?,
         module: String? = nil,
         supplementsTypenames: Bool = true
-    ) -> SyntaxStructure? {
+    ) -> (structure: SyntaxStructure?, reexports: Set<String>) {
         ParsingStack.run {
             // Step 1 — optional SourceKit pass for inferred variable typenames
             let typenameMap = supplementsTypenames
@@ -72,7 +96,10 @@ internal extension SyntaxStructure {
             )
             builder.walk(sourceFile)
 
-            return SyntaxStructure(substructure: builder.topLevelItems.isEmpty ? nil : builder.topLevelItems)
+            return (
+                SyntaxStructure(substructure: builder.topLevelItems.isEmpty ? nil : builder.topLevelItems),
+                ImportExtractor.reexportedModules(in: sourceFile)
+            )
         }
     }
 

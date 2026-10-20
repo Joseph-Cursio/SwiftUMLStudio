@@ -21,10 +21,14 @@ extension LayoutGraphBuilder {
         case outsideType
     }
 
-    /// A name to look up, and which type it starts at.
+    /// A name to look up, and which type it starts at. `isRecorded` marks one built on the name
+    /// a type is recorded under rather than on one written in the source, `Analytics.Event` for
+    /// Other's namespace in an extension spelled through a typealias of it: its first component
+    /// is no module qualifier to read.
     struct QualifiedName {
         let name: String
         let root: NameRoot
+        var isRecorded = false
     }
 }
 
@@ -101,10 +105,15 @@ extension LayoutGraphBuilder.TypeLookup {
     ) -> [LayoutGraphBuilder.Declared] {
         switch name.root {
         case .projectType:
-            return candidates.filter { !isInExtensionOfOutsideType($0, depth: depth) }
+            // A name built on `extension Analytics.Event` reads its qualifier as the extension
+            // does, so `Inner` in it is not one nested in a namespace the file does not import.
+            let seen = name.isRecorded
+                ? candidates : seenWhenQualifierIsModule(candidates, named: name.name, from: scope, depth: depth)
+            return seen.filter { !isInExtensionOfOutsideType($0, depth: depth) }
         case .outsideType:
             return candidates.filter { isInExtensionOfOutsideType($0, depth: depth) }
         case .asWritten:
+            let candidates = seenWhenQualifierIsModule(candidates, named: name.name, from: scope, depth: depth)
             guard candidates.count > 1, let dot = name.name.firstIndex(of: "."),
                   candidates.contains(where: { $0.extended != nil }) else {
                 return candidates

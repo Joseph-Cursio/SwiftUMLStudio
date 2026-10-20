@@ -76,4 +76,13 @@ struct ImportExtractorTests {
         let edges = ImportExtractor.extract(from: source, sourceModule: "Dup")
         #expect(edges.count == 2)
     }
+
+    /// A scoped import makes only the declaration it names visible, so it is recorded with it;
+    /// a submodule import counts as its top module.
+    @Test("a scoped import is recorded with the declaration it names")
+    func scopedImportKeepsItsDeclaration() {
+        let source = "import ModA.Sub\nimport struct ModB.Foo\nimport func ModC.run\nimport ModD"
+        let modules = ParsingStack.run { ImportExtractor.importedModules(in: ParsingStack.parse(source)) }
+        #expect(modules == ["ModA", "ModB.Foo", "ModC.run", "ModD"])
+    }
 }
