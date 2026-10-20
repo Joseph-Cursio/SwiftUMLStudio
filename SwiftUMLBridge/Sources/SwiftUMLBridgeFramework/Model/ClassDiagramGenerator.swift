@@ -74,13 +74,10 @@ public struct ClassDiagramGenerator: ClassDiagramGenerating, Sendable {
         with configuration: Configuration = .default,
         sdkPath: String? = nil
     ) -> DiagramScript {
-        var allValidItems: [SyntaxStructure] = []
-        for (path, module) in description.sourceFilesInPathOrder(packageRoot: packageRoot) {
-            let url = URL(fileURLWithPath: path)
-            if let validItems = SyntaxStructure.create(from: url, sdkPath: sdkPath, module: module)?.substructure {
-                allValidItems.append(contentsOf: validItems)
-            }
+        let files = description.sourceFilesInPathOrder(packageRoot: packageRoot).map { file in
+            (url: URL(fileURLWithPath: file.path), module: Optional(file.module))
         }
+        let allValidItems = SyntaxStructure.declarations(inPackageFiles: files, sdkPath: sdkPath)
         return DiagramScript(items: allValidItems, configuration: configuration)
     }
 

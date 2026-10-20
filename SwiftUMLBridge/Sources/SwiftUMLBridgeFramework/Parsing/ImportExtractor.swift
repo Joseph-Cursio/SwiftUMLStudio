@@ -25,10 +25,22 @@ final class ImportExtractor: SyntaxVisitor {
     /// the first component of its path: `ModA` for `import ModA`, `import struct ModA.Foo` and
     /// `import ModA.Sub`.
     static func importedModules(in sourceFile: SourceFileSyntax) -> Set<String> {
+        importedModules(in: sourceFile, exportedOnly: false)
+    }
+
+    /// The modules `sourceFile` re-exports with `@_exported import`, read as
+    /// `importedModules(in:)` reads them. Swift lets every file of the module, and every file
+    /// that imports it, see their declarations (`ModuleReexports`).
+    static func reexportedModules(in sourceFile: SourceFileSyntax) -> Set<String> {
+        importedModules(in: sourceFile, exportedOnly: true)
+    }
+
+    private static func importedModules(in sourceFile: SourceFileSyntax, exportedOnly: Bool) -> Set<String> {
         var modules: Set<String> = []
         func collect(_ statements: CodeBlockItemListSyntax) {
             for statement in statements {
                 if let importDecl = statement.item.as(ImportDeclSyntax.self), let first = importDecl.path.first {
+                    guard !exportedOnly || isExported(importDecl) else { continue }
                     modules.insert(first.name.canonicalName)
                 } else if let ifConfig = statement.item.as(IfConfigDeclSyntax.self) {
                     for clause in ifConfig.clauses {
@@ -39,6 +51,12 @@ final class ImportExtractor: SyntaxVisitor {
         }
         collect(sourceFile.statements)
         return modules
+    }
+
+    private static func isExported(_ importDecl: ImportDeclSyntax) -> Bool {
+        importDecl.attributes.contains { element in
+            element.as(AttributeSyntax.self)?.attributeName.trimmedDescription == "_exported"
+        }
     }
 
     /// Parse `source`, read from `file` when there is one, and extract all import edges, using
