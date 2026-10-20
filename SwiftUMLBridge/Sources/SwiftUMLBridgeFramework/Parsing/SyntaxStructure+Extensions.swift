@@ -114,12 +114,12 @@ extension SyntaxStructure {
 }
 
 extension SyntaxStructure {
-    /// The extension each typealias among this item's members was merged in from, by the
-    /// typealias (`mergedExtensions`): where that typealias is written, and so read.
-    var mergedTypealiasOrigins: [ObjectIdentifier: SyntaxStructure] {
+    /// The extension each of this item's members was merged in from, by the member
+    /// (`mergedExtensions`): where that member is written, and so read and ranked.
+    var mergedMemberOrigins: [ObjectIdentifier: SyntaxStructure] {
         var origins: [ObjectIdentifier: SyntaxStructure] = [:]
         for merged in mergedExtensions {
-            for member in merged.substructure ?? [] where member.kind == .typealias {
+            for member in merged.substructure ?? [] {
                 origins[ObjectIdentifier(member)] = merged
             }
         }

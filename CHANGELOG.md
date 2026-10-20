@@ -130,9 +130,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
     `_D.Foo` the target `2D`. Beyond ASCII the derivation keeps Unicode
     letters and digits where SwiftPM keeps C99's identifier ranges.
   - `ModA.Foo.Nested` also reaches a `Nested` another module adds to
-    ModA's `Foo` in an extension. A typealias another module adds to
-    ModA's `Foo`, in `extension ModA.Foo` or through a typealias of
-    `Foo`, ranks in that module, merged or drawn apart, so in ModA,
+    ModA's `Foo` in an extension. A typealias, or a nested type hidden
+    by `showNestedTypes: false`, that another module adds to ModA's
+    `Foo`, in `extension ModA.Foo` or through a typealias of `Foo`,
+    ranks in that module, merged or drawn apart, so in ModA,
     `Foo.X` still means ModA's own `X`, even in the file that declares
     `Foo`. In ModB, the `Foo.X` of ModB's own `Foo`, a nested type or a
     typealias, comes first whichever file is read first; a nested type

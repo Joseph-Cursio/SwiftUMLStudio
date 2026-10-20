@@ -154,4 +154,31 @@ struct ModuleQualifiedFormatTests {
             #expect(svg.edges.filter { $0.sourceId == "C11" }.isEmpty, "\(mode)")
         }
     }
+
+    /// ModA cannot see ModB, so in ModA `Foo.V` is ModA's own alias of `Base`, never the class
+    /// ModB's `extension ModA.Foo` nests in `Foo`: hidden and merged into `Foo`, that class ranks
+    /// in ModB, as it does drawn, wherever ModA writes the name.
+    @Test("another module's hidden nested type does not shadow the type module's own alias", arguments: [
+        ["public struct Foo {\n    public init() {}\n}\n\nopen class Base {\n    public init() {}\n}\n",
+         "extension Foo {\n    public typealias V = Base\n}\n",
+         "final class UseA: Foo.V {}\n"],
+        ["public struct Foo {\n    public init() {}\n    public typealias V = Base\n}\n\n"
+            + "open class Base {\n    public init() {}\n}\n\nfinal class UseA: Foo.V {}\n"]
+    ])
+    func hiddenNestedTypeOfOtherModule(modA: [String]) throws {
+        let modB = "import ModA\n\nextension ModA.Foo {\n    open class V {\n        public init() {}\n    }\n}\n"
+        let files: [(module: String?, source: String)] = modA.map { ("ModA", $0) } + [("ModB", modB)]
+        for mode in [ExtensionVisualization.all, .merged] {
+            let elements = ElementOptions(showNestedTypes: false, showExtensions: mode)
+            for format in [DiagramFormat.plantuml, .mermaid] {
+                let edges = try lines(files, Configuration(elements: elements, format: format), containing: "<|--")
+                #expect(edges.map { $0.trimmingCharacters(in: .whitespaces) } == ["Base <|-- UseA : inherits"],
+                        "\(mode) \(format)")
+            }
+            let nomnoml = try lines(files, Configuration(elements: elements, format: .nomnoml), containing: "-:>")
+            #expect(nomnoml == ["[UseA] -:> inherits [Base]"], "\(mode)")
+            let svg = try graph(files, Configuration(elements: elements, format: .svg))
+            #expect(svg.edgeEnds.contains("UseA -> Base"), "\(mode)")
+        }
+    }
 }

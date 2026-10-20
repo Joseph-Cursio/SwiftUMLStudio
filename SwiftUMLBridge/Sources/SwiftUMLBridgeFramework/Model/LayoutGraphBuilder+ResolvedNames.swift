@@ -183,7 +183,7 @@ extension LayoutGraphBuilder.TypeLookup {
             }
             guard let kind = item.kind, ElementKind.processable.contains(kind),
                   let containerName = item.fullName ?? item.name else { continue }
-            let origins = item.mergedTypealiasOrigins
+            let origins = item.mergedMemberOrigins
             for member in item.substructure ?? [] where member.kind == .typealias {
                 guard let name = member.name else { continue }
                 record(mergedAlias(member, in: item, from: origins[ObjectIdentifier(member)]),
@@ -268,16 +268,24 @@ extension LayoutGraphBuilder.TypeLookup {
     /// (`startsAtProjectType(_:from:depth:)`), so `extension Date.Box` after
     /// `extension Date { struct Box {} }` is the project's, and `extension Box.Inner.Stamp` after
     /// `struct Box { struct Inner { typealias Stamp = Date } }` is not, with nested types hidden.
+    /// One an extension of another module merged into `container` ranks in that module
+    /// (`memberRank`), as a typealias it adds does: in ModA, ModB's hidden `Foo.V` never
+    /// outranks ModA's own `Foo.V` alias.
     private func unlistedMembers(
         of container: SyntaxStructure, named name: String
     ) -> [String: [LayoutGraphBuilder.Declared]] {
         var found: [String: [LayoutGraphBuilder.Declared]] = [:]
+        let origins = container.mergedMemberOrigins
         for member in container.substructure ?? [] {
             guard let kind = member.kind, ElementKind.processable.contains(kind), kind != .extension,
                   kind != .macro, let memberName = member.name,
                   recordedName(of: ObjectIdentifier(member)) == nil else { continue }
             let fullName = "\(name).\(memberName)"
-            let nested = LayoutGraphBuilder.Declared(member, kind: kind, nodeId: nil, in: container)
+            let plain = LayoutGraphBuilder.Declared(member, kind: kind, nodeId: nil, in: container)
+            let nested = origins[ObjectIdentifier(member)].map {
+                let rank = memberRank(adding: LayoutGraphBuilder.Scope(of: $0), to: plain.rankScope)
+                return LayoutGraphBuilder.Declared(member, kind: kind, nodeId: nil, in: container, rankedAs: rank)
+            } ?? plain
             found[fullName, default: []].append(nested)
             for alias in member.substructure ?? [] where alias.kind == .typealias {
                 guard let aliasName = alias.name else { continue }
