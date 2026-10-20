@@ -22,8 +22,9 @@ final class ImportExtractor: SyntaxVisitor {
     // MARK: - Static factory
 
     /// The modules `sourceFile` imports anywhere at file scope, in any branch of an `#if`, each by
-    /// the first component of its path: `ModA` for `import ModA`, `import struct ModA.Foo` and
-    /// `import ModA.Sub`.
+    /// the first component of its path: `ModA` for `import ModA` and `import ModA.Sub`. A scoped
+    /// import, which makes only the declaration it names visible, is recorded with that
+    /// declaration: `ModA.Foo` for `import struct ModA.Foo`.
     static func importedModules(in sourceFile: SourceFileSyntax) -> Set<String> {
         importedModules(in: sourceFile, exportedOnly: false)
     }
@@ -41,7 +42,13 @@ final class ImportExtractor: SyntaxVisitor {
             for statement in statements {
                 if let importDecl = statement.item.as(ImportDeclSyntax.self), let first = importDecl.path.first {
                     guard !exportedOnly || isExported(importDecl) else { continue }
-                    modules.insert(first.name.canonicalName)
+                    let module = first.name.canonicalName
+                    let scoped = importDecl.importKindSpecifier != nil && importDecl.path.count > 1
+                    if scoped, let declaration = importDecl.path.last {
+                        modules.insert("\(module).\(declaration.name.canonicalName)")
+                    } else {
+                        modules.insert(module)
+                    }
                 } else if let ifConfig = statement.item.as(IfConfigDeclSyntax.self) {
                     for clause in ifConfig.clauses {
                         if case .statements(let nested)? = clause.elements { collect(nested) }

@@ -54,22 +54,27 @@ extension LayoutGraphBuilder.TypeLookup {
             return candidates
         }
         return candidates.filter { candidate in
-            owningModule(of: candidate, depth: depth).map { sees($0, from: scope) } ?? true
+            owningModule(of: candidate, depth: depth).map { sees(qualifier, in: $0, from: scope) } ?? true
         }
     }
 
-    /// Whether a file in `scope` sees the declarations of `module`: it is in it or imports it,
-    /// or its imports are unknown.
-    private func sees(_ module: String, from scope: Scope) -> Bool {
+    /// Whether a file in `scope` sees `module`'s top-level declaration `name`: it is in that
+    /// module, imports it, or imports `name` from it alone (`import enum Module.Name`), or its
+    /// imports are unknown. `import struct Module.Other` makes only `Other` visible.
+    private func sees(_ name: String, in module: String, from scope: Scope) -> Bool {
         guard let imports = scope.imports, module != scope.module else { return true }
-        return imports.contains(module) || imports.contains(ModuleQualifiers.c99Name(of: module))
+        return [module, ModuleQualifiers.c99Name(of: module)].contains { written in
+            imports.contains(written) || imports.contains("\(written).\(name)")
+        }
     }
 
     /// Whether a file in `scope` can write `qualifier` for one of `modules`: the file is in that
-    /// module or imports it. With the file's imports unknown, it can.
+    /// module or imports it, all of it or a declaration of it. With the file's imports unknown,
+    /// it can.
     private func canName(_ qualifier: String, modules named: Set<String>, from scope: Scope) -> Bool {
         guard let imports = scope.imports else { return true }
-        return imports.contains(qualifier) || scope.module.map(named.contains) == true
+        return imports.contains(qualifier) || imports.contains { $0.hasPrefix("\(qualifier).") }
+            || scope.module.map(named.contains) == true
     }
 
     /// Whether a type or typealias named `qualifier`, visible from `scope`, keeps it from being
@@ -79,7 +84,7 @@ extension LayoutGraphBuilder.TypeLookup {
     private func shadows(_ qualifier: String, from scope: Scope, depth: Int) -> Bool {
         declarations(named: qualifier).contains { declared in
             guard !declared.isExtension else { return false }
-            if let module = declared.scope.module, !sees(module, from: scope) { return false }
+            if let module = declared.scope.module, !sees(qualifier, in: module, from: scope) { return false }
             return isVisible(declared, from: scope, depth: depth)
         }
     }
