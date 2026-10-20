@@ -195,11 +195,12 @@ extension LayoutGraphBuilder.TypeLookup {
         var names: [String] = []
         if throughModule, let canonical = recordedName(of: spelling, from: scope) { names.append(canonical) }
         if let recorded = recordedName(of: type.declaration), !names.contains(recorded) { names.append(recorded) }
+        let rank = memberRank(adding: scope, to: type.scope)
         for name in names where name != spelling {
             for member in aliases {
                 guard let alias = member.name else { continue }
                 let ranked = LayoutGraphBuilder.Declared(
-                    member, kind: .typealias, nodeId: nil, in: anExtension, rankedAs: type.scope
+                    member, kind: .typealias, nodeId: nil, in: anExtension, rankedAs: rank
                 )
                 record(ranked, named: "\(name).\(alias)")
             }
@@ -219,15 +220,26 @@ extension LayoutGraphBuilder.TypeLookup {
     }
 
     /// The typealias `member` of `container`, read in the extension it was merged in from,
-    /// `home`, when there is one, and ranked as a member of `container`.
+    /// `home`, when there is one, and ranked as a member of `container` (`memberRank`).
     private func mergedAlias(
         _ member: SyntaxStructure, in container: SyntaxStructure, from home: SyntaxStructure?
     ) -> LayoutGraphBuilder.Declared {
         let ranked = LayoutGraphBuilder.Declared(member, kind: .typealias, nodeId: nil, in: container)
         guard let home else { return ranked }
-        return LayoutGraphBuilder.Declared(
-            member, kind: .typealias, nodeId: nil, in: home, rankedAs: ranked.rankScope
-        )
+        let rank = memberRank(adding: LayoutGraphBuilder.Scope(of: home), to: ranked.rankScope)
+        return LayoutGraphBuilder.Declared(member, kind: .typealias, nodeId: nil, in: home, rankedAs: rank)
+    }
+
+    /// The scope a typealias an extension in `adding` adds to a type in `type` ranks by: the
+    /// type's, as a member of it, where a lookup of the type finds it, when the two share a
+    /// module; else its own module's, in no file. A module cannot import one that depends on it,
+    /// so ranked as the type, ModB's `Foo.X` would come first in ModA's own file, where ModA's
+    /// own `Foo.X` is meant.
+    private func memberRank(
+        adding scope: LayoutGraphBuilder.Scope, to type: LayoutGraphBuilder.Scope
+    ) -> LayoutGraphBuilder.Scope {
+        guard let module = scope.module, let typeModule = type.module, module != typeModule else { return type }
+        return LayoutGraphBuilder.Scope(filePath: nil, module: module)
     }
 
     /// The types nested in `container`, written `name`, that the lookup has not recorded, as
