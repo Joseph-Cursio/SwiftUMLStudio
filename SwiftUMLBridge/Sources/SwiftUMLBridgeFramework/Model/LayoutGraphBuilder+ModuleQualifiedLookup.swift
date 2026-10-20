@@ -53,8 +53,14 @@ extension LayoutGraphBuilder.TypeLookup {
               !shadows(qualifier, from: scope, depth: depth) else {
             return candidates
         }
+        // A candidate of a module the qualifier names is reached through that module's top-level
+        // type the rest of the name starts with, `Event` for `Analytics.Event.Base`, which a scoped
+        // `import struct Analytics.Event` shows; one of another module, through its namespace.
+        let topLevel = String(name[name.index(after: dot)...].prefix { $0 != "." })
         return candidates.filter { candidate in
-            owningModule(of: candidate, depth: depth).map { sees(qualifier, in: $0, from: scope) } ?? true
+            owningModule(of: candidate, depth: depth).map { owner in
+                sees(named.contains(owner) ? topLevel : qualifier, in: owner, from: scope)
+            } ?? true
         }
     }
 

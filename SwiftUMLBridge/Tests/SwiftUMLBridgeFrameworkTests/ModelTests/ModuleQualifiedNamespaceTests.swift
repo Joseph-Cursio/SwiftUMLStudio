@@ -115,6 +115,23 @@ struct ModuleQualifiedNamespaceTests {
         #expect(try lines(files, Configuration(format: .plantuml), containing: "inherits") == [inherits])
     }
 
+    /// `import struct Analytics.Event` shows the module Analytics's `Event`, so through it
+    /// `Analytics.Event.Base`, and `Base` in `extension Analytics.Event`, are the `Base` another
+    /// file of App adds to that `Event`, as they are through `import Analytics`.
+    @Test("a scoped import of the qualifier module's type shows what is nested in it", arguments: [
+        "import struct Analytics.Event\n", "import Analytics\n", "@_exported import struct Analytics.Event\n"
+    ])
+    func scopedImportOfQualifierModuleType(imports: String) throws {
+        let analytics = "public struct Event {\n    public init() {}\n}"
+        let adder = "import Analytics\n\nextension Analytics.Event {\n    class Base {}\n}\n"
+        let writer = imports + "\nfinal class Child: Analytics.Event.Base {}\n\n"
+            + "extension Analytics.Event {\n    final class Nested: Base {}\n}\n"
+        let files: [(module: String?, source: String)] = [("Analytics", analytics), ("App", adder), ("App", writer)]
+        #expect(try lines(files, Configuration(format: .plantuml), containing: "inherits").sorted() == [
+            "Analytics.Event.Base <|-- Analytics.Event.Nested : inherits", "Analytics.Event.Base <|-- Child : inherits"
+        ])
+    }
+
     /// `extension OEvent`, after Mid's `typealias OEvent = Core.Analytics.Event`, extends Core's
     /// namespace `Event`, so `Inner` in it is Core's, though App does not import Core: the name
     /// `Analytics.Event` it is looked up under is the one the type is recorded under, whose
