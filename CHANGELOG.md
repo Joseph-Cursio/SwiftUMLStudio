@@ -130,12 +130,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
     `_D.Foo` the target `2D`. Beyond ASCII the derivation keeps Unicode
     letters and digits where SwiftPM keeps C99's identifier ranges.
   - `ModA.Foo.Nested` also reaches a `Nested` another module adds to
-    ModA's `Foo` in an extension. A module's `internal` types are still
-    not reached from another module, a qualified typealias means the
-    type it aliases, and a module may qualify its own types. In
-    `extension ModA.Foo`, a supertype is looked for among `Foo`'s
-    members, as Swift does; in an extension of a type that merely
-    shares a target's name, it is not looked for in that target.
+    ModA's `Foo` in an extension. A typealias, or a nested type hidden
+    by `showNestedTypes: false`, that another module adds to ModA's
+    `Foo`, in `extension ModA.Foo` or through a typealias of `Foo`,
+    ranks in that module, merged or drawn apart, so in ModA,
+    `Foo.X` still means ModA's own `X`, even in the file that declares
+    `Foo`. In ModB, the `Foo.X` of ModB's own `Foo`, a nested type or a
+    typealias, comes first whichever file is read first; a nested type
+    still does with nested types hidden, though it is not drawn: the
+    edge then finds no end, rather than one on ModA's `Foo` alias. A
+    module's `internal` types are still not reached from another module,
+    a qualified typealias means the type it aliases, and a module may
+    qualify its own types. In `extension ModA.Foo`, a supertype is
+    looked for among `Foo`'s members, as Swift does; in an extension of
+    a type that merely shares a target's name, it is not looked for in
+    that target.
   - A qualifier that names no target, such as `Swift` in
     `extension Swift.String`, and every qualifier without `--package`,
     is kept as part of the name.
@@ -146,20 +155,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   - In every format, a name written inside `extension ModA.Foo` is looked
     for among `Foo`'s members first, as Swift does: `class Child: Base`
     there means ModA's `Foo.Base`, even beside ModB's own `Base`.
-  - PlantUML, Mermaid and Nomnoml end a supertype edge on the first box
-    with the name it comes to, so a name some box already has still
-    ends there, as before, even where Swift means another type of that
-    name: after Lib's `typealias StoreType = Store`, `Cache: StoreType`
-    ends on App's own `Store` box when that comes first, where SVG ends
-    it on Lib's. A name no box has used to give the edge an undeclared
-    node of its own; it now ends on the box of the type the name means,
-    as in SVG, so `struct S: ModA.Q` ends on ModA's `Q`, and
-    `struct S: Lib.StoreType` on Lib's `Store`. So does a name only the
-    box of `extension ModA.Base` has, since that box is not the class:
-    `class Sub: ModA.Base` ends on `Base`. Such an edge takes the arrow
-    of the box it ends on, a conformance to a protocol and an
-    inheritance otherwise, and is drawn once when the same conformance
-    is also written without the module.
+  - PlantUML, Mermaid and Nomnoml end a supertype edge written through a
+    module where SVG ends it (see "PlantUML, Mermaid and Nomnoml end a
+    supertype edge where SVG does" below). Such a name used to give the
+    edge an undeclared node of its own. Now `struct S: ModA.Q` ends on
+    ModA's `Q`, and `struct S: Lib.StoreType` on Lib's `Store`.
+    `class Sub: ModA.Base` ends on `Base`, not on the box of
+    `extension ModA.Base`, which is not the class. The edge is drawn
+    once when the same conformance is also written without the module.
   - Still unread: a type declared inside `extension ModA.Foo` is known
     by that spelling, so `extension Foo.Nested` written where `Foo` is
     ModA's does not reach it. A type outside the diagram, such as
@@ -271,6 +274,168 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
     and with a bare `extension Array` when the project has no `Array`
     (#66).
   - An extension's id and label are unchanged.
+
+- **A supertype named in a sugared extension is looked up in Swift's
+  type** (follows #126). Inside `extension [Int]`, Swift looks a name up
+  among the members of Swift's `Array`, then at the top level. The type
+  lookup also tried a type nested in a project `struct Array`, since
+  both are recorded as `Array.Base`. So
+  `extension [Int] { class Sub: Base {} }` drew `Sub` inheriting the
+  project's `Array.Base` rather than a top-level `Base`, in every
+  format, and so did a type a level deeper and a typealias declared in
+  the extension. The mirror went wrong too: inside a project
+  `struct Array`, `Base` could reach the one `extension [Int]` declares,
+  and a written `Array.Base` reached whichever was declared first.
+  - A name built on the types around a declaration now takes only a
+    member of the type they start at: Swift's `Array` for
+    `extension [Int]`, the project's for a `struct Array`, or for a bare
+    `extension Array` beside one.
+  - A dotted name as written means the type its first component means
+    there, so `Array.Base` is the project's unless a nearer `Array`,
+    such as an enclosing type's `typealias Array = [Int]`, shadows it.
+    Only a name two such types share is told apart.
+  - `relationships.inheritance.exclude` matches the supertype the name
+    now means.
+  - When both `Array.Base` boxes are drawn, every format ends the edge
+    on the right one (see the next entry).
+
+- **PlantUML, Mermaid and Nomnoml end a supertype edge where SVG does**.
+  They wrote the end as the supertype's name, so when two boxes shared
+  it, the edge reached the first, while SVG ends it on the type the
+  name means where it is written. Now they end it on that same box:
+  - a supertype in the file's own `fileprivate class Base`, not
+    another file's;
+  - a hidden type's stand-in (#153), not another hidden type's of its
+    name, nor `extension Int?` beside a hidden `protocol Optional`;
+  - the type a typealias comes to, even where another box has its name:
+    after Lib's `typealias StoreType = Store`, `Cache: StoreType` ends on
+    Lib's `Store`, not on App's own `Store` drawn first;
+  - the `Array.Base` the name means when a project `struct Array` and
+    `extension [Int]` both declare one.
+
+  Where SVG finds no box to end the edge on, the text formats wrote the
+  name, and so ended it on whatever drawn box had that name. Now they
+  leave the edge out, as SVG does. This covers a hidden type with no
+  stand-in beside another type's box of its name, and Swift's
+  `Identifiable` beside another file's `fileprivate protocol
+  Identifiable`. With no box of that name, the edge is still written to
+  a node of its own, as for `Codable`.
+
+  Under `--merge-extensions`, a conformance a merged extension carries
+  is now left out only when it ends on the same box as one drawn
+  before it, as SVG does (#76). The name no longer decides it. So each
+  file's extension of one type still conforms to its own
+  `fileprivate protocol P`, and a conformance written once directly and
+  once through a typealias is drawn once.
+
+  An edge that ends on a protocol is now labelled and styled
+  `conforms to`, with the realization arrow, and one that ends on a
+  class `inherits`, with the arrow of the type it starts at. Both used
+  to follow the first box of the name drawn so far:
+  - an edge to a class took the realization arrow and the `conforms to`
+    label when a protocol of the class's name was drawn first;
+  - an edge from a protocol to a parent protocol drawn after it was
+    labelled `inherits`.
+
+  An edge to a hidden type follows that type too (see the next entry).
+
+- **A conformance to a hidden protocol is drawn as a conformance**. In
+  PlantUML, Mermaid and Nomnoml, an edge to a type the diagram hides,
+  ending on its stand-in (#153) or written to its name, was labelled,
+  styled and given its arrow from the first box of that name drawn so
+  far. That box was often another file's type, or there was none, which
+  gave `inherits`. So `struct U: P` with B.swift's
+  `fileprivate protocol P` drew `P0 <|-- U : inherits`. With another
+  file's `private protocol P` drawn first it was right by accident, and
+  with a `private class P` there it was wrong again. The edge is now
+  named after the type the name means, drawn or hidden: `conforms to`,
+  with the realization arrow, for a protocol, and `inherits` for
+  anything else. Two other cases took their name from the first box
+  the same way and now inherit too:
+  - an enum's raw type beside a protocol of its name drawn first, as
+    in `Code0 <|.. Kind : conforms to`;
+  - a type outside the diagram, whose kind the diagram does not know.
+    `extension Foo: Encodable` beside `extension Encodable {}` was
+    labelled `ext`, and a subclass of Foundation's `NSObject` beside
+    another file's `private protocol NSObject` was a conformance.
+
+  A file's imports are read only for module qualifiers, so when other
+  modules declare a bare name as different kinds, the lookup cannot
+  tell which one the writer imports.
+  If the edge then ends on no protocol's own box, it is named
+  `inherits`, not after whichever module came first. This holds through
+  a typealias, the writer's own included, and when the other module's
+  type is a typealias of a type outside the diagram. An edge that ends
+  on a drawn protocol's box stays a conformance, as the box's shape
+  says. With `showNestedTypes: false`, nested types are not looked up,
+  so a conformance to a nested protocol is still named `inherits`. The
+  reference, the user guide and the Studio guide now say a
+  protocol the sources declare, drawn or hidden, takes realization.
+
+- **An edge to a type outside the diagram ends on an extension of it,
+  however each spells the type**. After
+  `typealias Describable = CustomStringConvertible`,
+  `extension Describable` extends `CustomStringConvertible`, and
+  `--merge-extensions` already gave both spellings one box (#125). A
+  hidden type's edge already reached its stand-in through any spelling
+  (see "An edge to a hidden type ends on the extension that stands in
+  for it" above), but the edge to a type outside the diagram was looked
+  up only among the extensions written with the edge's own spelling, in
+  every format:
+  - `struct T: CustomStringConvertible` reached no box, while
+    `struct S: Describable` reached `extension Describable`.
+  - Under `--merge-extensions`, with both spellings extended, an edge
+    written with the merged-away spelling was dropped.
+
+  Such an edge now ends on an extension of its own spelling when there
+  is one, as before. Otherwise it ends on an extension spelled with the
+  name the type comes to, and failing that on the first drawn extension
+  written through a typealias that comes to it, its module first or
+  not: under `--package`, `extension MyModule.Describable` or, in
+  another target, `extension Lib.Describable` counts, and so does an
+  edge written `Lib.Describable`. A type nested in an extension the
+  diagram hides hangs off its type's other extension in the same way.
+  - A name written inside an extension of a type outside the diagram
+    may be one of that type's members, which the diagram cannot see.
+    So `extension Date { typealias Style = FormatStyle }` means
+    `Date.FormatStyle`, not Foundation's protocol `FormatStyle`. Such an
+    extension is no other spelling's end, and `--merge-extensions` no
+    longer folds it into `extension FormatStyle`. The same holds when
+    the extension spells the outside type through a typealias, as in
+    `extension Day` after `typealias Day = Date`.
+  - A name written there that the project declares, such as its own
+    `typealias Describable`, is taken as the project's, as everywhere
+    else, though the outside type may have a member of that name, which
+    the diagram cannot see. A name that no typealias takes is trusted
+    as written. So
+    `struct Stamp: CustomStringConvertible` inside `extension Date`
+    ends on `extension CustomStringConvertible`, or, under
+    `--merge-extensions`, on the box that extension merged into.
+  - A name written inside an extension of a project type is the
+    project's. This holds with nested types hidden, when the extension
+    spells the type through a typealias, as in `extension Crate.Inner`
+    after `typealias Crate = Outer`, when it writes the type's module
+    first, as `extension MyModule.Outer` does under `--package`, and
+    for a project type nested in an outside type's extension, as
+    `extension Date.Box` after `extension Date { struct Box {} }`.
+  - A name written inside an extension whose name is a typealias is
+    looked up among its type's members, as Swift does: inside
+    `extension Crate`, after `typealias Crate = Outer`, `Inner` is
+    `Outer.Inner`, not a top-level `Inner`, and inside `extension Day`,
+    after `typealias Day = Date`, `P` is the `Date.P` the project
+    declares in `extension Date`. An extension that writes a typealias
+    only as the first part of its name, as `extension Crate.Mid` does,
+    is not read this way yet.
+  - A typealias an extension spelled through a typealias declares is
+    also known by its type's own name: after
+    `extension Crate { typealias D = Date }`, `Outer.D` is `Date`, so
+    `Style` inside `extension Outer.D` may be `Date.FormatStyle`.
+  - Under `--merge-extensions`, a typealias an extension declares is
+    read where that extension declares it, not in the scope of the type
+    it merges into. It is also still known by the extension's own
+    spelling, so `extension Crate.Desc` after
+    `extension Crate { typealias Desc = CustomStringConvertible }` ends
+    edges as it does drawn apart.
 
 - **A chain of nested `[` no longer takes time that doubles with each
   `[`** (#148). Since swift-syntax 602, SwiftParser reads the element
@@ -960,10 +1125,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   type takes no name written in another file, nor one below `package` a
   name written in another module. A type is as visible as the most
   restrictive of itself, the types and the extension enclosing it, and
-  the type that extension extends. (The text formats link a supertype or
-  conformance by bare name, so there such an edge still lands on
-  whichever declaration holds that name; a nested type's edge follows
-  SVG, see above.)
+  the type that extension extends. (The text formats now end a supertype
+  or conformance edge where SVG does, see "PlantUML, Mermaid and
+  Nomnoml end a supertype edge where SVG does"; a nested type's edge
+  follows SVG too, see above.)
 - **`relationships.realize.exclude` and `relationships.dependency.exclude`
   now hide edges** (#113). Both were decoded but never read, so the
   reference's own `realize.exclude: [Codable, Sendable]` hid nothing.

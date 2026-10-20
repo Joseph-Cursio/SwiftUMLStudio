@@ -15,6 +15,10 @@ struct DeclarationScope {
     /// type an enclosing extension extends, which sees no further out. Empty for a top-level
     /// declaration and for an extension, whose clause Swift reads at file scope (#157).
     let enclosingTypes: [String]
+    /// The extension `enclosingTypes` ends at, when they reach one, with its name and its
+    /// `SyntaxStructure.isSugared`. Its type decides which type those names are members of: for
+    /// `extension [Int]`, Swift's `Array`, not a project `Array` (`TypeLookup.enclosingRoot(of:depth:)`).
+    let enclosingExtension: (name: String, isSugared: Bool)?
 
     /// The scope of `item`, a member of `container` when `item.parent` is not set: a typealias
     /// is never flattened out of its type's members.
@@ -22,32 +26,46 @@ struct DeclarationScope {
         filePath = item.sourceLocation?.filePath ?? container?.sourceLocation?.filePath
         module = item.module ?? container?.module
         imports = item.imports ?? container?.imports
-        enclosingTypes = item.kind == .extension ? [] : Self.enclosingTypes(from: container ?? item.parent)
+        let enclosing = item.kind == .extension ? [] : Self.enclosingTypes(from: container ?? item.parent)
+        enclosingTypes = enclosing.compactMap { $0.fullName ?? $0.name }
+        enclosingExtension = enclosing.last.flatMap { outermost in
+            outermost.kind == .extension ? outermost.name.map { ($0, outermost.isSugared) } : nil
+        }
     }
 
-    init(filePath: String?, module: String?) {
+    init(filePath: String?, module: String?, imports: Set<String>? = nil) {
         self.filePath = filePath
         self.module = module
-        imports = nil
+        self.imports = imports
         enclosingTypes = []
+        enclosingExtension = nil
     }
 
-    /// The full names of `context` and the types around it, innermost first, stopping after an
-    /// extension: its body sees the members of the type it extends, not of the types around that.
-    private static func enclosingTypes(from context: SyntaxStructure?) -> [String] {
-        var names: [String] = []
+    /// This scope's file, module and imports alone: where an extension's own clause is read,
+    /// which sees no enclosing types.
+    var fileScope: DeclarationScope {
+        DeclarationScope(filePath: filePath, module: module, imports: imports)
+    }
+
+    /// `context` and the types around it, innermost first, stopping after an extension: its body
+    /// sees the members of the type it extends, not of the types around that.
+    private static func enclosingTypes(from context: SyntaxStructure?) -> [SyntaxStructure] {
+        var types: [SyntaxStructure] = []
         var current = context
-        while let type = current, let name = type.fullName ?? type.name {
-            names.append(name)
+        while let type = current, (type.fullName ?? type.name) != nil {
+            types.append(type)
             if type.kind == .extension { break }
             current = type.parent
         }
-        return names
+        return types
     }
 
     /// The candidate a name means where this scope writes it, close to how Swift looks it up: the
-    /// first declared in the same file, then in the same module, then the first of all; `nil`
-    /// only when there are no candidates.
+    /// first declared in the same file, then in the same module, one ranked in a file before one
+    /// ranked in none, then the first of all; `nil` only when there are no candidates. A
+    /// typealias ModB's extension adds to ModA's `Foo` ranks in ModB and no file
+    /// (`TypeLookup.memberRank`), so in ModB, ModB's own `Foo.X` still comes first, whichever
+    /// was recorded first: there, `Foo` is ModB's own `Foo`.
     func nearest<Candidate>(
         among candidates: [Candidate], scope: (Candidate) -> DeclarationScope
     ) -> Candidate? {
@@ -55,8 +73,15 @@ struct DeclarationScope {
         if let filePath, let local = candidates.first(where: { scope($0).filePath == filePath }) {
             return local
         }
-        if let module, let sibling = candidates.first(where: { scope($0).module == module }) {
-            return sibling
+        if let module {
+            var fileless: Candidate?
+            for candidate in candidates {
+                let candidateScope = scope(candidate)
+                guard candidateScope.module == module else { continue }
+                if candidateScope.filePath != nil { return candidate }
+                if fileless == nil { fileless = candidate }
+            }
+            if let fileless { return fileless }
         }
         return first
     }

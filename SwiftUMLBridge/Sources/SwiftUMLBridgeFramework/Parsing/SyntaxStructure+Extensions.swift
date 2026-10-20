@@ -52,6 +52,7 @@ extension Array where Element == SyntaxStructure {
             }
             processedItems.removeAll(where: { $0 == structure })
             structure.mergedInto = parent
+            parent.mergedExtensions.append(structure)
             // Before the members guard: `extension Foo: P {}` has no members, and is the commonest form.
             let scope = DeclarationScope(of: structure)
             parent.carriedSupertypes += (structure.inheritedTypes ?? []).map {
@@ -109,6 +110,20 @@ extension SyntaxStructure {
     /// Attribute names (e.g. ["Observable", "MainActor"]) extracted from this element's declaration.
     var attributeNames: [String] {
         attributes?.compactMap(\.attribute) ?? []
+    }
+}
+
+extension SyntaxStructure {
+    /// The extension each of this item's members was merged in from, by the member
+    /// (`mergedExtensions`): where that member is written, and so read and ranked.
+    var mergedMemberOrigins: [ObjectIdentifier: SyntaxStructure] {
+        var origins: [ObjectIdentifier: SyntaxStructure] = [:]
+        for merged in mergedExtensions {
+            for member in merged.substructure ?? [] {
+                origins[ObjectIdentifier(member)] = merged
+            }
+        }
+        return origins
     }
 }
 
@@ -179,7 +194,11 @@ extension ElementKind: Comparable {
 /// so every edge to the hidden type ends on its box (`EdgeEndIds.standIn`). Extensions are matched
 /// by the type their names come to, not by spelling, so `extension Alias` and `extension Real`
 /// share a box after `typealias Alias = Real`, and so do `extension JSON` and
-/// `extension [String: Int]` after `typealias JSON = [String: Int]` (#125).
+/// `extension [String: Int]` after `typealias JSON = [String: Int]` (#125). Sugar always extends
+/// the standard library's type, so `extension [Int]` never merges into a project's own `Array`,
+/// which a bare `extension Array` does (#126). An extension whose type's name is not sure,
+/// `extension Date.Style` after `extension Date { typealias Style = FormatStyle }`, shares a box
+/// only with extensions spelled as it is (`TypeLookup.resolvedExtendedName(of:)`).
 ///
 /// Each extension is looked up once: finding a hidden type's first extension by looking up every
 /// extension again, for each extension, was cubic on many files that each hide a same-named type.
@@ -194,13 +213,19 @@ private struct MergeTargets {
         }
         var hidden = HiddenTypeHosts()
         var outsideHost: [String: SyntaxStructure] = [:]
+        var unsureHost: [String: SyntaxStructure] = [:]
         for item in items where item.kind == .extension {
             guard let name = item.fullName else { continue }
             let scope = DeclarationScope(of: item)
             guard let type = lookup.extendedType(of: item) else {
-                let resolvedName = lookup.resolvedExtendedName(of: item) ?? name
-                let host = outsideHost[resolvedName] ?? item
-                outsideHost[resolvedName] = host
+                let host: SyntaxStructure
+                if let resolvedName = lookup.resolvedExtendedName(of: item) {
+                    host = outsideHost[resolvedName] ?? item
+                    outsideHost[resolvedName] = host
+                } else {
+                    host = unsureHost[name] ?? item
+                    unsureHost[name] = host
+                }
                 targetForExtension[ObjectIdentifier(item)] = host
                 continue
             }

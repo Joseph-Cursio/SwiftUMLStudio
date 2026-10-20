@@ -99,16 +99,16 @@ struct ModuleQualifiedFormatTests {
     }
 
     /// App's own `Store` is the first box named `Store`. `StoreType` is Lib's alias of Lib's
-    /// `Store`, but the text formats end the edge on the name it comes to, as they did before;
-    /// SVG ends it on Lib's.
-    @Test("a supertype whose name some box has still ends on that box in the text formats")
-    func nameOfADrawnBoxWins() throws {
+    /// `Store`, so the edge ends on Lib's box, `Store0`, in the text formats as in SVG, though
+    /// App's box has the name it comes to.
+    @Test("a supertype ends on the box SVG ends it on, though another box has the name it comes to")
+    func nameOfADrawnBoxDoesNotWin() throws {
         let app = "import Lib\n\nprotocol Store {}\n\nstruct Cache: StoreType {}\n"
         let lib = "public protocol Store {}\npublic typealias StoreType = Store\n"
         let files: [(module: String?, source: String)] = [("App", app), ("Lib", lib)]
         let edges = try lines(files, Configuration(format: .plantuml), containing: "Cache")
             .filter { $0.contains("<|") }
-        #expect(edges == ["Store <|.. Cache : conforms to"])
+        #expect(edges == ["Store0 <|.. Cache : conforms to"])
         #expect(try graph(files, Configuration(format: .svg)).edgeEnds.contains("Cache -> Store_1"))
     }
 
@@ -126,5 +126,81 @@ struct ModuleQualifiedFormatTests {
             .filter { $0.contains("<|") }
         #expect(swapped == ["Store0 <|.. Cache : conforms to"])
         #expect(try graph(files, Configuration(format: .svg)).edgeEnds.contains("Cache -> Store"))
+    }
+
+    // MARK: - Hidden nested types
+
+    /// With nested types hidden ModB's own `Foo.V` is not drawn, but it is what `Foo.V` means in
+    /// ModB, never the `typealias V` ModB's extension of ModA's `Foo` declares, however that
+    /// extension spells the type: the edge finds no end, as when there is no such alias.
+    @Test("a hidden nested type is what its name means, not another module's member typealias", arguments: [
+        "typealias FA = ModA.Foo\n\nextension FA {\n    typealias V = ModA.Base\n}\n",
+        "extension ModA.Foo {\n    typealias V = ModA.Base\n}\n"
+    ])
+    func hiddenNestedTypeBeforeMemberAlias(spelling: String) throws {
+        let modA = "public struct Foo {\n    public init() {}\n}\n\nopen class Base {\n    public init() {}\n}\n"
+        let modB = "import ModA\n\nstruct Foo {\n    class V {}\n}\n\n\(spelling)\nfinal class C11: Foo.V {}\n"
+        let files: [(module: String?, source: String)] = [("ModA", modA), ("ModB", modB)]
+        for mode in [ExtensionVisualization.all, .merged] {
+            let elements = ElementOptions(showNestedTypes: false, showExtensions: mode)
+            for format in [DiagramFormat.plantuml, .mermaid] {
+                let edges = try lines(files, Configuration(elements: elements, format: format), containing: "<|--")
+                #expect(edges.map { $0.trimmingCharacters(in: .whitespaces) } == ["Foo.V <|-- C11 : inherits"],
+                        "\(mode) \(format)")
+            }
+            let nomnoml = try lines(files, Configuration(elements: elements, format: .nomnoml), containing: "-:>")
+            #expect(nomnoml == ["[C11] -:> inherits [Foo.V]"], "\(mode)")
+            let svg = try graph(files, Configuration(elements: elements, format: .svg))
+            #expect(svg.edges.filter { $0.sourceId == "C11" }.isEmpty, "\(mode)")
+        }
+    }
+
+    /// ModA cannot see ModB, so in ModA `Foo.V` is ModA's own alias of `Base`, never the class
+    /// ModB's `extension ModA.Foo` nests in `Foo`: hidden and merged into `Foo`, that class ranks
+    /// in ModB, as it does drawn, wherever ModA writes the name.
+    @Test("another module's hidden nested type does not shadow the type module's own alias", arguments: [
+        ["public struct Foo {\n    public init() {}\n}\n\nopen class Base {\n    public init() {}\n}\n",
+         "extension Foo {\n    public typealias V = Base\n}\n",
+         "final class UseA: Foo.V {}\n"],
+        ["public struct Foo {\n    public init() {}\n    public typealias V = Base\n}\n\n"
+            + "open class Base {\n    public init() {}\n}\n\nfinal class UseA: Foo.V {}\n"]
+    ])
+    func hiddenNestedTypeOfOtherModule(modA: [String]) throws {
+        let modB = "import ModA\n\nextension ModA.Foo {\n    open class V {\n        public init() {}\n    }\n}\n"
+        let files: [(module: String?, source: String)] = modA.map { ("ModA", $0) } + [("ModB", modB)]
+        for mode in [ExtensionVisualization.all, .merged] {
+            let elements = ElementOptions(showNestedTypes: false, showExtensions: mode)
+            for format in [DiagramFormat.plantuml, .mermaid] {
+                let edges = try lines(files, Configuration(elements: elements, format: format), containing: "<|--")
+                #expect(edges.map { $0.trimmingCharacters(in: .whitespaces) } == ["Base <|-- UseA : inherits"],
+                        "\(mode) \(format)")
+            }
+            let nomnoml = try lines(files, Configuration(elements: elements, format: .nomnoml), containing: "-:>")
+            #expect(nomnoml == ["[UseA] -:> inherits [Base]"], "\(mode)")
+            let svg = try graph(files, Configuration(elements: elements, format: .svg))
+            #expect(svg.edgeEnds.contains("UseA -> Base"), "\(mode)")
+        }
+    }
+
+    /// Compiles (`swiftc -typecheck`): `Array.Box` starts at the project's `struct Array`, while
+    /// `[Int]` is Swift's. A hidden `Box` in `extension [Int]` is no member of the project's
+    /// `Array`, so it shadows the project's `typealias Box = Base` no more than it would drawn;
+    /// a hidden `Box` nested in the project's `Array` still shadows `extension [Int]`'s alias.
+    @Test("a hidden nested type shadows an alias only when its name can mean it", arguments: [
+        ("struct Array {\n    typealias Box = Base\n}\n", "extension [Int] {\n    class Box {}\n}\n", "Base"),
+        ("struct Array {\n    class Box {}\n}\n", "extension [Int] {\n    typealias Box = Base\n}\n", nil)
+    ])
+    func hiddenNestedTypeOfOtherRoot(project: String, sugared: String, end: String?) throws {
+        let files: [(module: String?, source: String)] = [
+            (nil, "class Base {}\n\n" + project), (nil, sugared), (nil, "final class C: Array.Box {}\n")
+        ]
+        for mode in [ExtensionVisualization.all, .merged] {
+            let elements = ElementOptions(showNestedTypes: false, showExtensions: mode)
+            let edges = try lines(files, Configuration(elements: elements, format: .plantuml), containing: "<|--")
+            let edge = "\(end ?? "Array.Box") <|-- C : inherits"
+            #expect(edges.map { $0.trimmingCharacters(in: .whitespaces) } == [edge], "\(mode)")
+            let svg = try graph(files, Configuration(elements: elements, format: .svg))
+            #expect(svg.edgeEnds.filter { $0.hasPrefix("C -> ") } == (end.map { ["C -> \($0)"] } ?? []), "\(mode)")
+        }
     }
 }

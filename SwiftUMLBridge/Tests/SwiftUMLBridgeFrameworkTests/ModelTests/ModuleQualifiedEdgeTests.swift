@@ -87,7 +87,8 @@ struct ModuleQualifiedEdgeTests {
     }
 
     /// `Hidden` is internal and drawn only through `extension HA`. Both edges end on that box,
-    /// whether they name the type or the alias, as an inheritance edge, in every format.
+    /// whether they name the type or the alias, in every format, as conformances: the hidden
+    /// type is a protocol.
     @Test("an extension spelled through a typealias stands in for an edge that names the type")
     func aliasSpelledStandInForDirectName() throws {
         let app = """
@@ -106,6 +107,6 @@ struct ModuleQualifiedEdgeTests {
         #expect(try graph(files, Configuration(elements: publicOnly, format: .svg)).edgeEnds.sorted()
             == ["A -> HA", "B -> HA"])
         let edges = ClassDiagramIds.lines(of: try text(files, Configuration(elements: publicOnly)), containing: "<|")
-        #expect(edges.sorted() == ["HA <|-- A : inherits", "HA <|-- B : inherits"])
+        #expect(edges.sorted() == ["HA <|.. A : conforms to", "HA <|.. B : conforms to"])
     }
 }

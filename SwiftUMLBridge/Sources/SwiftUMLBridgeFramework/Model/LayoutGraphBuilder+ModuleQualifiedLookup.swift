@@ -67,6 +67,16 @@ extension LayoutGraphBuilder.TypeLookup {
             && moduleMatch(named: name, from: scope, depth: 0) != nil
     }
 
+    /// Whether `name`, written in `scope`, spells a typealias through its module, as
+    /// `extension MyModule.Describable` does after `typealias Describable = CustomStringConvertible`
+    /// in MyModule: an extension of the type the alias comes to, as `extension Describable` is.
+    /// A name whose rest no typealias is recorded under is answered without a lookup.
+    func spellsTypealiasThroughModule(_ name: String, from scope: Scope) -> Bool {
+        guard let dot = name.firstIndex(of: "."), namesTypealias(String(name[name.index(after: dot)...]))
+        else { return false }
+        return readsModule(name, from: scope)
+    }
+
     /// Whether `name`'s first component names a module of the diagram and some type is recorded
     /// under the rest of it: a dictionary check, before any lookup.
     func mayReadModule(_ name: String) -> Bool {

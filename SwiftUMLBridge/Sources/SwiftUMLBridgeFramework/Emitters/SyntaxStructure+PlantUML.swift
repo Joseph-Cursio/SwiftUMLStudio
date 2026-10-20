@@ -97,22 +97,20 @@ extension SyntaxStructure {
     /// The parents `addLinking` draws an edge to: inherited types plus macro-synthesised
     /// conformances, then the supertypes merged extensions carried here (#76). The parser has
     /// already split a composition `A & B` into its parts, so an `&` left in a name is part of
-    /// that one type, as in `Base<any P & Q>`. A carried one whose name is already drawn is left
-    /// out, so a conformance two `#if` clauses both declare is drawn once. Each comes with the
-    /// scope its name is written in: this declaration's, the carrying extension's (#125), or for
-    /// a macro's conformance the file's, since it names no member of a type around (#157).
+    /// that one type, as in `Base<any P & Q>`. A carried one that ends where an edge before it
+    /// does, as a conformance two `#if` clauses both declare, is left out by
+    /// `DiagramContext.addLinking`, by the box it ends on rather than its name: two files can each
+    /// declare their own `fileprivate protocol P`. Each comes with the scope its name is written
+    /// in: this declaration's, the carrying extension's (#125), or for a macro's conformance the
+    /// file's, since it names no member of a type around (#157).
     func linkParents() -> [CarriedSupertype] {
         let explicit = inheritedTypes ?? []
         let synthetic = syntheticConformances(besides: explicit)
-        var names = Set((explicit + synthetic).compactMap(\.name))
-        let carried = carriedSupertypes.filter { carried in
-            carried.supertype.name.map { names.insert($0).inserted } ?? true
-        }
         let scope = DeclarationScope(of: self)
         let fileScope = DeclarationScope(filePath: scope.filePath, module: scope.module)
         return explicit.map { CarriedSupertype(supertype: $0, scope: scope) }
             + synthetic.map { CarriedSupertype(supertype: $0, scope: fileScope) }
-            + carried
+            + carriedSupertypes
     }
 
     /// The conformances this declaration's macro attributes add, leaving out those `explicit`

@@ -200,8 +200,9 @@ struct ModuleQualifiedScopeTests {
         #expect(ClassDiagramIds.lines(of: text, containing: " : ext").contains("Bar <.. Foo.Alias : ext"))
     }
 
-    /// `S: Alias` ends where the text formats end it, on the box named `Q`, before the box of
-    /// `extension App.Q`, which spells the type through its module.
+    /// `S: Alias` ends on the box named `Q`, before the box of `extension App.Q`, which spells
+    /// the type through its module, in every format. `Q` is a protocol, so the edge is a
+    /// conformance.
     @Test("a stand-in under the type's own name comes before one spelled through its module")
     func ownNameBeforeQualified() throws {
         let app = """
@@ -226,6 +227,6 @@ struct ModuleQualifiedScopeTests {
             items: try moduleQualifiedItems([("App", app)]),
             configuration: Configuration(elements: publicOnly, format: .plantuml)
         ).text
-        #expect(ClassDiagramIds.lines(of: text, containing: "<|--") == ["Q <|-- S : inherits"])
+        #expect(ClassDiagramIds.lines(of: text, containing: "<|") == ["Q <|.. S : conforms to"])
     }
 }

@@ -137,4 +137,33 @@ struct ModuleQualifiedMergeTests {
         )
         #expect(edges == ["Configurable <|.. Settings.Theme : conforms to"])
     }
+
+    /// Lib's `typealias Describable = CustomStringConvertible`, extended first as
+    /// `Lib.Describable` and then as `CustomStringConvertible`: merged, the two are one box,
+    /// recorded under the qualified spelling, and an edge written with either spelling, or from
+    /// a type nested in an extension of a type outside the diagram, ends on it, as it does with
+    /// the alias written bare.
+    @Test("an edge to an outside type ends on the box its extensions merge into through a module's alias")
+    func outsideTypeEndsOnModuleAliasHost() throws {
+        let lib = "public typealias Describable = CustomStringConvertible\n"
+        let app = """
+            import Foundation
+            import Lib
+
+            extension Lib.Describable { func viaModule() {} }
+            extension CustomStringConvertible { func direct() {} }
+            struct T: CustomStringConvertible { var description: String { "" } }
+            struct S: Describable { var description: String { "" } }
+            extension Date { struct Stamp: CustomStringConvertible { var description: String { "" } } }
+            """
+        let files: [(module: String?, source: String)] = [("Lib", lib), ("App", app)]
+        let svg = try graph(files, Configuration(elements: Self.merged, format: .svg))
+        let host = try #require(svg.owner(of: "direct"))
+        #expect(svg.owner(of: "viaModule") == host)
+        for child in ["T", "S", "Date.Stamp"] {
+            #expect(svg.edgeEnds.contains("\(child) -> \(host)"))
+        }
+        let edges = ClassDiagramIds.lines(of: try text(files, Configuration(elements: Self.merged)), containing: "<|--")
+        #expect(edges == ["T", "S", "Date.Stamp"].map { "\(host) <|-- \($0) : inherits" })
+    }
 }

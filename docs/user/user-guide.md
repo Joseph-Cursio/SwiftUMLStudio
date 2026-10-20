@@ -982,9 +982,9 @@ Arrows between elements represent Swift relationships. The same arrow notation i
 | `<..` (dotted) | Extension dependency | `extension String: ...` |
 | `+--` (composition) | Nested type **(PlantUML only)** | `struct Outer { struct Inner {} }` |
 
-A conformance to a protocol the diagram does not declare, such as `Codable`, is labelled and styled as inheritance: `struct User: Codable` gives `Codable <|-- User : inherits`.
+A conformance to a protocol the sources do not declare, such as `Codable`, is labelled and styled as inheritance: `struct User: Codable` gives `Codable <|-- User : inherits`. A protocol the sources declare is a conformance whether the diagram draws it or hides it. The [reference](reference.md#relationship-arrows) lists the names the diagram cannot follow, such as one other modules declare as different kinds, which are labelled as inheritance.
 
-Each declaration draws its supertypes from its own box. An extension draws them with `<..`, whether or not the diagram declares the type it extends: `struct User {}` with `extension User: Codable {}` gives `Codable <.. User0 : inherits`, from the extension's box `User0`. A supertype the diagram declares as a protocol is drawn with `<|..` from any declaration.
+Each declaration draws its supertypes from its own box. An extension draws them with `<..`, whether or not the diagram declares the type it extends: `struct User {}` with `extension User: Codable {}` gives `Codable <.. User0 : inherits`, from the extension's box `User0`. A supertype the sources declare as a protocol, drawn or hidden, is drawn with `<|..` from any declaration.
 
 ### Access Level Indicators
 

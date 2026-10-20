@@ -12,6 +12,7 @@ extension LayoutGraphBuilder {
         /// `nil` for a type the diagram hides: it has no node, but still takes its name's lookup.
         let nodeId: String?
         let declaration: ObjectIdentifier
+        let kind: ElementKind
         let isExtension: Bool
         let scope: Scope
         /// The scope that ranks the declaration among others of its name (`DeclarationScope.nearest`):
@@ -43,6 +44,7 @@ extension LayoutGraphBuilder {
         ) {
             self.nodeId = nodeId
             declaration = ObjectIdentifier(item)
+            self.kind = kind
             isExtension = kind == .extension
             aliasTarget = kind == .typealias ? item.typename : nil
             isSugared = item.isSugared

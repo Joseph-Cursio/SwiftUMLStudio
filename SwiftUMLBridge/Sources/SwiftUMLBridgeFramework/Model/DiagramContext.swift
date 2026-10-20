@@ -17,11 +17,9 @@ class DiagramContext {
     /// The arrow for each element's supertype edges, from the relationship `uniqName` named it with,
     /// kept per element rather than under `<name>LinkType` in `uniqElementAndTypes`, where a repeat
     /// read its name's first declaration's arrow and a type named `PLinkType` overwrote protocol
-    /// `P`'s. `addLinking` draws an edge to a protocol the diagram declares with the realization
-    /// arrow instead.
+    /// `P`'s. `addLinking` draws an edge to a protocol the sources declare, drawn or hidden, with
+    /// the realization arrow instead.
     private var linkTypeForElement: [SyntaxStructure: String] = [:]
-    /// The relationship `uniqName` named each element with, for an edge that ends on it.
-    private var relationshipForElement: [SyntaxStructure: String] = [:]
 
     var uniqElementNames: [String] = []
     var uniqElementAndTypes: [String: String] = [:]
@@ -40,31 +38,22 @@ class DiagramContext {
     /// The drawn type each drawn extension extends, where its `ext` edge ends, found by
     /// `reserveIdentifiers(drawing:among:)`; an extension missing here gets no edge.
     private var extendedTypes: [ObjectIdentifier: SyntaxStructure] = [:]
-    /// The supertype and nesting edges, each written, or — for a supertype whose name as written
-    /// is no drawn box's — waiting for the alias of the box it resolves to (`addLinking`).
-    private var connectionEntries: [Connection] = []
-    /// The drawn elements, by declaration, that a supertype's name resolves to as SVG resolves it,
-    /// set by `reserveIdentifiers(drawing:among:)`; nil until then.
+    /// Where supertype edges end, found as SVG finds them, set by
+    /// `reserveIdentifiers(drawing:among:)`.
     private var edgeEnds: DrawnEdgeEnds?
-    /// The first drawn element of each name that declares an id: the one that keeps the name as
-    /// its alias, so the box an edge to that name ends on.
-    private var firstDrawnForName: [String: SyntaxStructure] = [:]
-
-    /// The supertype and nesting edges, in the order they were added.
-    /// A resolved edge that repeats one already drawn is dropped, as SVG drops a carried one: `P` in
-    /// `Foo`'s clause and `ModA.P` carried by a merged `extension ModA.Foo` are one conformance.
+    /// The supertype edges `addLinking` has drawn. `connections` writes them out once every
+    /// element has its alias: the element an edge ends on may be drawn after the one it starts at.
+    private var supertypeEdges: [SupertypeEdge] = []
+    /// Each box's supertype edge ends so far, so a second edge from a box to the same end is
+    /// left out, as SVG leaves it out (#76).
+    private var supertypeEndsDrawn: Set<SupertypeEndKey> = []
+    /// The edges from nested types to their parents, `collectNestedTypeConnections(items:)` drew.
+    private var nestingConnections: [String] = []
+    /// Each supertype edge as the format writes it, in the order `addLinking` drew them, then
+    /// each nesting edge.
     var connections: [String] {
-        var drawn = Set<String>()
-        return connectionEntries.compactMap { entry in
-            switch entry {
-            case .written(let text):
-                drawn.insert(text)
-                return text
-            case .resolved(let link):
-                let text = supertypeEdge(link)
-                return drawn.insert(text).inserted ? text : nil
-            }
-        }
+        let declared = Set(uniqueNameForElement.compactMap { declaresIdentifier(of: $0.key) ? $0.value : nil })
+        return supertypeEdges.compactMap { text(of: $0, besides: declared) } + nestingConnections
     }
     private(set) var extnConnections: [String] = []
     /// The typealiases among the items the diagram was built from, found by
@@ -95,7 +84,8 @@ class DiagramContext {
 
     var index = 0
 
-    /// The id `addLinking` writes for `parent`'s end of an edge, written in `scope`, or `nil` when
+    /// The name `addLinking` writes for `parent`'s end of an edge, written in `scope`, when the
+    /// edge ends on no drawn element (`supertypeEnd(for:from:)`), or `nil` when
     /// `relationships.inheritance.exclude` or `relationships.realize.exclude` suppresses the
     /// edge. Both drawing and `reserveIdentifiers(drawing:)` go through here, so an excluded
     /// target is neither drawn nor reserved. A name written through a typealias is the aliased
@@ -107,77 +97,98 @@ class DiagramContext {
         return linkTo.starts(with: "@") ? "\"\(linkTo)\"" : linkTo
     }
 
+    /// Where the edge to `parent`, written in `scope`, ends, as SVG ends it (`DrawnEdgeEnds`): the
+    /// drawn element the name means there, by file, module and access, or a hidden type's
+    /// stand-in. Writing the name instead ended the edge on the first box with that name, so
+    /// `struct U: P` reached another file's `P`. `element` is `nil` when SVG finds none: a type
+    /// outside the diagram, such as `Codable`, or a hidden type with no stand-in. `isProtocol`
+    /// says whether the edge is a realization (`DrawnEdgeEnds.supertype(named:from:)`).
+    private func supertypeEnd(
+        for parent: SyntaxStructure, from scope: DeclarationScope
+    ) -> (element: SyntaxStructure?, isProtocol: Bool) {
+        guard let name = parent.name?.removeAngleBracketsWithContent(), let edgeEnds else { return (nil, false) }
+        return edgeEnds.supertype(named: name, from: scope)
+    }
+
     /// Draws the edge from `item` to its supertype `parent`. It starts at the alias `uniqName` gave
-    /// `item` and takes the arrow of `item`'s own kind, so a second declaration of a name, such as
-    /// an extension or the other branch of an `#if`, draws its supertypes from its own box with its
-    /// own arrow, not from the first's with the first's (#68). A supertype the diagram declares as
-    /// a protocol takes the realization arrow from any declaration.
+    /// `item`, so a second declaration of a name, such as an extension or the other branch of an
+    /// `#if`, draws its supertypes from its own box (#68). It ends on the drawn element
+    /// `supertypeEnd(for:from:)` finds, under the alias `uniqName` gives that element. With none,
+    /// it is written to `linkTarget(for:from:)`, a node of its own, unless a drawn element
+    /// declares that name: then it is left out, as SVG leaves it out, rather than ending on that
+    /// unrelated box (`connections`). An edge from `item`'s box that ends where one before it
+    /// does, as a conformance two `#if` clauses or a merged extension repeat, is left out too.
+    ///
+    /// The edge is named after the type `parent`'s name means, drawn or hidden, whichever box it
+    /// ends on: `conforms to` for a protocol, and `inherits` for anything else, a class, an enum's
+    /// raw type, or a type outside the diagram such as `Codable`, whose kind the diagram does not
+    /// know. Named `conforms to`, it takes the realization arrow and that label and style;
+    /// otherwise the arrow of `item`'s own kind. A context that never resolved its ends
+    /// (`reserveIdentifiers(drawing:among:)`) names an edge as the name's first box drawn so far.
     /// `scope` is where `parent`'s name is written, `item`'s own scope by default: a merged
     /// extension's scope for a supertype it carried.
-    ///
-    /// The edge ends on the name `linkTarget` gives, as the box of that name is the first drawn
-    /// element so named. When no drawn box has that name, the edge would end on an undeclared node,
-    /// so it ends instead on the drawn element the name resolves to as SVG resolves it
-    /// (`DrawnEdgeEnds`): `struct S: ModA.Q` on ModA's `Q`, and on the box a hidden `Q`'s
-    /// extensions merged into (#124). Its alias is known only once that element is drawn, so the
-    /// edge is written when `connections` is read.
     func addLinking(item: SyntaxStructure, parent: SyntaxStructure, from scope: DeclarationScope? = nil) {
         let scope = scope ?? DeclarationScope(of: item)
-        guard let linkTo = linkTarget(for: parent, from: scope), let fullName = item.fullName else { return }
-        var target: SyntaxStructure?
-        if !linkTo.hasPrefix("\""), let edgeEnds, let written = parent.name?.removeAngleBracketsWithContent() {
-            // The box of that name, unless it is only `extension ModA.Base`, named as written but
-            // an extension of the type the name means (#124).
-            let box = firstDrawnForName[linkTo]
-            if box == nil || box.map(edgeEnds.isExtensionOfDrawnType) == true {
-                target = edgeEnds.element(at: .named(written, from: scope)).flatMap { $0 === box ? nil : $0 }
-            }
-        }
-        // The arrow and label are those of the box the edge ends on, as known when it is added: a
-        // resolved type's own, and an extension standing in for a hidden type's as inheritance.
-        let namedConnection = target.map { target in
-            target.kind == .extension ? "inherits" : relationshipForElement[target]
-                ?? (target.kind == .protocol ? "conforms to" : "inherits")
-        } ?? uniqElementAndTypes[linkTo] ?? "inherits"
-        let link = SupertypeLink(
-            child: uniqueNameForElement[item] ?? fullName, item: item, linkTo: linkTo, target: target,
-            namedConnection: namedConnection
-        )
-        connectionEntries.append(target == nil ? .written(supertypeEdge(link)) : .resolved(link))
-    }
-
-    /// A supertype edge as `addLinking` adds it.
-    private struct SupertypeLink {
-        let child: String
-        let item: SyntaxStructure
-        let linkTo: String
-        /// The drawn element the edge ends on instead of `linkTo`, once it has an alias.
-        let target: SyntaxStructure?
-        /// The relationship its arrow and label come from.
-        let namedConnection: String
-    }
-
-    private enum Connection {
-        case written(String)
-        case resolved(SupertypeLink)
-    }
-
-    /// The text of a supertype edge, ending on `link.target`'s alias when it has one.
-    private func supertypeEdge(_ link: SupertypeLink) -> String {
-        let linkTo = link.target.flatMap { uniqueNameForElement[$0] } ?? link.linkTo
-        let namedConnection = link.namedConnection
+        guard let linkTo = linkTarget(for: parent, from: scope) else { return }
+        guard let fullName = item.fullName else { return }
+        let (end, isProtocol) = supertypeEnd(for: parent, from: scope)
+        let key = SupertypeEndKey(child: ObjectIdentifier(item), end: end.map(ObjectIdentifier.init), written: linkTo)
+        guard supertypeEndsDrawn.insert(key).inserted else { return }
+        let namedConnection = edgeEnds == nil
+            ? uniqElementAndTypes[linkTo] ?? "inherits"
+            : isProtocol ? "conforms to" : "inherits"
         let arrow = namedConnection == "conforms to"
             ? linkTypeRealize
-            : linkTypeForElement[link.item] ?? "--ERROR--"
-        let label = relationshipLabel(for: namedConnection)
+            : linkTypeForElement[item] ?? "--ERROR--"
+        supertypeEdges.append(SupertypeEdge(
+            child: uniqueNameForElement[item] ?? fullName, arrow: arrow,
+            label: relationshipLabel(for: namedConnection),
+            plantUMLStyle: format == .plantuml ? relationshipStyle(for: namedConnection)?.plantuml : nil,
+            end: end, written: linkTo
+        ))
+    }
+
+    /// A supertype edge as `addLinking` works it out: everything but the id of its end, which
+    /// waits for `end`'s alias.
+    private struct SupertypeEdge {
+        let child: String
+        let arrow: String
+        let label: String?
+        let plantUMLStyle: String?
+        /// The drawn element the edge ends on, or `nil` to end it on `written`.
+        let end: SyntaxStructure?
+        let written: String
+    }
+
+    /// Where a supertype edge from a box ends: on a drawn element, or on the name it is written to.
+    private struct SupertypeEndKey: Hashable {
+        let child: ObjectIdentifier
+        let end: ObjectIdentifier?
+        let written: String
+
+        init(child: ObjectIdentifier, end: ObjectIdentifier?, written: String) {
+            self.child = child
+            self.end = end
+            // An edge to a drawn element ends there however its name is written.
+            self.written = end == nil ? written : ""
+        }
+    }
+
+    /// `edge` as the format writes it. `nil` when SVG finds no drawn end for it and the name it
+    /// would be written to is one of the `declared` ids, which would end it on that unrelated
+    /// element, as `HiddenParentEnd` keeps a nesting edge from doing (#67). A context that never
+    /// resolved its ends (`reserveIdentifiers(drawing:among:)`) writes every edge.
+    private func text(of edge: SupertypeEdge, besides declared: Set<String>) -> String? {
+        if edge.end == nil, edgeEnds != nil, declared.contains(edge.written) { return nil }
+        let end = edge.end.flatMap { uniqueNameForElement[$0] } ?? edge.written
         if format == .nomnoml || format == .svg {
-            return nomnomlEdge(from: link.child, arrow, to: linkTo, label: label)
+            return nomnomlEdge(from: edge.child, edge.arrow, to: end, label: edge.label)
         }
-        var connect = "\(linkTo) \(arrow) \(link.child)"
-        if format == .plantuml, let relStyle = relationshipStyle(for: namedConnection)?.plantuml {
-            connect += " \(relStyle)"
+        var connect = "\(end) \(edge.arrow) \(edge.child)"
+        if let style = edge.plantUMLStyle {
+            connect += " \(style)"
         }
-        if let label {
+        if let label = edge.label {
             connect += " : \(label)"
         }
         return connect
@@ -242,8 +253,9 @@ class DiagramContext {
     }
 
     /// Reserve every id the diagram will use, before the first alias is issued: the names of the
-    /// elements it draws, and the names its edges give elements it does not draw — a supertype,
-    /// a conformance or raw type, and a hidden parent of a drawn nested type. Mermaid and
+    /// elements it draws, and the names its edges give elements it does not draw — a supertype
+    /// that ends on no drawn element, such as a conformance to `Codable` or a raw type, and a
+    /// hidden parent of a drawn nested type. Mermaid and
     /// PlantUML give an edge's undeclared end a node of its own, so a suffix that took one of
     /// those names would join two elements. A first declaration keeps its own name as its alias,
     /// so a suffix must not take a name declared only later either: `struct Foo {}`,
@@ -256,9 +268,6 @@ class DiagramContext {
     func reserveIdentifiers(drawing items: [SyntaxStructure], among prepared: [SyntaxStructure]? = nil) {
         let edgeEnds = DrawnEdgeEnds(drawing: Set(items), among: prepared ?? items)
         self.edgeEnds = edgeEnds
-        for item in items where declaresIdentifier(of: item) {
-            if let name = item.fullName, firstDrawnForName[name] == nil { firstDrawnForName[name] = item }
-        }
         aliases = TypeAliasResolver(flattened: prepared ?? items)
         if drawsNestedTypeConnections {
             hiddenParentEnds = HiddenParentEnd.ends(
@@ -272,7 +281,12 @@ class DiagramContext {
             if declaresIdentifier(of: item), let fullName = item.fullName {
                 takenIdentifiers.insert(fullName)
             }
-            takenIdentifiers.formUnion(item.linkParents().compactMap { linkTarget(for: $0.supertype, from: $0.scope) })
+            // An edge that ends on a drawn element writes that element's alias, which `uniqName` takes.
+            takenIdentifiers.formUnion(item.linkParents().compactMap { parent in
+                let name = parent.supertype.name?.removeAngleBracketsWithContent()
+                let end = name.flatMap { edgeEnds.element(at: .named($0, from: parent.scope)) }
+                return end == nil ? linkTarget(for: parent.supertype, from: parent.scope) : nil
+            })
             if case .undeclared(let parentName)? = hiddenParentEnds[ObjectIdentifier(item)] {
                 takenIdentifiers.insert(parentName)
             }
@@ -301,12 +315,11 @@ class DiagramContext {
         }
         uniqueNameForElement[item] = newName
         linkTypeForElement[item] = linkType(for: relationship)
-        relationshipForElement[item] = relationship
         return newName
     }
 
     /// The arrow for the supertype edges of an element named with `relationship`, unless the
-    /// supertype is a protocol the diagram declares.
+    /// supertype is a protocol the sources declare.
     private func linkType(for relationship: String) -> String {
         switch relationship {
         case "inherits": linkTypeInheritance
@@ -353,9 +366,9 @@ class DiagramContext {
                 continue
             }
             if format == .nomnoml || format == .svg {
-                connectionEntries.append(.written(nomnomlEdge(from: parentName, "+-", to: name)))
+                nestingConnections.append(nomnomlEdge(from: parentName, "+-", to: name))
             } else {
-                connectionEntries.append(.written("\(parentName) +-- \(name)"))
+                nestingConnections.append("\(parentName) +-- \(name)")
             }
         }
     }
