@@ -9,8 +9,8 @@ public struct ElementOptions: Codable, Sendable {
     /// intentionally hidden. Single source for the property and initializer defaults below, which
     /// were four identical `[.open, .public, .package, .internal, .private]` literals.
     public static let defaultAccessLevels: [AccessLevel] = [.open, .public, .package, .internal, .private]
-    /// Only types declared at one of these access levels are drawn.
-    public private(set) var havingAccessLevel: [AccessLevel] = ElementOptions.defaultAccessLevels
+    /// Only types declared at one of these access levels are drawn. `deps --public-only` sets it.
+    public var havingAccessLevel: [AccessLevel] = ElementOptions.defaultAccessLevels
     /// Only members declared at one of these access levels are listed inside a type box.
     public private(set) var showMembersWithAccessLevel: [AccessLevel] = ElementOptions.defaultAccessLevels
     /// Whether nested types are drawn as their own boxes.
@@ -26,8 +26,9 @@ public struct ElementOptions: Codable, Sendable {
     /// Whether each member is annotated with its access-level symbol: `+` for `open` and `public`,
     /// `~` for `package` and `internal`, `-` for `private` and `fileprivate`, in every format.
     public private(set) var showMemberAccessLevelAttribute: Bool = true
-    /// Name patterns to exclude from the diagram entirely.
-    public private(set) var exclude: [String]?
+    /// Name patterns to exclude from the diagram entirely. `deps --exclude` sets it, in place of
+    /// the config file's list.
+    public var exclude: [String]?
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
