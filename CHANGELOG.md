@@ -106,6 +106,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed — Bridge
 
+- **A generic type keeps its kind in a Mermaid class diagram** (#164).
+  The Mermaid emitter wrote a type's generic clause on its last `<<…>>`
+  line, as `<<struct>> <Element>`. Mermaid reads a body line as an
+  annotation only when the whole line is `<<…>>`, so `struct Stack<Element>`
+  lost «struct» and gained a stray member `<<struct>> <Element>`. With
+  an attribute or a `--package` module the last annotation became the
+  member instead, and a clause ending in `>`, as in
+  `struct Lines<T: Collection<String>>`, garbled the kind into
+  `struct>> <T: Collection<String`. The clause now goes into the label
+  as entities, `class Stack["Stack&lt;Element&gt;"]`, as a bound
+  extension's arguments already did (#66), with several parameters
+  joined by `, `. Every annotation is a line of its own. PlantUML,
+  Nomnoml, SVG and Mermaid with `showGenerics: false` are unchanged.
+
 - **`deps` filters keep the config file's other `elements` keys, and
   reach modules mode** (#161). `--public-only` and `--exclude` each
   rebuilt `elements` from scratch, so `--public-only` dropped the config

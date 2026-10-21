@@ -57,14 +57,14 @@ extension SyntaxStructure {
     ) -> String {
         let alias = context.uniqName(item: self, relationship: relationship)
         // Mermaid reads `<…>` after a stereotype as a member and drops a raw `<Int>` from a label,
-        // so an extension's bound arguments go into its label as entities: `Foo&lt;Int&gt;` (#66).
-        let boundClause = boundGenericArguments == nil ? nil : generics
-        let genericsStr = boundClause == nil ? generics.map { " \($0)" } ?? "" : ""
-        let label = (displayName ?? name ?? "unknown") + (boundClause?.xmlEscaped ?? "")
+        // so the generic clause goes into the label as entities, `Foo&lt;T&gt;` (#66, #164). Its
+        // parameters are joined with `\n` for PlantUML; here they read as Swift writes them.
+        let clause = generics?.replacingOccurrences(of: "\\n", with: ", ")
+        let label = (displayName ?? name ?? "unknown") + (clause?.xmlEscaped ?? "")
         let membersText = mermaidMembers(context: context)
         let macroAnnotation = attributeNames.map { "\n    <<\($0)>>" }.joined()
         let moduleAnnotation = module.map { "\n    <<\($0)>>" } ?? ""
-        var body = "    <<\(stereotype)>>\(macroAnnotation)\(moduleAnnotation)\(genericsStr)"
+        var body = "    <<\(stereotype)>>\(macroAnnotation)\(moduleAnnotation)"
         if !membersText.isEmpty {
             body += membersText
         }
