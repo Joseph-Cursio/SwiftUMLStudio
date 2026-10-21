@@ -45,6 +45,19 @@ internal extension SyntaxStructure {
         return items
     }
 
+    /// The declarations of every source file in `description`'s targets, read in path order
+    /// (`sourceFilesInPathOrder`) and each under its target's module, as
+    /// `declarations(inPackageFiles:sdkPath:)` reads them. The class diagram and the dependency
+    /// graph both read a package this way.
+    static func declarations(
+        inPackage description: SPMPackageDescription, packageRoot: URL, sdkPath: String?
+    ) -> [SyntaxStructure] {
+        let files = description.sourceFilesInPathOrder(packageRoot: packageRoot).map { file in
+            (url: URL(fileURLWithPath: file.path), module: Optional(file.module))
+        }
+        return declarations(inPackageFiles: files, sdkPath: sdkPath)
+    }
+
     private static func parsed(_ fileOnDisk: URL, sdkPath: String?, module: String?) -> ParsedFile? {
         let methodStart = ContinuousClock.now
         guard let source = try? String(contentsOf: fileOnDisk, encoding: .utf8) else {

@@ -101,6 +101,17 @@ public struct DependencyGraphGenerator: DependencyGraphGenerating, Sendable {
         // Every file is parsed before any edge is drawn, so a typealias in one file is followed
         // from all the others (#125).
         let items = files.flatMap { SyntaxStructure.create(from: $0)?.substructure ?? [] }
+        return typeEdges(from: items, configuration: configuration)
+    }
+
+    /// The inheritance and conformance edges of `items`, each from a declaration to a supertype
+    /// it names, with each end tagged with the module `module` gives its type. That is `nil` for
+    /// loose files, and the owning target for a package (#209).
+    private func typeEdges(
+        from items: [SyntaxStructure],
+        configuration: Configuration,
+        module: (String) -> String? = { _ in nil }
+    ) -> [DependencyEdge] {
         let aliases = TypeAliasResolver(items: items)
         var edges: [DependencyEdge] = []
         for item in items {
@@ -109,7 +120,13 @@ public struct DependencyGraphGenerator: DependencyGraphGenerating, Sendable {
                 guard let parentName = supertypeName(
                     of: parent, in: item, aliases: aliases, configuration: configuration
                 ) else { continue }
-                edges.append(DependencyEdge(from: basis.name, to: parentName, kind: basis.edgeKind))
+                edges.append(DependencyEdge(
+                    from: basis.name,
+                    to: parentName,
+                    kind: basis.edgeKind,
+                    fromModule: module(basis.name),
+                    toModule: module(parentName)
+                ))
             }
         }
         return edges
@@ -196,33 +213,13 @@ public struct DependencyGraphGenerator: DependencyGraphGenerating, Sendable {
         // declarations' imports are widened with `@_exported` re-exports, as
         // the class diagram reads them.
         var owners = PackageTypeOwners()
-        let files = description.sourceFilesInPathOrder(packageRoot: packageRoot).map { file in
-            (url: URL(fileURLWithPath: file.path), module: Optional(file.module))
-        }
-        let parsedItems = SyntaxStructure.declarations(inPackageFiles: files, sdkPath: sdkPath)
+        let parsedItems = SyntaxStructure.declarations(
+            inPackage: description, packageRoot: packageRoot, sdkPath: sdkPath
+        )
         for item in parsedItems {
             if let module = item.module { owners.record(item, in: module) }
         }
-
-        let aliases = TypeAliasResolver(items: parsedItems)
-        var edges: [DependencyEdge] = []
-        for item in parsedItems {
-            guard let basis = typeEdgeBasis(for: item, configuration: configuration) else { continue }
-            for parent in basis.inheritedTypes {
-                guard let parentName = supertypeName(
-                    of: parent, in: item, aliases: aliases, configuration: configuration
-                ) else { continue }
-                edges.append(DependencyEdge(
-                    from: basis.name,
-                    to: parentName,
-                    kind: basis.edgeKind,
-                    fromModule: owners.module(of: basis.name),
-                    toModule: owners.module(of: parentName)
-                ))
-            }
-        }
-
-        return edges
+        return typeEdges(from: parsedItems, configuration: configuration) { owners.module(of: $0) }
     }
 
     /// Common per-item gate for type-edge extraction: apply the skip filter, then
