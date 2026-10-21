@@ -7,6 +7,7 @@ extension SwiftUMLBridgeCLI {
         static let configuration = CommandConfiguration(
             commandName: "state",
             abstract: "Generate a state machine diagram from Swift enum state patterns",
+            discussion: HelpNotes.mermaidForNomnomlAndSVG,
             helpNames: [.short, .long]
         )
 

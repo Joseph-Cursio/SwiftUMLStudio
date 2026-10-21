@@ -38,6 +38,7 @@ extension SwiftUMLBridgeCLI {
         static let configuration = CommandConfiguration(
             commandName: "sequence",
             abstract: "Generate a sequence diagram from a Swift entry point",
+            discussion: HelpNotes.mermaidForNomnoml,
             helpNames: [.short, .long]
         )
 

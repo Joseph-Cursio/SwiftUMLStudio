@@ -106,6 +106,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed — Bridge
 
+- **The CLI's help matches what the commands do** (#165). The
+  `classdiagram` abstract said "PlantUML or Mermaid", though it writes
+  Nomnoml and SVG too; it now names no format, since the `(values: …)`
+  list ArgumentParser adds cannot go stale. The `er` abstract named only
+  SwiftData and Core Data and now names GRDB and SQLite.swift as well.
+  `sequence`, `activity` and `component` now say that `--format nomnoml`
+  prints Mermaid text, and `state` and `er` that `--format nomnoml` and
+  `--format svg` do, which no help said, though a script asking `state`
+  for SVG got Mermaid with exit status 0 and nothing on stderr. Every
+  `--output` help now reads `Output destination.` with its values listed
+  once, not "Output format." with them listed twice, and `classdiagram`'s
+  usage writes `--output <output>` rather than `--output <format>`, the
+  `--format` option's placeholder. Output is unchanged.
+
 - **A generic type keeps its kind in a Mermaid class diagram** (#164).
   The Mermaid emitter wrote a type's generic clause on its last `<<…>>`
   line, as `<<struct>> <Element>`. Mermaid reads a body line as an
