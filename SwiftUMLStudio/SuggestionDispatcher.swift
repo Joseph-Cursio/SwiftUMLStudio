@@ -7,47 +7,30 @@ import SwiftUMLBridgeFramework
 /// so the Pro-gate mapping and ViewModel mutation paths can be unit-tested once.
 enum SuggestionDispatcher {
 
-    /// Maps a suggestion action to the Pro feature that gates it.
-    ///
-    /// Class diagrams are never Pro-gated at the feature level, but the picker
-    /// reuses `.sequenceDiagrams` as a benign fallback since `SuggestionAction`
-    /// is exhaustively switched in each dispatcher.
-    nonisolated static func featureRequired(for action: SuggestionAction) -> ProFeature {
-        switch action {
-        case .sequenceDiagram: return .sequenceDiagrams
-        case .dependencyGraph: return .dependencyGraphs
-        case .stateMachine: return .stateMachines
-        case .activityDiagram: return .activityDiagrams
-        case .erDiagram: return .erDiagrams
-        case .componentDiagram: return .componentDiagrams
-        case .classDiagram: return .sequenceDiagrams
-        }
+    /// The Pro feature that gates `action`, or `nil` when its diagram is free: the entitlement of
+    /// the mode it opens. This used to be a second mode-to-feature table, which had to return
+    /// something for `.classDiagram` and returned `.sequenceDiagrams`, so a class-diagram
+    /// suggestion marked `requiresPro` would have asked a free user to pay for sequence
+    /// diagrams (#209).
+    nonisolated static func featureRequired(for action: SuggestionAction) -> ProFeature? {
+        action.diagramMode.requiredFeature
     }
 
     /// Apply a suggestion's action to the view model. Callers are responsible
     /// for the feature-gate check before invoking this.
     @MainActor
     static func apply(_ suggestion: DiagramSuggestion, to viewModel: DiagramViewModel) {
+        viewModel.diagramMode = suggestion.action.diagramMode
         switch suggestion.action {
-        case .classDiagram:
-            viewModel.diagramMode = .classDiagram
-        case .sequenceDiagram(let entryPoint):
-            viewModel.diagramMode = .sequenceDiagram
+        case .sequenceDiagram(let entryPoint), .activityDiagram(let entryPoint):
             viewModel.entryPoint = entryPoint
         case .dependencyGraph(let mode):
-            viewModel.diagramMode = .dependencyGraph
             viewModel.depsMode = mode
         case .stateMachine(let identifier):
-            viewModel.diagramMode = .stateMachine
             viewModel.refreshStateMachines()
             viewModel.stateIdentifier = identifier
-        case .activityDiagram(let entryPoint):
-            viewModel.diagramMode = .activityDiagram
-            viewModel.entryPoint = entryPoint
-        case .erDiagram:
-            viewModel.diagramMode = .erDiagram
-        case .componentDiagram:
-            viewModel.diagramMode = .componentDiagram
+        case .classDiagram, .erDiagram, .componentDiagram:
+            break
         }
     }
 }
