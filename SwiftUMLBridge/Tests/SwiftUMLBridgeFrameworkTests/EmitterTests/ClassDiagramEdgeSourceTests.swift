@@ -22,11 +22,6 @@ struct ClassDiagramEdgeSourceTests {
         try NomnomlGraph(parsing: ClassDiagramIds.script(for: source, format: .nomnoml))
     }
 
-    /// Each edge as `[start, arrow, end]`.
-    private func edges(_ graph: NomnomlGraph) -> [[String]] {
-        graph.edges.map { [$0.start, $0.type, $0.end] }
-    }
-
     // MARK: - The issue's inputs
 
     static let repeatedType =
@@ -63,12 +58,12 @@ struct ClassDiagramEdgeSourceTests {
     @Test("Nomnoml starts each supertype edge at the box that wrote it")
     func nomnomlEdgesStartAtTheirDeclaration() throws {
         let repeated = try nomnoml(Self.repeatedType)
-        #expect(edges(repeated) == [["PlatformView", "-:>", "NSView"], ["PlatformView0", "-:>", "UIView"]])
+        #expect(repeated.edgeTriples == [["PlatformView", "-:>", "NSView"], ["PlatformView0", "-:>", "UIView"]])
         let extended = try nomnoml("struct Foo {}\nextension Foo: P {}\nprotocol P {}")
-        #expect(edges(extended) == [["Foo0", "--:>", "P"], ["Foo0", "-->", "Foo"]])
+        #expect(extended.edgeTriples == [["Foo0", "--:>", "P"], ["Foo0", "-->", "Foo"]])
         #expect(extended.node("Foo0")?.type == "extension")
         let twice = try nomnoml("protocol P {}\nprotocol Q {}\nextension String: P {}\nextension String: Q {}")
-        #expect(edges(twice) == [["String", "--:>", "P"], ["String0", "--:>", "Q"]])
+        #expect(twice.edgeTriples == [["String", "--:>", "P"], ["String0", "--:>", "Q"]])
     }
 
     // MARK: - One convention per declaration
@@ -115,7 +110,7 @@ struct ClassDiagramEdgeSourceTests {
         for format in [DiagramFormat.mermaid, .plantuml] {
             #expect(lines(source, format, containing: "Codable") == ["Codable <.. Foo0 : inherits"])
         }
-        #expect(edges(try nomnoml(source)) == [["Foo0", "-->", "Codable"], ["Foo0", "-->", "Foo"]])
+        #expect(try nomnoml(source).edgeTriples == [["Foo0", "-->", "Codable"], ["Foo0", "-->", "Foo"]])
         // The same arrow as an extension of a type the diagram does not declare.
         #expect(lines("extension Foo: Codable {}", .mermaid, containing: "Codable") == ["Codable <.. Foo : inherits"])
     }
@@ -127,7 +122,7 @@ struct ClassDiagramEdgeSourceTests {
             #expect(lines(source, format, containing: " : inherits")
                 == ["Int -- Mode : inherits", "Base <|-- Mode0 : inherits"])
         }
-        #expect(edges(try nomnoml(source)) == [["Mode", "-", "Int"], ["Mode0", "-:>", "Base"]])
+        #expect(try nomnoml(source).edgeTriples == [["Mode", "-", "Int"], ["Mode0", "-:>", "Base"]])
     }
 
     /// The arrows lived in `uniqElementAndTypes` under `<name>LinkType`, beside each name's

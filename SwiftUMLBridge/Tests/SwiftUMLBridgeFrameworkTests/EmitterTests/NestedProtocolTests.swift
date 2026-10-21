@@ -25,14 +25,6 @@ struct NestedProtocolTests {
         }
         """
 
-    private func script(
-        _ source: String, _ format: DiagramFormat, _ mode: ExtensionVisualization = .all, nested: Bool = true
-    ) -> DiagramScript {
-        let elements = ElementOptions(showNestedTypes: nested, showExtensions: mode)
-        let configuration = Configuration(elements: elements, format: format)
-        return ClassDiagramGenerator().generateScript(for: source, with: configuration)
-    }
-
     private func lines(_ drawn: DiagramScript) -> [String] {
         drawn.text.split(separator: "\n").map(String.init)
     }
@@ -108,27 +100,27 @@ struct NestedProtocolTests {
         ("enum A {\n    enum B {\n        protocol Deep {}\n    }\n}", "A.B.Deep")
     ])
     func declared(source: String, id: String) {
-        #expect(misses { protocolIds(script(source, $0, $1)) == [id] } == [])
+        #expect(misses { protocolIds(classDiagram(source, $0, $1)) == [id] } == [])
     }
 
     @Test("a conformance written in full ends on its box, with the conformance arrow")
     func conformanceInFull() {
-        #expect(misses { conforms("Square", to: "Outer.Shape", in: script(Self.shapes, $0, $1)) } == [])
+        #expect(misses { conforms("Square", to: "Outer.Shape", in: classDiagram(Self.shapes, $0, $1)) } == [])
     }
 
     @Test("hangs off the type it is nested in")
     func nestingEdge() {
         let deep = "enum A {\n    enum B {\n        protocol Deep {}\n    }\n}"
         #expect(misses(formats: [.plantuml, .nomnoml, .svg]) {
-            nests("Outer.Shape", in: "Outer", script(Self.shapes, $0, $1))
-                && nests("A.B.Deep", in: "A.B", script(deep, $0, $1))
+            nests("Outer.Shape", in: "Outer", classDiagram(Self.shapes, $0, $1))
+                && nests("A.B.Deep", in: "A.B", classDiagram(deep, $0, $1))
         } == [])
     }
 
     @Test("lists its requirements and draws its own supertype as a top-level protocol does", arguments: formats)
     func likeTopLevel(format: DiagramFormat) throws {
-        let topLevel = script(Self.delegate, format)
-        let nested = script("class TableView {\n\(Self.delegate)\n}", format)
+        let topLevel = classDiagram(Self.delegate, format)
+        let nested = classDiagram("class TableView {\n\(Self.delegate)\n}", format)
         if format == .svg {
             let top = try #require(topLevel.layoutGraph?.nodes.first { $0.id == "Delegate" })
             let inner = try #require(nested.layoutGraph?.nodes.first { $0.id == "TableView.Delegate" })
@@ -150,8 +142,8 @@ struct NestedProtocolTests {
     @Test("an extension of it is linked to it when shown, and merged into it when merged")
     func extended() throws {
         let source = Self.shapes + "\nextension Outer.Shape {\n    func describe() -> String { \"shape\" }\n}"
-        #expect(lines(script(source, .plantuml, .all)).contains("Outer.Shape <.. Outer.Shape0 : ext"))
-        let merged = try #require(script(source, .svg, .merged).layoutGraph)
+        #expect(lines(classDiagram(source, .plantuml, .all)).contains("Outer.Shape <.. Outer.Shape0 : ext"))
+        let merged = try #require(classDiagram(source, .svg, .merged).layoutGraph)
         #expect(merged.nodes.map(\.id).sorted() == ["Outer", "Outer.Shape", "Square"])
         let box = try #require(merged.nodes.first { $0.id == "Outer.Shape" })
         #expect(box.stereotype == "protocol")
@@ -173,11 +165,11 @@ struct NestedProtocolTests {
     @Test("a fileprivate one is hidden by default, as a fileprivate protocol at top level is")
     func hiddenByAccessLevel() {
         let source = "enum Outer {\n    fileprivate protocol Secret {}\n}\nfileprivate protocol TopSecret {}"
-        #expect(misses { protocolIds(script(source, $0, $1)) == [] } == [])
+        #expect(misses { protocolIds(classDiagram(source, $0, $1)) == [] } == [])
     }
 
     @Test("showNestedTypes: false leaves it out, as it leaves out every nested type")
     func nestedTypesOff() {
-        #expect(misses { protocolIds(script(Self.shapes, $0, $1, nested: false)) == [] } == [])
+        #expect(misses { protocolIds(classDiagram(Self.shapes, $0, $1, nestedTypes: false)) == [] } == [])
     }
 }

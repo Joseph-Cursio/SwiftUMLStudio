@@ -11,15 +11,6 @@ struct MergedExtensionOfHiddenTypeTests {
     private static let publicOnly: [AccessLevel] = [.open, .public]
     private static let noPrivate: [AccessLevel] = [.open, .public, .package, .internal]
 
-    private func script(
-        _ source: String, _ format: DiagramFormat, _ mode: ExtensionVisualization,
-        access: [AccessLevel] = ElementOptions.defaultAccessLevels, exclude: [String]? = nil
-    ) -> DiagramScript {
-        let elements = ElementOptions(havingAccessLevel: access, showExtensions: mode, exclude: exclude)
-        return ClassDiagramGenerator()
-            .generateScript(for: source, with: Configuration(elements: elements, format: format))
-    }
-
     /// What an SVG class diagram draws: each node as `id<<stereotype>>: members`, then each edge.
     private func drawn(_ graph: LayoutGraph?) -> [String] {
         guard let graph else { return ["no layout graph"] }
@@ -56,15 +47,15 @@ struct MergedExtensionOfHiddenTypeTests {
           arguments: oneExtensionOfAHiddenType.indices, [DiagramFormat.plantuml, .mermaid, .nomnoml])
     func textFormatsMatchAll(index: Int, format: DiagramFormat) {
         let (source, access) = Self.oneExtensionOfAHiddenType[index]
-        #expect(script(source, format, .merged, access: access).text
-            == script(source, format, .all, access: access).text)
+        #expect(classDiagram(source, format, .merged, access: access).text
+            == classDiagram(source, format, .all, access: access).text)
     }
 
     @Test("SVG: .merged draws what .all draws", arguments: oneExtensionOfAHiddenType.indices)
     func svgMatchesAll(index: Int) {
         let (source, access) = Self.oneExtensionOfAHiddenType[index]
-        #expect(drawn(script(source, .svg, .merged, access: access).layoutGraph)
-            == drawn(script(source, .svg, .all, access: access).layoutGraph))
+        #expect(drawn(classDiagram(source, .svg, .merged, access: access).layoutGraph)
+            == drawn(classDiagram(source, .svg, .all, access: access).layoutGraph))
     }
 
     /// Two extensions of one hidden type: one box, the first extension's, as for a type the
@@ -78,10 +69,10 @@ struct MergedExtensionOfHiddenTypeTests {
             extension Foo: P { func f() {} }
             extension Foo: Q { func g() {} }
             """
-        #expect(drawn(script(source, .svg, .merged).layoutGraph) == [
+        #expect(drawn(classDiagram(source, .svg, .merged).layoutGraph) == [
             "P<<protocol>>: ", "Q<<protocol>>: ", "Foo<<extension>>: ~ f(), ~ g()", "Foo -> P", "Foo -> Q"
         ])
-        let plantUML = script(source, .plantuml, .merged).text
+        let plantUML = classDiagram(source, .plantuml, .merged).text
         #expect(plantUML.contains("class \"Foo\" as Foo << (X, orchid) extension >> { \n  ~f\n  ~g \n}"), "\(plantUML)")
         #expect(plantUML.contains("P <|.. Foo : conforms to"))
         #expect(plantUML.contains("Q <|.. Foo : conforms to"))
@@ -92,17 +83,19 @@ struct MergedExtensionOfHiddenTypeTests {
     @Test("a drawn type still takes its extension's members")
     func drawnTypeStillMerges() {
         let source = "protocol P {}\nstruct Foo {}\nextension Foo: P { func f() {} }"
-        #expect(drawn(script(source, .svg, .merged).layoutGraph).prefix(2)
+        #expect(drawn(classDiagram(source, .svg, .merged).layoutGraph).prefix(2)
             == ["P<<protocol>>: ", "Foo<<struct>>: ~ f()"])
-        #expect(script(source, .plantuml, .merged).text.contains("~f <&bolt>"))
+        #expect(classDiagram(source, .plantuml, .merged).text.contains("~f <&bolt>"))
     }
 
     @Test("an extension the diagram excludes with its type stays out")
     func excludedExtensionStaysOut() {
         let source = "protocol P {}\nstruct Foo {}\nextension Foo: P { func f() {} }"
         for mode in [ExtensionVisualization.all, .merged] {
-            #expect(drawn(script(source, .svg, mode, exclude: ["Foo"]).layoutGraph) == ["P<<protocol>>: "], "\(mode)")
-            #expect(!script(source, .plantuml, mode, exclude: ["Foo"]).text.contains("Foo"), "\(mode)")
+            #expect(
+                drawn(classDiagram(source, .svg, mode, exclude: ["Foo"]).layoutGraph) == ["P<<protocol>>: "], "\(mode)"
+            )
+            #expect(!classDiagram(source, .plantuml, mode, exclude: ["Foo"]).text.contains("Foo"), "\(mode)")
         }
     }
 }

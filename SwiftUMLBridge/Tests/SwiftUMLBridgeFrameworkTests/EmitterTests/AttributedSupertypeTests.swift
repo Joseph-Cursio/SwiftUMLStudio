@@ -71,41 +71,12 @@ struct AttributedSupertypeTests {
         final class Box: @unchecked Sendable {}
         """
 
-    private static func configuration(
-        _ format: DiagramFormat,
-        _ mode: ExtensionVisualization = .all,
-        relationships: RelationshipOptions = RelationshipOptions()
-    ) -> Configuration {
-        Configuration(elements: ElementOptions(showExtensions: mode), relationships: relationships, format: format)
-    }
-
-    private static func script(
-        _ source: String,
-        _ format: DiagramFormat,
-        _ mode: ExtensionVisualization = .all,
-        relationships: RelationshipOptions = RelationshipOptions()
-    ) -> String {
-        ClassDiagramGenerator().generateScript(
-            for: source, with: configuration(format, mode, relationships: relationships)
-        ).text
-    }
-
     /// Each SVG edge as `"<source id> -> <target id> <style>"`.
     private static func svgEdges(
         _ source: String, relationships: RelationshipOptions = RelationshipOptions()
     ) -> [String] {
-        let graph = ClassDiagramGenerator()
-            .generateScript(for: source, with: configuration(.svg, relationships: relationships)).layoutGraph
+        let graph = classDiagram(source, .svg, relationships: relationships).layoutGraph
         return graph?.edges.map { "\($0.sourceId) -> \($0.targetId) \($0.style)" } ?? []
-    }
-
-    /// The edge lines of a text-format script: PlantUML's and Mermaid's `<parent> <arrow> <child>`
-    /// lines, and Nomnoml's `[start] arrow label [end]` lines.
-    private static func edges(_ script: String) -> [String] {
-        let arrows = ["<|--", "<|..", "<..", "+--"]
-        return script.split(separator: "\n").map(String.init).filter { line in
-            arrows.contains { line.contains(" \($0) ") } || (line.hasPrefix("[") && !line.hasPrefix("[<"))
-        }
     }
 
     /// Writes `source` to a file of its own and hands its path to `body`.
@@ -124,7 +95,7 @@ struct AttributedSupertypeTests {
     @Test("the attribute does not change the class diagram", arguments: textFormats)
     func classDiagramUnchanged(format: DiagramFormat) {
         for (attributed, plain) in Self.pairs {
-            #expect(Self.script(attributed, format) == Self.script(plain, format), "\(attributed)")
+            #expect(classDiagram(attributed, format).text == classDiagram(plain, format).text, "\(attributed)")
         }
     }
 
@@ -136,13 +107,13 @@ struct AttributedSupertypeTests {
             @MainActor final class Foo: @MainActor Q {}
             extension Foo: @MainActor P {}
             """
-        #expect(Self.edges(Self.script(source, .plantuml)) == [
+        #expect(edgeLines(classDiagram(source, .plantuml).text) == [
             "Q <|.. Foo : conforms to", "P <|.. Foo0 : conforms to", "Foo <.. Foo0 : ext"
         ])
-        #expect(Self.edges(Self.script(source, .nomnoml)) == [
+        #expect(edgeLines(classDiagram(source, .nomnoml).text) == [
             "[Foo] --:> conforms to [Q]", "[Foo0] --:> conforms to [P]", "[Foo0] --> ext [Foo]"
         ])
-        #expect(Self.edges(Self.script(source, .plantuml, .merged)) == [
+        #expect(edgeLines(classDiagram(source, .plantuml, .merged).text) == [
             "Q <|.. Foo : conforms to", "P <|.. Foo : conforms to"
         ])
     }
@@ -161,8 +132,8 @@ struct AttributedSupertypeTests {
         let realize = RelationshipOptions(realize: Relationship(label: "conforms to", exclude: patterns))
         let inheritance = RelationshipOptions(inheritance: Relationship(label: "inherits", exclude: patterns))
         let source = Self.isolatedAndUnchecked
-        #expect(Self.edges(Self.script(source, format, relationships: realize)).isEmpty)
-        #expect(Self.edges(Self.script(source, format, relationships: inheritance)).isEmpty)
+        #expect(edgeLines(classDiagram(source, format, relationships: realize).text).isEmpty)
+        #expect(edgeLines(classDiagram(source, format, relationships: inheritance).text).isEmpty)
     }
 
     @Test("SVG: an exclude written for the plain name hides the attributed edge")
@@ -175,8 +146,8 @@ struct AttributedSupertypeTests {
     @Test("an attribute a space ends applies to the type after it", arguments: textFormats + [.svg])
     func spacedAttribute(format: DiagramFormat) {
         for (attributed, plain) in Self.spacedAttributePairs {
-            let script = ClassDiagramGenerator().generateScript(for: attributed, with: Self.configuration(format))
-            let control = ClassDiagramGenerator().generateScript(for: plain, with: Self.configuration(format))
+            let script = classDiagram(attributed, format)
+            let control = classDiagram(plain, format)
             #expect(script.text == control.text, "\(attributed)")
             #expect(script.layoutGraph?.edges.map(\.targetId) == control.layoutGraph?.edges.map(\.targetId))
         }
@@ -185,8 +156,8 @@ struct AttributedSupertypeTests {
     /// An unfinished clause has no type to draw an edge to.
     @Test("an entry with no type draws no edge")
     func entryWithNoType() {
-        #expect(Self.edges(Self.script("class Foo: {}", .plantuml)).isEmpty)
-        #expect(Self.edges(Self.script("final class Box: @unchecked {}", .plantuml)).isEmpty)
+        #expect(edgeLines(classDiagram("class Foo: {}", .plantuml).text).isEmpty)
+        #expect(edgeLines(classDiagram("final class Box: @unchecked {}", .plantuml).text).isEmpty)
     }
 
     /// A conformance written with `@retroactive` for new compilers and without it for old ones is
@@ -200,8 +171,8 @@ struct AttributedSupertypeTests {
             extension Int: Identifiable { public var id: Int { self } }
             #endif
             """
-        #expect(Self.edges(Self.script(source, .plantuml, .merged)) == ["Identifiable <.. Int : inherits"])
-        #expect(Self.edges(Self.script(source, .plantuml)) == [
+        #expect(edgeLines(classDiagram(source, .plantuml, .merged).text) == ["Identifiable <.. Int : inherits"])
+        #expect(edgeLines(classDiagram(source, .plantuml).text) == [
             "Identifiable <.. Int : inherits", "Identifiable <.. Int0 : inherits"
         ])
     }
@@ -210,7 +181,7 @@ struct AttributedSupertypeTests {
     /// (#159). `SuppressedConformanceTests` covers the other formats.
     @Test("a suppressed conformance draws no edge")
     func suppressedConformanceDropped() {
-        #expect(Self.edges(Self.script("struct Token: ~Copyable {}", .plantuml)) == [])
+        #expect(edgeLines(classDiagram("struct Token: ~Copyable {}", .plantuml).text) == [])
     }
 
     // MARK: - deps, ER and TypeInfo

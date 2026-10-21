@@ -43,37 +43,10 @@ struct ParenthesizedSupertypeTests {
         extension Label: (Named) {}
         """
 
-    private static func configuration(
-        _ format: DiagramFormat,
-        _ mode: ExtensionVisualization = .all,
-        relationships: RelationshipOptions = RelationshipOptions()
-    ) -> Configuration {
-        Configuration(elements: ElementOptions(showExtensions: mode), relationships: relationships, format: format)
-    }
-
-    private static func script(
-        _ source: String,
-        _ format: DiagramFormat,
-        _ mode: ExtensionVisualization = .all,
-        relationships: RelationshipOptions = RelationshipOptions()
-    ) -> String {
-        ClassDiagramGenerator().generateScript(
-            for: source, with: configuration(format, mode, relationships: relationships)
-        ).text
-    }
-
     /// Each SVG edge as `"<source id> -> <target id> <style>"`.
     private static func svgEdges(_ source: String) -> [String] {
-        let graph = ClassDiagramGenerator().generateScript(for: source, with: configuration(.svg)).layoutGraph
+        let graph = classDiagram(source, .svg).layoutGraph
         return graph?.edges.map { "\($0.sourceId) -> \($0.targetId) \($0.style)" } ?? []
-    }
-
-    /// The edge lines of a PlantUML, Mermaid or Nomnoml script.
-    private static func edges(_ script: String) -> [String] {
-        let arrows = ["<|--", "<|..", "<..", "+--"]
-        return script.split(separator: "\n").map(String.init).filter { line in
-            arrows.contains { line.contains(" \($0) ") } || (line.hasPrefix("[") && !line.hasPrefix("[<"))
-        }
     }
 
     /// Writes `source` to a file of its own and hands its path to `body`.
@@ -92,7 +65,7 @@ struct ParenthesizedSupertypeTests {
     @Test("the parentheses do not change the class diagram", arguments: textFormats)
     func classDiagramUnchanged(format: DiagramFormat) {
         for (parenthesized, plain) in Self.pairs {
-            #expect(Self.script(parenthesized, format) == Self.script(plain, format), "\(parenthesized)")
+            #expect(classDiagram(parenthesized, format).text == classDiagram(plain, format).text, "\(parenthesized)")
         }
     }
 
@@ -105,7 +78,7 @@ struct ParenthesizedSupertypeTests {
 
     @Test("each edge ends on the declared type, with the realization arrow to a protocol")
     func endsOnDeclaredTypes() {
-        #expect(Self.edges(Self.script(Self.shapes, .plantuml)) == [
+        #expect(edgeLines(classDiagram(Self.shapes, .plantuml).text) == [
             "Base <|-- Circle : inherits",
             "Shape <|.. Circle : conforms to",
             "Shape <|.. Square : conforms to",
@@ -128,9 +101,9 @@ struct ParenthesizedSupertypeTests {
         let patterns = ["Shape", "Named", "Sendable"]
         let realize = RelationshipOptions(realize: Relationship(label: "conforms to", exclude: patterns))
         let inheritance = RelationshipOptions(inheritance: Relationship(label: "inherits", exclude: patterns))
-        #expect(!Self.edges(Self.script(source, format)).isEmpty)
-        #expect(Self.edges(Self.script(source, format, relationships: realize)).isEmpty)
-        #expect(Self.edges(Self.script(source, format, relationships: inheritance)).isEmpty)
+        #expect(!edgeLines(classDiagram(source, format).text).isEmpty)
+        #expect(edgeLines(classDiagram(source, format, relationships: realize).text).isEmpty)
+        #expect(edgeLines(classDiagram(source, format, relationships: inheritance).text).isEmpty)
     }
 
     // MARK: - deps, ER and TypeInfo

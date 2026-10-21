@@ -70,6 +70,11 @@ struct NomnomlGraph: Decodable {
         self = try JSONDecoder().decode(Self.self, from: data)
     }
 
+    /// Each edge as `[start, arrow, end]`.
+    var edgeTriples: [[String]] {
+        edges.map { [$0.start, $0.type, $0.end] }
+    }
+
     func node(_ id: String) -> Node? {
         nodes.first { $0.id == id }
     }

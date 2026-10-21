@@ -15,21 +15,12 @@ struct SugaredExtensionSupertypeScopeTests {
     static let formats: [DiagramFormat] = [.plantuml, .mermaid, .nomnoml, .svg]
     static let modes: [ExtensionVisualization] = [.all, .merged, .none]
 
-    private func script(
-        _ source: String, _ format: DiagramFormat, _ mode: ExtensionVisualization = .all,
-        relationships: RelationshipOptions = RelationshipOptions()
-    ) -> DiagramScript {
-        let elements = ElementOptions(showExtensions: mode)
-        let configuration = Configuration(elements: elements, relationships: relationships, format: format)
-        return ClassDiagramGenerator().generateScript(for: source, with: configuration)
-    }
-
     /// The ids the supertype edges drawn from `child` end on, in drawing order.
     private func ends(
         from child: String, _ source: String, _ format: DiagramFormat, _ mode: ExtensionVisualization = .all,
         relationships: RelationshipOptions = RelationshipOptions()
     ) -> [String] {
-        let drawn = script(source, format, mode, relationships: relationships)
+        let drawn = classDiagram(source, format, mode, relationships: relationships)
         switch format {
         case .svg:
             return drawn.layoutGraph?.edges
@@ -52,7 +43,7 @@ struct SugaredExtensionSupertypeScopeTests {
 
     /// The members of the SVG node each supertype edge from `child` ends on.
     private func endMembers(from child: String, _ source: String, _ mode: ExtensionVisualization = .all) -> [[String]] {
-        let graph = script(source, .svg, mode).layoutGraph
+        let graph = classDiagram(source, .svg, mode).layoutGraph
         return ends(from: child, source, .svg, mode).map { end in
             graph?.nodes.first { $0.id == end }?.compartments.flatMap(\.items) ?? []
         }
@@ -230,7 +221,7 @@ struct SugaredExtensionSupertypeScopeTests {
             struct Array { class Base { var local = 0 } }
             extension Array.Base { var viaBare: Int { local } }
             """
-        let graph = script(source, .svg, .merged).layoutGraph
+        let graph = classDiagram(source, .svg, .merged).layoutGraph
         let projectBase = try #require(nested(in: "Array", graph))
         let members = graph?.nodes.first { $0.id == projectBase }?.compartments.flatMap(\.items) ?? []
         #expect(members.contains { $0.contains("viaBare") })

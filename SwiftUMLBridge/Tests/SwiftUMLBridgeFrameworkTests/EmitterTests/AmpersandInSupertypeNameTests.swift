@@ -18,21 +18,9 @@ struct AmpersandInSupertypeNameTests {
         struct File: `Read & Write` {}
         """
 
-    private static func script(_ format: DiagramFormat) -> DiagramScript {
-        ClassDiagramGenerator().generateScript(for: source, with: Configuration(format: format))
-    }
-
-    /// The edge lines of a PlantUML, Mermaid or Nomnoml script.
-    private static func edges(_ script: String) -> [String] {
-        let arrows = ["<|--", "<|..", "<..", "+--"]
-        return script.split(separator: "\n").map(String.init).filter { line in
-            arrows.contains { line.contains(" \($0) ") } || (line.hasPrefix("[") && !line.hasPrefix("[<"))
-        }
-    }
-
     @Test("PlantUML and Mermaid draw one edge to each supertype", arguments: [DiagramFormat.plantuml, .mermaid])
     func textEdges(format: DiagramFormat) {
-        #expect(Self.edges(Self.script(format).text) == [
+        #expect(edgeLines(classDiagram(Self.source, format).text) == [
             "Base <|-- Sub : inherits",
             "`Read & Write` <|.. File : conforms to"
         ])
@@ -41,7 +29,7 @@ struct AmpersandInSupertypeNameTests {
     /// Nomnoml writes a space inside a name as a no-break space.
     @Test("Nomnoml draws one edge to each supertype")
     func nomnomlEdges() {
-        #expect(Self.edges(Self.script(.nomnoml).text) == [
+        #expect(edgeLines(classDiagram(Self.source, .nomnoml).text) == [
             "[Sub] -:> inherits [Base]",
             "[File] --:> conforms to [`Read\u{00A0}&\u{00A0}Write`]"
         ])
@@ -49,7 +37,7 @@ struct AmpersandInSupertypeNameTests {
 
     @Test("SVG draws one edge to each supertype")
     func svgEdges() throws {
-        let graph = try #require(Self.script(.svg).layoutGraph)
+        let graph = try #require(classDiagram(Self.source, .svg).layoutGraph)
         let labels = Dictionary(uniqueKeysWithValues: graph.nodes.map { ($0.id, $0.label) })
         #expect(graph.edges.map { "\(labels[$0.sourceId] ?? "?") -> \(labels[$0.targetId] ?? "?")" } == [
             "Sub -> Base", "File -> `Read & Write`"
