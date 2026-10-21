@@ -353,12 +353,22 @@ swiftumlbridge classdiagram Sources/ --format mermaid --output consoleOnly > dia
 
 ### Using an SDK Path
 
-For accurate type inference, pass the macOS SDK path with `--sdk`. This enables SourceKitten's `SwiftDocs` mode, which resolves types against the SDK.
+Without `--sdk`, a member shows only the type written in the source: `var count = 0` is drawn `~count`. Pass the macOS SDK path with `--sdk` to add the type Swift infers, so it is drawn `~count : Int`. For each stored property with no written type, SourceKit typechecks the file against the SDK and returns the inferred type.
 
 ```bash
 swiftumlbridge classdiagram Sources/ \
   --sdk "$(xcrun --show-sdk-path -sdk macosx)"
 ```
+
+What to expect:
+
+- **A type declared in another file stays unwritten**, as each file is typechecked alone. `var cache = Cache()`, with `Cache` in another file, is drawn `~cache`, not with a placeholder.
+- **SourceKit's spelling is used.** `[String: Int]()` is drawn `[String : Int]`, and `Notification.Name("x")` is drawn `NSNotification.Name`.
+- **It takes seconds, not tenths.** Each file with an untyped property is typechecked: about 3 s for the Bridge's own 124 files, against 0.2 s without `--sdk`.
+- **SourceKit may print `error: no such module` on stderr** for an import it cannot load, such as a package dependency. The diagram is unaffected, and types from that module stay unwritten.
+- **A file with a `[` nested more than 10 deep** (see [Known Limitations](#known-limitations)) is not typechecked, and shows only its written types.
+
+Only `classdiagram` reads `--sdk`.
 
 ### Controlling Extension Display
 

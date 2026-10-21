@@ -54,7 +54,7 @@ For the `classdiagram` subcommand, the SwiftPlantUML flag → SwiftUMLBridge fla
 |---|---|---|
 | _positional paths_ | _positional paths_ | Unchanged. Accepts files or directories. |
 | `--config` | `--config` | Unchanged. Defaults search to `.swiftumlbridge.yml` (was `.swiftplantuml.yml`). |
-| `--sdk` | `--sdk` | Unchanged. |
+| `--sdk` | `--sdk` | Unchanged: adds inferred property types. It added none from 0.3.0 to 1.1.0 (#147). |
 | `--output browser` / `consoleOnly` | Same values, plus `browserImageOnly` | New option renders the PNG/SVG without the surrounding HTML viewer. |
 | _(no format option)_ | `--format plantuml|mermaid` | PlantUML is the default; Mermaid is new in 0.2.0. |
 | `--extensions show|hide|asObjcLikeCategories` | `--extension-visualization` flag (`--show-extensions` etc.) | Renamed for clarity; same three semantics. |

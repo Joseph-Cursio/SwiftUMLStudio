@@ -26,7 +26,7 @@ extension SwiftUMLBridgeCLI {
         @Option(help: "Diagram format.")
         var format: DiagramFormat?
 
-        @Option(help: "macOS SDK path for type inference resolution (e.g. `$(xcrun --show-sdk-path -sdk macosx)`)")
+        @Option(help: "macOS SDK path, to show the types Swift infers (e.g. `$(xcrun --show-sdk-path -sdk macosx)`)")
         var sdk: String?
 
         @Option(help: """

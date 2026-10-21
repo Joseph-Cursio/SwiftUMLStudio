@@ -84,19 +84,21 @@ calls some features rely on.
 | Default diagram format | PlantUML — its preview still asks before anything is sent | **Mermaid** — so no diagram leaves your machine unless you opt in |
 | **Open Package…** (SPM package loading) | Available | **Unavailable** — it shells out to `swift package describe`, which the sandbox forbids |
 | Component diagrams, per-module dashboard, module-grouped layout | Available | Unavailable, since all three require a loaded package |
-| Inferred property/return types | Resolved via SourceKit | **Declared types only** — see below |
+| Inferred property types | Declared types only — see below | Declared types only — see below |
 | PlantUML rendering | Available, after one-time consent | Available, after one-time consent |
 
-**On inferred types.** The App Store build cannot load SourceKit from the system
-toolchain, so it parses with SwiftSyntax alone. Every diagram type is still
-produced in full; what you lose is type *inference*. A property written
-`let items = [Item]()` shows its declared form rather than being resolved to
-`[Item]`, and members whose types are only inferable from context may show
-without a type annotation. Anything with an explicit type annotation is
-unaffected, including a name that shares one, like `a` in `var a, b: Int`.
+**On inferred types.** Neither build resolves a type Swift infers: a property
+written `let items = [Item]()` shows with no type. Resolving it means
+typechecking each file against the macOS SDK, which Studio does not do. (The
+App Store build also cannot load SourceKit from the system toolchain, so it
+parses with SwiftSyntax alone.) Every diagram type is still produced in full.
+Anything with an explicit type annotation is unaffected, including a name that
+shares one, like `a` in `var a, b: Int`, so annotating the declaration is the
+in-app fix.
 
-If you need package-scoped diagrams or full type resolution, use the direct
-download build or the [`swiftumlbridge` CLI](user-guide.md).
+For inferred types, use the [`swiftumlbridge` CLI](user-guide.md#using-an-sdk-path)
+with `--sdk`. For package-scoped diagrams, use the direct download build or the
+CLI.
 
 ---
 
@@ -765,7 +767,9 @@ Toggle this in the Snapshots section of the Explorer sidebar.
 
 **Internet connection required for PlantUML rendering.** PlantUML diagrams are rendered server-side by planttext.com and require an active internet connection — and send your diagram source there, which is why the preview asks before the first upload (see [above](#plantuml-sends-your-diagram-source-to-a-third-party)). Mermaid and Nomnoml render locally from bundled copies of their JavaScript and work fully offline, with no CDN fallback. The raw markup (in Developer Mode's Markup tab) is always available offline regardless of format.
 
-**The App Store build cannot load Swift Packages or resolve inferred types.** Both need calls the App Sandbox forbids. See [App Store and Direct Download Builds](#app-store-and-direct-download-builds) for the full comparison.
+**Inferred property types are not shown.** `let items = [Item]()` shows with no type in both builds; the CLI's `classdiagram --sdk` resolves it (see [On inferred types](#app-store-and-direct-download-builds)).
+
+**The App Store build cannot load Swift Packages.** It needs calls the App Sandbox forbids. See [App Store and Direct Download Builds](#app-store-and-direct-download-builds) for the full comparison.
 
 **Actors appear as classes.** SourceKit 6.3 on macOS 26 reports `actor` declarations with kind `source.lang.swift.decl.class`. Actor types are included in class diagrams but show the `<<class>>` stereotype.
 
