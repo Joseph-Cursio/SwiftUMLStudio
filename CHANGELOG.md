@@ -106,6 +106,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed — Bridge
 
+- **The activity diagram draws code inside `#if`** (#206). An `#if`
+  among statements made no node, so `load()` / `#if DEBUG log() #elseif
+  os(iOS) trace() #endif` / `render()` drew only `load()` and `render()`,
+  and a switch case inside `#if` lost its branch. An `#if` is now a
+  decision labelled `#if`, with a branch per clause labelled as written
+  (`#if DEBUG`, `#elseif os(iOS)`, `#else`) and an empty `#else` branch
+  when there is none. A switch case inside `#if` is a branch of its
+  switch. Conditions are not evaluated, as in the other readers (#135).
+- **Mermaid activity diagrams with `(`, `[` or `|` in a branch label
+  render** (#206). Mermaid 11 rejects a bare edge label holding `(` or
+  `[`, and with it the whole diagram, so a branch such as
+  `.failure(let error)` broke it. Edge labels are now quoted. `|` was
+  written `&#124;`, which Mermaid draws `&|` (`a || b` came out
+  `a &|&| b`); it is now `#124;`, drawn `|`.
+
 - **The ER diagram draws only the `@Model` properties SwiftData stores**
   (#140). Every annotated `var` or `let` in a model class was read as
   stored, and `@Transient` was only a label.

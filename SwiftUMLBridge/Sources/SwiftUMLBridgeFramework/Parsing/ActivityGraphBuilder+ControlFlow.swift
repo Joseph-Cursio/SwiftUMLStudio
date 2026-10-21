@@ -1,7 +1,7 @@
 import Foundation
 import SwiftSyntax
 
-/// Control-flow walkers for `ActivityGraphBuilder`: if/guard/switch, loops,
+/// Control-flow walkers for `ActivityGraphBuilder`: if/guard/switch, `#if`, loops,
 /// return/throw, and do/catch.
 extension ActivityGraphBuilder {
 
@@ -73,10 +73,55 @@ extension ActivityGraphBuilder {
         let decisionId = makeNode(kind: .decision, label: "switch \(subject)")
         let mergeId = makeNode(kind: .merge, label: "")
 
-        for caseElement in node.cases {
-            guard let switchCase = caseElement.as(SwitchCaseSyntax.self) else { continue }
+        for switchCase in Self.casesInEveryClause(node.cases) {
             let branchLabel = Self.caseLabelText(switchCase.label)
             wireBranch(walkBlock(switchCase.statements), from: decisionId, to: mergeId, label: branchLabel)
+        }
+
+        return WalkResult(entry: decisionId, exits: [mergeId])
+    }
+
+    /// Each case of a switch in source order, with an `#if` among the cases replaced by the cases
+    /// of all its clauses. A case inside `#if` is a branch like any other, as the call graph and
+    /// the state-machine reader read it (#135).
+    static func casesInEveryClause(_ cases: SwitchCaseListSyntax) -> [SwitchCaseSyntax] {
+        cases.flatMap { element -> [SwitchCaseSyntax] in
+            switch element {
+            case .switchCase(let switchCase):
+                return [switchCase]
+            case .ifConfigDecl(let ifConfig):
+                return ifConfig.clauses.flatMap { clause -> [SwitchCaseSyntax] in
+                    guard case .switchCases(let nested)? = clause.elements else { return [] }
+                    return casesInEveryClause(nested)
+                }
+            }
+        }
+    }
+
+    // MARK: - #if
+
+    /// An `#if` among statements is a decision with one branch per clause, labelled as the clause
+    /// is written: `#if DEBUG`, `#elseif os(iOS)`, `#else`. Without an `#else`, an empty `#else`
+    /// branch goes straight to the merge, as an `if` without `else` does. The conditions are not
+    /// evaluated, since neither the CLI nor Studio knows which hold, so every clause is drawn.
+    mutating func walkIfConfig(_ node: IfConfigDeclSyntax) -> WalkResult {
+        let decisionId = makeNode(kind: .decision, label: "#if")
+        let mergeId = makeNode(kind: .merge, label: "")
+
+        for clause in node.clauses {
+            let keyword = clause.poundKeyword.text
+            let branchLabel = clause.condition
+                .map { "\(keyword) \(Self.compactText($0.trimmedDescription))" } ?? keyword
+            let result: WalkResult
+            if case .statements(let statements)? = clause.elements {
+                result = walkBlock(statements)
+            } else {
+                result = WalkResult(entry: nil, exits: [])
+            }
+            wireBranch(result, from: decisionId, to: mergeId, label: branchLabel)
+        }
+        if !node.clauses.contains(where: { $0.poundKeyword.tokenKind == .poundElse }) {
+            addEdge(from: decisionId, to: mergeId, label: "#else")
         }
 
         return WalkResult(entry: decisionId, exits: [mergeId])

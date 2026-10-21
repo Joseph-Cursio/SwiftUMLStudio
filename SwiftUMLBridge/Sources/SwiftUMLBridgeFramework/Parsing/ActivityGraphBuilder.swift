@@ -175,6 +175,9 @@ struct ActivityGraphBuilder {
             }
             return genericAction(description: variableDecl.trimmedDescription)
         }
+        if let ifConfig = decl.as(IfConfigDeclSyntax.self) {
+            return walkIfConfig(ifConfig)
+        }
         // Nested functions, types, etc. have no flow of their own at this level.
         return WalkResult(entry: nil, exits: [])
     }
