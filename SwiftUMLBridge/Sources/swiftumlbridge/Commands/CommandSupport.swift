@@ -90,6 +90,17 @@ extension String {
         else { throw CLIError.packageDirectoryNotFound(path: self) }
         return root
     }
+
+    /// The package a `--package` path names, described by `swift package describe` and logged,
+    /// with the root URL it was read from (see `packageRootURL()`).
+    func loadedPackage() throws -> (root: URL, description: SPMPackageDescription) {
+        let root = try packageRootURL()
+        let description = try SPMPackageReader.describe(at: root)
+        BridgeLogger.shared.info(
+            "Loaded SPM package '\(description.name)' with \(description.targets.count) target(s)"
+        )
+        return (root, description)
+    }
 }
 
 extension Optional where Wrapped == ClassDiagramOutput {

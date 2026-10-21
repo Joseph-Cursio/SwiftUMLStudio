@@ -9,10 +9,7 @@ struct LayoutFallbackBanner: View {
     let reason: String
 
     var body: some View {
-        HStack(alignment: .top, spacing: 10) {
-            Image(systemName: "square.grid.3x3")
-                .foregroundStyle(.orange)
-                .font(.title3)
+        NoticeBanner(systemImage: "square.grid.3x3", identifier: "layoutFallbackBanner") {
             VStack(alignment: .leading, spacing: 4) {
                 Text(Self.headline).font(.subheadline.bold())
                 Text(detail)
@@ -20,13 +17,7 @@ struct LayoutFallbackBanner: View {
                     .foregroundStyle(.secondary)
                     .textSelection(.enabled)
             }
-            Spacer(minLength: 0)
         }
-        .padding(12)
-        .background(Color.orange.opacity(0.1))
-        .overlay(Rectangle().frame(height: 1).foregroundStyle(Color.orange.opacity(0.3)), alignment: .bottom)
-        .accessibilityElement(children: .combine)
-        .accessibilityIdentifier("layoutFallbackBanner")
     }
 
     static let headline = "Boxes placed on a grid"

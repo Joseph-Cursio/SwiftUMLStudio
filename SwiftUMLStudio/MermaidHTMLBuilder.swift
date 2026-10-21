@@ -17,16 +17,7 @@ enum MermaidHTMLBuilder {
 
     nonisolated static func mermaidHTML(_ text: String, dark: Bool = false) -> String {
         let escaped = htmlEscape(text)
-        // Render strictly from the bundled mermaid.min.js — no CDN fallback,
-        // so the offline / no-third-party-network guarantee holds. The
-        // resource is always present in production; the comment fallback only
-        // fires in build setups where it isn't (test bundles, previews).
-        let scriptTag: String
-        if let bundleURL = Bundle.main.url(forResource: "mermaid.min", withExtension: "js") {
-            scriptTag = "<script src=\"\(bundleURL.absoluteString)\"></script>"
-        } else {
-            scriptTag = "<!-- mermaid.min.js missing from app bundle -->"
-        }
+        let scriptTag = BundledScript.tag(resource: "mermaid.min")
         let theme = dark ? "dark" : "default"
         let background = dark ? "#1e1e1e" : "white"
         return """

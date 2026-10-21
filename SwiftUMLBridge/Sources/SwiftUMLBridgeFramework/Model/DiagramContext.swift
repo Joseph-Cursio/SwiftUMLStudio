@@ -218,26 +218,21 @@ class DiagramContext {
     }
 
     func relationshipLabel(for name: String) -> String? {
-        if name == "inherits" {
-            return configuration.relationships.inheritance?.label
-        } else if name == "conforms to" {
-            return configuration.relationships.realize?.label
-        } else if name == "ext" {
-            return configuration.relationships.dependency?.label
-        } else {
-            return nil
-        }
+        relationship(named: name)?.label
     }
 
     func relationshipStyle(for name: String) -> RelationshipStyle? {
-        if name == "inherits" {
-            return configuration.relationships.inheritance?.style
-        } else if name == "conforms to" {
-            return configuration.relationships.realize?.style
-        } else if name == "ext" {
-            return configuration.relationships.dependency?.style
-        } else {
-            return nil
+        relationship(named: name)?.style
+    }
+
+    /// The configured relationship an edge's connection name stands for, or `nil` for a name
+    /// that is none of them.
+    private func relationship(named name: String) -> Relationship? {
+        switch name {
+        case "inherits": return configuration.relationships.inheritance
+        case "conforms to": return configuration.relationships.realize
+        case "ext": return configuration.relationships.dependency
+        default: return nil
         }
     }
 

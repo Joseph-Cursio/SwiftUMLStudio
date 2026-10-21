@@ -30,10 +30,7 @@ struct SourceReadNoticeBanner: View {
     }
 
     var body: some View {
-        HStack(alignment: .top, spacing: 10) {
-            Image(systemName: "text.badge.xmark")
-                .foregroundStyle(.orange)
-                .font(.title3)
+        NoticeBanner(systemImage: "text.badge.xmark", identifier: "sourceReadNoticeBanner") {
             VStack(alignment: .leading, spacing: 4) {
                 Text(Self.headline).font(.subheadline.bold())
                 Text(Self.detail)
@@ -46,13 +43,7 @@ struct SourceReadNoticeBanner: View {
                 }
             }
             .textSelection(.enabled)
-            Spacer(minLength: 0)
         }
-        .padding(12)
-        .background(Color.orange.opacity(0.1))
-        .overlay(Rectangle().frame(height: 1).foregroundStyle(Color.orange.opacity(0.3)), alignment: .bottom)
-        .accessibilityElement(children: .combine)
-        .accessibilityIdentifier("sourceReadNoticeBanner")
     }
 
     static let headline = "Deeply nested brackets read as spaces"
