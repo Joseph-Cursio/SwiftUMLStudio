@@ -12,27 +12,13 @@ public struct StateScript: Sendable {
     public static let empty = StateScript(text: "", format: .plantuml)
 
     internal init(model: StateMachineModel, configuration: Configuration) {
-        switch configuration.format {
-        case .plantuml:
-            self.text = StateScript.buildPlantUMLText(model: model)
-            self.format = .plantuml
-        case .mermaid:
-            self.text = StateScript.buildMermaidText(model: model)
-            self.format = .mermaid
-        case .nomnoml:
-            // nomnoml has no state-diagram syntax; fall back to Mermaid text and
-            // report `.mermaid` so presenters hand it to a Mermaid renderer
-            // (matches SequenceScript's behavior for the same limitation).
-            self.text = StateScript.buildMermaidText(model: model)
-            self.format = .mermaid
-        case .svg:
-            // No native SVG layout engine for state diagrams yet; piggyback on
-            // the Mermaid pipeline by emitting Mermaid text and overriding the
-            // reported format so DiagramWebView renders it through
-            // MermaidHTMLBuilder.
-            self.text = StateScript.buildMermaidText(model: model)
-            self.format = .mermaid
-        }
+        // No SVG layout for state diagrams yet, so SVG is drawn as Mermaid, as Nomnoml is.
+        let drawn = configuration.format.drawn(
+            plantUML: { StateScript.buildPlantUMLText(model: model) },
+            mermaid: { StateScript.buildMermaidText(model: model) }
+        )
+        self.text = drawn.text
+        self.format = drawn.format
     }
 
     private init(text: String, format: DiagramFormat) {

@@ -21,32 +21,30 @@ public struct SequenceScript: Sendable {
         configuration: Configuration,
         typeLocations: [String: SourceLocation] = [:]
     ) {
-        switch configuration.format {
-        case .plantuml:
-            self.format = .plantuml
-            self.text = SequenceScript.buildPlantUMLText(
-                traversedEdges: traversedEdges, entryType: entryType, entryMethod: entryMethod
-            )
-            self.sequenceLayout = nil
-        case .mermaid, .nomnoml:
-            // nomnoml does not support sequence diagrams; fall back to Mermaid
-            // and report `.mermaid` so presenters hand the text to a Mermaid renderer
-            self.format = .mermaid
-            self.text = SequenceScript.buildMermaidText(
-                traversedEdges: traversedEdges, entryType: entryType, entryMethod: entryMethod
-            )
-            self.sequenceLayout = nil
-        case .svg:
-            self.format = .svg
-            let layout = SequenceSVGRenderer.computeLayout(
-                traversedEdges: traversedEdges,
-                entryType: entryType,
-                entryMethod: entryMethod,
-                typeLocations: typeLocations
-            )
-            self.text = SequenceSVGRenderer.renderFromLayout(layout)
-            self.sequenceLayout = layout
-        }
+        let drawn = configuration.format.drawn(
+            plantUML: {
+                SequenceScript.buildPlantUMLText(
+                    traversedEdges: traversedEdges, entryType: entryType, entryMethod: entryMethod
+                )
+            },
+            mermaid: {
+                SequenceScript.buildMermaidText(
+                    traversedEdges: traversedEdges, entryType: entryType, entryMethod: entryMethod
+                )
+            },
+            svg: {
+                let layout = SequenceSVGRenderer.computeLayout(
+                    traversedEdges: traversedEdges,
+                    entryType: entryType,
+                    entryMethod: entryMethod,
+                    typeLocations: typeLocations
+                )
+                return (SequenceSVGRenderer.renderFromLayout(layout), layout)
+            }
+        )
+        self.text = drawn.text
+        self.format = drawn.format
+        self.sequenceLayout = drawn.layout
     }
 
     private init(text: String, format: DiagramFormat) {
