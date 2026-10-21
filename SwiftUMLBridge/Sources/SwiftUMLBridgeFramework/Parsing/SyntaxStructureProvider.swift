@@ -6,8 +6,8 @@ internal extension SyntaxStructure {
 
     // MARK: - Public entry points
 
-    /// Parse a Swift source file from disk. Runs a SourceKit typename supplement
-    /// whenever a file URL or SDK path is available.
+    /// Parse a Swift source file from disk. Runs a SourceKit typename supplement, which reads
+    /// the types written in the source and, given `sdkPath`, the types Swift infers.
     static func create(
         from fileOnDisk: URL,
         sdkPath: String? = nil,
@@ -58,8 +58,8 @@ internal extension SyntaxStructure {
         return parsed
     }
 
-    /// Parse Swift source from an in-memory string. Runs a SourceKit typename
-    /// supplement (without SDK) to resolve inferred variable types.
+    /// Parse Swift source from an in-memory string. Runs a SourceKit typename supplement
+    /// without an SDK or a file, so it reads only the types written in the source.
     static func create(from contents: String, module: String? = nil) -> SyntaxStructure? {
         build(from: contents, sdkPath: nil, fileURL: nil, module: module).structure
     }
@@ -128,6 +128,12 @@ internal extension SyntaxStructure {
     /// name to the type SourceKit gives it, for variables whose type cannot be read from the syntax
     /// tree alone (inferred types).
     ///
+    /// The structure pass (`editor.open`) is syntactic: it knows only the types written in the
+    /// source. With an SDK and a file on disk, each variable it leaves untyped also gets a
+    /// cursor-info request, which typechecks the file and returns the type Swift infers (#147).
+    /// Cursor info needs the file's path, as the request's source file and as the compiler's input
+    /// file, and the SDK, to load the standard library. Without both, only written types are known.
+    ///
     /// The key is where the name is, not what it is called. A key built from the names of the
     /// enclosing types left extensions out, kept no backticks, and gave the same key to a type
     /// nested in a function, to both clauses of an `#if` and to a type nested in an extension and
@@ -141,30 +147,70 @@ internal extension SyntaxStructure {
         if BridgeConfiguration.skipSourceKitTypenameSupplement {
             return [:]
         }
-        let file = File(contents: NestedSquareBrackets.readable(source, file: fileURL))
+        let readable = NestedSquareBrackets.readable(source, file: fileURL)
         let structure: Structure
         do {
-            if let sdk = sdkPath, !sdk.isEmpty {
-                guard let docs = SwiftDocs(file: file, arguments: ["-j4", "-sdk", sdk, ""]) else {
-                    BridgeLogger.shared.warning("SwiftDocs failed — typename supplement skipped")
-                    return [:]
-                }
-                structure = Structure(sourceKitResponse: docs.docsDictionary)
-            } else {
-                structure = try Structure(file: file)
-            }
+            structure = try Structure(file: File(contents: readable))
         } catch {
             BridgeLogger.shared.warning("SourceKit structure pass failed: \(error)")
             return [:]
         }
 
         var map: [Int: String] = [:]
-        collectTypenames(from: structure.dictionary, into: &map)
+        var untyped: [Int] = []
+        collectTypenames(from: structure.dictionary, into: &map, untyped: &untyped)
+
+        // Cursor info typechecks the file as it is on disk, so a file whose deep `[` chains were
+        // blanked out for the parsers is left to the structure pass: typechecking it would take
+        // the time the blanking saves.
+        guard let sdk = sdkPath, !sdk.isEmpty, let path = fileURL?.path, !untyped.isEmpty,
+              readable == source else { return map }
+        let byteOrderMark = byteOrderMarkLength(of: path, source: source)
+        for offset in untyped {
+            if let typename = inferredTypename(at: offset + byteOrderMark, in: path, sdk: sdk) {
+                map[offset] = typename.singleLineTypeName
+            }
+        }
         return map
     }
 
+    /// The type SourceKit's cursor info gives the declaration whose name is at UTF-8 `offset` of
+    /// the file at `path`, typechecked alone against `sdk`, or nil where it has none. A type from
+    /// another file is unknown to a file typechecked alone, and comes back as `_` or an error
+    /// type, so it is left out rather than drawn.
+    private static func inferredTypename(at offset: Int, in path: String, sdk: String) -> String? {
+        // Unless told not to, SourceKit cancels a cursor-info request when another one arrives,
+        // so two files parsed at once (as Swift Testing's parallel tests do) lose their types.
+        let request: SourceKitObject = [
+            "key.request": UID("source.request.cursorinfo"),
+            "key.name": path,
+            "key.sourcefile": path,
+            "key.offset": Int64(offset),
+            "key.compilerargs": ["-sdk", sdk, path],
+            "key.cancel_on_subsequent_request": Int64(0)
+        ]
+        guard let response = try? Request.customRequest(request: request).send(),
+              let typename = response["key.typename"] as? String,
+              !typename.isEmpty, typename != "_", !typename.contains("<<error type>>") else { return nil }
+        return typename
+    }
+
+    /// The 3 bytes of a UTF-8 byte-order mark that the file at `path` starts with and `source`,
+    /// read from it, does not, or 0. Reading a file into a `String` drops the mark, so the
+    /// offsets SourceKit and SwiftSyntax give `source` are 3 short of the file's, which cursor
+    /// info reads from disk.
+    private static func byteOrderMarkLength(of path: String, source: String) -> Int {
+        let mark: [UInt8] = [0xEF, 0xBB, 0xBF]
+        guard !source.utf8.starts(with: mark),
+              let handle = FileHandle(forReadingAtPath: path) else { return 0 }
+        defer { try? handle.close() }
+        let head = (try? handle.read(upToCount: mark.count)) ?? Data()
+        return Array(head) == mark ? mark.count : 0
+    }
+
     /// Recursively walks SourceKit's response and collects `nameOffset → typename` entries for
-    /// variable declarations that have a resolved type.
+    /// variable declarations that have a type written, and the name offsets of those that have
+    /// none in `untyped`.
     ///
     /// It walks the response as SourceKitten returns it. It used to write `Structure.description`,
     /// pretty-printed JSON, and parse that back, which cost an encode and a decode for every file
@@ -173,7 +219,8 @@ internal extension SyntaxStructure {
     /// build it was the recursion that overflowed first (#71).
     private static func collectTypenames(
         from dict: [String: SourceKitRepresentable],
-        into map: inout [Int: String]
+        into map: inout [Int: String],
+        untyped: inout [Int]
     ) {
         let varKinds: Set<String> = [
             ElementKind.varInstance.rawValue,
@@ -182,15 +229,18 @@ internal extension SyntaxStructure {
         ]
 
         let kind = dict["key.kind"] as? String ?? ""
-        if varKinds.contains(kind), let offset = dict["key.nameoffset"] as? Int64,
-           let typename = dict["key.typename"] as? String {
-            map[Int(offset)] = typename.singleLineTypeName
+        if varKinds.contains(kind), let offset = dict["key.nameoffset"] as? Int64 {
+            if let typename = dict["key.typename"] as? String {
+                map[Int(offset)] = typename.singleLineTypeName
+            } else {
+                untyped.append(Int(offset))
+            }
         }
 
         for key in ["key.substructure", "key.elements"] {
             guard let children = dict[key] as? [SourceKitRepresentable] else { continue }
             for case let child as [String: SourceKitRepresentable] in children {
-                collectTypenames(from: child, into: &map)
+                collectTypenames(from: child, into: &map, untyped: &untyped)
             }
         }
     }
