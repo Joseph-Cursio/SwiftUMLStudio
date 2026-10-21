@@ -3,24 +3,8 @@ import Foundation
 enum NomnomlHTMLBuilder {
     nonisolated static func nomnomlHTML(_ text: String, dark: Bool = false) -> String {
         let source = scriptStringLiteral(text)
-
-        // Render strictly from bundled graphre.js + nomnoml.js — no CDN
-        // fallback, so the offline / no-third-party-network guarantee holds.
-        // Resources are always present in production; the comment fallback
-        // only fires in build setups where they aren't (tests, previews).
-        let graphreTag: String
-        if let bundleURL = Bundle.main.url(forResource: "graphre", withExtension: "js") {
-            graphreTag = "<script src=\"\(bundleURL.absoluteString)\"></script>"
-        } else {
-            graphreTag = "<!-- graphre.js missing from app bundle -->"
-        }
-
-        let nomnomlTag: String
-        if let bundleURL = Bundle.main.url(forResource: "nomnoml", withExtension: "js") {
-            nomnomlTag = "<script src=\"\(bundleURL.absoluteString)\"></script>"
-        } else {
-            nomnomlTag = "<!-- nomnoml.js missing from app bundle -->"
-        }
+        let graphreTag = BundledScript.tag(resource: "graphre")
+        let nomnomlTag = BundledScript.tag(resource: "nomnoml")
 
         // Nomnoml's canvas drawing uses fixed light colors. We can only adapt
         // the surrounding page background; the diagram itself stays light.
