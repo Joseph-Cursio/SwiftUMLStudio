@@ -30,11 +30,7 @@ extension SwiftUMLBridgeCLI {
         var includeTestTargets: Bool = false
 
         mutating func run() async throws {
-            let packageRoot = try package.packageRootURL()
-            let description = try SPMPackageReader.describe(at: packageRoot)
-            BridgeLogger.shared.info(
-                "Loaded SPM package '\(description.name)' with \(description.targets.count) target(s)"
-            )
+            let (packageRoot, description) = try package.loadedPackage()
 
             var configuration = Configuration.default
             if let format { configuration.format = format }
