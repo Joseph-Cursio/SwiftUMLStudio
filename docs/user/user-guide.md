@@ -572,7 +572,7 @@ When `--modules` is specified, `--public-only` has no effect (import statements 
 swiftumlbridge deps Sources/ --public-only
 ```
 
-**`--exclude`** skips type names (in types mode) or module names (in modules mode) that match the given pattern. The flag can be repeated, and pattern matching follows the same glob rules as `elements.exclude` in the configuration file.
+**`--exclude`** skips type names (in types mode) or module names (in modules mode) that match the given pattern. In modules mode an import edge is dropped when either module matches, and with `--package` an excluded target is left out along with its edges. The flag can be repeated, and pattern matching follows the same glob rules as `elements.exclude` in the configuration file. Its patterns replace the config file's `elements.exclude` rather than adding to it, as `classdiagram --exclude` replaces `files.exclude`; repeat the file's patterns on the command line to keep them. `--public-only` changes only the access levels, so the file's `elements.exclude` still applies with it.
 
 ```bash
 # Exclude generated code from the graph
@@ -836,7 +836,7 @@ If `swift package describe` fails (the package directory does not contain a vali
 
 ## Configuration File
 
-For repeatable, project-specific settings, place a `.swiftumlbridge.yml` file in the root of your project. The `format` key applies to `classdiagram`, `sequence`, and `deps`. All other keys are class-diagram–specific and are silently ignored by `sequence` and `deps`. For `deps`, only `format` and the `elements.havingAccessLevel` and `elements.exclude` keys have any effect; all other keys are ignored.
+For repeatable, project-specific settings, place a `.swiftumlbridge.yml` file in the root of your project. The `format` key applies to `classdiagram`, `sequence`, and `deps`. All other keys are class-diagram–specific and are silently ignored by `sequence` and `deps`. For `deps`, only `format` and the `elements.havingAccessLevel` and `elements.exclude` keys have any effect; all other keys are ignored. `elements.exclude` applies in modules mode too, so a pattern there that also matches a module or target name hides it from `deps --modules`.
 
 **Minimal example:**
 

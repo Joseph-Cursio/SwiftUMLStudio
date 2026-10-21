@@ -106,6 +106,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed — Bridge
 
+- **`deps` filters keep the config file's other `elements` keys, and
+  reach modules mode** (#161). `--public-only` and `--exclude` each
+  rebuilt `elements` from scratch, so `--public-only` dropped the config
+  file's `elements.exclude` and an excluded type or supertype came back.
+  Each flag now sets only its own key. `--exclude` still replaces the
+  file's `elements.exclude` rather than adding to it, which the reference
+  and user guide now say. And `--modules` read no exclude at all, so
+  `deps --modules --exclude Foundation` still drew `App --> Foundation`.
+  Now an import edge is dropped when either module matches, and with
+  `--package` an excluded target is left out with its edges. A pattern
+  in `elements.exclude` that also matches a module or target name now
+  hides it from `deps --modules` too. Output without an exclude is
+  unchanged.
+
 - **`classdiagram --sdk` resolves inferred property types again** (#147).
   `struct S { var count = 0 }` was drawn `~count` with or without
   `--sdk`, from 0.3.0 (M5) on. The typename supplement handed SourceKit
