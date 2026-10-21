@@ -29,6 +29,8 @@ private struct ERRelationshipAttributeInfo {
 ///   `class` property, or a computed one, is skipped (#140).
 /// * A `@Transient` property is never a relationship or a key, whatever its type or its other
 ///   attributes, since SwiftData stores nothing for it. It is drawn as a transient column (#140).
+/// * Members and attributes inside `#if` are read in every clause. A property declared in more
+///   than one clause is one property, and the first clause's declaration wins (#135).
 /// * A property becomes a relationship if either (a) it carries an explicit
 ///   `@Relationship` attribute or (b) its (unwrapped) type name matches
 ///   another `@Model` class seen in the same file.
@@ -57,8 +59,8 @@ final class ERModelExtractor: SyntaxVisitor {
         guard Self.hasModelAttribute(node.attributes) else { return .skipChildren }
         currentEntityName = node.name.canonicalName
         currentEntityProperties = []
-        for member in node.memberBlock.members {
-            if let varDecl = member.decl.as(VariableDeclSyntax.self) {
+        for decl in node.memberBlock.members.declarationsInEveryClause {
+            if let varDecl = decl.as(VariableDeclSyntax.self) {
                 collectProperty(from: varDecl)
             }
         }
@@ -86,6 +88,7 @@ final class ERModelExtractor: SyntaxVisitor {
             }
             guard Self.isStored(binding) else { continue }
             let propertyName = identifierPattern.identifier.canonicalName
+            guard !currentEntityProperties.contains(where: { $0.name == propertyName }) else { continue }
 
             let rawType: String
             if let annotation = binding.typeAnnotation {
@@ -132,24 +135,21 @@ final class ERModelExtractor: SyntaxVisitor {
     /// `@SwiftData.Relationship`, so neither does this extractor. A `Model` from any other module
     /// is not SwiftData's.
     static func hasModelAttribute(_ attributes: AttributeListSyntax) -> Bool {
-        attributes.contains { element in
-            guard case .attribute(let attribute) = element else { return false }
-            return attribute.attributeName.names("Model", bareOrIn: "SwiftData")
-        }
+        attributes.attributesInEveryClause.contains { $0.attributeName.names("Model", bareOrIn: "SwiftData") }
     }
 
     static func hasAttribute(
         _ attributes: AttributeListSyntax, named name: String
     ) -> Bool {
-        firstAttribute(named: name, in: attributes) != nil
+        !firstAttributes(named: name, in: attributes).isEmpty
     }
 
-    /// The first attribute named `name`, if any.
-    private static func firstAttribute(
+    /// The first attribute named `name`, as `@Model` reads only the first (#140), under each
+    /// choice of `#if` clauses (#135). Without `#if` there is at most one.
+    private static func firstAttributes(
         named name: String, in attributes: AttributeListSyntax
-    ) -> AttributeSyntax? {
-        attributes.lazy.compactMap { $0.as(AttributeSyntax.self) }
-            .first { $0.attributeName.canonicalDescription == name }
+    ) -> [AttributeSyntax] {
+        attributes.firstAttributesInEveryClause { $0.attributeName.canonicalDescription == name }
     }
 
     /// The arguments an attribute is written with, as `(.unique, originalName: "c")`.
@@ -162,20 +162,24 @@ final class ERModelExtractor: SyntaxVisitor {
     /// They are read from the syntax, not searched for as text, so a comment or a string that
     /// mentions `.unique`, or a labeled argument such as `originalName: Legacy.unique`, does not
     /// count (#128).
+    /// Under `#if`, it is unique when the first `@Attribute` of any clause lists it.
     private static func hasUniqueOption(_ attributes: AttributeListSyntax) -> Bool {
-        guard let attribute = firstAttribute(named: "Attribute", in: attributes) else { return false }
-        return arguments(of: attribute).contains { argument in
-            argument.label == nil
-                && argument.expression.as(MemberAccessExprSyntax.self)?.declName.baseName.canonicalName == "unique"
+        firstAttributes(named: "Attribute", in: attributes).contains { attribute in
+            arguments(of: attribute).contains { argument in
+                argument.label == nil
+                    && argument.expression.as(MemberAccessExprSyntax.self)?.declName.baseName.canonicalName == "unique"
+            }
         }
     }
 
-    /// Whether the property carries `@Relationship`, and the inverse it names if so.
+    /// Whether the property carries `@Relationship`, and the inverse it names if so. Under `#if`,
+    /// the inverse is the first that any clause's first `@Relationship` names.
     private static func parseRelationshipAttribute(
         _ attributes: AttributeListSyntax
     ) -> ERRelationshipAttributeInfo? {
-        guard let attribute = firstAttribute(named: "Relationship", in: attributes) else { return nil }
-        return ERRelationshipAttributeInfo(inverseProperty: inverseProperty(of: attribute))
+        let relationships = firstAttributes(named: "Relationship", in: attributes)
+        guard !relationships.isEmpty else { return nil }
+        return ERRelationshipAttributeInfo(inverseProperty: relationships.lazy.compactMap(inverseProperty(of:)).first)
     }
 
     /// The property an `inverse:` key path ends at: `author` for `\Book.author`, also written

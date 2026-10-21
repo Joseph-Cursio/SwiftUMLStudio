@@ -90,19 +90,26 @@ public enum PersistenceSchemaExtractor {
             extractSQLiteSwiftTables(name: name, members: members)
         }
 
+        /// Members inside `#if` are read in every clause. A column or an association declared in
+        /// more than one clause is one, and the first clause's wins (#135).
         private func handleGRDBType(name: String, members: MemberBlockItemListSyntax) {
             var attributes: [ERAttribute] = []
-            for member in members {
-                guard let varDecl = member.decl.as(VariableDeclSyntax.self) else { continue }
+            var associations: Set<String> = []
+            for decl in members.declarationsInEveryClause {
+                guard let varDecl = decl.as(VariableDeclSyntax.self) else { continue }
 
                 if let relationship = grdbRelationship(from: varDecl, ownerType: name) {
-                    relationships.append(relationship)
+                    if associations.insert(relationship.label).inserted {
+                        relationships.append(relationship)
+                    }
                     continue
                 }
 
                 if isStatic(varDecl.modifiers) { continue }
 
-                attributes.append(contentsOf: columns(from: varDecl))
+                for column in columns(from: varDecl) where !attributes.contains(where: { $0.name == column.name }) {
+                    attributes.append(column)
+                }
             }
             entities.append(EREntity(name: name, attributes: attributes))
         }
@@ -114,18 +121,26 @@ public enum PersistenceSchemaExtractor {
         /// becomes an entity; Expression columns are attached to the single
         /// Table sibling when the container has exactly one (the common
         /// case). When the container has multiple Tables we emit them all
-        /// without columns to avoid mis-attributing.
+        /// without columns to avoid mis-attributing. Members inside `#if` are read in every
+        /// clause, and a `static let` declared in more than one clause is read once, from the
+        /// first: otherwise `Table("users")` in two clauses would be two tables, which get no
+        /// columns (#135).
         private func extractSQLiteSwiftTables(name _: String, members: MemberBlockItemListSyntax) {
             var tableNames: [String] = []
             var columnAttributes: [ERAttribute] = []
+            var readNames: Set<String> = []
 
-            for member in members {
-                guard let varDecl = member.decl.as(VariableDeclSyntax.self),
+            for decl in members.declarationsInEveryClause {
+                guard let varDecl = decl.as(VariableDeclSyntax.self),
                       isStatic(varDecl.modifiers),
                       let binding = varDecl.bindings.first,
                       let initializer = binding.initializer?.value.as(FunctionCallExprSyntax.self),
                       let funcName = associationFunctionName(in: initializer)
                 else { continue }
+                if let declaredName = binding.pattern.as(IdentifierPatternSyntax.self)?.identifier.canonicalName,
+                   !readNames.insert(declaredName).inserted {
+                    continue
+                }
 
                 if funcName == "Table" {
                     if let tableName = firstStringLiteral(in: initializer.arguments) {
