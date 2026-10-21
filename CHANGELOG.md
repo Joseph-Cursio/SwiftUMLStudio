@@ -1807,6 +1807,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   The reference's new **Formats by Subcommand** table lists every
   combination and where browser output sends it, and the README's
   diagram-types table now credits dependency graphs with Nomnoml output.
+- **The migration guide maps SwiftPlantUML's real flags** (#163). It
+  mapped `--extensions show|hide|asObjcLikeCategories` to an
+  `--extension-visualization` flag, and neither ever existed: both tools
+  have `--show-extensions`, `--merge-extensions` and `--hide-extensions`,
+  with the same meanings, though a flag now overrides the config file's
+  `elements.showExtensions` where SwiftPlantUML let the file win. The
+  guide also gave SwiftPlantUML a `--format` it never had, called
+  `browserImageOnly` new and `--verbose` ours alone though SwiftPlantUML
+  had both, listed only two formats, and left out `--exclude`. Its YAML
+  example no longer has a `relationships:` block: setting only the
+  inheritance label there removed the `conforms to` label from every
+  conformance.
+- **The user guide says which subcommands read the config file**
+  (#163). It said the `format` key applies to `classdiagram`, `sequence`
+  and `deps`. Every subcommand except `component` reads it, as the
+  reference says; `activity`, `state` and `er` were left out.
 
 ---
 

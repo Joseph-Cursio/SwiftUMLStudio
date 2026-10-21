@@ -1,6 +1,6 @@
 # Migrating from SwiftPlantUML
 
-SwiftUMLBridge is a Swift 6 evolution of [SwiftPlantUML](https://github.com/MarcoEidinger/SwiftPlantUML). The class-diagram surface is broadly compatible — same YAML configuration vocabulary, same `--format` story, same PlantUML output — but the CLI has been restructured into subcommands and a handful of behaviors changed. This page is a cheatsheet for SwiftPlantUML users who want to switch over.
+SwiftUMLBridge is a Swift 6 evolution of [SwiftPlantUML](https://github.com/MarcoEidinger/SwiftPlantUML). The class-diagram surface is broadly compatible — same YAML configuration vocabulary, same PlantUML output — but the CLI has been restructured into subcommands and a handful of behaviors changed. This page is a cheatsheet for SwiftPlantUML users who want to switch over.
 
 If you started with SwiftUMLBridge directly, you don't need this page — see [user-guide.md](user-guide.md) and [reference.md](reference.md) instead.
 
@@ -26,8 +26,8 @@ If you started with SwiftUMLBridge directly, you don't need this page — see [u
 SwiftPlantUML had one command that always produced a class diagram. SwiftUMLBridge groups every diagram type under a subcommand, so the same kind of class-diagram invocation now needs the `classdiagram` token explicitly:
 
 ```diff
-- swiftplantuml ./Sources/MyLib --format plantuml --output browser
-+ swiftumlbridge classdiagram ./Sources/MyLib --format plantuml --output browser
+- swiftplantuml ./Sources/MyLib --output browser
++ swiftumlbridge classdiagram ./Sources/MyLib --output browser
 ```
 
 Subcommand list:
@@ -55,11 +55,12 @@ For the `classdiagram` subcommand, the SwiftPlantUML flag → SwiftUMLBridge fla
 | _positional paths_ | _positional paths_ | Unchanged. Accepts files or directories. |
 | `--config` | `--config` | Unchanged. Defaults search to `.swiftumlbridge.yml` (was `.swiftplantuml.yml`). |
 | `--sdk` | `--sdk` | Unchanged: adds inferred property types. It added none from 0.3.0 to 1.1.0 (#147). |
-| `--output browser` / `consoleOnly` | Same values, plus `browserImageOnly` | New option renders the PNG/SVG without the surrounding HTML viewer. |
-| _(no format option)_ | `--format plantuml|mermaid` | PlantUML is the default; Mermaid is new in 0.2.0. |
-| `--extensions show|hide|asObjcLikeCategories` | `--extension-visualization` flag (`--show-extensions` etc.) | Renamed for clarity; same three semantics. |
+| `--exclude <path>` | `--exclude <path>` | Unchanged. Its patterns replace the config file's `files.exclude` rather than adding to it. |
+| `--output browser` / `browserImageOnly` / `consoleOnly` | Same values | Unchanged. |
+| _(no format option)_ | `--format <format>` | New. One of `plantuml` (the default), `mermaid`, `nomnoml` or `svg`. The config file's `format` key does the same. |
+| `--show-extensions` / `--merge-extensions` / `--hide-extensions` | Same flags | Same three meanings, and `--show-extensions` is still the default. A flag now overrides the config file's `elements.showExtensions`; SwiftPlantUML applied it only when the file left that key out. |
 | _(no module support)_ | `--package <Package.swift-dir>` | New module-aware mode. Each type is stamped with its owning SPM target and gets a module stereotype. |
-| _(none)_ | `--verbose` | Prints the log on stderr, such as which config file is read. `classdiagram` only. |
+| `--verbose` | `--verbose` | Unchanged. Prints the log on stderr, such as which config file is read. `classdiagram` only. |
 
 ---
 
@@ -79,9 +80,6 @@ hideShowCommands:
   - "hide empty members"
 skinparamCommands:
   - "skinparam shadowing false"
-relationships:
-  inheritance:
-    label: "inherits from"
 stereotypes:
   protocol:
     spot:
@@ -95,7 +93,7 @@ includeRemoteURL: null
 
 What's new on top:
 
-- **`format:`** — top-level field, `plantuml` (default) or `mermaid`. Equivalent to passing `--format` on the CLI.
+- **`format:`** — top-level field, `plantuml` (default), `mermaid`, `nomnoml` or `svg`. Equivalent to passing `--format` on the CLI. Every subcommand except `component` reads it.
 
 What changed:
 

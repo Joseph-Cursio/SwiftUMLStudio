@@ -836,7 +836,7 @@ If `swift package describe` fails (the package directory does not contain a vali
 
 ## Configuration File
 
-For repeatable, project-specific settings, place a `.swiftumlbridge.yml` file in the root of your project. The `format` key applies to `classdiagram`, `sequence`, and `deps`. All other keys are class-diagram–specific and are silently ignored by `sequence` and `deps`. For `deps`, only `format` and the `elements.havingAccessLevel` and `elements.exclude` keys have any effect; all other keys are ignored. `elements.exclude` applies in modules mode too, so a pattern there that also matches a module or target name hides it from `deps --modules`.
+For repeatable, project-specific settings, place a `.swiftumlbridge.yml` file in the root of your project. Every subcommand except `component` reads it. `sequence`, `activity`, `state` and `er` read only the `format` key. `deps` reads `format`, `elements.havingAccessLevel` and `elements.exclude`. Every other key applies to `classdiagram` only, and the other subcommands silently ignore it. `component` takes no `--config`, so pass it `--format` instead. `elements.exclude` applies in modules mode too, so a pattern there that also matches a module or target name hides it from `deps --modules`.
 
 **Minimal example:**
 

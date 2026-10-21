@@ -540,7 +540,7 @@ swiftumlbridge component --package SwiftUMLBridge --include-test-targets
 
 ## Configuration File Schema
 
-The configuration file is a YAML file named `.swiftumlbridge.yml`. All fields are optional, and any field you omit uses its built-in default, with two exceptions: a relationship `style` needs all of `lineStyle`, `lineColor` and `textColor`, and a stereotype's `spot` needs both `character` and `color`. A file with no settings in it, empty or only comments, is all defaults. The `sequence` subcommand uses `format` from the config file; other fields (elements, relationships, etc.) are class-diagram–specific and are ignored by `sequence`.
+The configuration file is a YAML file named `.swiftumlbridge.yml`. All fields are optional, and any field you omit uses its built-in default, with two exceptions: a relationship `style` needs all of `lineStyle`, `lineColor` and `textColor`, and a stereotype's `spot` needs both `character` and `color`. A file with no settings in it, empty or only comments, is all defaults. `sequence`, `activity`, `state` and `er` use only `format` from the config file, and `deps` uses `format` and two `elements` keys (see [deps](#deps)); other fields (elements, relationships, etc.) are class-diagram–specific and are ignored by those subcommands. `component` reads no config file.
 
 **When a file cannot be used.** A value the tool cannot read, such as `format: Mermaid` or `lineStyle: Dashed`, makes the whole file unusable, and the CLI says so with the key at fault:
 
