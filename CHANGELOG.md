@@ -1819,6 +1819,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   example no longer has a `relationships:` block: setting only the
   inheritance label there removed the `conforms to` label from every
   conformance.
+- **The user guide says which subcommands read the config file**
+  (#163). It said the `format` key applies to `classdiagram`, `sequence`
+  and `deps`. Every subcommand except `component` reads it, as the
+  reference says; `activity`, `state` and `er` were left out.
 
 ---
 
