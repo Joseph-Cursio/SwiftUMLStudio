@@ -3,7 +3,7 @@ import SwiftUMLBridgeFramework
 
 /// Native SwiftUI Canvas renderer for class and dependency diagrams.
 /// Draws from a positioned `LayoutGraph` with pan, zoom, and hover support.
-struct NativeDiagramView: View {
+struct NativeDiagramView: View, SelectableDiagramCanvas {
     let graph: LayoutGraph
     let viewport: DiagramViewport
 
@@ -48,20 +48,9 @@ struct NativeDiagramView: View {
                 }
             }
             .frame(width: canvasWidth, height: canvasHeight)
-            .coordinateSpace(name: Self.canvasCoordinateSpace)
-            .canvasPanZoom(viewport: viewport)
-            .gesture(tapToSelectGesture)
-            .onTapGesture(count: 2) { viewport.reset() }
-            .onContinuousHover(coordinateSpace: .named(Self.canvasCoordinateSpace)) { phase in
-                updateHover(phase)
-            }
-            .focusable()
-            .focusEffectDisabled()
-            .onKeyPress(.upArrow) { handleArrow(.upward) }
-            .onKeyPress(.downArrow) { handleArrow(.down) }
-            .onKeyPress(.leftArrow) { handleArrow(.left) }
-            .onKeyPress(.rightArrow) { handleArrow(.right) }
-            .onKeyPress(.escape) { clearSelection() }
+            .selectableCanvasInteraction(
+                self, coordinateSpace: Self.canvasCoordinateSpace, arrows: [.upward, .down, .left, .right]
+            )
             .diagramCanvasChrome(
                 viewport: viewport,
                 contentSize: CGSize(width: graph.width, height: graph.height),
@@ -73,50 +62,18 @@ struct NativeDiagramView: View {
         .background(Color(nsColor: .textBackgroundColor))
     }
 
-    // MARK: - Gestures
+    // MARK: - Selection geometry
 
-    private var tapToSelectGesture: some Gesture {
-        SpatialTapGesture(coordinateSpace: .named(Self.canvasCoordinateSpace))
-            .onEnded { value in
-                selectNode(at: value.location)
-            }
+    func nodeID(at location: CGPoint) -> String? {
+        NativeDiagramGeometry.hitNode(in: graph, at: location)?.id
     }
 
-    /// Selects whichever node sits under `location`, or clears the selection
-    /// when the tap lands on empty canvas.
-    func selectNode(at location: CGPoint) {
-        viewport.selectedNodeId = NativeDiagramGeometry.hitNode(in: graph, at: location)?.id
+    func nodeID(after currentID: String, direction: NativeDiagramGeometry.NavigationDirection) -> String? {
+        NativeDiagramGeometry.nextNode(in: graph, from: currentID, direction: direction)?.id
     }
 
-    func updateHover(_ phase: HoverPhase) {
-        switch phase {
-        case .active(let location):
-            viewport.hoveredNodeId = NativeDiagramGeometry.hitNode(in: graph, at: location)?.id
-        case .ended:
-            viewport.hoveredNodeId = nil
-        }
-    }
-
-    func clearSelection() -> KeyPress.Result {
-        viewport.selectedNodeId = nil
-        return .handled
-    }
-
-    /// Internal rather than private so the selection logic is unit-testable:
-    /// `ImageRenderer` drives the drawing code but never fires key presses, and
-    /// ViewInspector cannot reach this view at all (GeometryReader trap — see
-    /// NativeDiagramViewTests.swift).
-    func handleArrow(_ direction: NativeDiagramGeometry.NavigationDirection) -> KeyPress.Result {
-        if let currentId = viewport.selectedNodeId,
-           let next = NativeDiagramGeometry.nextNode(in: graph, from: currentId, direction: direction) {
-            viewport.selectedNodeId = next.id
-            return .handled
-        }
-        if let first = NativeDiagramGeometry.firstNode(in: graph) {
-            viewport.selectedNodeId = first.id
-            return .handled
-        }
-        return .ignored
+    func firstNodeID() -> String? {
+        NativeDiagramGeometry.firstNode(in: graph)?.id
     }
 }
 

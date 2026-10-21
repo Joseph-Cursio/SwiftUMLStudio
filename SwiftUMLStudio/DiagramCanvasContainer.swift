@@ -5,8 +5,8 @@ import SwiftUI
 /// space, then applies pan/zoom, double-tap-to-reset, and the shared chrome.
 ///
 /// Used by the activity and component renderers. The class and sequence
-/// renderers add selection / hover / keyboard affordances whose modifier order
-/// matters for hit-testing, so they keep their bodies inline.
+/// renderers add selection, hover and keyboard affordances, which they share
+/// through `SelectableDiagramCanvas`.
 struct DiagramCanvasContainer: View {
     let viewport: DiagramViewport
     let contentSize: CGSize
