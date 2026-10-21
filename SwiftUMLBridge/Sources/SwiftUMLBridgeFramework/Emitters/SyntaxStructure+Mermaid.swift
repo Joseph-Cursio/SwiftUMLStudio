@@ -8,44 +8,24 @@ extension SyntaxStructure {
         }
     }
 
-    // Maps an ElementKind to its Mermaid textual representation.
-    //
-    // The stereotype labels below are Mermaid's own and are deliberately not
-    // read from `configuration.stereotypes`: those carry a PlantUML spot (a
-    // character and a colour) that Mermaid has no syntax for. See
-    // `SyntaxStructure+PlantUML.plantUMLText(for:generics:context:)`.
+    // Maps an ElementKind to its Mermaid textual representation, a node labelled as
+    // `ElementKind.classNode` says, or a comment for a macro.
     private func mermaidText(
         for kind: ElementKind,
         generics: String?,
         context: DiagramContext
     ) -> String? {
-        switch kind {
-        case ElementKind.class:
-            return mermaidClassNode(relationship: "inherits", stereotype: "class", generics: generics, context: context)
-        case ElementKind.struct:
-            return mermaidClassNode(
-                relationship: "inherits", stereotype: "struct", generics: generics, context: context
-            )
-        case ElementKind.extension:
-            return mermaidClassNode(relationship: "ext", stereotype: "extension", generics: generics, context: context)
-        case ElementKind.enum:
-            return mermaidClassNode(relationship: "", stereotype: "enum", generics: generics, context: context)
-        case ElementKind.protocol:
-            return mermaidClassNode(
-                relationship: "conforms to",
-                stereotype: "protocol",
-                generics: generics,
-                context: context
-            )
-        case ElementKind.actor:
-            return mermaidClassNode(relationship: "actor", stereotype: "actor", generics: generics, context: context)
-        case ElementKind.macro:
+        if kind == .macro {
             let macroName = context.uniqName(item: self, relationship: "macro")
             return "%% macro: \(displayName ?? "unknown") (\(macroName))"
-        default:
+        }
+        guard let node = kind.classNode else {
             BridgeLogger.shared.error("element kind not supported for Mermaid rendering: \(kind.rawValue)")
             return nil
         }
+        return mermaidClassNode(
+            relationship: node.relationship, stereotype: node.stereotype, generics: generics, context: context
+        )
     }
 
     /// Build a Mermaid class-node declaration for this element.

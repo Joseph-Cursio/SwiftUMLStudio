@@ -8,41 +8,29 @@ extension SyntaxStructure {
         }
     }
 
-    // Maps an ElementKind to its nomnoml textual representation.
+    // Maps an ElementKind to its nomnoml textual representation, a node labelled as
+    // `ElementKind.classNode` says, or a comment for a macro.
     //
-    // The stereotype labels below are nomnoml's own and are deliberately not
-    // read from `configuration.stereotypes` — those carry a PlantUML spot that
-    // nomnoml has no syntax for. Note `protocol` renders as `interface`: that
-    // is nomnoml's classifier keyword, not a drift from `Stereotype.protocol`,
-    // so feeding the configured name through here would change every existing
-    // diagram. See `SyntaxStructure+PlantUML.plantUMLText(for:generics:context:)`.
+    // A protocol is labelled `interface`: that is nomnoml's classifier keyword, not a drift from
+    // `Stereotype.protocol`, so feeding the configured name through here would change every
+    // existing diagram.
     private func nomnomlText(
         for kind: ElementKind,
         generics: String?,
         context: DiagramContext
     ) -> String? {
-        switch kind {
-        case ElementKind.class:
-            return nomnomlNode(relationship: "inherits", stereotype: "class", generics: generics, context: context)
-        case ElementKind.struct:
-            return nomnomlNode(relationship: "inherits", stereotype: "struct", generics: generics, context: context)
-        case ElementKind.extension:
-            return nomnomlNode(relationship: "ext", stereotype: "extension", generics: generics, context: context)
-        case ElementKind.enum:
-            return nomnomlNode(relationship: "", stereotype: "enum", generics: generics, context: context)
-        case ElementKind.protocol:
-            return nomnomlNode(
-                relationship: "conforms to", stereotype: "interface", generics: generics, context: context
-            )
-        case ElementKind.actor:
-            return nomnomlNode(relationship: "actor", stereotype: "actor", generics: generics, context: context)
-        case ElementKind.macro:
+        if kind == .macro {
             let macroName = context.uniqName(item: self, relationship: "macro")
             return "// macro: \(displayName ?? "unknown") (\(macroName))"
-        default:
+        }
+        guard let node = kind.classNode else {
             BridgeLogger.shared.error("element kind not supported for nomnoml rendering: \(kind.rawValue)")
             return nil
         }
+        let stereotype = kind == .protocol ? "interface" : node.stereotype
+        return nomnomlNode(
+            relationship: node.relationship, stereotype: stereotype, generics: generics, context: context
+        )
     }
 
     /// Build a nomnoml node declaration: `[<stereotype id=alias> header|properties|methods]`.
