@@ -77,6 +77,13 @@ internal class SyntaxStructure: NSObject, Codable, @unchecked Sendable {
     /// module qualifier in the file can name only these and its own module (#124).
     internal var imports: Set<String>?
 
+    /// The modules the declaration's module loads, its own included: every module a file of it
+    /// imports, a file that declares nothing the diagram records too, and every module those
+    /// load (`ModuleLoads`). A member that another module's extension adds is seen in every file
+    /// of a module that loads that one, whichever file imports it. Stamped by
+    /// `SyntaxStructure.declarations(inPackageFiles:)`; nil when unknown.
+    internal var loadedModules: Set<String>?
+
     /// Set by `mergeExtensions` on an extension it merges away: the item that now shows its
     /// members. A type nested in that extension keeps the extension as its `parent`, which its
     /// name, scope and access come from, and is drawn hanging off this item (`nestingParent`).
@@ -145,6 +152,7 @@ internal class SyntaxStructure: NSObject, Codable, @unchecked Sendable {
         sourceLocation = original.sourceLocation
         module = original.module
         imports = original.imports
+        loadedModules = original.loadedModules
         carriedSupertypes = original.carriedSupertypes
         mergedExtensions = original.mergedExtensions
         boundGenericArguments = original.boundGenericArguments

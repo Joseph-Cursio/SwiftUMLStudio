@@ -19,24 +19,33 @@ internal extension SyntaxStructure {
     /// The declarations of a package's `files`, each parsed under its module as
     /// `create(from:sdkPath:module:)` parses it, in the order given, with each declaration's
     /// `imports` widened to every module its file sees through an `@_exported import`
-    /// (`ModuleReexports`), in a file of its own module or of a module it imports.
+    /// (`ModuleReexports`), in a file of its own module or of a module it imports, and its
+    /// `loadedModules` read from every file's imports, those of a file that declares nothing too.
     static func declarations(
         inPackageFiles files: [(url: URL, module: String?)], sdkPath: String? = nil
     ) -> [SyntaxStructure] {
         var items: [SyntaxStructure] = []
         var reexports = ModuleReexports()
+        var importsForModule: [String: Set<String>] = [:]
         for file in files {
             guard let parsed = parsed(file.url, sdkPath: sdkPath, module: file.module) else { continue }
-            if let module = file.module { reexports.record(parsed.reexports, from: module) }
+            if let module = file.module {
+                reexports.record(parsed.reexports, from: module)
+                importsForModule[module, default: []].formUnion(parsed.imports)
+            }
             items += parsed.structure?.substructure ?? []
         }
         reexports.widenImports(of: items)
+        let loads = ModuleLoads(importsForModule: importsForModule)
+        func stamp(_ item: SyntaxStructure) {
+            if let module = item.module { item.loadedModules = loads.loaded(by: module) }
+            item.substructure?.forEach(stamp)
+        }
+        items.forEach(stamp)
         return items
     }
 
-    private static func parsed(
-        _ fileOnDisk: URL, sdkPath: String?, module: String?
-    ) -> (structure: SyntaxStructure?, reexports: Set<String>)? {
+    private static func parsed(_ fileOnDisk: URL, sdkPath: String?, module: String?) -> ParsedFile? {
         let methodStart = ContinuousClock.now
         guard let source = try? String(contentsOf: fileOnDisk, encoding: .utf8) else {
             BridgeLogger.shared.error("not able to read contents of file \(fileOnDisk)")
@@ -64,13 +73,21 @@ internal extension SyntaxStructure {
 
     // MARK: - Core build pipeline
 
+    /// A parsed file: its declarations, and the modules it imports and re-exports, as
+    /// `ImportExtractor.importedModules(in:)` and `ImportExtractor.reexportedModules(in:)` read them.
+    struct ParsedFile {
+        let structure: SyntaxStructure?
+        let imports: Set<String>
+        let reexports: Set<String>
+    }
+
     private static func build(
         from source: String,
         sdkPath: String?,
         fileURL: URL?,
         module: String? = nil,
         supplementsTypenames: Bool = true
-    ) -> (structure: SyntaxStructure?, reexports: Set<String>) {
+    ) -> ParsedFile {
         ParsingStack.run {
             // Step 1 — optional SourceKit pass for inferred variable typenames
             let typenameMap = supplementsTypenames
@@ -80,6 +97,7 @@ internal extension SyntaxStructure {
             let sourceFile = ParsingStack.parse(source, file: fileURL)
             let filePath = fileURL?.path ?? ""
             let converter = SourceLocationConverter(fileName: filePath, tree: sourceFile)
+            let imports = ImportExtractor.importedModules(in: sourceFile)
             // A `SyntaxVisitor`, and SwiftSyntax's contract makes it single-use: construct, walk,
             // read the result, discard. A fresh one is needed per parse, so there is no instance to
             // inject and nothing a caller could hold. The six sibling walkers in this codebase that
@@ -92,13 +110,14 @@ internal extension SyntaxStructure {
                 filePath: filePath,
                 locationConverter: converter,
                 module: module,
-                imports: ImportExtractor.importedModules(in: sourceFile)
+                imports: imports
             )
             builder.walk(sourceFile)
 
-            return (
-                SyntaxStructure(substructure: builder.topLevelItems.isEmpty ? nil : builder.topLevelItems),
-                ImportExtractor.reexportedModules(in: sourceFile)
+            return ParsedFile(
+                structure: SyntaxStructure(substructure: builder.topLevelItems.isEmpty ? nil : builder.topLevelItems),
+                imports: imports,
+                reexports: ImportExtractor.reexportedModules(in: sourceFile)
             )
         }
     }
