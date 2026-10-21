@@ -28,21 +28,12 @@ struct NestedSupertypeScopeTests {
         final class Far: Base {}
         """
 
-    private func script(
-        _ source: String, _ format: DiagramFormat, _ mode: ExtensionVisualization,
-        relationships: RelationshipOptions = RelationshipOptions()
-    ) -> DiagramScript {
-        let elements = ElementOptions(showExtensions: mode)
-        let configuration = Configuration(elements: elements, relationships: relationships, format: format)
-        return ClassDiagramGenerator().generateScript(for: source, with: configuration)
-    }
-
     /// The ids the supertype edges drawn from `child` end on, in drawing order.
     private func ends(
         from child: String, _ source: String, _ format: DiagramFormat, _ mode: ExtensionVisualization,
         relationships: RelationshipOptions = RelationshipOptions()
     ) -> [String] {
-        let drawn = script(source, format, mode, relationships: relationships)
+        let drawn = classDiagram(source, format, mode, relationships: relationships)
         switch format {
         case .svg:
             return drawn.layoutGraph?.edges
@@ -89,7 +80,7 @@ struct NestedSupertypeScopeTests {
 
     @Test("nomnoml draws no box of its own for the short name")
     func noStrayNomnomlBox() throws {
-        let graph = try NomnomlGraph(parsing: script(Self.nested, .nomnoml, .all).text)
+        let graph = try NomnomlGraph(parsing: classDiagram(Self.nested, .nomnoml, .all).text)
         #expect(graph.nodes.map(\.id) == ["Outer", "Outer.Base", "Outer.Near", "Far"])
     }
 

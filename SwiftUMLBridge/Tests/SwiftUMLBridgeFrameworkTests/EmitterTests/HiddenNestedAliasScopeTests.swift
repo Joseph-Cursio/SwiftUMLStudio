@@ -10,40 +10,9 @@ struct HiddenNestedAliasScopeTests {
 
     static let formats: [DiagramFormat] = [.plantuml, .mermaid, .nomnoml, .svg]
 
-    private func script(_ source: String, _ format: DiagramFormat, _ mode: ExtensionVisualization) -> DiagramScript {
-        let elements = ElementOptions(showNestedTypes: false, showExtensions: mode)
-        let configuration = Configuration(elements: elements, format: format)
-        return ClassDiagramGenerator().generateScript(for: source, with: configuration)
-    }
-
-    /// The id each supertype edge from `child` ends on, in SVG the members of that node, which
-    /// tell the boxes apart.
-    private func ends(
-        from child: String, _ source: String, _ format: DiagramFormat, _ mode: ExtensionVisualization
-    ) -> [String] {
-        let drawn = script(source, format, mode)
-        switch format {
-        case .svg:
-            let graph = drawn.layoutGraph
-            return graph?.edges.filter { $0.sourceId == child && $0.style != .composition }.map { edge in
-                (graph?.nodes.first { $0.id == edge.targetId }?.compartments.flatMap(\.items) ?? []).joined()
-            } ?? []
-        case .nomnoml:
-            return drawn.text.split(separator: "\n").compactMap { line -> String? in
-                guard line.hasPrefix("[\(child)] -"), let open = line.lastIndex(of: "[") else { return nil }
-                return String(line[line.index(after: open)...].dropLast())
-            }
-        default:
-            return drawn.text.split(separator: "\n").compactMap { line -> String? in
-                let words = line.split(separator: " ")
-                guard words.count >= 3, ["<|--", "<|.."].contains(words[1]), words[2] == child else { return nil }
-                return String(words[0])
-            }
-        }
-    }
-
     private func classLines(_ source: String) -> [Substring] {
-        script(source, .plantuml, .merged).text.split(separator: "\n").filter { $0.hasPrefix("class ") }
+        classDiagram(source, .plantuml, .merged, nestedTypes: false).text.split(separator: "\n")
+            .filter { $0.hasPrefix("class ") }
     }
 
     /// Nested types hidden, the lookup records neither `Outer.Inner` nor `Box.Inner.Real`, so an
@@ -64,10 +33,13 @@ struct HiddenNestedAliasScopeTests {
             struct T: CustomStringConvertible { var description: String { "" } }
             """
         let box = "\(declared.extended).Desc"
-        #expect(ends(from: "T", alone, format, .all) == [format == .svg ? "~ viaAlias()" : box])
+        #expect(
+            supertypeEdgeEnds(from: "T", alone, format, .all, nestedTypes: false)
+                == [format == .svg ? "~ viaAlias()" : box]
+        )
         let both = alone + "\nextension CustomStringConvertible { func direct() {} }"
         let merged = format == .svg ? "~ viaAlias()~ direct()" : box
-        #expect(ends(from: "T", both, format, .merged) == [merged])
+        #expect(supertypeEdgeEnds(from: "T", both, format, .merged, nestedTypes: false) == [merged])
         let boxes = classLines(both)
         #expect(boxes.contains { $0.contains("as \(box)") })
         #expect(!boxes.contains { $0.contains("as CustomStringConvertible") })

@@ -11,43 +11,8 @@ struct MergedExtensionScopeTests {
 
     static let formats: [DiagramFormat] = [.plantuml, .mermaid, .nomnoml, .svg]
 
-    private func script(
-        _ source: String, _ format: DiagramFormat, _ mode: ExtensionVisualization, showNestedTypes: Bool = true
-    ) -> DiagramScript {
-        let elements = ElementOptions(showNestedTypes: showNestedTypes, showExtensions: mode)
-        let configuration = Configuration(elements: elements, format: format)
-        return ClassDiagramGenerator().generateScript(for: source, with: configuration)
-    }
-
-    /// The id each supertype edge from `child` ends on, in SVG the members of that node, which
-    /// tell the boxes apart.
-    private func ends(
-        from child: String, _ source: String, _ format: DiagramFormat, _ mode: ExtensionVisualization,
-        showNestedTypes: Bool = true
-    ) -> [String] {
-        let drawn = script(source, format, mode, showNestedTypes: showNestedTypes)
-        switch format {
-        case .svg:
-            let graph = drawn.layoutGraph
-            return graph?.edges.filter { $0.sourceId == child && $0.style != .composition }.map { edge in
-                (graph?.nodes.first { $0.id == edge.targetId }?.compartments.flatMap(\.items) ?? []).joined()
-            } ?? []
-        case .nomnoml:
-            return drawn.text.split(separator: "\n").compactMap { line -> String? in
-                guard line.hasPrefix("[\(child)] -"), let open = line.lastIndex(of: "[") else { return nil }
-                return String(line[line.index(after: open)...].dropLast())
-            }
-        default:
-            return drawn.text.split(separator: "\n").compactMap { line -> String? in
-                let words = line.split(separator: " ")
-                guard words.count >= 3, ["<|--", "<|.."].contains(words[1]), words[2] == child else { return nil }
-                return String(words[0])
-            }
-        }
-    }
-
     private func boxes(_ source: String, showNestedTypes: Bool = true) -> [Substring] {
-        script(source, .plantuml, .merged, showNestedTypes: showNestedTypes).text.split(separator: "\n")
+        classDiagram(source, .plantuml, .merged, nestedTypes: showNestedTypes).text.split(separator: "\n")
             .filter { $0.hasPrefix("class ") }
     }
 
@@ -66,7 +31,7 @@ struct MergedExtensionScopeTests {
           arguments: formats, [ExtensionVisualization.all, .merged])
     func aliasSpelledExtensionSeesItsTypesMembers(format: DiagramFormat, mode: ExtensionVisualization) {
         let protocolEnd = format == .svg ? "~ inner()" : "Outer.Inner"
-        #expect(ends(from: "Crate.Item", Self.crateMember, format, mode) == [protocolEnd])
+        #expect(supertypeEdgeEnds(from: "Crate.Item", Self.crateMember, format, mode) == [protocolEnd])
     }
 
     /// Merged into `struct Outer`, `extension Crate`'s `typealias Desc = Inner` is recorded as
@@ -89,8 +54,8 @@ struct MergedExtensionScopeTests {
             """
         let protocolEnd = format == .svg ? "~ inner()" : "Outer.Inner"
         for mode in [ExtensionVisualization.all, .merged] {
-            #expect(ends(from: "ViaOuter", source, format, mode) == [protocolEnd], "\(mode)")
-            #expect(ends(from: "ViaCrate", source, format, mode) == [protocolEnd], "\(mode)")
+            #expect(supertypeEdgeEnds(from: "ViaOuter", source, format, mode) == [protocolEnd], "\(mode)")
+            #expect(supertypeEdgeEnds(from: "ViaCrate", source, format, mode) == [protocolEnd], "\(mode)")
         }
     }
 
@@ -110,9 +75,9 @@ struct MergedExtensionScopeTests {
             extension Outer.D.Style { func viaMember() {} }
             struct Shout: FormatStyle { func format(_ value: String) -> String { value.uppercased() } }
             """
-        #expect(ends(from: "Shout", alone, format, mode) == (format == .svg ? [] : ["FormatStyle"]))
+        #expect(supertypeEdgeEnds(from: "Shout", alone, format, mode) == (format == .svg ? [] : ["FormatStyle"]))
         let both = alone + "\nextension FormatStyle { func direct() {} }"
-        #expect(ends(from: "Shout", both, format, mode) == [format == .svg ? "~ direct()" : "FormatStyle"])
+        #expect(supertypeEdgeEnds(from: "Shout", both, format, mode) == [format == .svg ? "~ direct()" : "FormatStyle"])
     }
 
     // MARK: - A merged typealias is read where its extension declares it
@@ -134,11 +99,14 @@ struct MergedExtensionScopeTests {
             """
         let alone = format == .svg ? "~ viaMember()" : "Date.Box.Desc"
         for mode in [ExtensionVisualization.all, .merged] {
-            #expect(ends(from: "T", declarations, format, mode, showNestedTypes: showNestedTypes) == [alone], "\(mode)")
+            #expect(
+                supertypeEdgeEnds(from: "T", declarations, format, mode, nestedTypes: showNestedTypes)
+                    == [alone], "\(mode)"
+            )
         }
         let both = declarations + "\nextension CustomStringConvertible { func direct() {} }"
         let merged = format == .svg ? "~ viaMember()~ direct()" : "Date.Box.Desc"
-        #expect(ends(from: "T", both, format, .merged, showNestedTypes: showNestedTypes) == [merged])
+        #expect(supertypeEdgeEnds(from: "T", both, format, .merged, nestedTypes: showNestedTypes) == [merged])
     }
 
     /// Inside `extension Outer.Inner`, `Base` is the top-level protocol, never `Outer.Base`:
@@ -154,7 +122,7 @@ struct MergedExtensionScopeTests {
             """
         let topLevel = format == .svg ? "~ top()" : "Base"
         for mode in [ExtensionVisualization.all, .merged] {
-            #expect(ends(from: "S", source, format, mode) == [topLevel], "\(mode)")
+            #expect(supertypeEdgeEnds(from: "S", source, format, mode) == [topLevel], "\(mode)")
         }
     }
 
@@ -175,7 +143,7 @@ struct MergedExtensionScopeTests {
             extension FormatStyle { func direct() {} }
             struct Fmt: FormatStyle { func format(_ value: Int) -> String { "" } }
             """
-        #expect(ends(from: "Fmt", source, format, mode) == [format == .svg ? "~ direct()" : "FormatStyle"])
+        #expect(supertypeEdgeEnds(from: "Fmt", source, format, mode) == [format == .svg ? "~ direct()" : "FormatStyle"])
     }
 
     /// `Day.Box` is the project's `Date.Box`, and `Crate.Alias` the project's `Outer.Inner`, so
@@ -213,7 +181,9 @@ struct MergedExtensionScopeTests {
             extension JSON { typealias B = Base }
             class Sub: Dictionary<String, Int>.B {}
             """
-        #expect(ends(from: "Sub", source, format, mode) == [format == .svg ? "~ nested()" : "Dictionary.Base"])
+        #expect(
+            supertypeEdgeEnds(from: "Sub", source, format, mode) == [format == .svg ? "~ nested()" : "Dictionary.Base"]
+        )
     }
 
     /// `X` in `extension Day`, after `typealias Day = Date`, is `Date.Y`, the protocol the
@@ -229,6 +199,6 @@ struct MergedExtensionScopeTests {
             extension Day { typealias X = Y }
             struct T: \(written) { func y() {} }
             """
-        #expect(ends(from: "T", source, format, .merged) == [format == .svg ? "~ y()" : "Date.Y"])
+        #expect(supertypeEdgeEnds(from: "T", source, format, .merged) == [format == .svg ? "~ y()" : "Date.Y"])
     }
 }

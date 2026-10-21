@@ -20,11 +20,6 @@ struct NomnomlNodeIdTests {
         graph.nodes.map { [$0.id, $0.type, $0.title] }
     }
 
-    /// Each edge as `[start, arrow, end]`.
-    private func edges(_ graph: NomnomlGraph) -> [[String]] {
-        graph.edges.map { [$0.start, $0.type, $0.end] }
-    }
-
     // MARK: - The issue's inputs
 
     @Test("each declaration is its own node, and every edge ends on one", arguments: [
@@ -49,7 +44,7 @@ struct NomnomlNodeIdTests {
     func nestedType() throws {
         let graph = try graph("struct Outer {\n    struct Inner {}\n}")
         #expect(nodes(graph) == [["Outer", "struct", "Outer"], ["Outer.Inner", "struct", "Inner"]])
-        #expect(edges(graph) == [["Outer", "+-", "Outer.Inner"]])
+        #expect(graph.edgeTriples == [["Outer", "+-", "Outer.Inner"]])
     }
 
     @Test("two extensions of one type keep their own members")
@@ -64,17 +59,17 @@ struct NomnomlNodeIdTests {
         let graph = try graph(source)
         #expect(graph.node("A.Inner")?.compartments == [["Inner"], ["~fromA: Int"]])
         #expect(graph.node("B.Inner")?.compartments == [["Inner"], ["~fromB: Int"]])
-        #expect(edges(graph) == [["A", "+-", "A.Inner"], ["B", "+-", "B.Inner"]])
+        #expect(graph.edgeTriples == [["A", "+-", "A.Inner"], ["B", "+-", "B.Inner"]])
     }
 
     @Test("generics and attributes stay in the title, out of the id")
     func decoratedHeaders() throws {
         let box = try graph("struct Box<T> { struct Inner {} }")
         #expect(nodes(box) == [["Box", "struct", "Box <T>"], ["Box.Inner", "struct", "Inner"]])
-        #expect(edges(box) == [["Box", "+-", "Box.Inner"]])
+        #expect(box.edgeTriples == [["Box", "+-", "Box.Inner"]])
         let model = try graph("@MainActor final class Model { enum State {} }")
         #expect(nodes(model) == [["Model", "class", "Model <<MainActor>>"], ["Model.State", "enum", "State"]])
-        #expect(edges(model) == [["Model", "+-", "Model.State"]])
+        #expect(model.edgeTriples == [["Model", "+-", "Model.State"]])
     }
 
     @Test("an extension's edges start at the extension's own box")
@@ -86,7 +81,7 @@ struct NomnomlNodeIdTests {
         ])
         #expect(graph.node("Foo")?.compartments == [["Foo"]])
         #expect(graph.node("Foo0")?.compartments == [["Foo"], ["~bar()"]])
-        #expect(edges(graph) == [["Foo1", "+-", "Foo.Inner"], ["Foo0", "-->", "Foo"], ["Foo1", "-->", "Foo"]])
+        #expect(graph.edgeTriples == [["Foo1", "+-", "Foo.Inner"], ["Foo0", "-->", "Foo"], ["Foo1", "-->", "Foo"]])
     }
 
     // MARK: - Names nomnoml can't take as written
@@ -98,7 +93,7 @@ struct NomnomlNodeIdTests {
         #expect(nodes(graph) == [
             ["P", "interface", "P"], [id, "struct", "`Foo Bar`"], [id + "0", "extension", "`Foo Bar`"]
         ])
-        #expect(edges(graph) == [[id, "--:>", "P"], [id + "0", "-->", id]])
+        #expect(graph.edgeTriples == [[id, "--:>", "P"], [id + "0", "-->", id]])
     }
 
     @Test("a raw identifier holding nomnoml's syntax is encoded in its id and escaped in its title")
@@ -108,7 +103,7 @@ struct NomnomlNodeIdTests {
         #expect(nodes(graph) == [
             [id, "struct", "`a/b (c)`"], [id + ".Inner", "struct", "Inner"], [id + "0", "extension", "`a/b (c)`"]
         ])
-        #expect(edges(graph) == [[id + "0", "+-", id + ".Inner"], [id + "0", "-->", id]])
+        #expect(graph.edgeTriples == [[id + "0", "+-", id + ".Inner"], [id + "0", "-->", id]])
     }
 
     /// An undeclared supertype has no declaration, so nomnoml draws a box titled with its id. An
@@ -119,7 +114,7 @@ struct NomnomlNodeIdTests {
         let graph = try graph("final class Box: `Foo Bar` {}")
         let supertype = try #require(graph.node("`Foo\u{00A0}Bar`"))
         #expect(supertype.title == "`Foo\u{00A0}Bar`")
-        #expect(edges(graph) == [["Box", "-:>", supertype.id]])
+        #expect(graph.edgeTriples == [["Box", "-:>", supertype.id]])
     }
 
     /// `Base <Int>` names the supertype `Base `; with the space kept, the edge end would be read as

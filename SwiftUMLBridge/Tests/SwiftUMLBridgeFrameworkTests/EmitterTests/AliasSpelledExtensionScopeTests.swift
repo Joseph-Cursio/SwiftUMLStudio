@@ -11,41 +11,6 @@ struct AliasSpelledExtensionScopeTests {
 
     static let formats: [DiagramFormat] = [.plantuml, .mermaid, .nomnoml, .svg]
 
-    private func script(
-        _ source: String, _ format: DiagramFormat, _ mode: ExtensionVisualization, showNestedTypes: Bool = true
-    ) -> DiagramScript {
-        let elements = ElementOptions(showNestedTypes: showNestedTypes, showExtensions: mode)
-        let configuration = Configuration(elements: elements, format: format)
-        return ClassDiagramGenerator().generateScript(for: source, with: configuration)
-    }
-
-    /// The id each supertype edge from `child` ends on, in SVG the members of that node, which
-    /// tell the boxes apart.
-    private func ends(
-        from child: String, _ source: String, _ format: DiagramFormat, _ mode: ExtensionVisualization,
-        showNestedTypes: Bool = true
-    ) -> [String] {
-        let drawn = script(source, format, mode, showNestedTypes: showNestedTypes)
-        switch format {
-        case .svg:
-            let graph = drawn.layoutGraph
-            return graph?.edges.filter { $0.sourceId == child && $0.style != .composition }.map { edge in
-                (graph?.nodes.first { $0.id == edge.targetId }?.compartments.flatMap(\.items) ?? []).joined()
-            } ?? []
-        case .nomnoml:
-            return drawn.text.split(separator: "\n").compactMap { line -> String? in
-                guard line.hasPrefix("[\(child)] -"), let open = line.lastIndex(of: "[") else { return nil }
-                return String(line[line.index(after: open)...].dropLast())
-            }
-        default:
-            return drawn.text.split(separator: "\n").compactMap { line -> String? in
-                let words = line.split(separator: " ")
-                guard words.count >= 3, ["<|--", "<|.."].contains(words[1]), words[2] == child else { return nil }
-                return String(words[0])
-            }
-        }
-    }
-
     // MARK: - Inside an extension of a type outside the diagram
 
     /// `CustomStringConvertible` written in `extension Date`, or in `extension [Int]`, may be a
@@ -68,10 +33,10 @@ struct AliasSpelledExtensionScopeTests {
     func outsideTypeMemberEndsOnMergedBox(format: DiagramFormat, outside: (written: String, stamp: String)) {
         let source = Self.stamped(in: outside.written)
         let direct = format == .svg ? "~ direct()" : "CustomStringConvertible"
-        #expect(ends(from: outside.stamp, source, format, .all) == [direct])
+        #expect(supertypeEdgeEnds(from: outside.stamp, source, format, .all) == [direct])
         let merged = format == .svg ? "~ viaAlias()~ direct()" : "Describable"
-        #expect(ends(from: outside.stamp, source, format, .merged) == [merged])
-        #expect(ends(from: "Top", source, format, .merged) == [merged])
+        #expect(supertypeEdgeEnds(from: outside.stamp, source, format, .merged) == [merged])
+        #expect(supertypeEdgeEnds(from: "Top", source, format, .merged) == [merged])
     }
 
     /// `Describable`, written in `extension Date`, is the project's typealias, as the lookup
@@ -90,8 +55,8 @@ struct AliasSpelledExtensionScopeTests {
             struct Top: Describable { var description: String { "" } }
             """
         let merged = format == .svg ? "~ direct()~ viaAlias()" : "CustomStringConvertible"
-        #expect(ends(from: "Date.Stamp", source, format, .merged) == [merged])
-        #expect(ends(from: "Top", source, format, .merged) == [merged])
+        #expect(supertypeEdgeEnds(from: "Date.Stamp", source, format, .merged) == [merged])
+        #expect(supertypeEdgeEnds(from: "Top", source, format, .merged) == [merged])
         let throughMember = """
             import Foundation
             typealias Describable = CustomStringConvertible
@@ -101,7 +66,7 @@ struct AliasSpelledExtensionScopeTests {
             struct T: CustomStringConvertible { var description: String { "" } }
             """
         let box = format == .svg ? "~ viaDateAlias()~ direct()" : "Date.Desc"
-        #expect(ends(from: "T", throughMember, format, .merged) == [box])
+        #expect(supertypeEdgeEnds(from: "T", throughMember, format, .merged) == [box])
     }
 
     // MARK: - Inside an extension spelled through a typealias of an outside type
@@ -134,11 +99,11 @@ struct AliasSpelledExtensionScopeTests {
         for (declaration, extended) in Self.outsideAliases {
             for nested in [true, false] {
                 let alone = Self.styled(declaring: declaration, extending: extended, direct: false)
-                #expect(ends(from: "Shout", alone, format, mode, showNestedTypes: nested)
+                #expect(supertypeEdgeEnds(from: "Shout", alone, format, mode, nestedTypes: nested)
                         == (format == .svg ? [] : ["FormatStyle"]), "\(extended) \(nested)")
                 let beside = Self.styled(declaring: declaration, extending: extended, direct: true)
                 let direct = format == .svg ? "~ direct()" : "FormatStyle"
-                #expect(ends(from: "Shout", beside, format, mode, showNestedTypes: nested) == [direct],
+                #expect(supertypeEdgeEnds(from: "Shout", beside, format, mode, nestedTypes: nested) == [direct],
                         "\(extended) \(nested)")
             }
         }
@@ -162,7 +127,9 @@ struct AliasSpelledExtensionScopeTests {
           arguments: formats, [true, false])
     func aliasInNestedProjectTypeExtension(format: DiagramFormat, showNestedTypes: Bool) {
         let merged = format == .svg ? "~ viaAlias()~ direct()" : "Outer.Inner.Desc"
-        #expect(ends(from: "T", Self.nestedAlias, format, .merged, showNestedTypes: showNestedTypes) == [merged])
+        #expect(
+            supertypeEdgeEnds(from: "T", Self.nestedAlias, format, .merged, nestedTypes: showNestedTypes) == [merged]
+        )
     }
 
     /// The same through `typealias Crate = Outer`: the lookup never resolves `Crate.Inner`, but
@@ -179,7 +146,7 @@ struct AliasSpelledExtensionScopeTests {
             struct T: CustomStringConvertible { var description: String { "" } }
             """
         let merged = format == .svg ? "~ viaAlias()~ direct()" : "Crate.Inner.Desc"
-        #expect(ends(from: "T", source, format, .merged) == [merged])
+        #expect(supertypeEdgeEnds(from: "T", source, format, .merged) == [merged])
         // Through an alias of the nested type itself, which the lookup never records while
         // nested types are hidden: only `Crate`'s target's first name, `Outer`, is known.
         let ofNested = """
@@ -191,7 +158,7 @@ struct AliasSpelledExtensionScopeTests {
             struct T: CustomStringConvertible { var description: String { "" } }
             """
         let box = format == .svg ? "~ viaAlias()~ direct()" : "Crate.Desc"
-        #expect(ends(from: "T", ofNested, format, .merged, showNestedTypes: false) == [box])
+        #expect(supertypeEdgeEnds(from: "T", ofNested, format, .merged, nestedTypes: false) == [box])
     }
 
     /// `Outer.Alias` is the project's `Outer.Inner`, which the lookup reads `Inner`, written
@@ -219,7 +186,7 @@ struct AliasSpelledExtensionScopeTests {
     private func classLines(
         _ source: String, _ mode: ExtensionVisualization, showNestedTypes: Bool = true
     ) -> [Substring] {
-        script(source, .plantuml, mode, showNestedTypes: showNestedTypes).text.split(separator: "\n")
+        classDiagram(source, .plantuml, mode, nestedTypes: showNestedTypes).text.split(separator: "\n")
             .filter { $0.hasPrefix("class ") }
     }
 
@@ -229,7 +196,10 @@ struct AliasSpelledExtensionScopeTests {
         for declaration in Self.siblingAliasDeclarations {
             let alone = Self.siblingAlias(declaring: declaration, direct: false)
             let end = format == .svg ? "~ viaMember()" : "Outer.Alias.Desc"
-            #expect(ends(from: "T", alone, format, .all, showNestedTypes: showNestedTypes) == [end], "\(declaration)")
+            #expect(
+                supertypeEdgeEnds(from: "T", alone, format, .all, nestedTypes: showNestedTypes)
+                    == [end], "\(declaration)"
+            )
             let both = Self.siblingAlias(declaring: declaration, direct: true)
             let boxes = classLines(both, .merged, showNestedTypes: showNestedTypes)
             #expect(boxes.contains { $0.contains("as Outer.Alias.Desc") }, "\(declaration)")

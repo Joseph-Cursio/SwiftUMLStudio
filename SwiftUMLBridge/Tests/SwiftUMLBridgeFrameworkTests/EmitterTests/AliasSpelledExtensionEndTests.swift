@@ -14,41 +14,6 @@ struct AliasSpelledExtensionEndTests {
 
     static let formats: [DiagramFormat] = [.plantuml, .mermaid, .nomnoml, .svg]
 
-    private func script(
-        _ source: String, _ format: DiagramFormat, _ mode: ExtensionVisualization = .all,
-        exclude: [String]? = nil
-    ) -> DiagramScript {
-        let elements = ElementOptions(showExtensions: mode, exclude: exclude)
-        let configuration = Configuration(elements: elements, format: format)
-        return ClassDiagramGenerator().generateScript(for: source, with: configuration)
-    }
-
-    /// The id each supertype edge from `child` ends on, in SVG the members of that node, which
-    /// tell the boxes apart.
-    private func ends(
-        from child: String, _ source: String, _ format: DiagramFormat, _ mode: ExtensionVisualization
-    ) -> [String] {
-        let drawn = script(source, format, mode)
-        switch format {
-        case .svg:
-            let graph = drawn.layoutGraph
-            return graph?.edges.filter { $0.sourceId == child && $0.style != .composition }.map { edge in
-                (graph?.nodes.first { $0.id == edge.targetId }?.compartments.flatMap(\.items) ?? []).joined()
-            } ?? []
-        case .nomnoml:
-            return drawn.text.split(separator: "\n").compactMap { line -> String? in
-                guard line.hasPrefix("[\(child)] -"), let open = line.lastIndex(of: "[") else { return nil }
-                return String(line[line.index(after: open)...].dropLast())
-            }
-        default:
-            return drawn.text.split(separator: "\n").compactMap { line -> String? in
-                let words = line.split(separator: " ")
-                guard words.count >= 3, ["<|--", "<|.."].contains(words[1]), words[2] == child else { return nil }
-                return String(words[0])
-            }
-        }
-    }
-
     // MARK: - A type outside the diagram
 
     static let outside = """
@@ -62,8 +27,8 @@ struct AliasSpelledExtensionEndTests {
           arguments: formats, [ExtensionVisualization.all, .merged])
     func outsideTypeBothSpellings(format: DiagramFormat, mode: ExtensionVisualization) {
         let box = format == .svg ? "~ shout: String" : "Describable"
-        #expect(ends(from: "S", Self.outside, format, mode) == [box])
-        #expect(ends(from: "T", Self.outside, format, mode) == [box])
+        #expect(supertypeEdgeEnds(from: "S", Self.outside, format, mode) == [box])
+        #expect(supertypeEdgeEnds(from: "T", Self.outside, format, mode) == [box])
     }
 
     /// Drawn apart, each spelling keeps its own extension, as before. Merged, the second is
@@ -81,11 +46,11 @@ struct AliasSpelledExtensionEndTests {
     func bothSpellingsExtended(format: DiagramFormat) {
         let (direct, viaAlias) = format == .svg
             ? ("~ direct: Int", "~ shout: String") : ("CustomStringConvertible", "Describable")
-        #expect(ends(from: "S", Self.bothSpelled, format, .all) == [viaAlias])
-        #expect(ends(from: "T", Self.bothSpelled, format, .all) == [direct])
+        #expect(supertypeEdgeEnds(from: "S", Self.bothSpelled, format, .all) == [viaAlias])
+        #expect(supertypeEdgeEnds(from: "T", Self.bothSpelled, format, .all) == [direct])
         let merged = format == .svg ? "~ direct: Int~ shout: String" : "CustomStringConvertible"
-        #expect(ends(from: "S", Self.bothSpelled, format, .merged) == [merged])
-        #expect(ends(from: "T", Self.bothSpelled, format, .merged) == [merged])
+        #expect(supertypeEdgeEnds(from: "S", Self.bothSpelled, format, .merged) == [merged])
+        #expect(supertypeEdgeEnds(from: "T", Self.bothSpelled, format, .merged) == [merged])
     }
 
     // MARK: - A hidden type
@@ -103,15 +68,15 @@ struct AliasSpelledExtensionEndTests {
             struct V: Q { func base() {} }
             """
         let box = format == .svg ? "~ viaAlias()" : "Q"
-        #expect(ends(from: "U", source, format, mode) == [box])
-        #expect(ends(from: "V", source, format, mode) == [box])
+        #expect(supertypeEdgeEnds(from: "U", source, format, mode) == [box])
+        #expect(supertypeEdgeEnds(from: "V", source, format, mode) == [box])
     }
 
     // MARK: - A nested type
 
     /// The nesting edges `format` draws, as `parent -> child` in every format.
     private func nestingEdges(_ source: String, _ format: DiagramFormat, exclude: [String]) -> [String] {
-        let drawn = script(source, format, exclude: exclude)
+        let drawn = classDiagram(source, format, exclude: exclude)
         switch format {
         case .svg:
             return drawn.layoutGraph?.edges.filter { $0.style == .composition }
@@ -179,8 +144,10 @@ struct AliasSpelledExtensionEndTests {
     @Test("an alias written in an outside type's extension is no other outside type's fallback",
           arguments: formats, [ExtensionVisualization.all, .merged])
     func aliasInOutsideTypeExtensionIsNoFallback(format: DiagramFormat, mode: ExtensionVisualization) {
-        #expect(ends(from: "T", Self.hostAlias, format, mode) == (format == .svg ? [] : ["Delegate"]))
-        #expect(ends(from: "Shouty", Self.dateStyle, format, mode) == (format == .svg ? [] : ["FormatStyle"]))
+        #expect(supertypeEdgeEnds(from: "T", Self.hostAlias, format, mode) == (format == .svg ? [] : ["Delegate"]))
+        #expect(
+            supertypeEdgeEnds(from: "Shouty", Self.dateStyle, format, mode) == (format == .svg ? [] : ["FormatStyle"])
+        )
     }
 
     @Test("--merge-extensions keeps an alias-spelled extension apart when the alias may name a member")
@@ -190,7 +157,8 @@ struct AliasSpelledExtensionEndTests {
             extension Host.HD { func callsHost() { hostOnly() } }
             extension Delegate { func callsTop() { topOnly() } }
             """
-        let boxes = script(source, .plantuml, .merged).text.split(separator: "\n").filter { $0.hasPrefix("class ") }
+        let boxes = classDiagram(source, .plantuml, .merged).text.split(separator: "\n")
+            .filter { $0.hasPrefix("class ") }
         #expect(boxes.contains { $0.contains("as Host.HD") })
         #expect(boxes.contains { $0.contains("as Delegate") })
     }
@@ -229,10 +197,10 @@ struct AliasSpelledExtensionEndTests {
           arguments: formats, [ExtensionVisualization.all, .merged])
     func memberAliasOfAliasSpelledExtension(format: DiagramFormat, mode: ExtensionVisualization) {
         let box = format == .svg ? "~ viaAlias()" : "Crate.Desc"
-        #expect(ends(from: "T", Self.memberOfAliasSpelled, format, mode) == [box])
+        #expect(supertypeEdgeEnds(from: "T", Self.memberOfAliasSpelled, format, mode) == [box])
         let bothSpelled = Self.memberOfAliasSpelled + "\nextension CustomStringConvertible { func direct() {} }"
         let merged = format == .svg ? "~ viaAlias()~ direct()" : "Crate.Desc"
-        #expect(ends(from: "T", bothSpelled, format, .merged) == [merged])
+        #expect(supertypeEdgeEnds(from: "T", bothSpelled, format, .merged) == [merged])
     }
 
     @Test("so is one declared in an extension of a nested type spelled through an alias", arguments: formats)
@@ -245,7 +213,7 @@ struct AliasSpelledExtensionEndTests {
             struct T: CustomStringConvertible { var description: String { "" } }
             """
         let box = format == .svg ? "~ viaAlias()" : "Alias.Desc"
-        #expect(ends(from: "T", source, format, .merged) == [box])
+        #expect(supertypeEdgeEnds(from: "T", source, format, .merged) == [box])
     }
 
     // MARK: - Controls
@@ -257,6 +225,6 @@ struct AliasSpelledExtensionEndTests {
             extension Same { var viaAlias: Int { 0 } }
             struct S: Hashable { var value = 0 }
             """
-        #expect(ends(from: "S", source, format, .all) == (format == .svg ? [] : ["Hashable"]))
+        #expect(supertypeEdgeEnds(from: "S", source, format, .all) == (format == .svg ? [] : ["Hashable"]))
     }
 }

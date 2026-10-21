@@ -38,24 +38,17 @@ struct EscapedNameClassDiagramTests {
         generics, attribute
     ]
 
-    private func script(
-        _ source: String, _ format: DiagramFormat, _ extensions: ExtensionVisualization = .all
-    ) -> DiagramScript {
-        let configuration = Configuration(elements: ElementOptions(showExtensions: extensions), format: format)
-        return ClassDiagramGenerator().generateScript(for: source, with: configuration)
-    }
-
     private func lines(
         _ source: String, _ format: DiagramFormat, _ extensions: ExtensionVisualization = .all
     ) -> [String] {
-        script(source, format, extensions).text.split(separator: "\n").map(String.init)
+        classDiagram(source, format, extensions).text.split(separator: "\n").map(String.init)
     }
 
     /// The title of each box `source` draws in `format`, in drawing order.
     private func titles(
         _ source: String, _ format: DiagramFormat, _ extensions: ExtensionVisualization = .all
     ) throws -> [String] {
-        let drawn = script(source, format, extensions)
+        let drawn = classDiagram(source, format, extensions)
         let lines = drawn.text.split(separator: "\n")
         switch format {
         case .plantuml:
@@ -69,7 +62,7 @@ struct EscapedNameClassDiagramTests {
     }
 
     private func svgGraph(_ source: String, _ extensions: ExtensionVisualization = .all) -> LayoutGraph? {
-        script(source, .svg, extensions).layoutGraph
+        classDiagram(source, .svg, extensions).layoutGraph
     }
 
     // MARK: - The issue's witnesses
@@ -84,7 +77,7 @@ struct EscapedNameClassDiagramTests {
     func sameAsUnescaped(source: String, format: DiagramFormat) {
         let unescaped = source.replacingOccurrences(of: "`", with: "")
         for extensions in [ExtensionVisualization.all, .merged] {
-            #expect(script(source, format, extensions).text == script(unescaped, format, extensions).text)
+            #expect(classDiagram(source, format, extensions).text == classDiagram(unescaped, format, extensions).text)
         }
     }
 
@@ -104,7 +97,7 @@ struct EscapedNameClassDiagramTests {
 
     @Test("nomnoml links the extension to its type")
     func nomnomlExtEdge() throws {
-        let graph = try NomnomlGraph(parsing: script(Self.extendedPlain, .nomnoml).text)
+        let graph = try NomnomlGraph(parsing: classDiagram(Self.extendedPlain, .nomnoml).text)
         #expect(graph.nodes.map(\.id) == ["Plain", "Plain0"])
         #expect(graph.edges.map { [$0.start, $0.type, $0.end] } == [["Plain0", "-->", "Plain"]])
     }

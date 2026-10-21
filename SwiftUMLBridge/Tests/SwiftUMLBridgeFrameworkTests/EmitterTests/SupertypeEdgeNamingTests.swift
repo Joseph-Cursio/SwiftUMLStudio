@@ -12,48 +12,6 @@ struct SupertypeEdgeNamingTests {
     static let textFormats: [DiagramFormat] = [.plantuml, .mermaid, .nomnoml]
     static let everyAccessLevel: [AccessLevel] = [.open, .public, .package, .internal, .fileprivate, .private]
 
-    /// The items of `files`, each stamped as declared in its own file, as on disk.
-    private func parsed(_ files: [(name: String, source: String)]) throws -> [SyntaxStructure] {
-        try files.flatMap { file in
-            let items = try #require(SyntaxStructure.create(from: file.source)?.substructure)
-            func stamp(_ item: SyntaxStructure) {
-                item.sourceLocation = SourceLocation(filePath: file.name, line: 1, column: 1)
-                item.substructure?.forEach(stamp)
-            }
-            items.forEach(stamp)
-            return items
-        }
-    }
-
-    private func script(
-        _ files: [(name: String, source: String)], _ format: DiagramFormat,
-        _ mode: ExtensionVisualization = .all, access: [AccessLevel] = ElementOptions.defaultAccessLevels
-    ) throws -> DiagramScript {
-        let elements = ElementOptions(havingAccessLevel: access, showExtensions: mode)
-        return DiagramScript(items: try parsed(files), configuration: Configuration(elements: elements, format: format))
-    }
-
-    /// Each supertype edge drawn from `child`, as `end arrow`: `P <|--`, `P <|..`, or Nomnoml's
-    /// `P -:>` and `P --:>`.
-    private func edges(
-        from child: String, _ files: [(name: String, source: String)], _ format: DiagramFormat,
-        _ mode: ExtensionVisualization = .all, access: [AccessLevel] = ElementOptions.defaultAccessLevels
-    ) throws -> [String] {
-        let text = try script(files, format, mode, access: access).text
-        return text.split(separator: "\n").compactMap { line -> String? in
-            if format == .nomnoml {
-                // `[child] -:> label [parent]`
-                let words = line.split(separator: " ")
-                guard words.first == "[\(child)]", words.count >= 3, let last = words.last else { return nil }
-                return "\(last.dropFirst().dropLast()) \(words[1])"
-            }
-            // `parent <|-- child : label`
-            let words = line.split(separator: " ")
-            guard words.count >= 3, ["<|--", "<|.."].contains(words[1]), words[2] == child else { return nil }
-            return "\(words[0]) \(words[1])"
-        }
-    }
-
     // MARK: - Arrows
 
     /// The protocol is drawn first, so the name `Base` was a protocol's, and `Sub`'s edge to its
@@ -66,8 +24,10 @@ struct SupertypeEdgeNamingTests {
             ("B.swift", "fileprivate class Base { var isClass = 0 }\nfileprivate class Sub: Base {}")
         ]
         let (inherits, realizes) = format == .nomnoml ? ("-:>", "--:>") : ("<|--", "<|..")
-        #expect(try edges(from: "Sub", files, format, access: Self.everyAccessLevel) == ["Base0 \(inherits)"])
-        #expect(try edges(from: "Conformer", files, format, access: Self.everyAccessLevel) == ["Base \(realizes)"])
+        #expect(try supertypeEdges(from: "Sub", files, format, access: Self.everyAccessLevel) == ["Base0 \(inherits)"])
+        #expect(
+            try supertypeEdges(from: "Conformer", files, format, access: Self.everyAccessLevel) == ["Base \(realizes)"]
+        )
     }
 
     // MARK: - Labels
@@ -76,7 +36,7 @@ struct SupertypeEdgeNamingTests {
     /// it was drawn, and the edge was labelled `inherits`.
     @Test("an edge to a parent protocol drawn later is labelled as a conformance", arguments: textFormats)
     func parentProtocolDrawnLater(format: DiagramFormat) throws {
-        let text = try script([("A.swift", "protocol Animal: Named {}\nprotocol Named {}")], format).text
+        let text = try classDiagram([("A.swift", "protocol Animal: Named {}\nprotocol Named {}")], format).text
         let edge = format == .nomnoml ? "[Animal] --:> conforms to [Named]" : "Named <|.. Animal : conforms to"
         #expect(text.split(separator: "\n").contains { $0.hasPrefix(edge) })
     }
@@ -93,7 +53,7 @@ struct SupertypeEdgeNamingTests {
         let files = (other.map { [("A.swift", $0)] } ?? []) + [own]
         let end = other == nil ? "P" : "P0"
         let edge = format == .nomnoml ? "[U] --:> conforms to [\(end)]" : "\(end) <|.. U : conforms to"
-        #expect(try script(files, format).text.split(separator: "\n").contains { $0.hasPrefix(edge) })
+        #expect(try classDiagram(files, format).text.split(separator: "\n").contains { $0.hasPrefix(edge) })
     }
 
     /// The mirror: an edge to a hidden class's stand-in inherits, though a `private protocol`
@@ -107,7 +67,7 @@ struct SupertypeEdgeNamingTests {
                 + "private class Sub: Base { func f() -> Int { isClass } }")
         ]
         let edge = format == .nomnoml ? "[Sub] -:> inherits [Base0]" : "Base0 <|-- Sub : inherits"
-        #expect(try script(files, format).text.split(separator: "\n").contains { $0.hasPrefix(edge) })
+        #expect(try classDiagram(files, format).text.split(separator: "\n").contains { $0.hasPrefix(edge) })
     }
 
     /// Every edge line `format` writes for `files`, whole, so `<..`, `--` and `-` show too.
@@ -115,7 +75,7 @@ struct SupertypeEdgeNamingTests {
         _ files: [(name: String, source: String)], _ format: DiagramFormat, _ mode: ExtensionVisualization = .all,
         access: [AccessLevel] = ElementOptions.defaultAccessLevels
     ) throws -> [String] {
-        try script(files, format, mode, access: access).text.split(separator: "\n").map(String.init)
+        try classDiagram(files, format, mode, access: access).text.split(separator: "\n").map(String.init)
     }
 
     /// The edge from `child` to `parent` as each format writes it: PlantUML and Mermaid
