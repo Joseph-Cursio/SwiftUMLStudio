@@ -170,7 +170,7 @@ swiftumlbridge classdiagram [<paths>...] [options]
 | `--exclude <path>...` | `[String]` | `[]` | File or directory paths to exclude. Takes precedence over positional path arguments. May be specified multiple times. |
 | `--format <format>` | `DiagramFormat?` | `plantuml` | Diagram language. One of: `plantuml`, `mermaid`, `nomnoml`, `svg`. All four are native. Overrides the `format` field in the config file. See [Formats by Subcommand](#formats-by-subcommand). |
 | `--output <format>` | `ClassDiagramOutput?` | `browser` | Output destination. One of: `browser`, `browserImageOnly`, `consoleOnly`. |
-| `--sdk <path>` | `String?` | `nil` | macOS SDK path for improved type inference. Typically `$(xcrun --show-sdk-path -sdk macosx)`. |
+| `--sdk <path>` | `String?` | `nil` | macOS SDK path. With it, a stored property with no written type shows the type Swift infers (`var count = 0` is `~count : Int`); without it, only written types show. Each file is typechecked alone, so a type declared in another file stays unwritten. Typically `$(xcrun --show-sdk-path -sdk macosx)`. See [User Guide → Using an SDK Path](user-guide.md#using-an-sdk-path). |
 | `--package <path>` | `String?` | `nil` | Path to a `Package.swift` directory. Activates module-aware mode: each type is tagged with its SPM target and rendered with an additional module stereotype. Overrides positional `<paths>` arguments. A relative path is read against the current directory, with each `..` removed by text as `cd` reads it, so `../MyPackage` works from a sibling directory. |
 | `--show-extensions` | Flag | — | Show all extensions as separate nodes (overrides config file). |
 | `--merge-extensions` | Flag | — | Fold extension members into parent type nodes, and draw the conformances extensions declare from them (overrides config file). |
@@ -197,7 +197,7 @@ swiftumlbridge classdiagram Sources/ --format mermaid --output consoleOnly
 # Use a custom config, write PlantUML to stdout
 swiftumlbridge classdiagram Sources/ --config ./docs/diagram.yml --output consoleOnly
 
-# Diagram with SDK for better type resolution, open PNG
+# Diagram with inferred property types, open PNG
 swiftumlbridge classdiagram Sources/ \
   --sdk "$(xcrun --show-sdk-path -sdk macosx)" \
   --output browserImageOnly
@@ -243,7 +243,7 @@ swiftumlbridge sequence [<paths>...] --entry Type.method [options]
 | `--format <format>` | `DiagramFormat?` | `plantuml` | Diagram language. One of: `plantuml`, `mermaid`, `nomnoml`, `svg`. `nomnoml` falls back to Mermaid text. See [Formats by Subcommand](#formats-by-subcommand). |
 | `--output <format>` | `ClassDiagramOutput?` | `browser` | Output destination. One of: `browser`, `browserImageOnly`, `consoleOnly`. |
 | `--config <path>` | `String?` | `nil` | Path to a custom `.swiftumlbridge.yml` config file. |
-| `--sdk <path>` | `String?` | `nil` | macOS SDK path (reserved; not currently used by the sequence extractor). |
+| `--sdk <path>` | `String?` | `nil` | Reserved. Accepted and ignored: the sequence extractor reads no types from SourceKit. |
 | `--help` | Flag | — | Print subcommand help and exit. |
 
 **Call resolution rules:**

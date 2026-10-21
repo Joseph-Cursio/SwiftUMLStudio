@@ -50,7 +50,7 @@ extension SwiftUMLBridgeCLI {
         @Option(help: "Max call depth (default: 3)")
         var depth: Int = 3
 
-        @Option(help: "macOS SDK path for type inference resolution")
+        @Option(help: "Reserved: accepted and ignored")
         var sdk: String?
 
         @OptionGroup var common: CommonDiagramOptions

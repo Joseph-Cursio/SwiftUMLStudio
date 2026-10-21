@@ -106,6 +106,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed — Bridge
 
+- **`classdiagram --sdk` resolves inferred property types again** (#147).
+  `struct S { var count = 0 }` was drawn `~count` with or without
+  `--sdk`, from 0.3.0 (M5) on. The typename supplement handed SourceKit
+  a file with no path and `""` as the compiler's input file, so it sent
+  only the syntactic `editor.open`, which knows the types written in the
+  source and none inferred, and the SDK reached SourceKit nowhere. Now,
+  with an SDK, each stored property that `editor.open` leaves untyped
+  gets one cursor-info request against the file on disk, so it is drawn
+  `~count : Int`. Each request asks SourceKit not to cancel it when the
+  next arrives, which lost the types of files parsed at once. A file is
+  typechecked alone, so a type declared in another file stays unwritten
+  rather than drawn `_`. A file that starts with a byte-order mark gets
+  its offsets moved past it, as reading it into a `String` drops it, and
+  a file whose deep `[` chains were read as spaces (#148) is not
+  typechecked. Without `--sdk` nothing changes: the output of the
+  Bridge's and Studio's sources is byte-identical. With it, 37 members
+  of the Bridge's sources and 60 of Studio's gain a type, and a run
+  takes about 3 s and 5 s instead of 0.2 s. `sequence --sdk`'s help now
+  says it is ignored, and the user guide, reference, troubleshooting
+  guide and Studio guide say what `--sdk` does and that Studio, which
+  passes no SDK, shows declared types only in both builds.
 - **The activity diagram draws code inside `#if`** (#206). An `#if`
   among statements made no node, so `load()` / `#if DEBUG log() #elseif
   os(iOS) trace() #endif` / `render()` drew only `load()` and `render()`,

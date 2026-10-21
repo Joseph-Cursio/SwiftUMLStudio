@@ -290,9 +290,11 @@ Loading a Swift Package shells out to `swift package describe`, and the App Sand
 
 Use the direct download build, or generate package-scoped diagrams with the CLI's `--package` flag. See [Studio User Guide → App Store and Direct Download Builds](studio-user-guide.md#app-store-and-direct-download-builds).
 
-### Types show without annotations, or as written rather than resolved (App Store build)
+### Properties show without a type
 
-The App Store build cannot load SourceKit from the system toolchain — another sandbox restriction — so it parses with SwiftSyntax alone. Every diagram still generates in full; what is lost is type *inference*. `let items = [Item]()` shows its declared form rather than resolving to `[Item]`, and members whose types are only inferable from context may appear without an annotation. Explicit type annotations are unaffected, so annotating the declaration is the in-app fix. For full resolution, use the direct download build or the CLI.
+A stored property with no written type, such as `let items = [Item]()`, shows with no type unless its type is inferred, which takes typechecking the file against the macOS SDK. Only the CLI's `classdiagram --sdk "$(xcrun --show-sdk-path -sdk macosx)"` does that (see [User Guide → Using an SDK Path](user-guide.md#using-an-sdk-path)). Studio does not, in either build. Explicit type annotations are unaffected, so annotating the declaration is the in-app fix.
+
+With `--sdk`, a property whose type is declared in another file still shows with no type, as each file is typechecked alone.
 
 ### Studio asks for permission before rendering PlantUML
 
