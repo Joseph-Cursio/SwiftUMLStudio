@@ -56,6 +56,9 @@ extension LayoutGraphBuilder {
         /// The type each declaration's enclosing extension extends, once worked out
         /// (`enclosingExtensionType(of:depth:)`); `record` starts a new one.
         private var enclosingTypes = EnclosingTypes()
+        /// The type each first component means, once worked out (`started(_:from:depth:)`);
+        /// `record` and a change of `unlistedMembers` start a new one.
+        private(set) var nameStarts = NameStarts()
         /// The names a type declared in an extension is recorded under, the only names a dotted
         /// name as written can be told apart by (`fitsEachAlone(_:)`).
         private var namesWithExtendedTypes: Set<String> = []
@@ -69,7 +72,9 @@ extension LayoutGraphBuilder {
         /// The nested types the items do not list, as while nested types are hidden, and their
         /// typealiases, by full name (`unlistedMembers(of:named:)`). Never what a name means:
         /// only whether an extension is of a project type goes by them.
-        var unlistedMembers: [String: [Declared]] = [:]
+        var unlistedMembers: [String: [Declared]] = [:] {
+            didSet { nameStarts = NameStarts() }
+        }
         /// Which modules each module loads, worked out once every declaration is recorded
         /// (`recordAliases(in:)`): a member that another module's extension adds is seen in the
         /// modules that load that one.
@@ -106,6 +111,7 @@ extension LayoutGraphBuilder {
                 modules.record(module)
             }
             enclosingTypes = EnclosingTypes()
+            nameStarts = NameStarts()
         }
 
         /// The name `declaration` was recorded under.

@@ -52,11 +52,27 @@ extension LayoutGraphBuilder.TypeLookup {
             return name
         }
         var started = name
-        started.start = firstComponentType(of: name.name, from: scope, depth: depth).map { type in
+        started.start = start(of: first, in: name.name, from: scope, depth: depth)
+        return started
+    }
+
+    /// The type the first component `first` of the dotted name `name` means where `scope`
+    /// writes it, shared among the writers of one module and imports (`NameStarts`) when it
+    /// can depend on nothing else: one at file scope whose own file declares no `first`.
+    private func start(
+        of first: String, in name: String, from scope: LayoutGraphBuilder.Scope, depth: Int
+    ) -> LayoutGraphBuilder.NameStart {
+        func lookUp() -> LayoutGraphBuilder.NameStart {
+            guard let type = firstComponentType(of: name, from: scope, depth: depth) else { return .outsideType }
             let recorded = recordedName(of: type.declaration)
             return .projectType(owningType(of: type, depth: depth + 1), renamedTo: recorded == first ? nil : recorded)
-        } ?? .outsideType
-        return started
+        }
+        guard scope.enclosingTypes.isEmpty, scope.enclosingExtension == nil, let filePath = scope.filePath,
+              typesForNameInFile[first]?[filePath] == nil else { return lookUp() }
+        let key = LayoutGraphBuilder.NameStartKey(
+            first: first, module: scope.module, imports: scope.imports, depth: depth
+        )
+        return nameStarts.start(for: key, lookUp: lookUp)
     }
 
     /// The type the first component of the dotted name `name` means where `scope` writes it, or

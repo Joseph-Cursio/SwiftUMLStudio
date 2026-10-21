@@ -168,6 +168,44 @@ struct NameStartFallbackTests {
         }
     }
 
+    /// Two files of ModC write `Foo.V`, one importing ModA and one ModB, and a third, which also
+    /// imports ModA, declares `private typealias Foo = ModA.Bar`, so each `Foo.V` is the one its
+    /// file sees (swiftc: `CA` calls `aOnly`, `CB` `bOnly`, `CP` `pOnly`). The type a first
+    /// component means is shared only among files of one module and imports with no such type.
+    @Test("each file reads a first component through its own imports and its own types", arguments: [false, true])
+    func firstComponentPerFile(reversed: Bool) throws {
+        let given = [
+            Self.fooWithV(in: "ModA", member: "aOnly"), Self.fooWithV(in: "ModB", member: "bOnly"),
+            File(module: "ModA", source: """
+                public struct Bar {
+                    public init() {}
+                    open class V {
+                        public init() {}
+                        public func pOnly() {}
+                    }
+                }
+                """),
+            File(module: "ModC", source: "import ModA\n\nfinal class CA: Foo.V {}\n"),
+            File(module: "ModC", source: "import ModB\n\nfinal class CB: Foo.V {}\n"),
+            File(module: "ModC", source: """
+                import ModA
+
+                private typealias Foo = ModA.Bar
+
+                private final class CP: Foo.V {}
+                """)
+        ]
+        let files = (reversed ? given.reversed() : given).map { (module: Optional($0.module), source: $0.source) }
+        for mode in [ExtensionVisualization.all, .merged] {
+            let svg = Configuration(elements: ElementOptions(showExtensions: mode), format: .svg)
+            let graph = LayoutGraphBuilder.buildClassDiagram(from: try moduleQualifiedItems(files), configuration: svg)
+            for (writer, member) in [("CA", "aOnly"), ("CB", "bOnly"), ("CP", "pOnly")] {
+                let owner = try #require(graph.owner(of: member), "\(mode)")
+                #expect(graph.edgeEnds.filter { $0.hasPrefix("\(writer) -> ") } == ["\(writer) -> \(owner)"], "\(mode)")
+            }
+        }
+    }
+
     /// In ModC, which does not import the target Unicode, `Unicode` is Swift's, so the extension
     /// is one of Swift's `Unicode.Scalar` (swiftc: `value` resolves, the target's `projectOnly`
     /// does not), neither merged into nor linked to the target's `Unicode.Scalar`.
