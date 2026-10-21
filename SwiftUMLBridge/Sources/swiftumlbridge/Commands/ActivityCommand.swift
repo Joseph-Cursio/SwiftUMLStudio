@@ -7,6 +7,7 @@ extension SwiftUMLBridgeCLI {
         static let configuration = CommandConfiguration(
             commandName: "activity",
             abstract: "Generate a control-flow activity diagram for a Swift entry function",
+            discussion: HelpNotes.mermaidForNomnoml,
             helpNames: [.short, .long]
         )
 

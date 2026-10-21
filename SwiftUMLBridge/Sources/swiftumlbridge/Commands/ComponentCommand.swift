@@ -11,6 +11,7 @@ extension SwiftUMLBridgeCLI {
             targets, edges come from target_dependencies, provided interfaces are public \
             Swift types per target.
             """,
+            discussion: HelpNotes.mermaidForNomnoml,
             helpNames: [.short, .long]
         )
 
@@ -20,10 +21,7 @@ extension SwiftUMLBridgeCLI {
         @Option(help: "Diagram format.")
         var format: DiagramFormat?
 
-        @Option(help: ArgumentHelp(
-            "Output destination. Options: \(ClassDiagramOutput.allCases.map(\.rawValue).joined(separator: ", "))",
-            valueName: "output"
-        ))
+        @Option(help: "Output destination.")
         var output: ClassDiagramOutput?
 
         @Flag(help: "Include test targets in the diagram (excluded by default).")

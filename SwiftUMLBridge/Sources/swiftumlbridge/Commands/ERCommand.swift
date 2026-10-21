@@ -7,9 +7,10 @@ extension SwiftUMLBridgeCLI {
         static let configuration = CommandConfiguration(
             commandName: "er",
             abstract: """
-            Generate an Entity-Relationship diagram from SwiftData @Model classes \
-            or Core Data .xcdatamodeld bundles
+            Generate an Entity-Relationship diagram from SwiftData, Core Data, GRDB \
+            or SQLite.swift models
             """,
+            discussion: HelpNotes.mermaidForNomnomlAndSVG,
             helpNames: [.short, .long]
         )
 

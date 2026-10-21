@@ -6,7 +6,7 @@ extension SwiftUMLBridgeCLI {
     struct ClassDiagramCommand: AsyncParsableCommand {
         static let configuration = CommandConfiguration(
             commandName: "classdiagram",
-            abstract: "Generate PlantUML or Mermaid class diagram from Swift sources",
+            abstract: "Generate a class diagram from Swift sources",
             helpNames: [.short, .long]
         )
 
@@ -17,10 +17,7 @@ extension SwiftUMLBridgeCLI {
         @Option(help: "Paths to source files to exclude. Takes precedence over arguments.")
         var exclude = [String]()
 
-        @Option(help: ArgumentHelp(
-            "Output format. Options: \(ClassDiagramOutput.allCases.map(\.rawValue).joined(separator: ", "))",
-            valueName: "format"
-        ))
+        @Option(help: "Output destination.")
         var output: ClassDiagramOutput?
 
         @Option(help: "Diagram format.")

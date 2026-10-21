@@ -150,7 +150,7 @@ With `--output browser` (the default) or `browserImageOnly`, where the diagram g
 
 ### classdiagram
 
-Generate a PlantUML or Mermaid class diagram from Swift source files.
+Generate a class diagram from Swift source files.
 
 ```
 swiftumlbridge classdiagram [<paths>...] [options]
@@ -169,7 +169,7 @@ swiftumlbridge classdiagram [<paths>...] [options]
 | `--config <path>` | `String?` | `nil` | Path to a custom `.swiftumlbridge.yml` file. When omitted, looks for `.swiftumlbridge.yml` in the current directory, then uses the built-in defaults. A file that cannot be used stops the run or is ignored with a warning; see [Configuration File Schema](#configuration-file-schema). |
 | `--exclude <path>...` | `[String]` | `[]` | File or directory paths to exclude. Takes precedence over positional path arguments. May be specified multiple times. |
 | `--format <format>` | `DiagramFormat?` | `plantuml` | Diagram language. One of: `plantuml`, `mermaid`, `nomnoml`, `svg`. All four are native. Overrides the `format` field in the config file. See [Formats by Subcommand](#formats-by-subcommand). |
-| `--output <format>` | `ClassDiagramOutput?` | `browser` | Output destination. One of: `browser`, `browserImageOnly`, `consoleOnly`. |
+| `--output <output>` | `ClassDiagramOutput?` | `browser` | Output destination. One of: `browser`, `browserImageOnly`, `consoleOnly`. |
 | `--sdk <path>` | `String?` | `nil` | macOS SDK path. With it, a stored property with no written type shows the type Swift infers (`var count = 0` is `~count : Int`); without it, only written types show. Each file is typechecked alone, so a type declared in another file stays unwritten. Typically `$(xcrun --show-sdk-path -sdk macosx)`. See [User Guide → Using an SDK Path](user-guide.md#using-an-sdk-path). |
 | `--package <path>` | `String?` | `nil` | Path to a `Package.swift` directory. Activates module-aware mode: each type is tagged with its SPM target and rendered with an additional module stereotype. Overrides positional `<paths>` arguments. A relative path is read against the current directory, with each `..` removed by text as `cd` reads it, so `../MyPackage` works from a sibling directory. |
 | `--show-extensions` | Flag | — | Show all extensions as separate nodes (overrides config file). |
@@ -217,7 +217,7 @@ swiftumlbridge classdiagram --package /path/to/MyPackage
 
 ### sequence
 
-Generate a PlantUML or Mermaid sequence diagram by statically tracing call edges from a named entry-point method.
+Generate a sequence diagram by statically tracing call edges from a named entry-point method.
 
 ```
 swiftumlbridge sequence [<paths>...] --entry Type.method [options]
@@ -241,7 +241,7 @@ swiftumlbridge sequence [<paths>...] --entry Type.method [options]
 |---|---|---|---|
 | `--depth <n>` | `Int` | `3` | Maximum call-graph depth to traverse from the entry point. |
 | `--format <format>` | `DiagramFormat?` | `plantuml` | Diagram language. One of: `plantuml`, `mermaid`, `nomnoml`, `svg`. `nomnoml` falls back to Mermaid text. See [Formats by Subcommand](#formats-by-subcommand). |
-| `--output <format>` | `ClassDiagramOutput?` | `browser` | Output destination. One of: `browser`, `browserImageOnly`, `consoleOnly`. |
+| `--output <output>` | `ClassDiagramOutput?` | `browser` | Output destination. One of: `browser`, `browserImageOnly`, `consoleOnly`. |
 | `--config <path>` | `String?` | `nil` | Path to a custom `.swiftumlbridge.yml` config file. |
 | `--sdk <path>` | `String?` | `nil` | Reserved. Accepted and ignored: the sequence extractor reads no types from SourceKit. |
 | `--help` | Flag | — | Print subcommand help and exit. |
@@ -282,7 +282,7 @@ swiftumlbridge sequence Sources/ Tests/ --entry AuthService.login
 
 ### deps
 
-Generate a PlantUML or Mermaid dependency graph from Swift source files. Supports both type-level graphs (inheritance and conformance edges) and module-level graphs (import statement edges).
+Generate a dependency graph from Swift source files. Supports both type-level graphs (inheritance and conformance edges) and module-level graphs (import statement edges).
 
 ```
 swiftumlbridge deps [<paths>...] [--modules] [--types] [--public-only] [--exclude <pattern>...] [--format <format>] [--output <output>] [--package <path>] [--config <path>]
@@ -308,7 +308,7 @@ swiftumlbridge deps [<paths>...] [--modules] [--types] [--public-only] [--exclud
 |---|---|---|---|
 | `--exclude <pattern>...` | `[String]` | `[]` | Exclude type or module names matching these glob patterns. In modules mode an import edge is dropped when either module matches, and with `--package` an excluded target is left out with its edges. Replaces the config file's `elements.exclude` rather than adding to it. May be specified multiple times. |
 | `--format <format>` | `DiagramFormat?` | `plantuml` | Diagram language. One of: `plantuml`, `mermaid`, `nomnoml`, `svg`. All four are native, in both `--types` and `--modules` mode. See [Formats by Subcommand](#formats-by-subcommand). |
-| `--output <format>` | `ClassDiagramOutput?` | `browser` | Output destination. One of: `browser`, `browserImageOnly`, `consoleOnly`. |
+| `--output <output>` | `ClassDiagramOutput?` | `browser` | Output destination. One of: `browser`, `browserImageOnly`, `consoleOnly`. |
 | `--package <path>` | `String?` | `nil` | Path to a `Package.swift` directory. Activates module-aware mode: in `--modules` each SPM `target_dependencies` pair becomes an edge (authoritative — system frameworks are excluded); in `--types` each type is tagged with the SPM target that declares it, rendered as a `<<Module>>` stereotype in PlantUML, Mermaid and Nomnoml, and in SVG as a labelled grouping box around each target's types; in `--modules` each target is labelled with its kind, `<<library>>` or `<<executable>>`, in every format; a type the package only extends takes the first target, in path order (sorted by byte, so `Sources/Zed` comes before `Sources/app`), that extends it. A supertype written with generic arguments, such as `Repo<String>`, is a node of its own and is not tagged. Overrides `<paths>`. Test targets are excluded. A relative path is read against the current directory, with each `..` removed by text as `cd` reads it, so `../MyPackage` works from a sibling directory. |
 | `--config <path>` | `String?` | `nil` | Path to a custom `.swiftumlbridge.yml` config file. |
 | `--help` | Flag | — | Print subcommand help and exit. |
@@ -345,7 +345,7 @@ swiftumlbridge deps --package . --output consoleOnly
 
 ### activity
 
-Generate a PlantUML or Mermaid activity diagram showing the control flow inside a single Swift method.
+Generate an activity diagram showing the control flow inside a single Swift method.
 
 ```
 swiftumlbridge activity [<paths>...] --entry Type.method [options]
@@ -368,7 +368,7 @@ swiftumlbridge activity [<paths>...] --entry Type.method [options]
 | Option | Type | Default | Description |
 |---|---|---|---|
 | `--format <format>` | `DiagramFormat?` | `plantuml` | Diagram language. One of: `plantuml`, `mermaid`, `nomnoml`, `svg`. `nomnoml` falls back to Mermaid text. See [Formats by Subcommand](#formats-by-subcommand). |
-| `--output <format>` | `ClassDiagramOutput?` | `browser` | Output destination. One of: `browser`, `browserImageOnly`, `consoleOnly`. |
+| `--output <output>` | `ClassDiagramOutput?` | `browser` | Output destination. One of: `browser`, `browserImageOnly`, `consoleOnly`. |
 | `--config <path>` | `String?` | `nil` | Path to a custom `.swiftumlbridge.yml` config file. |
 | `--help` | Flag | — | Print subcommand help and exit. |
 
@@ -392,7 +392,7 @@ swiftumlbridge activity Sources/ --entry MyService.run --config ./configs/diagra
 
 ### state
 
-Detect state machines in Swift source and render the selected one as a PlantUML or Mermaid state diagram. A state machine is recognized when an `enum` with no associated values is held as a property on another type and mutated via `switch`-based assignment.
+Detect state machines in Swift source and render the selected one as a state diagram. A state machine is recognized when an `enum` with no associated values is held as a property on another type and mutated via `switch`-based assignment.
 
 ```
 swiftumlbridge state [<paths>...] [--list | --state HostType.EnumType] [options]
@@ -416,7 +416,7 @@ swiftumlbridge state [<paths>...] [--list | --state HostType.EnumType] [options]
 | Option | Type | Default | Description |
 |---|---|---|---|
 | `--format <format>` | `DiagramFormat?` | `plantuml` | Diagram language. One of: `plantuml`, `mermaid`, `nomnoml`, `svg`. `nomnoml` and `svg` both fall back to Mermaid text. See [Formats by Subcommand](#formats-by-subcommand). |
-| `--output <format>` | `ClassDiagramOutput?` | `browser` | Output destination. One of: `browser`, `browserImageOnly`, `consoleOnly`. |
+| `--output <output>` | `ClassDiagramOutput?` | `browser` | Output destination. One of: `browser`, `browserImageOnly`, `consoleOnly`. |
 | `--config <path>` | `String?` | `nil` | Path to a custom `.swiftumlbridge.yml` config file. |
 | `--help` | Flag | — | Print subcommand help and exit. |
 
@@ -441,7 +441,7 @@ swiftumlbridge state Sources/ -s TrafficLight.Color \
 
 ### er
 
-Generate a PlantUML or Mermaid Entity-Relationship diagram from persisted-model declarations. Sources may be Swift files (SwiftData `@Model`, GRDB record protocols, SQLite.swift `Table` declarations) and/or Core Data `.xcdatamodeld` bundles. A single run can mix all four — the extracted entities and relationships are merged into one ER model.
+Generate an Entity-Relationship diagram from persisted-model declarations. Sources may be Swift files (SwiftData `@Model`, GRDB record protocols, SQLite.swift `Table` declarations) and/or Core Data `.xcdatamodeld` bundles. A single run can mix all four — the extracted entities and relationships are merged into one ER model.
 
 ```
 swiftumlbridge er [<paths>...] [options]
