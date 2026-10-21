@@ -106,6 +106,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed — Bridge
 
+- **The ER diagram draws only the `@Model` properties SwiftData stores**
+  (#140). Every annotated `var` or `let` in a model class was read as
+  stored, and `@Transient` was only a label.
+  - A computed property (`var display: String { … }`, or one with
+    `get` / `set`) was a column, or a relationship when its type was a
+    model: `var favorite: Pet? { pets.first }` drew an edge. A `static`
+    or `class` property was a column. Both are now skipped. A property
+    with only `willSet` / `didSet` is stored and is still drawn.
+  - A `@Transient` property of a model type was drawn as a relationship,
+    and `@Transient` with `@Attribute(.unique)` — or a `@Transient var
+    id` — as a primary key. A `@Transient` property is now always a
+    column marked transient, never an edge, a key or unique.
+  - Reaches `swiftumlbridge er` in every format and Studio's ER diagram.
+    Only the first `@Attribute` and `@Relationship` on a property are
+    still read, as `@Model` reads them; new tests pin that.
+
 - **A module-qualified extension reaches the type it extends** (#124).
   In package mode (`--package`, or Open Package… in Studio),
   `extension ModA.Foo` written in ModB extends ModA's `Foo`, and
