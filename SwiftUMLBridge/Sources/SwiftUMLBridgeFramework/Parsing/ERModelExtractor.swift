@@ -25,6 +25,10 @@ private struct ERRelationshipAttributeInfo {
 ///
 /// Heuristic (M1, single-file):
 /// * An entity is any `class` carrying an `@Model` attribute.
+/// * Only stored instance properties are read, as SwiftData stores only those: a `static` or
+///   `class` property, or a computed one, is skipped (#140).
+/// * A `@Transient` property is never a relationship or a key, whatever its type or its other
+///   attributes, since SwiftData stores nothing for it. It is drawn as a transient column (#140).
 /// * A property becomes a relationship if either (a) it carries an explicit
 ///   `@Relationship` attribute or (b) its (unwrapped) type name matches
 ///   another `@Model` class seen in the same file.
@@ -69,6 +73,9 @@ final class ERModelExtractor: SyntaxVisitor {
     // MARK: - Property collection
 
     private func collectProperty(from varDecl: VariableDeclSyntax) {
+        guard !varDecl.modifiers.contains(where: {
+            $0.name.tokenKind == .keyword(.static) || $0.name.tokenKind == .keyword(.class)
+        }) else { return }
         let relInfo = Self.parseRelationshipAttribute(varDecl.attributes)
         let isUnique = Self.hasUniqueOption(varDecl.attributes)
         let isTransient = Self.hasAttribute(varDecl.attributes, named: "Transient")
@@ -77,6 +84,7 @@ final class ERModelExtractor: SyntaxVisitor {
             guard let identifierPattern = binding.pattern.as(IdentifierPatternSyntax.self) else {
                 continue
             }
+            guard Self.isStored(binding) else { continue }
             let propertyName = identifierPattern.identifier.canonicalName
 
             let rawType: String
@@ -96,6 +104,23 @@ final class ERModelExtractor: SyntaxVisitor {
                 isUnique: isUnique,
                 isTransient: isTransient
             ))
+        }
+    }
+
+    /// Whether `binding` has storage: it has no accessors, or only `willSet` / `didSet`. The
+    /// `{ … }` getter shorthand, or a list with `get`, `set`, `_read` or `_modify`, is computed.
+    /// A closure initializer, `= { 1 }`, is not an accessor block, so it does not count.
+    private static func isStored(_ binding: PatternBindingSyntax) -> Bool {
+        switch binding.accessorBlock?.accessors {
+        case nil:
+            return true
+        case .getter:
+            return false
+        case .accessors(let accessors):
+            return accessors.allSatisfy {
+                $0.accessorSpecifier.tokenKind == .keyword(.willSet)
+                    || $0.accessorSpecifier.tokenKind == .keyword(.didSet)
+            }
         }
     }
 
@@ -203,7 +228,9 @@ final class ERModelExtractor: SyntaxVisitor {
             for property in properties {
                 let (targetType, cardinality) = Self.unwrapRelationshipType(property.rawType)
 
-                if property.isExplicitRelationship {
+                if property.isTransient {
+                    attributes.append(Self.attribute(from: property))
+                } else if property.isExplicitRelationship {
                     explicit.append(Self.relationship(
                         from: entityName, toEntity: targetType,
                         toCardinality: cardinality, property: property
@@ -229,13 +256,15 @@ final class ERModelExtractor: SyntaxVisitor {
         let trimmedType = isOptional
             ? String(property.rawType.dropLast())
             : property.rawType
-        let isPrimaryKey = property.isUnique || property.name == "id"
+        // Nothing is stored for a @Transient property, so no option or name makes it a key.
+        let isUnique = property.isUnique && !property.isTransient
+        let isPrimaryKey = !property.isTransient && (isUnique || property.name == "id")
         return ERAttribute(
             name: property.name,
             type: trimmedType,
             isOptional: isOptional,
             isPrimaryKey: isPrimaryKey,
-            isUnique: property.isUnique,
+            isUnique: isUnique,
             isTransient: property.isTransient
         )
     }

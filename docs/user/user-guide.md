@@ -750,6 +750,8 @@ swiftumlbridge er [<paths>...] [options]
 
 A framework's own name may be written with its module: `@SwiftData.Model`, `GRDB.FetchableRecord` and `SQLite.Expression<Int64>("id")` are read as `@Model`, `FetchableRecord` and `Expression<Int64>("id")`. A name of the same spelling from another module, such as `@MyKit.Model`, is not. A member's `@SwiftData.Attribute`, `@SwiftData.Relationship` or `@SwiftData.Transient` is not read, because SwiftData's `@Model` macro does not read it either, so the property is persisted with no options. Write those attributes bare.
 
+Only the properties SwiftData stores are drawn: stored instance properties, including those with `willSet` / `didSet`. A computed, `static` or `class` property is left out. A `@Transient` property is drawn as a column marked transient, never as a relationship or a key, whatever its type or its other attributes. As in `@Model`, only the first `@Attribute` and the first `@Relationship` on a property are read.
+
 The extractors look for mutually-exclusive signals so a single source file is never represented twice.
 
 ### Examples
