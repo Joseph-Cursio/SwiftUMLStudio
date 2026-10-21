@@ -10,15 +10,7 @@ struct DiagramViewportControls: View {
 
     var body: some View {
         HStack(spacing: 4) {
-            Button {
-                viewport.zoomOut()
-            } label: {
-                Label("Zoom Out", systemImage: "minus.magnifyingglass")
-                    .labelStyle(.iconOnly)
-            }
-            .keyboardShortcut("-", modifiers: .command)
-            .help("Zoom out (⌘−)")
-            .accessibilityIdentifier("viewportZoomOut")
+            controlButton(.zoomOut) { viewport.zoomOut() }
 
             Text(viewport.zoomPercentLabel)
                 .font(.system(.body, design: .monospaced))
@@ -26,47 +18,13 @@ struct DiagramViewportControls: View {
                 .frame(minWidth: 48)
                 .accessibilityIdentifier("viewportZoomLabel")
 
-            Button {
-                viewport.zoomIn()
-            } label: {
-                Label("Zoom In", systemImage: "plus.magnifyingglass")
-                    .labelStyle(.iconOnly)
-            }
-            .keyboardShortcut("=", modifiers: .command)
-            .help("Zoom in (⌘=)")
-            .accessibilityIdentifier("viewportZoomIn")
+            controlButton(.zoomIn) { viewport.zoomIn() }
 
             Divider().frame(height: 18).padding(.horizontal, 4)
 
-            Button {
-                viewport.fitToWindow()
-            } label: {
-                Label("Fit to Window", systemImage: "arrow.up.left.and.down.right.magnifyingglass")
-                    .labelStyle(.iconOnly)
-            }
-            .keyboardShortcut("9", modifiers: .command)
-            .help("Fit to window (⌘9)")
-            .accessibilityIdentifier("viewportFit")
-
-            Button {
-                viewport.actualSize()
-            } label: {
-                Label("Actual Size", systemImage: "1.magnifyingglass")
-                    .labelStyle(.iconOnly)
-            }
-            .keyboardShortcut("0", modifiers: .command)
-            .help("Actual size (⌘0)")
-            .accessibilityIdentifier("viewportActualSize")
-
-            Button {
-                viewport.reset()
-            } label: {
-                Label("Reset Zoom and Pan", systemImage: "arrow.counterclockwise")
-                    .labelStyle(.iconOnly)
-            }
-            .keyboardShortcut("r", modifiers: [.command, .shift])
-            .help("Reset zoom and pan (⇧⌘R)")
-            .accessibilityIdentifier("viewportReset")
+            controlButton(.fitToWindow) { viewport.fitToWindow() }
+            controlButton(.actualSize) { viewport.actualSize() }
+            controlButton(.reset) { viewport.reset() }
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 6)
@@ -77,5 +35,47 @@ struct DiagramViewportControls: View {
         )
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("diagramViewportControls")
+    }
+
+    private func controlButton(_ control: Control, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Label(control.title, systemImage: control.systemImage)
+                .labelStyle(.iconOnly)
+        }
+        .keyboardShortcut(control.shortcut)
+        .help(control.help)
+        .accessibilityIdentifier(control.identifier)
+    }
+
+    /// What one of the toolbar's icon-only buttons shows, the key that presses it, and how
+    /// tests find it.
+    private struct Control {
+        let title: String
+        let systemImage: String
+        let shortcut: KeyboardShortcut
+        let help: String
+        let identifier: String
+
+        static let zoomOut = Control(
+            title: "Zoom Out", systemImage: "minus.magnifyingglass",
+            shortcut: KeyboardShortcut("-"), help: "Zoom out (⌘−)", identifier: "viewportZoomOut"
+        )
+        static let zoomIn = Control(
+            title: "Zoom In", systemImage: "plus.magnifyingglass",
+            shortcut: KeyboardShortcut("="), help: "Zoom in (⌘=)", identifier: "viewportZoomIn"
+        )
+        static let fitToWindow = Control(
+            title: "Fit to Window", systemImage: "arrow.up.left.and.down.right.magnifyingglass",
+            shortcut: KeyboardShortcut("9"), help: "Fit to window (⌘9)", identifier: "viewportFit"
+        )
+        static let actualSize = Control(
+            title: "Actual Size", systemImage: "1.magnifyingglass",
+            shortcut: KeyboardShortcut("0"), help: "Actual size (⌘0)", identifier: "viewportActualSize"
+        )
+        static let reset = Control(
+            title: "Reset Zoom and Pan", systemImage: "arrow.counterclockwise",
+            shortcut: KeyboardShortcut("r", modifiers: [.command, .shift]),
+            help: "Reset zoom and pan (⇧⌘R)", identifier: "viewportReset"
+        )
     }
 }
