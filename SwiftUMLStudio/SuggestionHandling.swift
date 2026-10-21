@@ -11,11 +11,10 @@ enum SuggestionHandler {
         viewModel: DiagramViewModel,
         subscriptionManager: SubscriptionManager
     ) -> Bool {
-        if suggestion.requiresPro {
-            let feature = SuggestionDispatcher.featureRequired(for: suggestion.action)
-            guard FeatureGate.isUnlocked(feature, manager: subscriptionManager) else {
-                return true
-            }
+        if suggestion.requiresPro,
+           let feature = SuggestionDispatcher.featureRequired(for: suggestion.action),
+           !FeatureGate.isUnlocked(feature, manager: subscriptionManager) {
+            return true
         }
         SuggestionDispatcher.apply(suggestion, to: viewModel)
         viewModel.generate()

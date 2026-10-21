@@ -28,12 +28,27 @@ struct SuggestionDispatcherFeatureMappingTests {
         #expect(feature == .stateMachines)
     }
 
-    @Test("class diagram falls back to .sequenceDiagrams")
+    /// Class diagrams are free, so a class-diagram suggestion marked `requiresPro` must not ask
+    /// a free user to pay for another diagram's feature (#209).
+    @Test("class diagram needs no feature")
     func classDiagramMapping() {
-        // Not Pro-gated in practice, but the dispatcher must return a value
-        // to satisfy the exhaustive switch on every call site.
-        let feature = SuggestionDispatcher.featureRequired(for: .classDiagram)
-        #expect(feature == .sequenceDiagrams)
+        #expect(SuggestionDispatcher.featureRequired(for: .classDiagram) == nil)
+    }
+
+    /// The gate is read from the mode the action opens, so the suggestion and the mode's own
+    /// gate in `ContentView` cannot disagree.
+    @Test("each action opens its mode and needs that mode's feature", arguments: [
+        (SuggestionAction.classDiagram, DiagramMode.classDiagram),
+        (.sequenceDiagram(entryPoint: "F.b"), .sequenceDiagram),
+        (.dependencyGraph(mode: .modules), .dependencyGraph),
+        (.stateMachine(identifier: "H.E"), .stateMachine),
+        (.activityDiagram(entryPoint: "F.m"), .activityDiagram),
+        (.erDiagram, .erDiagram),
+        (.componentDiagram, .componentDiagram)
+    ])
+    func actionMatchesMode(action: SuggestionAction, mode: DiagramMode) {
+        #expect(action.diagramMode == mode)
+        #expect(SuggestionDispatcher.featureRequired(for: action) == mode.requiredFeature)
     }
 
     /// These two must map to their own gates, not to a fallback — ContentView

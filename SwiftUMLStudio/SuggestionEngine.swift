@@ -20,6 +20,19 @@ enum SuggestionAction: Sendable {
     case activityDiagram(entryPoint: String)
     case erDiagram
     case componentDiagram
+
+    /// The diagram mode this action opens.
+    nonisolated var diagramMode: DiagramMode {
+        switch self {
+        case .classDiagram: return .classDiagram
+        case .sequenceDiagram: return .sequenceDiagram
+        case .dependencyGraph: return .dependencyGraph
+        case .stateMachine: return .stateMachine
+        case .activityDiagram: return .activityDiagram
+        case .erDiagram: return .erDiagram
+        case .componentDiagram: return .componentDiagram
+        }
+    }
 }
 
 nonisolated enum SuggestionEngine {
