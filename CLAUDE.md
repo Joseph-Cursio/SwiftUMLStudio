@@ -77,7 +77,7 @@ The **CLI** (`swiftumlbridge`) is a thin wrapper over the framework using `Async
 ### CLI Commands
 
 ```
-swiftumlbridge classdiagram [paths...] [--format plantuml|mermaid] [--output browser|browserImageOnly|consoleOnly] [--package <Package.swift dir>]
+swiftumlbridge classdiagram [paths...] [--format plantuml|mermaid|nomnoml|svg] [--output browser|browserImageOnly|consoleOnly] [--package <Package.swift dir>]
 swiftumlbridge sequence    --entry <Type.method> [paths...] [--depth n]
 swiftumlbridge activity    --entry <Type.method> [paths...]
 swiftumlbridge state       [paths...] [--list | --state HostType.EnumType]

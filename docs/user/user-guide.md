@@ -1,6 +1,6 @@
 # SwiftUMLBridge User Guide
 
-SwiftUMLBridge is a command-line tool and Swift Package that generates architectural diagrams from Swift source code. It supports **PlantUML** and **Mermaid** output for seven diagram types:
+SwiftUMLBridge is a command-line tool and Swift Package that generates architectural diagrams from Swift source code. It writes **PlantUML**, **Mermaid**, **Nomnoml** and **SVG** for seven diagram types, though some draw Nomnoml or SVG as Mermaid (see [Formats by Subcommand](reference.md#formats-by-subcommand)):
 
 - **Class diagrams** — structural overview of types, members, and relationships
 - **Sequence diagrams** — static call-graph traces from a named entry-point method
