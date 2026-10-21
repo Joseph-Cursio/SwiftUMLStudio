@@ -649,6 +649,8 @@ swiftumlbridge deps Sources/ --config ./configs/diagram.yml
 
 The `activity` subcommand renders the control flow inside a single Swift method as an activity diagram. It parses the named method's body and emits nodes for decisions (`if`/`else`, `switch`), loops (`for`/`while`/`repeat`), protected blocks (`do`/`try`/`catch`), async steps (`async`/`await`), and task-group fork/join points.
 
+An `#if` block is drawn as a decision labelled `#if`, with one branch per clause labelled as written (`#if DEBUG`, `#elseif os(iOS)`, `#else`). The conditions are not evaluated, so every clause is drawn. When there is no `#else`, an empty `#else` branch skips the block. A `switch` case inside `#if` is drawn as a branch of its switch.
+
 ```
 swiftumlbridge activity [<paths>...] --entry Type.method [options]
 ```

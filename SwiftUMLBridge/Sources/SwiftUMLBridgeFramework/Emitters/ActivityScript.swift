@@ -163,7 +163,9 @@ private extension ActivityScript {
         let from = "N\(edge.fromId)"
         let to = "N\(edge.toId)"
         if let label = edge.label, !label.isEmpty {
-            return "\(from) -->|\(mermaidEscape(label))| \(to)"
+            // Quoted, since Mermaid rejects a `(` or `[` in a bare edge label and with it the whole
+            // diagram: `-->|.failure(let error)|` and `-->|#if os(iOS)|` did not parse.
+            return "\(from) -->|\"\(mermaidEscape(label))\"| \(to)"
         }
         return "\(from) --> \(to)"
     }
@@ -177,10 +179,12 @@ extension ActivityScript {
         text.replacingOccurrences(of: "\"", with: "\\\"")
     }
 
+    /// `|` is written as Mermaid's own entity, `#124;`: Mermaid reads `#124;` inside `&#124;`
+    /// first, so `&#124;` was drawn `&|`, and `a || b` as `a &|&| b`.
     static func mermaidEscape(_ text: String) -> String {
         text.replacingOccurrences(of: "\"", with: "&quot;")
             .replacingOccurrences(of: "<", with: "&lt;")
             .replacingOccurrences(of: ">", with: "&gt;")
-            .replacingOccurrences(of: "|", with: "&#124;")
+            .replacingOccurrences(of: "|", with: "#124;")
     }
 }
