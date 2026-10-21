@@ -266,7 +266,7 @@ struct NativeSequenceDiagramViewPointerTests {
     func tapSelectsParticipant() {
         let viewport = DiagramViewport()
 
-        makeView(viewport).selectParticipant(at: CGPoint(x: 100, y: 38))
+        makeView(viewport).select(at: CGPoint(x: 100, y: 38))
 
         #expect(viewport.selectedNodeId == "Caller")
     }
@@ -276,7 +276,7 @@ struct NativeSequenceDiagramViewPointerTests {
         let viewport = DiagramViewport()
         viewport.selectedNodeId = "Caller"
 
-        makeView(viewport).selectParticipant(at: CGPoint(x: 4000, y: 4000))
+        makeView(viewport).select(at: CGPoint(x: 4000, y: 4000))
 
         #expect(viewport.selectedNodeId == nil)
     }

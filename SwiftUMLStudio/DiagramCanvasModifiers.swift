@@ -4,8 +4,9 @@ import SwiftUI
 /// (`NativeDiagramView`, `NativeSequenceDiagramView`,
 /// `NativeActivityDiagramView`, `NativeComponentDiagramView`). Each renderer
 /// differs in its drawing and in which interactive affordances it offers
-/// (selection, hover, keyboard navigation), but they share the pan/zoom
-/// transform and the viewport-syncing accessibility tail extracted here.
+/// (selection, hover, keyboard navigation, shared through
+/// `SelectableDiagramCanvas`), but they share the pan/zoom transform and the
+/// viewport-syncing accessibility tail extracted here.
 
 /// Applies the pan/zoom transform and the magnify + drag gestures that drive a
 /// `DiagramViewport`. Mirrors the order the renderers used inline:

@@ -3,7 +3,7 @@ import SwiftUMLBridgeFramework
 
 /// Native SwiftUI Canvas renderer for sequence diagrams.
 /// Draws from a positioned `SequenceLayout` with pan, zoom support.
-struct NativeSequenceDiagramView: View {
+struct NativeSequenceDiagramView: View, SelectableDiagramCanvas {
     let layout: SequenceLayout
     let viewport: DiagramViewport
 
@@ -41,18 +41,8 @@ struct NativeSequenceDiagramView: View {
                 drawParticipantBoxes(top: false, in: &context)
             }
             .frame(width: canvasWidth, height: canvasHeight)
-            .coordinateSpace(name: Self.canvasCoordinateSpace)
-            .canvasPanZoom(viewport: viewport)
-            .gesture(tapToSelectGesture)
-            .onTapGesture(count: 2) { viewport.reset() }
-            .onContinuousHover(coordinateSpace: .named(Self.canvasCoordinateSpace)) { phase in
-                updateHover(phase)
-            }
-            .focusable()
-            .focusEffectDisabled()
-            .onKeyPress(.leftArrow) { handleArrow(.left) }
-            .onKeyPress(.rightArrow) { handleArrow(.right) }
-            .onKeyPress(.escape) { clearSelection() }
+            // Participants sit on one row, so only left and right move the selection.
+            .selectableCanvasInteraction(self, coordinateSpace: Self.canvasCoordinateSpace, arrows: [.left, .right])
             .diagramCanvasChrome(
                 viewport: viewport,
                 contentSize: CGSize(width: layout.totalWidth, height: layout.totalHeight),
@@ -64,57 +54,18 @@ struct NativeSequenceDiagramView: View {
         .background(Color(nsColor: .textBackgroundColor))
     }
 
-    // MARK: - Gestures
+    // MARK: - Selection geometry
 
-    private var tapToSelectGesture: some Gesture {
-        SpatialTapGesture(coordinateSpace: .named(Self.canvasCoordinateSpace))
-            .onEnded { value in
-                selectParticipant(at: value.location)
-            }
+    func nodeID(at location: CGPoint) -> String? {
+        NativeSequenceGeometry.hitParticipant(in: layout, at: location)?.id
     }
 
-    /// Selects whichever participant sits under `location`, or clears the
-    /// selection when the tap lands on empty canvas.
-    ///
-    /// The interaction handlers below are internal rather than inlined in the
-    /// body so they are unit-testable: `ImageRenderer` drives the drawing code
-    /// but never fires gestures or key presses, and ViewInspector cannot reach
-    /// this view at all (GeometryReader trap).
-    func selectParticipant(at location: CGPoint) {
-        viewport.selectedNodeId =
-            NativeSequenceGeometry.hitParticipant(in: layout, at: location)?.id
+    func nodeID(after currentID: String, direction: NativeDiagramGeometry.NavigationDirection) -> String? {
+        NativeSequenceGeometry.nextParticipant(in: layout, from: currentID, direction: direction)?.id
     }
 
-    func updateHover(_ phase: HoverPhase) {
-        switch phase {
-        case .active(let location):
-            viewport.hoveredNodeId =
-                NativeSequenceGeometry.hitParticipant(in: layout, at: location)?.id
-        case .ended:
-            viewport.hoveredNodeId = nil
-        }
-    }
-
-    func clearSelection() -> KeyPress.Result {
-        viewport.selectedNodeId = nil
-        return .handled
-    }
-
-    /// Internal rather than private so the selection logic is unit-testable —
-    /// see the note on `NativeDiagramView.handleArrow`.
-    func handleArrow(_ direction: NativeDiagramGeometry.NavigationDirection) -> KeyPress.Result {
-        if let currentId = viewport.selectedNodeId,
-           let next = NativeSequenceGeometry.nextParticipant(
-                in: layout, from: currentId, direction: direction
-           ) {
-            viewport.selectedNodeId = next.id
-            return .handled
-        }
-        if let first = NativeSequenceGeometry.firstParticipant(in: layout) {
-            viewport.selectedNodeId = first.id
-            return .handled
-        }
-        return .ignored
+    func firstNodeID() -> String? {
+        NativeSequenceGeometry.firstParticipant(in: layout)?.id
     }
 
     // MARK: - Drawing
