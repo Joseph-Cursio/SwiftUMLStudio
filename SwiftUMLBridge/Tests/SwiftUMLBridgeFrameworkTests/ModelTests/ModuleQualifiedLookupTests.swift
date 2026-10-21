@@ -85,6 +85,33 @@ struct ModuleQualifiedLookupTests {
         #expect(graph.owner(of: "fromC") == "Foo.Nested")
     }
 
+    /// ModB nests `Nested` in `extension ModA.Foo`, so the lookup records it by that spelling.
+    /// In ModC, where `Foo` is ModA's, Swift finds `Foo` first and `Nested` among its members, so
+    /// `extension Foo.Nested` extends it.
+    @Test("a type nested in a module-qualified extension is reached through its type's own name")
+    func nestedInQualifiedExtension() throws {
+        let modA = "public struct Foo {\n    public init() {}\n}"
+        let modB = """
+            import ModA
+
+            extension ModA.Foo {
+                public struct Nested {
+                    public init() {}
+                }
+            }
+            """
+        let modC = """
+            import ModA
+            import ModB
+
+            extension Foo.Nested {
+                func fromC() {}
+            }
+            """
+        let graph = try graph([("ModA", modA), ("ModB", modB), ("ModC", modC)])
+        #expect(graph.owner(of: "fromC") == "ModA.Foo.Nested")
+    }
+
     // MARK: - When a type keeps the qualifier a type
 
     /// Core's `enum Analytics` is a namespace App's file does not import, so there `Analytics` is

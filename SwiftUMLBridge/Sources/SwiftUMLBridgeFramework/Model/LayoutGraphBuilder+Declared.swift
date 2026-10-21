@@ -34,6 +34,9 @@ extension LayoutGraphBuilder {
         /// The module of the outermost type around the declaration, before any extension: its
         /// container's for a member `mergeExtensions` moved into a type of another module.
         let outermostModule: String?
+        /// The name of that outermost type: `Foo` for a `V` that `struct Foo` declares, and a
+        /// top-level type's own.
+        let outermostName: String?
 
         /// `container` is the declaration `item` is a member of, when `item.parent` is not set:
         /// a typealias is never flattened out of its type's members. `rankedAs` overrides
@@ -65,6 +68,7 @@ extension LayoutGraphBuilder {
             }
             ownAccess = levels.min() ?? .internal
             outermostModule = declared.last?.module ?? scope.module
+            outermostName = declared.last?.name
             rankScope = rankedAs ?? declared.last.flatMap { $0 === item ? nil : Scope(of: $0) } ?? scope
             extended = chain.first { $0.kind == .extension && $0 !== item }.flatMap { enclosing in
                 enclosing.name.map {

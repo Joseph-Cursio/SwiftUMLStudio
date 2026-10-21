@@ -25,12 +25,13 @@ extension LayoutGraphBuilder {
     }
 
     /// A name `TypeLookup.typeWithSureKind` looks up for a writer with no candidate in its own
-    /// file: the answer then depends on the writer's module, and on its imports for a name read
-    /// through a module, alone.
+    /// file: the answer then depends on the writer's module, its imports, and the type a dotted
+    /// name starts at there, alone.
     struct SharedLookupKey: Hashable {
         let name: String
         let root: NameRoot
         let isRecorded: Bool
+        let start: NameStart?
         let module: String?
         let imports: Set<String>?
         let depth: Int

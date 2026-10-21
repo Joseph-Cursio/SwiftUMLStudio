@@ -8,18 +8,21 @@ import Foundation
 extension LayoutGraphBuilder.TypeLookup {
     /// `type(_:from:depth:)`, and, when that is a protocol, whether it surely is: the nearest
     /// candidate is one in the writer's own file or module, or the only one, or every
-    /// candidate comes to a protocol, and a typealias on the way was as sure. A file's imports
-    /// are read only for module qualifiers, so among same-named types of other modules the
-    /// nearest is a guess, which may be one the writer does not import. A name read through its
+    /// candidate comes to a protocol, and a typealias on the way was as sure. Among same-named
+    /// types of other modules that a file sees together, which Swift rejects as ambiguous or
+    /// settles by a shadowing the lookup does not read, as a re-export's, or of sources read
+    /// without their package, the nearest is a guess. A name read through its
     /// module, `ModA.P`, names the module it means. Only a protocol names an edge apart, so no
     /// other kind costs a check. `kinds` keeps each typealias's kind once worked out, and the
-    /// answer for a writer with no candidate in its own file, which depends on its module and
-    /// imports alone: without them, a name many same-named aliases share looked each alias's
-    /// target up for every edge, and every alias of a chain the next one's.
+    /// answer for a writer with no candidate in its own file, which depends on its module, its
+    /// imports and the type a dotted name starts at (`QualifiedName.start`) alone: without them,
+    /// a name many same-named aliases share looked each alias's target up for every edge, and
+    /// every alias of a chain the next one's.
     func typeWithSureKind(
-        _ name: LayoutGraphBuilder.QualifiedName, from scope: LayoutGraphBuilder.Scope, depth: Int = 0,
+        _ written: LayoutGraphBuilder.QualifiedName, from scope: LayoutGraphBuilder.Scope, depth: Int = 0,
         kinds: LayoutGraphBuilder.AliasKinds
     ) -> (type: LayoutGraphBuilder.Declared?, kindIsSure: Bool) {
+        let name = started(written, from: scope, depth: depth)
         // The writer's own candidate is the nearest, and surely the one it means.
         if let local = localNearest(name, from: scope, depth: depth),
            !unlistedMemberShadows(local, named: name, from: scope, depth: depth) {
@@ -28,15 +31,17 @@ extension LayoutGraphBuilder.TypeLookup {
             return (resolved.type, resolved.isSure)
         }
         // A hidden nested type in the writer's own file ranks there alone, so its answer is not shared.
-        let ownUnlisted = unlistedMembers[name.name]?.contains {
-            $0.scope.filePath == scope.filePath || $0.rankScope.filePath == scope.filePath
-        } == true
+        let ownUnlisted = spellings(of: name).contains { spelling in
+            unlistedMembers[spelling]?.contains {
+                $0.scope.filePath == scope.filePath || $0.rankScope.filePath == scope.filePath
+            } == true
+        }
         guard scope.filePath != nil, fitsEachAlone(name), !ownUnlisted else {
             return uncachedTypeWithSureKind(name, from: scope, depth: depth, kinds: kinds)
         }
         let key = LayoutGraphBuilder.SharedLookupKey(
-            name: name.name, root: name.root, isRecorded: name.isRecorded, module: scope.module,
-            imports: scope.imports, depth: depth
+            name: name.name, root: name.root, isRecorded: name.isRecorded, start: name.start,
+            module: scope.module, imports: scope.imports, depth: depth
         )
         if let known = kinds.shared[key] { return known }
         let result = uncachedTypeWithSureKind(name, from: scope, depth: depth, kinds: kinds)
