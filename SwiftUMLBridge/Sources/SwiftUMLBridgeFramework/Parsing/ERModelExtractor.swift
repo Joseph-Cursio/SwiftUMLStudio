@@ -304,29 +304,12 @@ final class ERModelExtractor: SyntaxVisitor {
     /// with to-many cardinality.
     static func unwrapRelationshipType(_ raw: String) -> (String, ERCardinality) {
         let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
-        if trimmed.hasPrefix("["), trimmed.hasSuffix("]") {
-            let inner = String(trimmed.dropFirst().dropLast())
+        for wrapper in relationshipWrappers
+        where trimmed.hasPrefix(wrapper.open) && trimmed.hasSuffix(wrapper.close) {
+            let inner = String(trimmed.dropFirst(wrapper.open.count).dropLast(wrapper.close.count))
                 .trimmingCharacters(in: .whitespacesAndNewlines)
             let (innerType, _) = unwrapRelationshipType(inner)
-            return (innerType, .zeroOrMany)
-        }
-        if trimmed.hasPrefix("Array<"), trimmed.hasSuffix(">") {
-            let inner = String(trimmed.dropFirst("Array<".count).dropLast())
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-            let (innerType, _) = unwrapRelationshipType(inner)
-            return (innerType, .zeroOrMany)
-        }
-        if trimmed.hasPrefix("Set<"), trimmed.hasSuffix(">") {
-            let inner = String(trimmed.dropFirst("Set<".count).dropLast())
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-            let (innerType, _) = unwrapRelationshipType(inner)
-            return (innerType, .zeroOrMany)
-        }
-        if trimmed.hasPrefix("Optional<"), trimmed.hasSuffix(">") {
-            let inner = String(trimmed.dropFirst("Optional<".count).dropLast())
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-            let (innerType, _) = unwrapRelationshipType(inner)
-            return (innerType, .zeroOrOne)
+            return (innerType, wrapper.cardinality)
         }
         if trimmed.hasSuffix("?") {
             let inner = String(trimmed.dropLast())
@@ -334,6 +317,21 @@ final class ERModelExtractor: SyntaxVisitor {
             return (inner, .zeroOrOne)
         }
         return (trimmed, .exactlyOne)
+    }
+
+    /// The collection and optional spellings `unwrapRelationshipType` looks through, each with
+    /// the cardinality it gives the relationship. `T?` is not here: it has no opening part.
+    private static let relationshipWrappers: [RelationshipWrapper] = [
+        RelationshipWrapper(open: "[", close: "]", cardinality: .zeroOrMany),
+        RelationshipWrapper(open: "Array<", close: ">", cardinality: .zeroOrMany),
+        RelationshipWrapper(open: "Set<", close: ">", cardinality: .zeroOrMany),
+        RelationshipWrapper(open: "Optional<", close: ">", cardinality: .zeroOrOne)
+    ]
+
+    private struct RelationshipWrapper {
+        let open: String
+        let close: String
+        let cardinality: ERCardinality
     }
 
     /// Drop implicit relationships whose reverse direction is already covered
