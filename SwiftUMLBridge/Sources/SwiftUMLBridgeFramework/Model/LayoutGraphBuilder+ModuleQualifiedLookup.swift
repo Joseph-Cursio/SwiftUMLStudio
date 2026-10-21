@@ -78,17 +78,24 @@ extension LayoutGraphBuilder.TypeLookup {
     /// Whether a file in `scope` sees `module`'s top-level declaration `name`: it is in that
     /// module, imports it, or imports `name` from it alone (`import enum Module.Name`), or its
     /// imports are unknown. `import struct Module.Other` makes only `Other` visible.
-    private func sees(_ name: String, in module: String, from scope: Scope) -> Bool {
+    func sees(_ name: String, in module: String, from scope: Scope) -> Bool {
         guard let imports = scope.imports, module != scope.module else { return true }
-        return [module, ModuleQualifiers.c99Name(of: module)].contains { written in
-            imports.contains(written) || imports.contains("\(written).\(name)")
-        }
+        return imports.contains(module) || imports.contains(modules.writtenName(of: module))
+            || seesAlone(name, in: module, from: scope)
+    }
+
+    /// Whether a file in `scope` imports `module`'s top-level declaration `name` alone, as
+    /// `import enum Module.Name` does, directly or through a re-export.
+    func seesAlone(_ name: String, in module: String, from scope: Scope) -> Bool {
+        guard let imports = scope.imports else { return false }
+        let written = modules.writtenName(of: module)
+        return imports.contains("\(written).\(name)") || written != module && imports.contains("\(module).\(name)")
     }
 
     /// Whether a file in `scope` can write `qualifier` for one of `modules`: the file is in that
     /// module or imports it, all of it or a declaration of it. With the file's imports unknown,
     /// it can.
-    private func canName(_ qualifier: String, modules named: Set<String>, from scope: Scope) -> Bool {
+    func canName(_ qualifier: String, modules named: Set<String>, from scope: Scope) -> Bool {
         guard let imports = scope.imports else { return true }
         return imports.contains(qualifier) || imports.contains { $0.hasPrefix("\(qualifier).") }
             || scope.module.map(named.contains) == true
@@ -98,7 +105,7 @@ extension LayoutGraphBuilder.TypeLookup {
     /// read as a module, as Swift reads a type first: one in the file's own module, or in a module
     /// the file imports — so a namespace `enum Analytics` in a module the file does not import
     /// leaves `Analytics.Event` to the module Analytics. With the imports unknown, any does.
-    private func shadows(_ qualifier: String, from scope: Scope, depth: Int) -> Bool {
+    func shadows(_ qualifier: String, from scope: Scope, depth: Int) -> Bool {
         declarations(named: qualifier).contains { declared in
             guard !declared.isExtension else { return false }
             if let module = declared.scope.module, !sees(qualifier, in: module, from: scope) { return false }
@@ -134,16 +141,20 @@ extension LayoutGraphBuilder.TypeLookup {
         return declarations(named: String(name[name.index(after: dot)...])).contains { !$0.isExtension }
     }
 
-    /// The module of the outermost type `declared` belongs to: its own, or for a declaration
-    /// in an extension, that of the type the extension extends, as the extension finds it.
+    /// The module of the outermost type `declared` belongs to (`owningType(of:depth:)`).
     func owningModule(of declared: Declared, depth: Int) -> String? {
-        guard let extended = declared.extended else { return declared.outermostModule }
-        guard depth < 8, let type = extendedType(
-            named: extended.name, from: extended.scope, isSugared: extended.isSugared, depth: depth + 1
-        ) else {
-            return nil
+        owningType(of: declared, depth: depth)?.module
+    }
+
+    /// The outermost type `declared` belongs to: its own, or for a declaration in an extension,
+    /// that of the type the extension extends, as the extension finds it; `nil` for one in an
+    /// extension of a type outside the diagram.
+    func owningType(of declared: Declared, depth: Int) -> LayoutGraphBuilder.OwningType? {
+        guard declared.extended != nil else {
+            return LayoutGraphBuilder.OwningType(module: declared.outermostModule, name: declared.outermostName)
         }
-        return owningModule(of: type, depth: depth + 1)
+        guard depth < 8, let type = enclosingExtensionType(of: declared, depth: depth) else { return nil }
+        return owningType(of: type, depth: depth + 1)
     }
 
     /// The name the declaration `name` means is recorded under, before any typealias is

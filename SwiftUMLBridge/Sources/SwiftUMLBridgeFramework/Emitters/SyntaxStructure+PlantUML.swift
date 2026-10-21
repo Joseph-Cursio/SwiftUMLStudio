@@ -101,15 +101,20 @@ extension SyntaxStructure {
     /// does, as a conformance two `#if` clauses both declare, is left out by
     /// `DiagramContext.addLinking`, by the box it ends on rather than its name: two files can each
     /// declare their own `fileprivate protocol P`. Each comes with the scope its name is written
-    /// in: this declaration's, the carrying extension's (#125), or for a macro's conformance the
-    /// file's, since it names no member of a type around (#157).
+    /// in: this declaration's, the carrying extension's (#125), or for a macro's conformance a
+    /// file of the module that declares the protocol, which names no member of a type around
+    /// (#157) and imports nothing: the expansion writes `Observation.Observable`, which no
+    /// target's own `Observable` shadows.
     func linkParents() -> [CarriedSupertype] {
         let explicit = inheritedTypes ?? []
         let synthetic = syntheticConformances(besides: explicit)
         let scope = DeclarationScope(of: self)
-        let fileScope = DeclarationScope(filePath: scope.filePath, module: scope.module)
         return explicit.map { CarriedSupertype(supertype: $0, scope: scope) }
-            + synthetic.map { CarriedSupertype(supertype: $0, scope: fileScope) }
+            + synthetic.map { conformance in
+                let module = conformance.name.flatMap(MacroConformanceTable.module(declaring:))
+                let macroScope = DeclarationScope(filePath: scope.filePath, module: module, imports: [])
+                return CarriedSupertype(supertype: conformance, scope: macroScope)
+            }
             + carriedSupertypes
     }
 

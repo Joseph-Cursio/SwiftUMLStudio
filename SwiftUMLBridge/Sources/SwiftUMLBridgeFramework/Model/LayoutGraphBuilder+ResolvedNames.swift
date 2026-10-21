@@ -18,7 +18,9 @@ extension LayoutGraphBuilder.TypeLookup {
     /// written there that nothing the project declares takes may be one of them:
     /// `typealias Style = FormatStyle` in `extension Date` is `Date.FormatStyle`, not
     /// Foundation's protocol `FormatStyle`. A name the project declares is taken as the lookup
-    /// takes it everywhere else, so `Describable` written there is the project's typealias.
+    /// takes it everywhere else, so `Describable` written there is the project's typealias. A
+    /// name the lookup finds nothing for comes to its spelling through its first component's
+    /// typealias (`spelledThroughStart(_:from:depth:)`).
     func sureResolvedName(
         of name: LayoutGraphBuilder.QualifiedName, from scope: LayoutGraphBuilder.Scope, depth: Int = 0
     ) -> String? {
@@ -27,7 +29,7 @@ extension LayoutGraphBuilder.TypeLookup {
         if match == nil, name.root == .asWritten, mayMeanOutsideMember(from: scope, depth: depth) {
             return nil
         }
-        guard let match else { return name.name }
+        guard let match else { return spelledThroughStart(name, from: scope, depth: depth) ?? name.name }
         guard let target = match.declared.aliasTarget else { return match.name }
         guard !match.declared.isSugared else { return target }
         let targetName = qualifiedName(ofWritten: target, from: match.declared.scope, depth: depth + 1)
@@ -107,7 +109,8 @@ extension LayoutGraphBuilder.TypeLookup {
         _ nearest: LayoutGraphBuilder.Declared, named name: LayoutGraphBuilder.QualifiedName,
         from scope: LayoutGraphBuilder.Scope, depth: Int
     ) -> Bool {
-        guard name.root != .outsideType, let unlisted = unlistedMembers[name.name] else { return false }
+        let unlisted = spellings(of: name).flatMap { unlistedMembers[$0] ?? [] }
+        guard name.root != .outsideType, !unlisted.isEmpty else { return false }
         let visible = unlisted.filter {
             $0.declaration != nearest.declaration && isVisible($0, from: scope, depth: depth)
         }
@@ -181,8 +184,10 @@ extension LayoutGraphBuilder.TypeLookup {
     /// `extension ModA.Foo`, it ranks as ModA's, so ModB's own `Foo.Alias` still comes first in
     /// ModB. It is recorded under the extension's own spelling too: `extension Crate { typealias
     /// Desc }` merged into `struct Outer` makes both `Outer.Desc` and `Crate.Desc`. The nested
-    /// types the items do not list are kept apart (`unlistedMembers`).
+    /// types the items do not list are kept apart (`unlistedMembers`), and the modules each
+    /// module loads are read from `items` (`moduleLoads`).
     mutating func recordAliases(in items: [SyntaxStructure]) {
+        moduleLoads = ModuleLoads(of: items)
         for item in items {
             if item.kind == .typealias, let name = item.fullName ?? item.name {
                 record(LayoutGraphBuilder.Declared(item, kind: .typealias, nodeId: nil), named: name)

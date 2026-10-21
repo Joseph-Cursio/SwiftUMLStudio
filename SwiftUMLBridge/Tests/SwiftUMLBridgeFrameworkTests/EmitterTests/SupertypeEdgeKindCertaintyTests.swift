@@ -2,10 +2,11 @@ import Testing
 @testable import SwiftUMLBridgeFramework
 
 /// When PlantUML, Mermaid and Nomnoml are sure a supertype's name means a protocol, so its edge
-/// is a conformance. Imports are not tracked, so among same-named types of other modules the
-/// lookup can only guess which one a writer means: such an edge is named as for a type it cannot
-/// tell, `inherits`, unless it ends on that protocol's own box, whose shape says what it is
-/// anyway. Each file passes `swiftc -typecheck` with the modules it imports.
+/// is a conformance. Among same-named types of files read without their package, or of modules
+/// a file imports together, the lookup can only guess which one a writer means: such an edge is
+/// named as for a type it cannot tell, `inherits`, unless it ends on that protocol's own box,
+/// whose shape says what it is anyway. Each file passes `swiftc -typecheck` with the modules it
+/// imports.
 @Suite("Text formats name a supertype edge only after a kind they are sure of")
 struct SupertypeEdgeKindCertaintyTests {
 
@@ -59,45 +60,65 @@ struct SupertypeEdgeKindCertaintyTests {
 
     // MARK: - Unsure
 
-    /// The nearest `Service` to App is Alpha's, recorded first, but App imports Beta's class.
+    /// Read without their package, the files have no modules, so imports cannot tell Alpha's
+    /// protocol from Beta's class, and the nearest `Service`, Alpha's, recorded first, is a guess.
     @Test("an edge to a name two other modules hide as different kinds is not named after a guess",
           arguments: textFormats)
     func ambiguousKindAcrossModules(format: DiagramFormat) throws {
-        let impl = File(module: "App", path: "App/Impl.swift",
+        let impl = File(module: nil, path: "App/Impl.swift",
                         source: "import Beta\nfinal class Impl: Service { func use() { onlyBeta() } }")
-        let items = try parsed([Self.alphaProtocol, Self.betaClass, impl])
+        let items = try parsed(Self.withoutPackage([Self.alphaProtocol, Self.betaClass]) + [impl])
         #expect(lines(items, format, excluding: ["Service"])
             .contains(edgeLine(format, "Service", Self.inherits, "Impl", "inherits")))
     }
 
-    /// App's own typealias is sure to be the one `Base` means, but the name it aliases is the
-    /// same guess between Alpha's and Beta's `Service`. That alias's sureness counted for the
-    /// whole name, so the edge was named after Alpha's protocol.
+    /// App's own typealias is sure to be the one `Base` means, but read without the package, the
+    /// name it aliases is the same guess between Alpha's and Beta's `Service`. That alias's
+    /// sureness counted for the whole name, so the edge was named after Alpha's protocol.
     @Test("an edge through the writer's own typealias to a guessed type is not named after the guess",
           arguments: textFormats)
     func ambiguousKindThroughOwnAlias(format: DiagramFormat) throws {
-        let impl = File(module: "App", path: "App/Impl.swift", source: """
+        let impl = File(module: nil, path: "App/Impl.swift", source: """
             import Beta
             typealias Base = Service
             final class Impl: Base { func use() { onlyBeta() } }
             """)
-        let items = try parsed([Self.alphaProtocol, Self.betaClass, impl])
+        let items = try parsed(Self.withoutPackage([Self.alphaProtocol, Self.betaClass]) + [impl])
         #expect(lines(items, format, excluding: ["Service"])
             .contains(edgeLine(format, "Service", Self.inherits, "Impl", "inherits")))
     }
 
-    /// Beta's `Service` is a typealias of a type outside the diagram, so of no kind the diagram
-    /// knows: no sign App means Alpha's protocol.
-    @Test("an edge to a name another module aliases to an outside type is not named after a guess",
+    /// `files` as read without their package.
+    private static func withoutPackage(_ files: [File]) -> [File] {
+        files.map { File(module: nil, path: $0.path, source: $0.source) }
+    }
+
+    // MARK: - Sure through the imports
+
+    /// With the package, App imports Alpha alone, so `Service` is surely Alpha's protocol, hidden
+    /// or not, beside Beta's class: the edge is a conformance.
+    @Test("an edge to the protocol the writer imports, beside another module's class, conforms",
           arguments: textFormats)
-    func ambiguousKindBesideOutsideAlias(format: DiagramFormat) throws {
+    func importedProtocolBesideClass(format: DiagramFormat) throws {
+        let impl = File(module: "App", path: "App/Impl.swift",
+                        source: "import Alpha\nfinal class Impl: Service { func onlyAlpha() {} }")
+        let items = try parsed([Self.alphaProtocol, Self.betaClass, impl])
+        #expect(lines(items, format, excluding: ["Service"])
+            .contains(edgeLine(format, "Service", Self.realizes, "Impl", "conforms to")))
+    }
+
+    /// Beta's `Service` is a typealias of a type outside the diagram, and App, which imports Beta
+    /// and not Alpha, means it: the edge ends on `NSObject`, an inheritance.
+    @Test("an edge to the imported module's alias of an outside type ends on that type",
+          arguments: textFormats)
+    func importedAliasOfOutsideType(format: DiagramFormat) throws {
         let betaAlias = File(module: "Beta", path: "Beta/Service.swift",
                              source: "import Foundation\npublic typealias Service = NSObject")
         let impl = File(module: "App", path: "App/Impl.swift",
                         source: "import Beta\nimport Foundation\nfinal class Impl: Service {}")
         let items = try parsed([Self.alphaProtocol, betaAlias, impl])
         #expect(lines(items, format, excluding: ["Service"])
-            .contains(edgeLine(format, "Service", Self.inherits, "Impl", "inherits")))
+            .contains(edgeLine(format, "NSObject", Self.inherits, "Impl", "inherits")))
     }
 
     // MARK: - Ends on a protocol's box
@@ -110,7 +131,7 @@ struct SupertypeEdgeKindCertaintyTests {
     func guessEndingOnDrawnProtocol(format: DiagramFormat) throws {
         let impl = File(module: nil, path: "App/Impl.swift",
                         source: "import Alpha\nfinal class Impl: Service { func onlyAlpha() {} }")
-        let files = [Self.alphaProtocol, Self.betaClass].map { File(module: nil, path: $0.path, source: $0.source) }
+        let files = Self.withoutPackage([Self.alphaProtocol, Self.betaClass])
         #expect(lines(try parsed(files + [impl]), format)
             .contains(edgeLine(format, "Service", Self.realizes, "Impl", "conforms to")))
     }
@@ -120,7 +141,8 @@ struct SupertypeEdgeKindCertaintyTests {
     static let libraries = 200
 
     /// `libraries` modules, each aliasing its own protocol as `Base`, and an App module whose
-    /// `libraries` types each conform to `Base`.
+    /// `libraries` types each conform to `Base`, in files that import Lib0, and the last module
+    /// too when its `Base` is a cycle.
     static func aliasedProtocols(cyclicLast: Bool = false) -> [File] {
         let modules = (0..<libraries).map { index in
             let isCyclic = cyclicLast && index == libraries - 1
@@ -128,8 +150,9 @@ struct SupertypeEdgeKindCertaintyTests {
                         source: isCyclic ? "public typealias Base = Base"
                             : "public protocol Model {}\npublic typealias Base = Model")
         }
+        let imports = cyclicLast ? "import Lib0\nimport Lib\(libraries - 1)\n" : "import Lib0\n"
         let writers = (0..<libraries).map { index in
-            File(module: "App", path: "App/Writer\(index).swift", source: "import Lib0\nstruct Writer\(index): Base {}")
+            File(module: "App", path: "App/Writer\(index).swift", source: imports + "struct Writer\(index): Base {}")
         }
         return modules + writers
     }
@@ -200,7 +223,8 @@ struct SupertypeEdgeKindCertaintyTests {
     }
 
     /// One module's `Base` is a cycle, which Swift rejects, so comes to no kind at all: no sign
-    /// App means a protocol. The edge ends on no box, Lib0's protocol being hidden.
+    /// App, which imports it beside Lib0, means a protocol. The edge ends on no box, Lib0's
+    /// protocol being hidden.
     @Test("a cyclic typealias among the candidates ends, unsure of the kind")
     func cyclicAliasAmongCandidates() throws {
         let items = try parsed(Self.aliasedProtocols(cyclicLast: true))

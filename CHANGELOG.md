@@ -154,6 +154,52 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
     looked for among `Foo`'s members, as Swift does; in an extension of
     a type that merely shares a target's name, it is not looked for in
     that target.
+  - Of same-named types of different targets, a name means the one the
+    file's imports show, with nested types drawn or hidden. A bare name
+    is a type of the file's own target or of one it imports, all of it
+    or that declaration, directly or through a re-export, a scoped
+    import such as `import class ModB.Base` shadowing a whole one; with
+    none, it is a type outside the diagram, so `class C: NSObject` in a
+    file that imports only Foundation is not a target's own `NSObject`.
+    A dotted name is looked up from its first component, by that rule
+    and through typealiases, so after `typealias Foo = ModA.Bar`,
+    `Foo.V` is `Bar.V`, and after `typealias API = Networking.API`,
+    `API.Request` is `Networking.API.Request`. It means a member of the
+    type it names: one declared in its body, or one an extension adds.
+    Swift shows such a member in every file of a target once any file
+    of it, even one that declares nothing, imports the extension's
+    target, or a target that loads it in turn. After
+    `extension [Int] { class Box {} }`, `Array<Int>.Box` is that `Box`
+    in a file that does not import a target's own `Array`. When the
+    type has no member the name could mean, as when a typealias on the
+    way, an extension the diagram cannot follow or a superclass hides
+    it, the name is read as it was before, but only among the types
+    recorded under it as written, of the file's own target or one it
+    imports, and an extension's only if the target loads it, so it may
+    end on no box. With nested types hidden, such a name is written as
+    the type it comes to, `Bar.V`, as for a typealias of the whole
+    name, unless a type the diagram reads has that name.
+    - Still unread: of the types a file sees, a target's own does not
+      shadow one it re-exports, nor an available one an
+      `@available(*, unavailable)` one, so a bare name takes the first
+      target read (#200). A name looked up among the members of the types
+      around it, or read through a module, as `ModA.Foo.V`, is ranked
+      without the imports, so it may take another target's same-named
+      member. `internal import` and `@_implementationOnly import` load a
+      target as a plain import does, every `#if` branch's imports count,
+      and a target that enables `MemberImportVisibility` is read as one
+      that does not, each of its files seeing a member any of them
+      loads (#201). `deps --types` still tags a supertype with the first
+      target that declares its name (#202). A first component that is
+      a typealias of a type outside the diagram, as
+      `typealias Foo = [Int]`, is not followed, so `Foo.Box` misses the
+      `Box` of `extension [Int]`; with nested types hidden, neither is
+      one of a nested type.
+  - A macro's conformance, such as `@Observable`'s, is the protocol of
+    the framework the macro expands to, `Observation.Observable`, never
+    a target's own `Observable`, in a file that imports that target or
+    in the target itself. An explicit `: Observable` is read through
+    the file's imports.
   - A qualifier that names no target, such as `Swift` in
     `extension Swift.String`, and every qualifier without `--package`,
     is kept as part of the name.
@@ -172,14 +218,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
     `class Sub: ModA.Base` ends on `Base`, not on the box of
     `extension ModA.Base`, which is not the class. The edge is drawn
     once when the same conformance is also written without the module.
-  - Still unread: a type declared inside `extension ModA.Foo` is known
-    by that spelling, so `extension Foo.Nested` written where `Foo` is
-    ModA's does not reach it. A type outside the diagram, such as
+  - Still unread: a type outside the diagram, such as
     Foundation's `Calendar`, does not keep a target named `Calendar`
     from being read as a module, in a file of that target or one that
-    imports it. Only a file's own imports are read, so a module it sees
-    through another's `@_exported import` neither names a module nor
-    keeps one from being read. `deps --types` draws
+    imports it. `deps --types` draws
     `extension ModA.Foo: P` apart from ModA's `Foo`.
   - Reading names through modules costs lookups where they resolve: a
     package of deep types nested in module-qualified extensions across
@@ -368,9 +410,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
     labelled `ext`, and a subclass of Foundation's `NSObject` beside
     another file's `private protocol NSObject` was a conformance.
 
-  A file's imports are read only for module qualifiers, so when other
-  modules declare a bare name as different kinds, the lookup cannot
-  tell which one the writer imports.
+  When a file sees a bare name in more than one target, as when one
+  re-exports the other, or the sources are read without their package,
+  the lookup cannot tell which one the writer means.
   If the edge then ends on no protocol's own box, it is named
   `inherits`, not after whichever module came first. This holds through
   a typealias, the writer's own included, and when the other module's

@@ -6,10 +6,20 @@ import Foundation
 /// target's C99 name, so both count: `my-lib` and `my_lib`.
 struct ModuleQualifiers {
     private var modulesForQualifier: [String: Set<String>] = [:]
+    private var writtenNameForModule: [String: String] = [:]
 
     mutating func record(_ module: String) {
+        guard writtenNameForModule[module] == nil else { return }
+        let written = Self.c99Name(of: module)
+        writtenNameForModule[module] = written
         modulesForQualifier[module, default: []].insert(module)
-        modulesForQualifier[Self.c99Name(of: module), default: []].insert(module)
+        modulesForQualifier[written, default: []].insert(module)
+    }
+
+    /// The name Swift code writes for `module` (`c99Name(of:)`), worked out once for a module
+    /// the diagram has seen: a lookup asks it for every candidate it weighs.
+    func writtenName(of module: String) -> String {
+        writtenNameForModule[module] ?? Self.c99Name(of: module)
     }
 
     /// Every name a qualifier can name a module by, in a fixed order.

@@ -29,6 +29,9 @@ extension LayoutGraphBuilder {
         let name: String
         let root: NameRoot
         var isRecorded = false
+        /// For a dotted name as written, the type its first component means, once worked out
+        /// (`TypeLookup.started(_:from:depth:)`).
+        var start: NameStart?
     }
 }
 
@@ -95,10 +98,16 @@ extension LayoutGraphBuilder.TypeLookup {
     }
 
     /// The `candidates` recorded under `name` that it can mean from `scope`. A name built on an
-    /// enclosing type takes only those of that type's root. A dotted name as written takes those
-    /// of the type its first component means there, the project's `Array` unless a nearer one
-    /// shadows it, but only when the candidates are not all of one root: a name the diagram does
-    /// not mix up keeps every candidate, as it always has, and costs no lookup of its root.
+    /// enclosing type takes only those of that type's root. A bare name takes those the file
+    /// sees (`seenAtFileScope(_:named:from:)`). A dotted name as written takes the members of the
+    /// type its first component means there. Where that is worked out (`started(_:from:depth:)`),
+    /// they are the members of that very type, an extension's if the writer's module loads it.
+    /// Otherwise, as for sources read without their package or a first component read as a
+    /// module, they are those of its root, the project's `Array` unless a nearer one shadows it,
+    /// but only when the candidates are not all of one root: a name the diagram does not mix up
+    /// keeps every candidate, as it always has, and costs no lookup. So are a started name's
+    /// when that type has none, among those the file can reach
+    /// (`fallbackCandidates(_:for:from:depth:)`).
     func fitting(
         _ candidates: [LayoutGraphBuilder.Declared], for name: LayoutGraphBuilder.QualifiedName,
         from scope: LayoutGraphBuilder.Scope, depth: Int
@@ -113,17 +122,18 @@ extension LayoutGraphBuilder.TypeLookup {
         case .outsideType:
             return candidates.filter { isInExtensionOfOutsideType($0, depth: depth) }
         case .asWritten:
-            let candidates = seenWhenQualifierIsModule(candidates, named: name.name, from: scope, depth: depth)
-            guard candidates.count > 1, let dot = name.name.firstIndex(of: "."),
-                  candidates.contains(where: { $0.extended != nil }) else {
+            var candidates = seenWhenQualifierIsModule(candidates, named: name.name, from: scope, depth: depth)
+            guard name.name.contains(".") else { return seenAtFileScope(candidates, named: name.name, from: scope) }
+            if let start = name.start {
+                if let members = members(of: start, among: candidates, from: scope, depth: depth) { return members }
+                candidates = fallbackCandidates(candidates, for: name, from: scope, depth: depth)
+            }
+            guard candidates.count > 1, candidates.contains(where: { $0.extended != nil }) else {
                 return candidates
             }
             let isOutside = candidates.map { isInExtensionOfOutsideType($0, depth: depth) }
             guard isOutside.contains(true), isOutside.contains(false) else { return candidates }
-            // Swift looks the first component up as a bare name, a member of the types around it
-            // first, so `typealias Array = [Int]` in an enclosing type counts.
-            let first = qualifiedName(ofWritten: String(name.name[..<dot]), from: scope, depth: depth + 1)
-            let startsOutside = type(first, from: scope, depth: depth + 1) == nil
+            let startsOutside = firstComponentType(of: name.name, from: scope, depth: depth) == nil
             return zip(candidates, isOutside).filter { $0.1 == startsOutside }.map(\.0)
         }
     }

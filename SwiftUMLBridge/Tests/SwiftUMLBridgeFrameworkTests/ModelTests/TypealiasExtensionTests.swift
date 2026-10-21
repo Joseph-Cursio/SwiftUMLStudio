@@ -228,12 +228,12 @@ struct TypealiasExtensionTests {
         #expect(mergedIds(of: aliasFile + otherFile) == ["Real", "Alias"])
     }
 
-    /// Between modules an alias below `package` is invisible, so ModB's extension is of ModB's
-    /// own `Alias` struct, not ModA's internal alias of `Real`.
+    /// Between modules an alias below `package` is invisible, so ModB's extension is of a type
+    /// outside the diagram, not of ModA's internal alias of `Real`, though ModB imports ModA.
     @Test("an internal alias in another module does not capture an extension's name")
     func internalAliasInAnotherModule() throws {
         let modA = try parsed("public struct Real {}\ntypealias Alias = Real", file: "A.swift", module: "ModA")
-        let modB = try parsed("extension Alias { func fromB() {} }", file: "B.swift", module: "ModB")
+        let modB = try parsed("import ModA\nextension Alias { func fromB() {} }", file: "B.swift", module: "ModB")
         #expect(mergedIds(of: modA + modB) == ["Real", "Alias"])
         let publicAlias = try parsed(
             "public struct Real {}\npublic typealias Alias = Real", file: "A.swift", module: "ModA"

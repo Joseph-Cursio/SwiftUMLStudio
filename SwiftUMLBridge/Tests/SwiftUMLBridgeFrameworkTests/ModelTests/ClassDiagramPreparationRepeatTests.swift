@@ -204,10 +204,13 @@ struct ClassDiagramPreparationRepeatTests {
         #expect(linksKept)
     }
 
+    /// UI imports Networking, whose `Client` is public, as Swift needs to extend it: without the
+    /// import, `extension Client` names no type its file sees, and the lookup takes it for one of
+    /// a type outside the diagram.
     @Test("a merged type keeps its own module and source location")
     func mergedTypeKeepsItsScope() {
-        let parsed = items("struct Client {}", module: "Networking")
-            + items("extension Client { func render() {} }", module: "UI")
+        let parsed = items("public struct Client {}", module: "Networking")
+            + items("import Networking\nextension Client { func render() {} }", module: "UI")
         for _ in 1...2 {
             let laid = graph(parsed)
             #expect(laid.nodeIds == ["Client"])

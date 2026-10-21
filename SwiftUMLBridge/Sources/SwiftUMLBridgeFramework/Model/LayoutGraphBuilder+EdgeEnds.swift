@@ -56,6 +56,9 @@ extension LayoutGraphBuilder {
         /// The type each declaration's enclosing extension extends, once worked out
         /// (`enclosingExtensionType(of:depth:)`); `record` starts a new one.
         private var enclosingTypes = EnclosingTypes()
+        /// The type each first component means, once worked out (`started(_:from:depth:)`);
+        /// `record` and a change of `unlistedMembers` start a new one.
+        private(set) var nameStarts = NameStarts()
         /// The names a type declared in an extension is recorded under, the only names a dotted
         /// name as written can be told apart by (`fitsEachAlone(_:)`).
         private var namesWithExtendedTypes: Set<String> = []
@@ -69,7 +72,13 @@ extension LayoutGraphBuilder {
         /// The nested types the items do not list, as while nested types are hidden, and their
         /// typealiases, by full name (`unlistedMembers(of:named:)`). Never what a name means:
         /// only whether an extension is of a project type goes by them.
-        var unlistedMembers: [String: [Declared]] = [:]
+        var unlistedMembers: [String: [Declared]] = [:] {
+            didSet { nameStarts = NameStarts() }
+        }
+        /// Which modules each module loads, worked out once every declaration is recorded
+        /// (`recordAliases(in:)`): a member that another module's extension adds is seen in the
+        /// modules that load that one.
+        var moduleLoads = ModuleLoads()
 
         /// A lookup of every type, extension and typealias in `items`, none of them drawn.
         init(of items: [SyntaxStructure] = []) {
@@ -102,6 +111,7 @@ extension LayoutGraphBuilder {
                 modules.record(module)
             }
             enclosingTypes = EnclosingTypes()
+            nameStarts = NameStarts()
         }
 
         /// The name `declaration` was recorded under.
@@ -160,7 +170,8 @@ extension LayoutGraphBuilder {
         /// The name `name` comes to where it is written once every typealias it goes through is
         /// followed: `Dictionary` for `JSON` after `typealias JSON = [String: Int]`, and otherwise
         /// the name the declaration it means is recorded under — `name` itself, or `Foo` for a
-        /// `ModA.Foo` read through its module. Two extensions of one type outside the diagram share
+        /// `ModA.Foo` read through its module, or with none, `name` through its first component's
+        /// typealias (`spelledThroughStart(_:from:depth:)`). Two extensions of one type outside the diagram share
         /// this name however each spells the type. `readingModules: false` reads no module
         /// qualifier, for the text formats' supertype edges, which end on a name and so cannot
         /// tell ModA's `Foo` from another `Foo` (`TypeAliasResolver`).
@@ -176,8 +187,10 @@ extension LayoutGraphBuilder {
         func resolvedName(
             of name: QualifiedName, from scope: Scope, readingModules: Bool = true, depth: Int = 0
         ) -> String {
-            guard depth < 8, let match = nearestMatch(name, from: scope, depth: depth, readingModules: readingModules)
-            else { return name.name }
+            guard depth < 8 else { return name.name }
+            guard let match = nearestMatch(name, from: scope, depth: depth, readingModules: readingModules) else {
+                return spelledThroughStart(name, from: scope, depth: depth) ?? name.name
+            }
             guard let target = match.declared.aliasTarget else { return match.name }
             // Sugar names the standard library's type, which no project type or alias shadows, or a
             // member path past it, kept as written (#126).
@@ -255,7 +268,8 @@ extension LayoutGraphBuilder {
         /// The nearest of the types and typealiases recorded under `name` that are visible from
         /// `scope` and that it can mean there (`fitting(_:for:from:depth:)`), unless a nested type
         /// the items do not list ranks nearer (`unlistedMemberShadows(_:named:from:depth:)`).
-        func nearestDeclaration(_ name: QualifiedName, from scope: Scope, depth: Int) -> Declared? {
+        func nearestDeclaration(_ written: QualifiedName, from scope: Scope, depth: Int) -> Declared? {
+            let name = started(written, from: scope, depth: depth)
             let nearest = localNearest(name, from: scope, depth: depth)
                 ?? scope.nearest(among: candidates(name, from: scope, depth: depth), scope: \.rankScope)
             guard let nearest, !unlistedMemberShadows(nearest, named: name, from: scope, depth: depth) else {
@@ -268,21 +282,37 @@ extension LayoutGraphBuilder {
         /// candidates of one file fit as they do among the rest. A dotted name as written is fitted
         /// by what the whole set holds, but only when a type declared in an extension is among them.
         func fitsEachAlone(_ name: QualifiedName) -> Bool {
-            !(name.root == .asWritten && name.name.contains(".")) || !namesWithExtendedTypes.contains(name.name)
+            guard name.root == .asWritten, name.name.contains(".") else { return true }
+            return !spellings(of: name).contains(where: namesWithExtendedTypes.contains)
         }
 
         /// The nearest candidate when one ranks in `scope`'s own file, found without the rest:
-        /// `DeclarationScope.nearest` picks the first visible such.
+        /// `DeclarationScope.nearest` picks the first visible such, under any of `name`'s spellings.
         func localNearest(_ name: QualifiedName, from scope: Scope, depth: Int) -> Declared? {
-            guard let filePath = scope.filePath, fitsEachAlone(name),
-                  let local = typesForNameInFile[name.name]?[filePath] else { return nil }
+            guard let filePath = scope.filePath, fitsEachAlone(name) else { return nil }
+            let local = typesFirst(spellings(of: name).flatMap { typesForNameInFile[$0]?[filePath] ?? [] })
+            guard !local.isEmpty else { return nil }
             let visible = local.filter { isVisible($0, from: scope, depth: depth) }
             return fitting(visible, for: name, from: scope, depth: depth).first
         }
 
+        /// The types and typealiases recorded under any of `name`'s spellings (`spellings(of:)`)
+        /// that are visible from `scope` and that `name` can mean there.
         func candidates(_ name: QualifiedName, from scope: Scope, depth: Int) -> [Declared] {
-            let visible = (typesForName[name.name] ?? []).filter { isVisible($0, from: scope, depth: depth) }
+            let visible = recorded(under: spellings(of: name)).filter { isVisible($0, from: scope, depth: depth) }
             return fitting(visible, for: name, from: scope, depth: depth)
+        }
+
+        /// The types and typealiases recorded under any of `spellings`, types first.
+        private func recorded(under spellings: [String]) -> [Declared] {
+            guard spellings.count > 1 else { return spellings.first.flatMap { typesForName[$0] } ?? [] }
+            return typesFirst(spellings.flatMap { typesForName[$0] ?? [] })
+        }
+
+        /// `declared` with its types before its typealiases, as they are recorded under one name, so
+        /// a type still comes before a typealias among equals gathered under several.
+        private func typesFirst(_ declared: [Declared]) -> [Declared] {
+            declared.filter { $0.aliasTarget == nil } + declared.filter { $0.aliasTarget != nil }
         }
 
         /// Whether a name written in `lookup` can mean `declared`, as Swift's access control

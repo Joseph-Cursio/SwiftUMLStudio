@@ -124,8 +124,8 @@ struct TypealiasSupertypeTests {
         #expect(DependencyGraphGenerator().extractEdges(for: [root.path], mode: .types, with: configuration).isEmpty)
     }
 
-    /// Across targets an alias below `package` is invisible, so `Networking` sees only Core's
-    /// public alias.
+    /// Across targets an alias below `package` is invisible, so `Networking`, which imports
+    /// Core, sees only Core's public alias.
     @Test("deps --types --package follows a public alias across targets, not an internal one")
     func depsPackageAcrossTargets() throws {
         let root = try directory([
@@ -135,6 +135,8 @@ struct TypealiasSupertypeTests {
                 typealias InternalQ = Proto
                 """,
             "Sources/Networking/Client.swift": """
+                import Core
+
                 public struct ViaPublic: PublicQ {}
                 public struct ViaInternal: InternalQ {}
                 """
