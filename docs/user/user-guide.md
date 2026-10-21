@@ -692,6 +692,8 @@ The `state` subcommand auto-detects state machines in your source and renders th
 
 When all three are present, the candidate is reported as HIGH confidence. Partial matches produce medium and low confidence candidates.
 
+Code inside `#if` is read in every clause, since `swiftumlbridge` does not know which conditions hold. An enum case inside `#if` is a state, and an associated value in any clause rules the enum out. The same transition found more than once, for example in both branches of an `if` or in each clause of an `#if`, is drawn once.
+
 ```
 swiftumlbridge state [<paths>...] [--list | --state HostType.EnumType] [options]
 ```
@@ -751,6 +753,8 @@ swiftumlbridge er [<paths>...] [options]
 A framework's own name may be written with its module: `@SwiftData.Model`, `GRDB.FetchableRecord` and `SQLite.Expression<Int64>("id")` are read as `@Model`, `FetchableRecord` and `Expression<Int64>("id")`. A name of the same spelling from another module, such as `@MyKit.Model`, is not. A member's `@SwiftData.Attribute`, `@SwiftData.Relationship` or `@SwiftData.Transient` is not read, because SwiftData's `@Model` macro does not read it either, so the property is persisted with no options. Write those attributes bare.
 
 Only the properties SwiftData stores are drawn: stored instance properties, including those with `willSet` / `didSet`. A computed, `static` or `class` property is left out. A `@Transient` property is drawn as a column marked transient, never as a relationship or a key, whatever its type or its other attributes. As in `@Model`, only the first `@Attribute` and the first `@Relationship` on a property are read.
+
+Members and attributes inside `#if` are read in every clause, as the class diagram reads them. This covers SwiftData properties and attributes (`@Model` included), GRDB columns and SQLite.swift tables and columns. A property, column or table declared in more than one clause is drawn once, from the first clause. Where an `#if` chooses between attributes, the first `@Attribute` of each clause is read, so an `@Attribute(.unique)` in the `#else` clause makes the property unique even when the `#if` clause has an `@Attribute` without it.
 
 The extractors look for mutually-exclusive signals so a single source file is never represented twice.
 

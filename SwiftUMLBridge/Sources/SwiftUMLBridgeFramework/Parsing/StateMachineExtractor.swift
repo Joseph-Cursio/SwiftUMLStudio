@@ -64,14 +64,17 @@ final class StateMachineExtractor: TypeStackVisitor {
         var caseNames: [String] = []
         var rejected = false
 
-        for member in node.memberBlock.members {
-            guard let caseDecl = member.decl.as(EnumCaseDeclSyntax.self) else { continue }
+        // Cases inside `#if` are read in every clause, so a case with associated values in any
+        // clause rejects the enum, and a case declared in more than one clause is one state (#135).
+        for decl in node.memberBlock.members.declarationsInEveryClause {
+            guard let caseDecl = decl.as(EnumCaseDeclSyntax.self) else { continue }
             for element in caseDecl.elements {
                 if element.parameterClause != nil {
                     rejected = true
                     break
                 }
-                caseNames.append(element.name.canonicalName)
+                let caseName = element.name.canonicalName
+                if !caseNames.contains(caseName) { caseNames.append(caseName) }
             }
             if rejected { break }
         }
@@ -271,7 +274,7 @@ final class StateMachineExtractor: TypeStackVisitor {
             let notes = propertyInfo.typeInferred
                 ? ["Enum type inferred from initializer; no explicit annotation."]
                 : []
-            return ClassifiedTransitions(transitions: switched, confidence: confidence, notes: notes)
+            return ClassifiedTransitions(transitions: Self.uniqued(switched), confidence: confidence, notes: notes)
         }
         let unknown: [StateTransition] = group.compactMap { obs in
             guard !obs.switchSubjectMatches else { return nil }
@@ -279,10 +282,17 @@ final class StateMachineExtractor: TypeStackVisitor {
         }
         guard !unknown.isEmpty else { return nil }
         return ClassifiedTransitions(
-            transitions: unknown,
+            transitions: Self.uniqued(unknown),
             confidence: .low,
             notes: ["No switch statement found over \(propertyName); transition sources are unknown."]
         )
+    }
+
+    /// `transitions` with each repeat dropped, in order. The same assignment in both branches of
+    /// an `if`, or in each clause of an `#if`, is one transition (#135).
+    private static func uniqued(_ transitions: [StateTransition]) -> [StateTransition] {
+        var seen: Set<StateTransition> = []
+        return transitions.filter { seen.insert($0).inserted }
     }
 
     private static let finalStateNames: Set<String> = [
