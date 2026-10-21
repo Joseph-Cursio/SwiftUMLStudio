@@ -120,6 +120,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   `.failure(let error)` broke it. Edge labels are now quoted. `|` was
   written `&#124;`, which Mermaid draws `&|` (`a || b` came out
   `a &|&| b`); it is now `#124;`, drawn `|`.
+- **The ER and state-machine readers read declarations inside `#if`**
+  (#135). They looped over a type's members, or a declaration's
+  attributes, and an `#if` block is one member (or one attribute-list
+  element) of neither kind, so everything in it was skipped. The class
+  diagram and the call graph already read every clause.
+  - ER: a SwiftData property, GRDB column, or SQLite.swift table or
+    column inside `#if` was lost, and an `@Model`, `@Attribute(.unique)`,
+    `@Relationship(inverse:)` or `@Transient` written inside `#if` was
+    ignored. Every clause is now read. A name declared in more than one
+    clause is one property, column or table, taken from the first
+    clause. As `@Model` reads only a property's first `@Attribute` and
+    `@Relationship` (#140), the first one of each clause is read.
+  - State machines: an enum case inside `#if` was not a state, and an
+    associated-value case there did not rule the enum out. Both now
+    count.
+  - State machines: the same assignment in each clause of an `#if`, or
+    in both branches of a plain `if`, drew the same transition twice
+    (and `--list` counted it twice) unless the machine was also found in
+    another file. Repeats are now removed in the extractor.
+  - Reaches `swiftumlbridge er` and `state`, and Studio's ER and
+    state-machine diagrams, picker and dashboard suggestions. The
+    activity diagram's `#if` is drawn by its own change (#206), above.
 
 - **The ER diagram draws only the `@Model` properties SwiftData stores**
   (#140). Every annotated `var` or `let` in a model class was read as
