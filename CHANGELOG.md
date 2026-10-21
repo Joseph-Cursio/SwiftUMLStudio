@@ -195,6 +195,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
       `typealias Foo = [Int]`, is not followed, so `Foo.Box` misses the
       `Box` of `extension [Int]`; with nested types hidden, neither is
       one of a nested type.
+  - A macro's conformance, such as `@Observable`'s, is the protocol of
+    the framework the macro expands to, `Observation.Observable`, never
+    a target's own `Observable`, in a file that imports that target or
+    in the target itself. An explicit `: Observable` is read through
+    the file's imports.
   - A qualifier that names no target, such as `Swift` in
     `extension Swift.String`, and every qualifier without `--package`,
     is kept as part of the name.

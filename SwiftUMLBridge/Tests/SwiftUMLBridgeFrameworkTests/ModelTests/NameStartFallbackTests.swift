@@ -206,6 +206,25 @@ struct NameStartFallbackTests {
         }
     }
 
+    /// `@Observable` expands to a conformance to `Observation.Observable`, so it is never ModA's
+    /// protocol, not in a file that imports ModA, nor in ModA itself, and an explicit
+    /// conformance in a file that imports only Observation is not either (swiftc: no `Model`
+    /// and no `Explicit` is an `any ModA.Observable`).
+    @Test("a macro's conformance is its module's protocol, as an explicit one is the imported one's")
+    func macroConformanceIsItsModules() throws {
+        let files: [(module: String?, source: String)] = [
+            ("ModA", "public protocol Observable {\n    func onlyA()\n}\n"),
+            ("ModA", "import Observation\n\n@Observable final class OwnModel {}\n"),
+            ("ModB", "import Observation\n\n@Observable final class Model {}\n\nfinal class Explicit: Observable {}\n"),
+            ("ModC", "import Observation\nimport ModA\n\n@Observable final class BothModel {}\n")
+        ]
+        let text = DiagramScript(items: try moduleQualifiedItems(files), configuration: Configuration()).text
+        for writer in ["Model", "Explicit", "OwnModel", "BothModel"] {
+            #expect(ClassDiagramIds.lines(of: text, containing: "<|.. \(writer) ").isEmpty, "\(writer)")
+            #expect(ClassDiagramIds.lines(of: text, containing: "Observable <|-- \(writer) ").isEmpty, "\(writer)")
+        }
+    }
+
     /// In ModC, which does not import the target Unicode, `Unicode` is Swift's, so the extension
     /// is one of Swift's `Unicode.Scalar` (swiftc: `value` resolves, the target's `projectOnly`
     /// does not), neither merged into nor linked to the target's `Unicode.Scalar`.

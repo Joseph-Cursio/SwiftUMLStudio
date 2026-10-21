@@ -12,6 +12,17 @@ enum MacroConformanceTable: Sendable {
         table[macroName] ?? []
     }
 
+    /// The module that declares the protocol `conformance`, through which a macro's expansion
+    /// names it, as `extension Model: Observation.Observable {}`, or `nil` for one no macro adds.
+    static func module(declaring conformance: String) -> String? {
+        modules[conformance]
+    }
+
+    private static let modules: [String: String] = [
+        "Observable": "Observation",
+        "PersistentModel": "SwiftData"
+    ]
+
     /// Each macro is listed bare and with its own module, as `@SwiftData.Model` writes it (#134).
     /// A macro of the same name from any other module adds nothing.
     private static let table: [String: [String]] = [
