@@ -13,23 +13,17 @@ public struct ComponentScript: Sendable {
     public static let empty = ComponentScript(text: "", format: .plantuml)
 
     public init(model: ComponentModel, configuration: Configuration = .default) {
-        switch configuration.format {
-        case .plantuml:
-            self.format = .plantuml
-            self.text = ComponentScript.buildPlantUMLText(model: model)
-            self.componentLayout = nil
-        case .mermaid, .nomnoml:
-            // nomnoml has no component dialect; fall back to Mermaid and report
-            // `.mermaid` so presenters hand the text to a (local) Mermaid renderer
-            self.format = .mermaid
-            self.text = ComponentScript.buildMermaidText(model: model)
-            self.componentLayout = nil
-        case .svg:
-            let result = ComponentSVGRenderer.render(model)
-            self.format = .svg
-            self.text = result.svg
-            self.componentLayout = result.layout
-        }
+        let drawn = configuration.format.drawn(
+            plantUML: { ComponentScript.buildPlantUMLText(model: model) },
+            mermaid: { ComponentScript.buildMermaidText(model: model) },
+            svg: {
+                let result = ComponentSVGRenderer.render(model)
+                return (result.svg, result.layout)
+            }
+        )
+        self.text = drawn.text
+        self.format = drawn.format
+        self.componentLayout = drawn.layout
     }
 
     private init(text: String, format: DiagramFormat) {

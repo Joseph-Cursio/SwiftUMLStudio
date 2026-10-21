@@ -15,23 +15,17 @@ public struct ActivityScript: Sendable {
     public static let empty = ActivityScript(text: "", format: .plantuml)
 
     internal init(graph: ActivityGraph, configuration: Configuration) {
-        switch configuration.format {
-        case .plantuml:
-            self.format = .plantuml
-            self.text = Self.buildPlantUMLText(from: graph)
-            self.activityLayout = nil
-        case .mermaid, .nomnoml:
-            // nomnoml does not support activity diagrams; fall back to Mermaid
-            // and report `.mermaid` so presenters hand the text to a Mermaid renderer
-            self.format = .mermaid
-            self.text = Self.buildMermaidText(from: graph)
-            self.activityLayout = nil
-        case .svg:
-            self.format = .svg
-            let layout = ActivitySVGRenderer.computeLayout(from: graph)
-            self.text = ActivitySVGRenderer.renderFromLayout(layout)
-            self.activityLayout = layout
-        }
+        let drawn = configuration.format.drawn(
+            plantUML: { Self.buildPlantUMLText(from: graph) },
+            mermaid: { Self.buildMermaidText(from: graph) },
+            svg: {
+                let layout = ActivitySVGRenderer.computeLayout(from: graph)
+                return (ActivitySVGRenderer.renderFromLayout(layout), layout)
+            }
+        )
+        self.text = drawn.text
+        self.format = drawn.format
+        self.activityLayout = drawn.layout
     }
 
     private init(text: String, format: DiagramFormat) {

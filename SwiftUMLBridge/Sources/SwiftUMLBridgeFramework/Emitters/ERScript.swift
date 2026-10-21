@@ -9,25 +9,13 @@ public struct ERScript: Sendable {
     public static let empty = ERScript(text: "", format: .plantuml)
 
     internal init(model: ERModel, configuration: Configuration) {
-        switch configuration.format {
-        case .plantuml:
-            self.text = ERScript.buildPlantUMLText(model: model)
-            self.format = .plantuml
-        case .mermaid:
-            self.text = ERScript.buildMermaidText(model: model)
-            self.format = .mermaid
-        case .nomnoml:
-            // Nomnoml has no ER-specific syntax; fall back to Mermaid text and
-            // report `.mermaid` so DiagramWebView and BrowserPresenter render it
-            // through Mermaid (matches StateScript).
-            self.text = ERScript.buildMermaidText(model: model)
-            self.format = .mermaid
-        case .svg:
-            // No native SVG layout for ER yet; piggyback on the Mermaid pipeline
-            // so DiagramWebView routes through MermaidHTMLBuilder.
-            self.text = ERScript.buildMermaidText(model: model)
-            self.format = .mermaid
-        }
+        // No SVG layout for ER diagrams yet, so SVG is drawn as Mermaid, as Nomnoml is.
+        let drawn = configuration.format.drawn(
+            plantUML: { ERScript.buildPlantUMLText(model: model) },
+            mermaid: { ERScript.buildMermaidText(model: model) }
+        )
+        self.text = drawn.text
+        self.format = drawn.format
     }
 
     private init(text: String, format: DiagramFormat) {
