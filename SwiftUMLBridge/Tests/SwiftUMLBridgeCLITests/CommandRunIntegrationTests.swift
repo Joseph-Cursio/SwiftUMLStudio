@@ -151,9 +151,9 @@ struct CommandRunIntegrationTests {
         try await command.run()
     }
 
-    /// `--public-only` and `--exclude` each rebuild `bridgeConfig.elements`, the
-    /// second reading back what the first wrote. Running them together is the
-    /// only way to catch one clobbering the other.
+    /// `--public-only` and `--exclude` each set their own `bridgeConfig.elements`
+    /// key. `DepsFilterScopeTests` checks what each run draws; this one only
+    /// that the two together run.
     @Test("deps runs with --public-only and --exclude combined")
     func runsDepsWithFilters() async throws {
         var command = try SwiftUMLBridgeCLI.DepsCommand.parse([

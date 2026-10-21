@@ -306,14 +306,14 @@ swiftumlbridge deps [<paths>...] [--modules] [--types] [--public-only] [--exclud
 
 | Option | Type | Default | Description |
 |---|---|---|---|
-| `--exclude <pattern>...` | `[String]` | `[]` | Exclude type or module names matching these glob patterns. May be specified multiple times. |
+| `--exclude <pattern>...` | `[String]` | `[]` | Exclude type or module names matching these glob patterns. In modules mode an import edge is dropped when either module matches, and with `--package` an excluded target is left out with its edges. Replaces the config file's `elements.exclude` rather than adding to it. May be specified multiple times. |
 | `--format <format>` | `DiagramFormat?` | `plantuml` | Diagram language. One of: `plantuml`, `mermaid`, `nomnoml`, `svg`. All four are native, in both `--types` and `--modules` mode. See [Formats by Subcommand](#formats-by-subcommand). |
 | `--output <format>` | `ClassDiagramOutput?` | `browser` | Output destination. One of: `browser`, `browserImageOnly`, `consoleOnly`. |
 | `--package <path>` | `String?` | `nil` | Path to a `Package.swift` directory. Activates module-aware mode: in `--modules` each SPM `target_dependencies` pair becomes an edge (authoritative — system frameworks are excluded); in `--types` each type is tagged with the SPM target that declares it, rendered as a `<<Module>>` stereotype in PlantUML, Mermaid and Nomnoml, and in SVG as a labelled grouping box around each target's types; in `--modules` each target is labelled with its kind, `<<library>>` or `<<executable>>`, in every format; a type the package only extends takes the first target, in path order (sorted by byte, so `Sources/Zed` comes before `Sources/app`), that extends it. A supertype written with generic arguments, such as `Repo<String>`, is a node of its own and is not tagged. Overrides `<paths>`. Test targets are excluded. A relative path is read against the current directory, with each `..` removed by text as `cd` reads it, so `../MyPackage` works from a sibling directory. |
 | `--config <path>` | `String?` | `nil` | Path to a custom `.swiftumlbridge.yml` config file. |
 | `--help` | Flag | — | Print subcommand help and exit. |
 
-**Config file usage:** Only `format`, `elements.havingAccessLevel`, and `elements.exclude` are read from the config file. All other fields (relationships, themes, stereotypes, etc.) are ignored by the `deps` subcommand.
+**Config file usage:** Only `format`, `elements.havingAccessLevel`, and `elements.exclude` are read from the config file. `--public-only` replaces only `elements.havingAccessLevel`, so the file's `elements.exclude` still applies; `--exclude` replaces only `elements.exclude`, so its patterns stand in place of the file's and the file's `elements.havingAccessLevel` still applies. `elements.exclude` applies in modules mode too, so a pattern there that also matches a module or target name hides it from `deps --modules`. All other fields (relationships, themes, stereotypes, etc.) are ignored by the `deps` subcommand.
 
 **Examples:**
 
@@ -1429,7 +1429,7 @@ public func generateScript(
 
 **Types mode behavior:** Uses `FileCollector` and `SyntaxStructure.create()` to parse Swift declarations. Applies `configuration.elements.havingAccessLevel` and `configuration.elements.exclude` filters. Class elements produce `.inherits` edges; struct, enum, actor, and protocol elements produce `.conforms` edges. Compound conformance annotations such as `A & B` are split into individual edges.
 
-**Modules mode behavior:** Reads each file as a plain string and runs `ImportExtractor`. The source module name is the last path component of the file's parent directory. Access-level and exclude filters do not apply in modules mode.
+**Modules mode behavior:** Reads each file as a plain string and runs `ImportExtractor`. The source module name is the last path component of the file's parent directory. An import edge is dropped when either module matches `configuration.elements.exclude`; the access-level filter does not apply in modules mode.
 
 **Example:**
 

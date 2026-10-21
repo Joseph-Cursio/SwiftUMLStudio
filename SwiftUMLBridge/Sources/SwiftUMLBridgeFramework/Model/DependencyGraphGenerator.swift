@@ -31,7 +31,7 @@ public struct DependencyGraphGenerator: DependencyGraphGenerating, Sendable {
         case .types:
             edges = extractTypeEdges(from: files, configuration: configuration)
         case .modules:
-            edges = extractModuleEdges(from: files)
+            edges = extractModuleEdges(from: files, configuration: configuration)
         }
 
         let model = DependencyGraphModel(edges: edges)
@@ -49,7 +49,7 @@ public struct DependencyGraphGenerator: DependencyGraphGenerating, Sendable {
         case .types:
             return extractTypeEdges(from: files, configuration: configuration)
         case .modules:
-            return extractModuleEdges(from: files)
+            return extractModuleEdges(from: files, configuration: configuration)
         }
     }
 
@@ -75,10 +75,10 @@ public struct DependencyGraphGenerator: DependencyGraphGenerating, Sendable {
 
         switch mode {
         case .modules:
-            edges = extractModuleEdges(forPackage: description)
+            edges = extractModuleEdges(forPackage: description, configuration: configuration)
             kinds = Dictionary(
                 uniqueKeysWithValues: description.targets
-                    .filter { $0.kind != .test }
+                    .filter { $0.kind != .test && !shouldExclude(name: $0.name, configuration: configuration) }
                     .map { ($0.name, $0.kind) }
             )
         case .types:
@@ -131,14 +131,17 @@ public struct DependencyGraphGenerator: DependencyGraphGenerating, Sendable {
 
     // MARK: - Modules mode
 
-    private func extractModuleEdges(from files: [URL]) -> [DependencyEdge] {
+    /// An import edge is dropped when either module matches `elements.exclude` (#161).
+    private func extractModuleEdges(from files: [URL], configuration: Configuration) -> [DependencyEdge] {
         var edges: [DependencyEdge] = []
 
         for file in files {
             let sourceModule = file.deletingLastPathComponent().lastPathComponent
-            guard let source = try? String(contentsOf: file, encoding: .utf8) else { continue }
+            guard !shouldExclude(name: sourceModule, configuration: configuration),
+                  let source = try? String(contentsOf: file, encoding: .utf8) else { continue }
             let importEdges = ImportExtractor.extract(from: source, sourceModule: sourceModule, file: file)
-            for importEdge in importEdges {
+            for importEdge in importEdges
+            where !shouldExclude(name: importEdge.importedModule, configuration: configuration) {
                 edges.append(DependencyEdge(
                     from: importEdge.sourceModule,
                     to: importEdge.importedModule,
@@ -152,8 +155,10 @@ public struct DependencyGraphGenerator: DependencyGraphGenerating, Sendable {
 
     // MARK: - Package mode
 
+    /// An excluded target, and every edge to or from it, is left out (#161).
     private func extractModuleEdges(
-        forPackage description: SPMPackageDescription
+        forPackage description: SPMPackageDescription,
+        configuration: Configuration
     ) -> [DependencyEdge] {
         var edges: [DependencyEdge] = []
         let internalTargets = Set(
@@ -162,8 +167,10 @@ public struct DependencyGraphGenerator: DependencyGraphGenerating, Sendable {
                 .map(\.name)
         )
 
-        for target in description.targets where target.kind != .test {
-            for dependency in target.dependencies {
+        for target in description.targets
+        where target.kind != .test && !shouldExclude(name: target.name, configuration: configuration) {
+            for dependency in target.dependencies
+            where !shouldExclude(name: dependency, configuration: configuration) {
                 let toModule = internalTargets.contains(dependency) ? dependency : nil
                 edges.append(DependencyEdge(
                     from: target.name,
@@ -265,6 +272,7 @@ public struct DependencyGraphGenerator: DependencyGraphGenerating, Sendable {
         return false
     }
 
+    /// Whether `name`, a type or module, matches `elements.exclude` (`deps --exclude`).
     func shouldExclude(name: String, configuration: Configuration) -> Bool {
         guard let excludePatterns = configuration.elements.exclude else { return false }
         // Names are read as Swift reads them (#123), so a pattern is too: `` `Base` `` is `Base`.

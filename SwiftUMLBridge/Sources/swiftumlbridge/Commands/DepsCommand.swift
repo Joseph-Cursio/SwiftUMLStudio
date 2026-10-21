@@ -41,19 +41,14 @@ extension SwiftUMLBridgeCLI {
         mutating func run() async throws {
             var bridgeConfig = try common.resolvedConfiguration()
 
+            // Each flag sets only its own key, so the config file's other `elements` keys,
+            // `exclude` among them, still apply. `--exclude` replaces the file's list.
             if publicOnly {
-                bridgeConfig.elements = ElementOptions(
-                    havingAccessLevel: [.open, .public],
-                    showMembersWithAccessLevel: bridgeConfig.elements.showMembersWithAccessLevel
-                )
+                bridgeConfig.elements.havingAccessLevel = [.open, .public]
             }
 
             if !exclude.isEmpty {
-                bridgeConfig.elements = ElementOptions(
-                    havingAccessLevel: bridgeConfig.elements.havingAccessLevel,
-                    showMembersWithAccessLevel: bridgeConfig.elements.showMembersWithAccessLevel,
-                    exclude: exclude
-                )
+                bridgeConfig.elements.exclude = exclude
             }
 
             // `--modules` takes precedence; `--types` is also valid; default to types
