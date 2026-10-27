@@ -16,7 +16,7 @@ struct BoundGenericExtensionModelTests {
     func svgNodesAndEdges() {
         let source = "struct Foo<T> {}\nextension Foo<Int> { struct Inner {} }"
         #expect(svg(source, .all)?.nodeIds == ["Foo", "Foo.Inner", "Foo_1"])
-        #expect(svg(source, .all)?.edgeEnds == ["Foo -> Foo.Inner"])
+        #expect(svg(source, .all)?.edgeEnds == ["Foo -> Foo.Inner", "Foo_1 -> Foo"])
         #expect(svg(source, .none)?.edgeEnds == ["Foo -> Foo.Inner"])
     }
 

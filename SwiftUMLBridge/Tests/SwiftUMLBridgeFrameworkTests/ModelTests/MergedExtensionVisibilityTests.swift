@@ -58,7 +58,7 @@ struct MergedExtensionVisibilityTests {
 
     @Test("the merged box is the one the nested type hangs off when extensions are drawn apart")
     func mergedAndSeparateAgree() {
-        #expect(graph(shadowedFoo(), .all).edgeEnds == ["Foo_1 -> Foo.Inner"])
+        #expect(graph(shadowedFoo(), .all).edgeEnds == ["Foo_1 -> Foo.Inner", "Foo_2 -> Foo_1"])
         #expect(graph(shadowedFoo(), .merged).edgeEnds == ["Foo_1 -> Foo.Inner"])
     }
 

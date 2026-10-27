@@ -118,7 +118,7 @@ struct EscapedNameClassDiagramTests {
     @Test("SVG folds the extension into its type's node, and hangs its nested type off that node")
     func svgExtendedType() {
         #expect(svgGraph(Self.extendedPlain, .merged)?.nodeIds == ["Plain"])
-        #expect(svgGraph(Self.nestedInExtension)?.edgeEnds == ["Plain -> Plain.Inner"])
+        #expect(svgGraph(Self.nestedInExtension)?.edgeEnds == ["Plain -> Plain.Inner", "Plain_1 -> Plain"])
         #expect(svgGraph(Self.nestedInExtension, .merged)?.edgeEnds == ["Plain -> Plain.Inner"])
     }
 
@@ -211,6 +211,6 @@ struct EscapedNameClassDiagramTests {
         #expect(lines(plain, .plantuml).filter { $0.contains("<..") } == ["Plain <.. Plain0 : ext"])
         #expect(try titles(plain, .nomnoml, .merged) == ["Plain"])
         let nested = "struct Plain {}\nextension Plain { struct Inner {} }"
-        #expect(svgGraph(nested)?.edgeEnds == ["Plain -> Plain.Inner"])
+        #expect(svgGraph(nested)?.edgeEnds == ["Plain -> Plain.Inner", "Plain_1 -> Plain"])
     }
 }

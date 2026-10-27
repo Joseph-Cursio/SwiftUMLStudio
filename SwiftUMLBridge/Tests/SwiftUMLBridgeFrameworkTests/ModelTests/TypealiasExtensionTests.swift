@@ -132,7 +132,9 @@ struct TypealiasExtensionTests {
         let source = "struct Real {}\ntypealias Alias = Real\nextension Alias { struct Nested {} }"
         let configuration = Configuration(elements: ElementOptions(showExtensions: extensions), format: .svg)
         let graph = ClassDiagramGenerator().generateScript(for: source, with: configuration).layoutGraph
-        #expect(graph?.edges.map { "\($0.sourceId) -> \($0.targetId)" } == ["Real -> Alias.Nested"])
+        // Drawn apart, the extension also points at the type it extends through the alias (#75).
+        let extensionEdge = extensions == .all ? ["Alias -> Real"] : []
+        #expect(graph?.edges.map { "\($0.sourceId) -> \($0.targetId)" } == ["Real -> Alias.Nested"] + extensionEdge)
     }
 
     @Test("PlantUML with --merge-extensions hangs a type nested through a typealias off the aliased type")

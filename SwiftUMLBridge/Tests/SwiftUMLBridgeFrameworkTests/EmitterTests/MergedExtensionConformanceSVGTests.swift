@@ -40,7 +40,7 @@ struct MergedExtensionConformanceSVGTests {
     @Test("SVG draws an empty extension's conformance from the type, once")
     func svgEmptyExtension() {
         let source = "protocol P {}\nstruct Foo {}\nextension Foo: P {}"
-        #expect(Self.styledEdges(Self.graph(source, .all)) == ["Foo_1 -> P dependency"])
+        #expect(Self.styledEdges(Self.graph(source, .all)) == ["Foo_1 -> P dependency", "Foo_1 -> Foo dependency"])
         #expect(Self.styledEdges(Self.graph(source)) == ["Foo -> P inheritance"])
     }
 

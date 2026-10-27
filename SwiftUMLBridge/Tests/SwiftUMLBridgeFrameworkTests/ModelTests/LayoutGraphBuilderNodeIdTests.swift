@@ -94,23 +94,25 @@ struct LayoutGraphBuilderNodeIdTests {
 
     @Test("an inheritance edge ends at the type, not at its extension")
     func inheritanceEdgeTargetsTheType() {
-        #expect(edges(for: "class Base {}\nextension Base {}\nclass Sub: Base {}") == ["Sub -> Base"])
+        #expect(edges(for: "class Base {}\nextension Base {}\nclass Sub: Base {}") == ["Sub -> Base", "Base_1 -> Base"])
     }
 
     @Test("an edge to an undeclared name never lands on a generated id")
     func undeclaredTargetIsNotMatchedAgainstIds() {
-        // `Foo_1` is the id of Foo's extension, but nothing named Foo_1 is declared.
-        #expect(edges(for: "struct Foo {}\nextension Foo {}\nclass C: Foo_1 {}").isEmpty)
+        // `Foo_1` is the id of Foo's extension, but nothing named Foo_1 is declared, so the only
+        // edge is the extension's own, to the type it extends.
+        #expect(edges(for: "struct Foo {}\nextension Foo {}\nclass C: Foo_1 {}") == ["Foo_1 -> Foo"])
     }
 
     @Test("a composition edge ends at the nested type, not at its extension")
     func compositionEdgeTargetsTheNestedType() {
-        #expect(edges(for: "struct Outer { struct Inner {} }\nextension Outer.Inner {}") == ["Outer -> Outer.Inner"])
+        #expect(edges(for: "struct Outer { struct Inner {} }\nextension Outer.Inner {}")
+            == ["Outer -> Outer.Inner", "Outer.Inner_1 -> Outer.Inner"])
     }
 
     @Test("a type nested in an extension hangs off the type it extends")
     func typeNestedInExtensionHangsOffTheType() {
-        #expect(edges(for: "struct Foo {}\nextension Foo { struct Inner {} }") == ["Foo -> Foo.Inner"])
+        #expect(edges(for: "struct Foo {}\nextension Foo { struct Inner {} }") == ["Foo -> Foo.Inner", "Foo_1 -> Foo"])
     }
 
     @Test("the second of two same-named types keeps its own nested types")
@@ -138,7 +140,7 @@ struct LayoutGraphBuilderNodeIdTests {
 
     @Test("an extension's conformance edge starts at the extension")
     func extensionConformanceStartsAtTheExtension() {
-        #expect(edges(for: "protocol P {}\nstruct Foo {}\nextension Foo: P {}") == ["Foo_1 -> P"])
+        #expect(edges(for: "protocol P {}\nstruct Foo {}\nextension Foo: P {}") == ["Foo_1 -> P", "Foo_1 -> Foo"])
     }
 
     @Test("merged extensions leave one node per name and the same edge ends")

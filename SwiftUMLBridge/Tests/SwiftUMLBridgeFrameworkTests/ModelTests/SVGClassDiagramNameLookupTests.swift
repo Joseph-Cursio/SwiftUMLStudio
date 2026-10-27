@@ -73,7 +73,7 @@ struct SVGClassDiagramNameLookupTests {
             "A.swift": "fileprivate class Foo {}\nclass SubA: Foo {}",
             "B.swift": "class Foo {}\nextension Foo {}\nclass SubB: Foo {}"
         ])
-        #expect(graph?.edgeEnds == ["SubB -> Foo"])
+        #expect(graph?.edgeEnds == ["SubB -> Foo", "Foo_1 -> Foo"])
     }
 
     @Test("a conformance to a hidden protocol never moves to a same-named protocol in another file")
@@ -131,14 +131,15 @@ struct SVGClassDiagramNameLookupTests {
         #expect(graph?.edgeEnds == ["Circle -> Shape"])
     }
 
-    /// The extension in C.swift extends the `Foo` it can see, B's, so it stands in for neither.
+    /// The extension in C.swift extends the `Foo` it can see, B's, so it stands in for neither, and
+    /// its own edge goes to B's `Foo` (#75).
     @Test("an extension in a third file is no stand-in for another file's fileprivate type", arguments: [
         ("fileprivate class Foo {}\nclass SubA: Foo {}", "class Foo {}", "extension Foo { func run() {} }"),
         ("fileprivate struct Foo { struct Inner {} }", "struct Foo {}", "extension Foo { func run() {} }")
     ])
     func thirdFileExtensionIsNoStandIn(fileA: String, fileB: String, fileC: String) throws {
         let graph = try svg(files: ["A.swift": fileA, "B.swift": fileB, "C.swift": fileC])
-        #expect(graph?.edgeEnds == [])
+        #expect(graph?.edgeEnds == ["Foo_1 -> Foo"])
     }
 
     /// `Foo` in App means Kit's public `Foo`: Core's is internal to Core, and hidden here.

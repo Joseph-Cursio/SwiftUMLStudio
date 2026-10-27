@@ -37,7 +37,7 @@ struct LayoutGraphBuilderEdgeScopeTests {
             declared(.struct, "Math", in: "Math.swift"),
             declared(.extension, "Math", in: "Math.swift", nesting: [SyntaxStructure(kind: .struct, name: "Add")])
         ]
-        #expect(edges(for: items) == ["Math_1 -> Math.Add"])
+        #expect(edges(for: items) == ["Math_1 -> Math.Add", "Math_2 -> Math_1"])
     }
 
     @Test("an inheritance edge ends at the same-named type in the subclass's file")
@@ -58,7 +58,7 @@ struct LayoutGraphBuilderEdgeScopeTests {
             declared(.extension, "Name", in: "Core/Name+Case.swift", module: "Core",
                      nesting: [SyntaxStructure(kind: .enum, name: "Case")])
         ]
-        #expect(edges(for: items) == ["Name_1 -> Name.Case"])
+        #expect(edges(for: items) == ["Name_1 -> Name.Case", "Name_2 -> Name_1"])
     }
 
     @Test("with no same-file or same-module type, the first declaration is used")
@@ -78,7 +78,7 @@ struct LayoutGraphBuilderEdgeScopeTests {
             declared(.extension, "Base", in: "Sub.swift"),
             declared(.class, "Sub", in: "Sub.swift", inheriting: ["Base"])
         ]
-        #expect(edges(for: items) == ["Sub -> Base"])
+        #expect(edges(for: items) == ["Sub -> Base", "Base_1 -> Base"])
     }
 
     @Test("a same-file type beats an earlier type in the same module")

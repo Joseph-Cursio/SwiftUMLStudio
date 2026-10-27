@@ -11,6 +11,9 @@ extension LayoutGraphBuilder {
         case supertype
         /// An edge from a type's box to a supertype a merged extension carried to it (#76).
         case carriedSupertype
+        /// An edge from an extension's box to the type it extends, kept only when that end is a
+        /// drawn type, not the extension standing in for itself (#75).
+        case extendedType
         case other
     }
 

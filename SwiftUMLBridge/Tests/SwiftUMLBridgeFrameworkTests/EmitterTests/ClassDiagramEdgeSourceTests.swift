@@ -156,8 +156,9 @@ struct ClassDiagramEdgeSourceTests {
     ]
 
     /// SVG lists its nodes in the order the text formats declare them, so the n-th SVG id and the
-    /// n-th Mermaid or PlantUML id name one declaration.
-    @Test("each supertype edge starts at the declaration SVG starts it at", arguments: declaredSupertypes)
+    /// n-th Mermaid or PlantUML id name one declaration. An extension's `ext` edge is compared too,
+    /// since SVG draws it (#75).
+    @Test("each supertype and extension edge joins the declarations SVG joins", arguments: declaredSupertypes)
     func agreesWithSVG(source: String) throws {
         let svg = try #require(ClassDiagramGenerator().generateScript(
             for: source, with: Configuration(format: .svg)
@@ -171,8 +172,7 @@ struct ClassDiagramEdgeSourceTests {
                 .map { "\(textId[$0.sourceId] ?? "?") -> \(textId[$0.targetId] ?? "?")" }
             let drawn = script.split(separator: "\n").compactMap { line -> String? in
                 let words = line.split(separator: " ")
-                guard words.count >= 3, ["<|--", "<|..", "<..", "--"].contains(words[1]),
-                      !line.hasSuffix(" : ext") else { return nil }
+                guard words.count >= 3, ["<|--", "<|..", "<..", "--"].contains(words[1]) else { return nil }
                 return "\(words[2]) -> \(words[0])"
             }
             #expect(drawn.sorted() == expected.sorted(), "\(format): \(script)")
