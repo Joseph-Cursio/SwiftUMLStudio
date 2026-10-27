@@ -277,7 +277,7 @@ struct SugaredExtensionTargetTests {
         #expect(mergedMembers(bare) == ["~local : Int <&bolt>"])
         #expect(extEdges(bare, .plantuml) == ["Array <.. Array0 : ext"])
         #expect(graph("struct Array {}\nextension Array { struct Summary {} }")?.edgeEnds
-            == ["Array -> Array.Summary"])
+            == ["Array -> Array.Summary", "Array_1 -> Array"])
     }
 
     @Test("without a project type, a sugared extension gets no edge and nothing to merge into")

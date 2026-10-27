@@ -21,6 +21,7 @@ struct LayoutGraphBuilder {
         var edges: [PendingEdge] = []
         var nodeIds = NodeIdAllocator(reserving: entries.filter(\.isDrawn).map(\.name))
         var endIds = EdgeEndIds()
+        var itemForNodeId: [String: SyntaxStructure] = [:]
         let aliases = TypeAliasResolver(flattened: prepared)
 
         for entry in entries {
@@ -34,6 +35,7 @@ struct LayoutGraphBuilder {
             let nodeId = nodeIds.issue(for: entry.name)
             nodes.append(buildNode(from: entry.item, nodeId: nodeId, kind: entry.kind, configuration: configuration))
             endIds.record(nodeId, for: entry)
+            itemForNodeId[nodeId] = entry.item
             edges.append(contentsOf: buildEdges(
                 from: entry.item, nodeId: nodeId, kind: entry.kind, relationships: configuration.relationships,
                 aliases: aliases
@@ -41,19 +43,38 @@ struct LayoutGraphBuilder {
         }
         endIds.recordAliases(in: prepared)
 
-        return LayoutGraph(nodes: nodes, edges: resolved(edges, through: endIds))
+        let ends = ResolvedEnds(
+            endIds: endIds, itemForNodeId: itemForNodeId,
+            dependencyExclude: configuration.relationships.dependency?.exclude
+        )
+        return LayoutGraph(nodes: nodes, edges: resolved(edges, through: ends))
+    }
+
+    /// What `resolved(_:through:)` reads an edge's ends by: the node ids, and for an extension's
+    /// edge to its type, the declaration each node draws and the patterns that hide the edge.
+    private struct ResolvedEnds {
+        let endIds: EdgeEndIds
+        let itemForNodeId: [String: SyntaxStructure]
+        let dependencyExclude: [String]?
     }
 
     /// `edges` between the nodes their ends name, without a carried supertype edge that repeats a
     /// supertype edge its box already draws. Repeats are found by the nodes the ends resolve to,
     /// not by name: both clauses of an `#if` name the same protocol, but two files can each declare
     /// their own `fileprivate protocol P`, and the extension in each file conforms to its own (#76).
-    private static func resolved(_ edges: [PendingEdge], through endIds: EdgeEndIds) -> [LayoutEdge] {
+    private static func resolved(_ edges: [PendingEdge], through ends: ResolvedEnds) -> [LayoutEdge] {
         var supertypeEnds = Set<[String]>()
         return edges.compactMap { pending in
-            guard let edge = pending.resolved(through: endIds) else { return nil }
+            guard let edge = pending.resolved(through: ends.endIds) else { return nil }
             switch pending.role {
             case .other:
+                return edge
+            case .extendedType:
+                // As `DrawnEdgeEnds.extendedType(of:)` and `DiagramContext.addExtensionEdge` keep
+                // the text formats' `ext` edge: a hidden type, or none, resolves to the extension
+                // itself, and `dependency.exclude` may match the type's name as declared (#124).
+                guard let type = ends.itemForNodeId[edge.targetId], type.kind != .extension,
+                      type.isExcluded(byPatterns: ends.dependencyExclude) == false else { return nil }
                 return edge
             case .supertype:
                 supertypeEnds.insert([edge.sourceId, edge.targetId])
@@ -117,6 +138,16 @@ struct LayoutGraphBuilder {
                 ? .extended(ObjectIdentifier(parent), name: parentName, scope: scope, isSugared: parent.isSugared)
                 : .declaration(ObjectIdentifier(parent), name: parentName, scope: scope)
             edges.append(PendingEdge(source: parentEnd, target: .node(nodeId), style: .composition))
+        }
+        // An extension's box points at the type it extends, as the text formats' `ext` edge does
+        // (#75): the type its name means where it is written, the box `--merge-extensions` merges
+        // it into. `dependency.exclude` matching the name as the extension writes it hides the edge.
+        if kind == .extension, let name = item.fullName,
+           item.isExcluded(byPatterns: relationships.dependency?.exclude) == false {
+            let target = EdgeEnd.extended(
+                ObjectIdentifier(item), name: name, scope: Scope(of: item), isSugared: item.isSugared
+            )
+            edges.append(PendingEdge(source: .node(nodeId), target: target, style: .dependency, role: .extendedType))
         }
         return edges
     }

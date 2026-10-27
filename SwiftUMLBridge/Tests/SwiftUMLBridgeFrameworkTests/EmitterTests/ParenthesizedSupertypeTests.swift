@@ -86,7 +86,7 @@ struct ParenthesizedSupertypeTests {
             "Named <|.. Label0 : conforms to",
             "Label <.. Label0 : ext"
         ])
-        #expect(Self.svgEdges(Self.shapes).count == 5)
+        #expect(Self.svgEdges(Self.shapes).count == 6)
     }
 
     @Test("an exclude written for the plain name hides the parenthesized edge", arguments: textFormats)

@@ -188,8 +188,9 @@ struct LayoutGraphBuilderTests {
         let hidden = LayoutGraphBuilder.buildClassDiagram(
             from: items, configuration: Configuration(relationships: relationships)
         )
-        #expect(shown.edges.map(\.targetId).sorted() == ["Base", "Shape", "Shape"])
-        #expect(hidden.edges.map(\.targetId) == ["Base"])
+        // `Base`'s extension also points at `Base` (#75), which neither list hides.
+        #expect(shown.edges.map(\.targetId).sorted() == ["Base", "Base", "Shape", "Shape"])
+        #expect(hidden.edges.map(\.targetId) == ["Base", "Base"])
     }
 
     // MARK: - Class Diagram: Members
