@@ -106,6 +106,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed — Bridge
 
+- **An SVG class diagram links an extension's box to the type it
+  extends** (#75). PlantUML, Mermaid and Nomnoml draw this `ext` edge,
+  `Foo <.. Foo0 : ext`, and SVG drew none, so in SVG and on Studio's
+  canvas an extension's box stood beside its type with nothing joining
+  them. SVG now draws a dashed edge with an open arrowhead from each
+  drawn extension to the type it extends. It finds the type as the text
+  formats do: the type the extension's name means where it is written,
+  through a typealias or a module too. It also draws no edge where they
+  draw none: for an extension of a type the diagram hides or does not
+  declare, under `--merge-extensions` or with extensions hidden, and
+  when `relationships.dependency.exclude` matches. Like SVG's other
+  edges, it has no label. The layout ranks an edge's start above its
+  end, so each extension now sits above its type, and a diagram with
+  many extended types is taller.
+
 - **The CLI's help matches what the commands do** (#165). The
   `classdiagram` abstract said "PlantUML or Mermaid", though it writes
   Nomnoml and SVG too; it now names no format, since the `(values: …)`
