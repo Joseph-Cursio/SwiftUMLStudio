@@ -110,9 +110,11 @@ struct NativeComponentEdgePointTests {
         #expect(abs(point.y + 30) < Self.tolerance)
     }
 
-    /// Two components sharing a center have no meaningful direction. The guard
-    /// must return the center rather than dividing by zero and producing NaN,
-    /// which would poison the Path and blank the canvas.
+    /// Two components sharing a center have no meaningful direction, and the
+    /// guard returns the source's center. The 0.001 delta floor would keep the
+    /// arithmetic finite even without the guard (0 × scale is 0), so this pins
+    /// the result: the center, and no NaN to poison the Path and blank the
+    /// canvas.
     @Test("coincident centers return the center instead of NaN")
     func coincidentCentersAreGuarded() {
         let source = makeComponent(name: "A", centerX: 42, centerY: 17)
@@ -126,10 +128,13 @@ struct NativeComponentEdgePointTests {
         #expect(point.y.isNaN == false)
     }
 
-    /// The core invariant: whatever the direction, the projected point lies on
-    /// the source's own border — never inside it, never past it.
+    /// The core invariant: whatever the direction, the anchor lies on the
+    /// source's own border — never inside it, never past it. Two kinds of
+    /// target are exceptions, and these arguments avoid both: one at the
+    /// source's center (see above), and one so close to it that the 0.001
+    /// delta floor lowers the scale, which puts the point inside the box.
     @Test(
-        "the result always lands on the source border",
+        "the result lands on the source border for targets clear of its center",
         arguments: [
             (300.0, 0.0), (-300.0, 0.0), (0.0, 300.0), (0.0, -300.0),
             (300.0, 300.0), (-300.0, 300.0), (300.0, -300.0), (-300.0, -300.0),
@@ -182,8 +187,9 @@ struct NativeComponentEdgePointTests {
 
         let point = NativeComponentDiagramView.edgePoint(from: source, towards: target)
 
-        // Half-height is 10 and half-width 200, so the vertical bound binds first.
-        #expect(abs(point.y - 10) < Self.tolerance, "should clamp to the bottom edge")
+        // The run's slope, 500 ÷ 20 = 25, is steeper than the box's diagonals,
+        // 20 ÷ 400 = 0.05, so the ray reaches the bottom first.
+        #expect(abs(point.y - 10) < Self.tolerance, "should exit through the bottom edge")
         #expect(abs(point.x) < 200, "must not run past the box width")
     }
 }
