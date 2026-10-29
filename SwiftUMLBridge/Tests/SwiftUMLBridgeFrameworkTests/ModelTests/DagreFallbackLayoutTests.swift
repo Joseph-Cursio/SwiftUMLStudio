@@ -61,8 +61,12 @@ struct DagreFallbackLayoutTests {
     /// Mixed widths and heights on grids of one to twelve nodes, some with a partly filled last row.
     @Test("nodes of mixed sizes neither overlap nor leave the canvas", arguments: 1...12)
     func mixedSizes(count: Int) {
-        let sizes = (0..<count).map { idx in
-            (width: Double(100 + idx * 137 % 540), height: Double(50 + idx * 89 % 280))
+        // Built in typed steps: Swift 6.3 cannot type-check the one-expression tuple in reasonable
+        // time, which broke the test target's build on Xcode 26.
+        let sizes = (0..<count).map { idx -> (width: Double, height: Double) in
+            let width: Int = 100 + idx * 137 % 540
+            let height: Int = 50 + idx * 89 % 280
+            return (width: Double(width), height: Double(height))
         }
         let laid = DagreLayoutEngine.fallbackLayout(sizedGraph(sizes), because: "a test")
         #expect(overlappingPairs(in: laid).isEmpty, "\(overlappingPairs(in: laid))")
