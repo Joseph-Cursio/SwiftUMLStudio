@@ -154,15 +154,34 @@ extension ComponentSVGRenderer {
 
     // MARK: - Geometry / string helpers
 
-    /// Returns the point on the rectangle border of `source` closest to
-    /// `target`, used as the edge anchor.
+    /// Returns where the ray from `source`'s center towards `target`'s center
+    /// leaves `source`'s rectangle, used as the edge anchor. An edge drawn
+    /// between the anchors at its two ends therefore lies on the
+    /// center-to-center line. The point is on whichever side the ray reaches
+    /// first: the top or bottom when the ray is steeper than the box's
+    /// diagonals, the left or right when it is shallower, and a corner when
+    /// the two are equal. The rectangle's corners are square, while the box is
+    /// drawn with 4-point rounded ones, so an anchor near a corner sits just
+    /// outside the outline. The anchor is not the border point nearest
+    /// `target`'s center: for a 20×20 box at the origin and a target centered
+    /// at (100, 5), it is (10, 0.5), not (10, 5) (#62).
+    ///
+    /// When the centers coincide there is no direction, and `source`'s center
+    /// is returned. Each delta's magnitude is raised to at least 0.001 where
+    /// it is divided by, so a target level with `source`, or directly above or
+    /// below it, does not divide by zero. Where that lowers the scale, the
+    /// point lies inside the box rather than on its border. That happens
+    /// exactly when the target is less than 0.001 from `source`'s center along
+    /// the box's shorter axis and less than 0.001 × (longer side ÷ shorter
+    /// side) along the longer one; for a square box, less than 0.001 on both.
+    /// All of this assumes a box of positive width and height. One with a zero
+    /// side gets its center for every target.
     static func edgePoint(
         from source: PositionedComponent,
         towards target: PositionedComponent
     ) -> (Double, Double) {
         let deltaX = target.centerX - source.centerX
         let deltaY = target.centerY - source.centerY
-        // Clamp slope to box aspect so we land on a top/bottom edge most of the time.
         let halfW = source.width / 2
         let halfH = source.height / 2
         guard deltaX != 0 || deltaY != 0 else {
@@ -170,6 +189,9 @@ extension ComponentSVGRenderer {
         }
         let scaleX = halfW / max(abs(deltaX), 0.001)
         let scaleY = halfH / max(abs(deltaY), 0.001)
+        // Unfloored, scaleX stretches the delta to an x offset of ±halfW and
+        // scaleY to a y offset of ±halfH; the smaller picks the side the ray
+        // reaches first.
         let scale = min(scaleX, scaleY)
         return (source.centerX + deltaX * scale, source.centerY + deltaY * scale)
     }

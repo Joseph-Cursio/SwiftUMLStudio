@@ -122,8 +122,15 @@ struct NativeComponentDiagramView: View {
         }
     }
 
-    /// Project to whichever rectangle border of `source` lies nearest the
-    /// line towards `target`. Mirrors `ComponentSVGRenderer.edgePoint`.
+    /// Returns where the ray from `source`'s center towards `target`'s center
+    /// leaves `source`'s rectangle, used as the edge anchor. An edge drawn
+    /// between the anchors at its two ends therefore lies on the
+    /// center-to-center line. The point is on whichever side the ray reaches
+    /// first: the top or bottom when the ray is steeper than the box's
+    /// diagonals, the left or right when it is shallower, and a corner when
+    /// the two are equal. Mirrors `ComponentSVGRenderer.edgePoint`, whose
+    /// comment covers coincident centers, the 0.001 delta floor and a box with
+    /// a zero side.
     ///
     /// Static and internal because it depends on nothing but its arguments, so
     /// it stays unit-testable without inspecting the view body.
