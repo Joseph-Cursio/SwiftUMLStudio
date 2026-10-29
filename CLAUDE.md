@@ -55,7 +55,7 @@ swift run --package-path SwiftUMLBridge swiftumlbridge classdiagram <paths...>
 - **Swift toolchain**: Swift 6.0 strict concurrency enabled across all targets
 - **Bundle ID**: `name.JosephCursio.SwiftUMLStudio`
 - **Build configs**: `Debug` / `Release` (direct distribution, unsandboxed) plus `AppStoreRelease`, which defines `APP_STORE_BUILD` and enables App Sandbox. The flag gates every subprocess/`dlopen` path — SourceKit typename supplementation and `Open Package…` are both disabled under it (see M14 in `CHANGELOG.md`).
-- **CI is deliberately dormant.** `.github/workflows/ci.yml` triggers on `workflow_dispatch` only, and the workflow itself is disabled on GitHub, to avoid the macOS runner's 10x billing (commit `5257203`). Do not add `push` / `pull_request` triggers without asking — run the suites locally instead.
+- **CI runs on every push to `main` and every PR against it.** `.github/workflows/ci.yml` builds and tests the Bridge on `macos-latest` and the Studio app, unsigned, on `macos-26`. Both are standard GitHub-hosted runners, which are free because the repo is public. CI was dormant from May to October 2026 to avoid macOS's 10x billing (commit `5257203`), but that rate applies only to private repos. Ask before making the repo private or moving a job to a larger runner (such as `macos-15-xlarge`): either one makes the minutes billable.
 
 ## Architecture
 

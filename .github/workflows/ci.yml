@@ -1,13 +1,19 @@
 name: CI
 
+# Both jobs run on standard GitHub-hosted runners (macos-latest, macos-26),
+# which are free and unlimited because this repository is public. macOS
+# minutes are billed if the repository goes private, and larger runners
+# (such as macos-15-xlarge) are billed even on a public one — check before
+# changing either.
 on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
-# Dormant as written: the only trigger above is workflow_dispatch, for which
-# `cancel-in-progress` evaluates to false, so manual runs never cancel each
-# other. Kept for whoever restores the push / pull_request triggers — at that
-# point it cancels in-flight runs on the same ref so PR pushes don't pile up,
-# while letting pushes to main run to completion.
+# Cancel in-flight runs of the same workflow on the same ref so PR pushes
+# don't pile up, while letting pushes to main run to completion.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
