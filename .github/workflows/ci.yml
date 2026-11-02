@@ -1,10 +1,14 @@
 name: CI
 
-# Both jobs run on standard GitHub-hosted runners (macos-latest, macos-26),
-# which are free and unlimited because this repository is public. macOS
-# minutes are billed if the repository goes private, and larger runners
-# (such as macos-15-xlarge) are billed even on a public one — check before
-# changing either.
+# Both jobs run on the standard GitHub-hosted `xcode-27` runner, which is free
+# and unlimited because this repository is public. macOS minutes are billed if
+# the repository goes private, and larger runners (such as xcode-27-xlarge)
+# are billed even on a public one — check before changing either.
+#
+# `xcode-27` is a preview image (actions/runner-images#14404): the GA macOS
+# images stop at Xcode 26.6 and Swift 6.3, and this project is developed on
+# Xcode 27 and Swift 6.4. Move both jobs to the GA image that ships Xcode 27
+# once there is one.
 on:
   push:
     branches: [main]
@@ -28,16 +32,14 @@ defaults:
 jobs:
   bridge:
     name: SwiftUMLBridge (CLI + framework)
-    runs-on: macos-latest
+    runs-on: xcode-27
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v6
 
-      # The package's manifest declares swift-tools-version: 6.2, which
-      # the default Xcode on macos-latest doesn't ship yet. Pick the
-      # newest preinstalled Xcode on the runner image — `latest-stable`
-      # tracks the highest GM Xcode available and at the time of writing
-      # has Swift 6.2.
+      # Pick the newest preinstalled Xcode that is not a beta or release
+      # candidate. `latest-stable` tracks the highest GM Xcode on the image:
+      # Xcode 27.1 at the time of writing, beside a 27.2 release candidate.
       - name: Select latest Xcode
         uses: maxim-lobanov/setup-xcode@v1
         with:
@@ -71,12 +73,10 @@ jobs:
           swift run --package-path SwiftUMLBridge swiftumlbridge --help
 
   studio:
-    # The Studio app targets macOS 26.4+ (uses iOS-26 SwiftUI APIs), so the
-    # macos-latest runner — currently macOS 15 — can't run its tests. Pin to
-    # macos-26 explicitly. Bridge stays on macos-latest because it deliberately
-    # supports .macOS(.v15).
+    # The Studio app targets macOS 26.4+ (uses iOS-26 SwiftUI APIs), so its
+    # tests need a runner on macOS 26 or later; `xcode-27` is macOS 27.
     name: SwiftUMLStudio (macOS app)
-    runs-on: macos-26
+    runs-on: xcode-27
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v6
