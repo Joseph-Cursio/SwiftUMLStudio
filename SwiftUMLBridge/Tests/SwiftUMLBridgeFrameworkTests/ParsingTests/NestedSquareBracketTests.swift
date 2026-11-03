@@ -56,9 +56,16 @@ struct NestedSquareBracketTests {
 
     /// A clock, not `.timeLimit`, because a time limit cannot stop a parse that is running.
     /// The bounds are for a debug build under load. Unbounded, a 20-deep chain took 8 to 15 s.
+    ///
+    /// The parsing thread's CPU clock, so the suites running beside this one do not count: the
+    /// tuple type, parsed in 0.4 s on its own, took 2.4 s by the wall clock on a 3-core CI runner.
     @Test("SwiftParser reads a 20-deep chain in under two seconds", arguments: shapes(depth: 20))
     func swiftParser(shape: String, source: String) {
-        let time = seconds { _ = ParsingStack.run { ParsingStack.parse(source).statements.count } }
+        let time = ParsingStack.run {
+            let start = clock_gettime_nsec_np(CLOCK_THREAD_CPUTIME_ID)
+            _ = ParsingStack.parse(source).statements.count
+            return Double(clock_gettime_nsec_np(CLOCK_THREAD_CPUTIME_ID) - start) / 1e9
+        }
         #expect(time < 2, "\(shape): \(time) s")
     }
 
