@@ -64,56 +64,8 @@ jobs:
       - name: Build
         run: swift build --package-path SwiftUMLBridge
 
-      # TEMPORARY, for PR #224: on the runner this step has hung on every run
-      # so far, printing nothing once the tests start, where locally the suite
-      # passes in seconds. If `swift test` outlives `limit`, record what the
-      # test process is doing, twice 20 s apart so a deadlock shows as the
-      # same stacks, and fail instead of waiting for the job's timeout.
       - name: Test
-        run: |
-          swift test --package-path SwiftUMLBridge --enable-code-coverage &
-          test_pid=$!
-          limit=600
-          for ((waited = 0; waited < limit; waited += 5)); do
-            if ! kill -0 "$test_pid" 2>/dev/null; then
-              wait "$test_pid"
-              exit
-            fi
-            sleep 5
-          done
-
-          echo "::error::swift test was still running after ${limit}s; sampling it"
-          mkdir -p hang-diagnostics
-          sysctl hw.ncpu hw.memsize | tee hang-diagnostics/machine.txt
-          top -l 1 -s 0 -n 15 -o cpu | tee hang-diagnostics/top.txt
-          ps -axo pid,ppid,etime,%cpu,rss,command > hang-diagnostics/ps.txt
-          grep -E 'swift|xctest|sourcekit|xcrun|git' hang-diagnostics/ps.txt || true
-          for round in 1 2; do
-            for pid in $(pgrep -f swiftpm-testing-helper); do
-              sample "$pid" 5 -file "hang-diagnostics/sample-$pid-$round.txt" || true
-            done
-            if [ "$round" = 1 ]; then sleep 20; fi
-          done
-          for file in hang-diagnostics/sample-*-2.txt; do
-            [ -f "$file" ] || continue
-            echo "::group::$file: threads"
-            grep -E '^ +[0-9]+ Thread_' "$file" || true
-            echo "::endgroup::"
-            echo "::group::$file: top of stack"
-            sed -n '/Sort by top of stack/,/^$/p' "$file" | head -40 || true
-            echo "::endgroup::"
-          done
-          pkill -f swiftpm-testing-helper || true
-          kill "$test_pid" 2>/dev/null || true
-          exit 1
-
-      - name: Upload hang diagnostics
-        if: failure()
-        uses: actions/upload-artifact@v7
-        with:
-          name: bridge-hang-diagnostics
-          path: hang-diagnostics
-          if-no-files-found: ignore
+        run: swift test --package-path SwiftUMLBridge --enable-code-coverage
 
       - name: Smoke-test the CLI
         run: |
