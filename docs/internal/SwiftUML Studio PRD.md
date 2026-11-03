@@ -395,10 +395,12 @@ and is not yet in a tagged release. See §9.2.
 | M16 — DOT / GraphViz output | Optional emitter for large-scale dependency graphs | v1.1+ |
 | M17 — Macro expansion handling | Better fidelity for macro-generated types | v1.1+ |
 
-> **Note**: this repo's *own* CI (`.github/workflows/ci.yml`) is intentionally
-> dormant — `workflow_dispatch` only, and disabled on GitHub, to avoid the macOS
-> runner's 10x billing (commit `5257203`). That is unrelated to M11, which
-> tracked the action published for *consumers* and is complete.
+> **Note**: this repo's *own* CI (`.github/workflows/ci.yml`) runs on every
+> push to `main` and every pull request against it. It was dormant from May to
+> October 2026 to avoid the macOS runner's 10x billing (commit `5257203`), which
+> applies only to private repositories; standard runners are free on this public
+> one. That is unrelated to M11, which tracked the action published for
+> *consumers* and is complete.
 
 ---
 

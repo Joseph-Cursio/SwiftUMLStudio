@@ -51,11 +51,11 @@ swift run --package-path SwiftUMLBridge swiftumlbridge classdiagram <paths...>
 ```
 
 - **Studio target platform**: macOS 26.4+, `SDKROOT = macosx`
-- **Bridge target platform**: macOS 15+ (per `Package.swift`). Lower than Studio because nothing in the Bridge requires macOS 26 — kept at 15 so the SwiftPM tests run on GitHub's `macos-latest` runner (still macOS 15) and on every other Sequoia host.
+- **Bridge target platform**: macOS 15+ (per `Package.swift`). Lower than Studio because nothing in the Bridge requires macOS 26 — kept at 15 so the CLI and the package still run on Sequoia hosts. CI no longer runs on macOS 15: the deployment target still makes the compiler reject newer APIs used without `#available`, but nothing runs the tests there.
 - **Swift toolchain**: Swift 6.0 strict concurrency enabled across all targets
 - **Bundle ID**: `name.JosephCursio.SwiftUMLStudio`
 - **Build configs**: `Debug` / `Release` (direct distribution, unsandboxed) plus `AppStoreRelease`, which defines `APP_STORE_BUILD` and enables App Sandbox. The flag gates every subprocess/`dlopen` path — SourceKit typename supplementation and `Open Package…` are both disabled under it (see M14 in `CHANGELOG.md`).
-- **CI is deliberately dormant.** `.github/workflows/ci.yml` triggers on `workflow_dispatch` only, and the workflow itself is disabled on GitHub, to avoid the macOS runner's 10x billing (commit `5257203`). Do not add `push` / `pull_request` triggers without asking — run the suites locally instead.
+- **CI runs on every push to `main` and every PR against it.** `.github/workflows/ci.yml` builds and tests the Bridge and the Studio app, unsigned, on the `xcode-27` runner with the newest stable Xcode 27, matching local development. It's a standard GitHub-hosted runner, free because the repo is public, but a preview image: the GA images stop at Xcode 26.6 / Swift 6.3, so move to the GA image with Xcode 27 when one ships. CI was dormant from May to October 2026 to avoid macOS's 10x billing (commit `5257203`), but that rate applies only to private repos. Ask before making the repo private or moving a job to a larger runner (such as `xcode-27-xlarge`): either one makes the minutes billable.
 
 ## Architecture
 
