@@ -106,6 +106,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed — Bridge
 
+- **`classdiagram --package` no longer overflows the stack on a name that
+  means both a module and a type around the writer** (#244). In module `M`,
+  `enum M { enum M { class W: M.V {} } }` built with `swift build`, but
+  `--package` exited with 132 and no output, in every format, so the whole
+  diagram was lost. Whether the enclosing `M` is read as a module takes what
+  `M.V`'s first component means, and that takes the enclosing `M` again.
+  `readsModule` restarted its depth at 0 each time, so no guard ended the
+  loop. It now takes the lookup's depth and stops past 8, and such a name
+  draws the edge Swift means, here to the inner `M.V`. Depth 8 itself still
+  reads, so the last link of an eight-link alias chain is still found through
+  its module.
+
 - **`brew install` works on Homebrew 7, and a Homebrew install draws SVG.**
   Homebrew 7 refused to load the formula, because it had `depends_on :macos`
   beside `depends_on macos:`. It also refuses a bare
