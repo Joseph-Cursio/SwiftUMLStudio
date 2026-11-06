@@ -139,11 +139,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   with the writer's, compared whole, so `Sources/Foo` shares only `Sources`
   with `Sources/FooBar`. Types equally near still fall to that first, so a
   directory every path is under, such as the scan's root, changes
-  nothing. This holds wherever a name is looked up: supertype and
-  extension edges in every format, a nesting edge that ends on a type
-  rather than on an extension's own box (Mermaid draws none),
-  `--merge-extensions`, a hidden type's stand-in, and the typealiases that
-  sequence, activity and `deps --types` follow. A nearer typealias now
+  nothing. This is how supertype and extension edges in every format, a
+  nesting edge that ends on a type rather than on an extension's own box
+  (Mermaid draws none), `--merge-extensions`, a hidden type's stand-in, and
+  the typealiases that sequence, activity and `deps --types` follow all find
+  a name, apart from the cases below and #232. A nearer typealias now
   comes before a farther type.
 
   With `--package` nothing changes: a directory never decides among
@@ -171,10 +171,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
   That leaves these wrong, without `--package`. A writer that imports only
   `Core` takes an extension's `Foo.X` in a sibling directory before one in
-  `Core`, when `Foo`'s body declares no such member for it to see. A name
-  built on the type around the writer, in `extension Foo` or, merged, in
-  `struct Foo`, can take the `X` near it that an extension adds to another
-  target's `Foo` through a typealias of it. An extension equally near two
+  `Core`, when `Foo`'s body declares no such member for it to see (#253). A
+  name built on the type around the writer, in `extension Foo` or, merged,
+  in `struct Foo`, can take the `X` near it that an extension adds to another
+  target's `Foo` through a typealias of it (#252). An extension equally near two
   `Foo`s extends the first read, so a directory's name can decide whose
   member it adds. And extensions equally near fall to the first read, which
   merging and edges can take differently, so with one written `extension
@@ -1465,13 +1465,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   braces expand only in `files.include` and `files.exclude`, and corrects
   the description of a plain string, which matches the path it names
   and what lies inside it, not a substring anywhere.
-- **A plain `files.include` or `files.exclude` entry stops at a path
-  component** (#111). It matched every path that merely began with the
-  same text: `--exclude Sources/App` also dropped `Sources/AppKit/…` and
-  `Sources/AppDelegate.swift`, and `--exclude Generated` dropped
-  `GeneratedExtra/`. `Glob.matches` tested `path.contains`, a substring
-  match left from before entries and enumerated files were spelled
-  alike; it now takes the named path and what lies inside it.
 - **A type nested in a hidden type no longer hangs off an unrelated type
   with the hidden type's short name** (#67). In PlantUML and Nomnoml,
   the edge from a drawn nested type to a parent the diagram does not draw
@@ -1517,33 +1510,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   builder, on a private copy of the items. Repeated or concurrent
   diagrams from one parse now give the same output, and a `.merged` run
   no longer leaves `<&bolt>` on a later `.all` one.
-- **`classdiagram` no longer diagrams the whole current directory when its
-  file selection comes out empty.** The command collected and filtered
-  its files, then passed the paths to `ClassDiagramGenerator.generate(for:)`,
-  which collected them again — and `FileCollector` reads an empty path
-  list as "the current directory". So a `files.include` that matched
-  nothing, a `files.exclude` or `--exclude` that matched everything, or a
-  path holding no Swift files produced a diagram of every Swift file under
-  the working directory, with exit status 0: the files the selection had
-  just ruled out. It now fails with `No Swift files were found in the
-  given paths, or the files.include / files.exclude (--exclude) filters
-  left none.` and a non-zero exit, as `er`, `state` and `component`
-  already do when they find nothing. Only `classdiagram` applies file
-  filters; the other subcommands, Studio and the framework API are
-  unchanged.
-- **Every `--exclude` and `files.exclude` entry applies, not only the
-  last.** `FileCollector.getFiles(for:in:honoring:)` replaced its set of
-  excluded files with each exclude glob in turn, so only the last entry
-  excluded anything. The documented
-  `classdiagram Sources/ --exclude Sources/Generated/ --exclude Sources/Mocks/`
-  dropped `Mocks` and kept `Generated`, and a `.swiftumlbridge.yml` with
-  several `files.exclude` patterns honoured only the last one. Include
-  globs had a related fault: a file matching two of them came back twice,
-  as did a file with include globs and two exclude entries, and include
-  results followed the order of the globs rather than the order the
-  files were found. Files are now filtered in one pass: dropped if any
-  exclude glob matches, kept if any include glob does, each at most once
-  and in the order found.
 - **A PlantUML diagram reaches planttext.com whole** (#57). `DiagramText`
   deflated the script with `compression_encode_buffer`, passing the
   string's `Character` count as both the number of bytes to read and the
@@ -1711,9 +1677,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   as `.nomnoml`. The fallbacks now report `.mermaid`, as the
   `--format svg` fallback in `state` and `er` already did, so the CLI
   opens mermaid.live and Studio previews and exports the text as
-  Mermaid. A diagram reopened from Studio's history still takes the
-  format picker's value rather than the script's, so it is still sent
-  to `nomnoml.js`.
+  Mermaid.
 - **`--format` help no longer lists only `plantuml` and `mermaid`**
   (#82). The hand-written "Options: plantuml, mermaid" sat beside
   ArgumentParser's own "(values: plantuml, mermaid, nomnoml, svg)",
@@ -1811,9 +1775,71 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed — Bridge
 
-- **swift-syntax 602 or later is required** (`a53bedd`). The pin moved
-  from `from: "600.0.0"`, which allowed only 600.x, to `from: "602.0.0"`,
-  so a package that also depends on something needing 602 resolves.
+- **`classdiagram` no longer diagrams the whole current directory when its
+  file selection comes out empty.** The command collected and filtered
+  its files, then passed the paths to `ClassDiagramGenerator.generate(for:)`,
+  which collected them again — and `FileCollector` reads an empty path
+  list as "the current directory". So a `files.include` that matched
+  nothing, a `files.exclude` or `--exclude` that matched everything, or a
+  path holding no Swift files produced a diagram of every Swift file under
+  the working directory, with exit status 0: the files the selection had
+  just ruled out. It now fails with `No Swift files were found in the
+  given paths, or the files.include / files.exclude (--exclude) filters
+  left none.` and a non-zero exit, as `er` and `component` already do
+  when they find nothing. `deps`, `sequence`, `activity` and `state` still
+  exit 0 on an empty directory. Only `classdiagram` applies file
+  filters; the other subcommands, Studio and the framework API are
+  unchanged.
+- **Every `--exclude` and `files.exclude` entry applies, not only the
+  last.** `FileCollector.getFiles(for:in:honoring:)` replaced its set of
+  excluded files with each exclude glob in turn, so only the last entry
+  excluded anything. The documented
+  `classdiagram Sources/ --exclude Sources/Generated/ --exclude Sources/Mocks/`
+  dropped `Mocks` and kept `Generated`, and a `.swiftumlbridge.yml` with
+  several `files.exclude` patterns honoured only the last one. Include
+  globs had a related fault: a file matching two of them came back twice,
+  as did a file with include globs and two exclude entries, and include
+  results followed the order of the globs rather than the order the
+  files were found. Files are now filtered in one pass: dropped if any
+  exclude glob matches, kept if any include glob does, each at most once
+  and in the order found.
+- **A plain `files.include` or `files.exclude` entry stops at a path
+  component** (#111). It matched every path that merely began with the
+  same text: `--exclude Sources/App` also dropped `Sources/AppKit/…` and
+  `Sources/AppDelegate.swift`, and `--exclude Generated` dropped
+  `GeneratedExtra/`. `Glob.matches` tested `path.contains`, a substring
+  match left from before entries and enumerated files were spelled
+  alike; it now takes the named path and what lies inside it.
+- **Library callers: a few public declarations change.** Conformers of
+  `ClassDiagramGenerating` must add `analyzeTypes(for:sdkPath:) -> [TypeInfo]`,
+  and conformers of `DependencyGraphGenerating` must add
+  `extractEdges(for:mode:with:) -> [DependencyEdge]`; neither has a default.
+  Code that only uses the provided generators is unaffected.
+  `PersistenceSchemaExtractor.extract(from:)` gained a defaulted `file:`, so a
+  reference to it needs a closure, and `ComponentExtractor.extract`'s
+  `analyzer` takes `any ClassDiagramGenerating`, so `analyzer: .init()` must
+  be written `analyzer: ClassDiagramGenerator()`. Values change too:
+  `TypeInfo.inheritedTypeNames` holds `Sendable` for `@unchecked Sendable` and
+  no longer holds `~Copyable`, `TypeInfo.name` is `Foo` for `extension
+  Foo<Int>`, and `script.format` is `.mermaid` when a `.nomnoml` request falls
+  back to Mermaid. The package has no manifest at the repository root, so it
+  can only be used by path, and none of this reaches a version requirement.
+- **`classdiagram --sdk` now does the work it promises** (#147). It added no
+  types from 0.3.0 to 1.1.0, so it now takes longer: on Studio's own sources,
+  about 0.15 s became about 6 s. A file that imports a module SourceKit cannot
+  find can put `error: no such module` on stderr, with exit 0, which a build
+  step that treats `error:` as failure will trip on.
+- **Existing excludes can hide more.** A prefix glob such as `Diagram*`
+  reaches nested types, `Name` hides `extension Notification.Name`, `Foo` also
+  hides `extension Foo<Int>`, a supertype exclude also matches an edge written
+  through a typealias, and an `elements.exclude` pattern that matches a module
+  or target name hides it from `deps --modules`. Patterns written for spellings
+  that are no longer names, such as `Foo<Int>`, `@unchecked*` and `~*`, match
+  nothing; use the plain type name.
+- **swift-syntax 602.x is required** (`a53bedd`). The pin moved from
+  `from: "600.0.0"`, which allowed only 600.x, to `from: "602.0.0"`, which
+  allows only 602.x. A package that also needs 602 now resolves, and one
+  that needs 600, 601, 603 or 604 does not.
   602 checks each `[` for InlineArray sugar, which made a chain of
   nested `[` slow until #148.
 
