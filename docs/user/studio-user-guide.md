@@ -63,7 +63,7 @@ For CLI usage, see the [SwiftUMLBridge User Guide](user-guide.md).
 
 | Requirement | Minimum |
 |---|---|
-| macOS | 26.4 |
+| macOS | 26.2 |
 | Xcode (to build the app) | 26.0 |
 
 Xcode 26 is the floor because the embedded SwiftUMLBridge package declares
