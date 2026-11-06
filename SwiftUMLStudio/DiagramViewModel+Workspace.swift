@@ -96,7 +96,7 @@ extension DiagramViewModel {
         for (idx, bookmark) in storedBookmarks.enumerated() {
             if let bookmark, let result = SecurityScopedURL.resolveURL(from: bookmark) {
                 resolvedURLs.append(result.url)
-                resolvedPaths.append(result.url.path())
+                resolvedPaths.append(result.url.path(percentEncoded: false))
                 // Stale bookmarks regenerate via `bookmarkToPersist`. Storing
                 // `nil` would silently strip sandbox access on the next launch
                 // (path-only fallback isn't readable under sandbox).
