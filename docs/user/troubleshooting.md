@@ -62,7 +62,7 @@ eval "$(/opt/homebrew/bin/brew shellenv)"
 
 ### Build-from-source: `error: package manifest cannot be loaded`
 
-Means the toolchain doesn't understand `swift-tools-version: 6.2`. Same fix as above — install Xcode 16+ and re-run `xcode-select -s`.
+Means the toolchain doesn't understand `swift-tools-version: 6.2`. Same fix as above — install Xcode 26+ and re-run `xcode-select -s`.
 
 ---
 
