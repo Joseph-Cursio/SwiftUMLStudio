@@ -408,6 +408,8 @@ swiftumlbridge classdiagram --package /path/to/MyPackage --format mermaid --outp
 
 `--package` overrides any positional `<paths>` arguments — the file list is derived from each target's `sources` array, and the files are read in path order, so the same package gives the same diagram on every run. Test targets are excluded.
 
+Without `--package`, nothing says which module a file belongs to. When several files declare a type of one name, an edge ends on the type in the writer's file, else on the one whose file shares the most leading directories with the writer's, else on the first read, a protocol coming before other types and a typealias after them. That keeps a scan of several packages' edges within each package when each package is its own directory tree, but it is a guess: only `--package` reads what each file imports.
+
 ---
 
 ## Generating Sequence Diagrams
