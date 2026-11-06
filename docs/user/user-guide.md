@@ -64,7 +64,7 @@ SwiftUMLBridge is a command-line tool and Swift Package that generates architect
 
 | Requirement | Minimum Version |
 |---|---|
-| macOS | 15.0 (Sequoia) for the CLI / Swift Package; 26.0 for the SwiftUML Studio app |
+| macOS | 15.0 (Sequoia) for the CLI / Swift Package; 26.2 for the SwiftUML Studio app |
 | Xcode | 26.0 |
 | Swift | 6.2 (strict concurrency / Swift 6 language mode) |
 | Swift toolchain | Current or one prior major release |
