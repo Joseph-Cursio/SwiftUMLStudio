@@ -23,18 +23,26 @@ public struct ActivityDiagramGenerator: ActivityDiagramGenerating, Sendable {
         let listed = CallGraphExtractor.listedEntryPoint(type: entryType, method: entryMethod)
         let sources = CallGraphExtractor.readSources(for: paths)
         let aliases = TypeAliasResolver(sources: sources)
-        // `--entry Alias.helper` is the aliased type's `helper`, as its extension is (#125).
-        let entry = (type: aliases.resolve(listed.type, in: nil), method: listed.method)
-        for source in sources {
-            if let graph = ActivityFlowExtractor.extract(
-                from: source.contents, entryType: entry.type, entryMethod: entry.method,
-                file: source.file, aliases: aliases
-            ) {
-                return ActivityScript(graph: graph, configuration: configuration)
+        // `--entry Alias.helper` is the aliased type's `helper`, as its extension is (#125): the first
+        // the name can come to with a body for it. Chosen before any graph is built, so a name that
+        // is a typealias costs one more pass over the files, not one per declaration.
+        let types = aliases.entryTypes(of: listed.type)
+        let chosen = CallGraphExtractor.entryType(
+            named: listed.type, among: types, method: listed.method,
+            in: sources.map { CallGraphExtractor.extract(from: $0.contents, file: $0.file, aliases: aliases) }
+        )
+        if let chosen {
+            for source in sources {
+                if let graph = ActivityFlowExtractor.extract(
+                    from: source.contents, entryType: chosen, entryMethod: listed.method,
+                    file: source.file, aliases: aliases
+                ) {
+                    return ActivityScript(graph: graph, configuration: configuration)
+                }
             }
         }
         return ActivityScript(
-            graph: ActivityGraph(entryType: entry.type, entryMethod: entry.method),
+            graph: ActivityGraph(entryType: types[0], entryMethod: listed.method),
             configuration: configuration
         )
     }

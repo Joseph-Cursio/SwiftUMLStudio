@@ -222,8 +222,8 @@ struct NearestDirectoryNameTests {
     }
 
     /// Known gap: `--entry` is typed in, so it has no file to rank from, while a caller in `/r/B`
-    /// has: a traversal from `Foo.run` starts at `RealA`, whatever `/r/B`'s callers mean, and a
-    /// `run` in an `extension Foo` in `/r/B` is `RealB`'s, so `--entry Foo.run` draws nothing.
+    /// has: a traversal from `Foo.run` starts at the first that declares `run`
+    /// (`EntryThroughLaterDeclarationTests`), whatever `/r/B`'s callers mean.
     @Test("a name with no file to rank from means the first typealias")
     func entryPointHasNoDirectory() throws {
         #expect(TypeAliasResolver(items: try parsed(Self.aliases)).resolve("Foo", in: nil) == "RealA")

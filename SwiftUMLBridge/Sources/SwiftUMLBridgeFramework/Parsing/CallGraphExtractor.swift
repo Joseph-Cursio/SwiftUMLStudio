@@ -14,6 +14,8 @@ import SwiftSyntax
 final class CallGraphExtractor: TypeStackVisitor {
     private var edges: [CallEdge] = []
     private var methods: Set<String> = []
+    private var entryMethods: Set<String> = []
+    private var nestedEntryMethods: [String: String] = [:]
     private var methodStack: [String] = []
 
     // MARK: - Function declarations (push/pop methodStack)
@@ -22,6 +24,14 @@ final class CallGraphExtractor: TypeStackVisitor {
         let methodName = node.name.canonicalName
         if let typeName = typeStack.last {
             methods.insert("\(typeName).\(methodName)")
+            if node.body != nil, !node.isInsideBody {
+                if typeStack.count == 1 {
+                    entryMethods.insert("\(typeName).\(methodName)")
+                } else {
+                    nestedEntryMethods["\(typeName).\(methodName)"] = typeName
+                    nestedEntryMethods["\(typeStack.joined(separator: ".")).\(methodName)"] = typeName
+                }
+            }
         }
         methodStack.append(methodName)
         return .visitChildren
@@ -119,6 +129,15 @@ final class CallGraphExtractor: TypeStackVisitor {
     internal struct ExtractionResult: Sendable {
         let edges: [CallEdge]
         let methods: [String]
+        /// The methods an entry through several types can mean in a type that is in no other, as
+        /// `Type.method`: a body's, or an extension's under the type it names, which may be dotted
+        /// (`OB.IB.run`). A requirement has no body, a function local to a body is no member, and a
+        /// type local to a body cannot be named from outside it, so none of those is here.
+        let entryMethods: Set<String>
+        /// The same for a type inside another, which is filed under its innermost name: its
+        /// `Type.method` under that name (`IB.run`) and under the types around it (`OB.IB.run`), to
+        /// the name (`IB`).
+        let nestedEntryMethods: [String: String]
     }
 
     /// Parse `source` and extract all call edges and method definitions. With the project's
@@ -132,8 +151,39 @@ final class CallGraphExtractor: TypeStackVisitor {
             let extractor = CallGraphExtractor(viewMode: .sourceAccurate)
             extractor.resolveTypeName = { aliases.resolve($0, in: file) }
             extractor.walk(sourceFile)
-            return ExtractionResult(edges: extractor.edges, methods: Array(extractor.methods).sorted())
+            return ExtractionResult(
+                edges: extractor.edges, methods: Array(extractor.methods).sorted(),
+                entryMethods: extractor.entryMethods, nestedEntryMethods: extractor.nestedEntryMethods
+            )
         }
+    }
+
+    /// What an entry typed as `name`, which can come to any of `types`
+    /// (`TypeAliasResolver.entryTypes(of:)`), is drawn from: the only one, or of several the first
+    /// with a body for `method`, as that method is filed, and `nil` when none has one. Sequence and
+    /// activity diagrams both choose here, so they cannot disagree on the type. A body counts
+    /// however little it does: a `run` with no calls is still that type's. Of one spelling, what is
+    /// filed under it wins, so `extension OB.IB` is `OB.IB` whichever file is read first. A nested
+    /// type is only what its whole spelling names, or failing every type, what `name` itself was
+    /// typed as: `IB` from a typealias is the top-level `IB`, not `OC.IB`. `results` are in the
+    /// order the files were read, and a single type needs none of them, so a name that is no
+    /// typealias is parsed no more for being chosen.
+    static func entryType(
+        named name: String, among types: [String], method: String,
+        in results: @autoclosure () -> [ExtractionResult]
+    ) -> String? {
+        guard types.count > 1 else { return types.first }
+        var filed: Set<String> = []
+        var nested: [String: String] = [:]
+        for result in results() {
+            filed.formUnion(result.entryMethods)
+            nested.merge(result.nestedEntryMethods) { first, _ in first }
+        }
+        for type in types {
+            if filed.contains("\(type).\(method)") { return type }
+            if type.contains("."), let nestedType = nested["\(type).\(method)"] { return nestedType }
+        }
+        return nested["\(name).\(method)"]
     }
 
     /// Collect every `Type.method` entry point defined across the given source paths.

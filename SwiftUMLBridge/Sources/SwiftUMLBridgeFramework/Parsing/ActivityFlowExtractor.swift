@@ -121,8 +121,12 @@ final class ActivityEntryFunctionFinder: SyntaxVisitor {
 
     // MARK: Function declarations
 
+    /// A member only: a function local to an initializer, accessor or closure is reached by this
+    /// walk, and `T.method` cannot name it. A function's own body is not walked, so a type local
+    /// to it never takes the entry from a type of that name that can be named.
     override func visit(_ node: FunctionDeclSyntax) -> SyntaxVisitorContinueKind {
         if foundBody == nil,
+           node.isMember,
            typeStack.last == entryType,
            node.name.canonicalName == entryMethod,
            let body = node.body {
