@@ -51,6 +51,11 @@ extension LayoutGraphBuilder {
         /// candidate in the writer's own file, which `DeclarationScope.nearest` always picks, is
         /// looked up there alone.
         private(set) var typesForNameInFile: [String: [String: [Declared]]] = [:]
+        /// The files declaring a type of each name that ranks in another file, with no module, as
+        /// a typealias `mergeExtensions` moved into its type does. `typesForNameInFile` does not
+        /// list it there, yet if it is `private` only that file sees it, so a writer there can't
+        /// share candidates with others of its name (`TypeLookup.typeWithSureKind`).
+        private(set) var filesDeclaringApartFromRank: [String: Set<String>] = [:]
         /// Each declaration as recorded, by its identity.
         private(set) var recordForDeclaration: [ObjectIdentifier: RecordedDeclaration] = [:]
         /// The type each declaration's enclosing extension extends, once worked out
@@ -100,6 +105,10 @@ extension LayoutGraphBuilder {
                     typesForNameInFile[name, default: [:]][filePath, default: []].append(declared)
                 }
                 if declared.extended != nil { namesWithExtendedTypes.insert(name) }
+                if declared.scope.module == nil, let own = declared.scope.filePath,
+                   own != declared.rankScope.filePath {
+                    filesDeclaringApartFromRank[name, default: []].insert(own)
+                }
             }
             if declared.aliasTarget != nil {
                 aliasNames.insert(name)

@@ -26,7 +26,8 @@ extension LayoutGraphBuilder {
 
     /// The type each dotted name's first component means (`TypeLookup.started(_:from:depth:)`)
     /// for a writer at file scope with no declaration of that name in its own file, where the
-    /// answer depends on the writer's module and imports alone, filled the first time one asks.
+    /// answer depends on the writer's module and imports alone, filled the first time one asks: a
+    /// name's start is worked out only with a module, and a directory ranks only without one.
     /// Without it, every dotted name looked its first component up among all of its same-named
     /// types again. A class behind a lock, as `EnclosingTypes` is, which the lookup starts anew
     /// whenever it records a declaration.
@@ -51,8 +52,8 @@ extension LayoutGraphBuilder {
     }
 
     /// A name `TypeLookup.typeWithSureKind` looks up for a writer with no candidate in its own
-    /// file: the answer then depends on the writer's module, its imports, and the type a dotted
-    /// name starts at there, alone.
+    /// file: its candidates then depend on the writer's module, its imports, and the type a dotted
+    /// name starts at there, alone (`SharedLookup`).
     struct SharedLookupKey: Hashable {
         let name: String
         let root: NameRoot
@@ -63,12 +64,16 @@ extension LayoutGraphBuilder {
         let depth: Int
     }
 
-    /// What the writers of one `SharedLookupKey` share: the candidates, whether every one comes to
-    /// a protocol, each candidate coming to what it does from its own scope, and the answer.
+    /// What the writers of one `SharedLookupKey` share: the candidates, and whether every one comes
+    /// to a protocol, each candidate coming to what it does from its own scope. Which candidate a
+    /// writer with no module means goes by its directory too (`DeclarationScope.rankingDirectory`),
+    /// so the answer is kept per directory, and a writer with a module has the one, under `nil`.
+    /// A writer that alone can see a candidate never shares
+    /// (`TypeLookup.filesDeclaringApartFromRank`), or the others would rank it.
     final class SharedLookup {
         let found: [Declared]
         var everyComesToProtocol: Bool?
-        var answer: (type: Declared?, kindIsSure: Bool)?
+        var answerInDirectory: [[UInt8]?: (type: Declared?, kindIsSure: Bool)] = [:]
 
         init(found: [Declared]) {
             self.found = found

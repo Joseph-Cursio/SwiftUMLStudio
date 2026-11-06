@@ -208,8 +208,10 @@ struct SupertypeEdgeKindCertaintyTests {
     /// to a protocol in a file of its own, and one writer. A dotted name was looked up among every
     /// same-named alias, and each alias walked the rest of its chain again, to the protocol.
     ///
-    /// This thread's CPU clock, so the suites running beside this one do not count: a 3-core CI
-    /// runner took some six times as long by the wall clock (8e939be).
+    /// This thread's CPU clock, so the suites running beside this one do not count. Ranking by
+    /// directory made this about 2.5 times the work, which took it past 2 s by the wall clock in a
+    /// loaded full run, where it had stayed under. The bound guards only a gross regression;
+    /// `NearestDirectoryMemoTests` guards the shared memo.
     @Test("many alias chains through a type's members are checked once each")
     func manyDottedAliasChains() throws {
         let members = (1..<8).map { "    typealias A\($0) = \($0 == 7 ? "Proto" : "NS.A\($0 + 1)")" }

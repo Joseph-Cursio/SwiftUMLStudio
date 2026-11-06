@@ -62,10 +62,12 @@ struct DeclarationScope {
 
     /// The candidate a name means where this scope writes it, close to how Swift looks it up: the
     /// first declared in the same file, then in the same module, one ranked in a file before one
-    /// ranked in none, then the first of all; `nil` only when there are no candidates. A
-    /// typealias ModB's extension adds to ModA's `Foo` ranks in ModB and no file
-    /// (`TypeLookup.memberRank`), so in ModB, ModB's own `Foo.X` still comes first, whichever
-    /// was recorded first: there, `Foo` is ModB's own `Foo`.
+    /// ranked in none; for a scope of no known module, as for sources read without their package,
+    /// the one nearest by directory (`nearestByDirectory(among:scope:)`), a guess at the module;
+    /// then the first of all. `nil` only when there are no candidates. A typealias ModB's
+    /// extension adds to ModA's `Foo` ranks in ModB and no file (`TypeLookup.memberRank`), so in
+    /// ModB, ModB's own `Foo.X` still comes first, whichever was recorded first: there, `Foo` is
+    /// ModB's own `Foo`.
     func nearest<Candidate>(
         among candidates: [Candidate], scope: (Candidate) -> DeclarationScope
     ) -> Candidate? {
@@ -82,7 +84,57 @@ struct DeclarationScope {
                 if fileless == nil { fileless = candidate }
             }
             if let fileless { return fileless }
+        } else if let near = nearestByDirectory(among: candidates, scope: scope) {
+            return near
         }
         return first
     }
+
+    /// The first of `candidates` whose file shares the most leading directories with this scope's,
+    /// or `nil` when none shares any. Separate targets and packages are separate directory trees,
+    /// so this stands in for the module the sources were read without. A shorter run never wins
+    /// and a tie goes to the first, so a directory every candidate is under, the scan's root or
+    /// `/`, decides nothing, with no need to know where the scan began. Directories are compared
+    /// whole and as spelled, so `Sources/Foo` shares only `Sources` with `Sources/FooBar`, a relative
+    /// path shares nothing with an absolute one, and two spellings of one directory, as through a
+    /// symlink, share only what they spell alike. It reads paths alone and calls nothing on the
+    /// lookup, so it adds no recursion. A name can have thousands of candidates, so it compares
+    /// bytes: `hasPrefix` or splitting the paths took seconds.
+    private func nearestByDirectory<Candidate>(
+        among candidates: [Candidate], scope: (Candidate) -> DeclarationScope
+    ) -> Candidate? {
+        guard candidates.count > 1, var writer = filePath else { return nil }
+        return writer.withUTF8 { writerBytes in
+            // Each leading run of directories' length, with its final `/`; the root, however many
+            // slashes spell it, is none.
+            let start = writerBytes.firstIndex { $0 != Self.slash } ?? writerBytes.endIndex
+            let lengths = writerBytes[start...].indices.filter { writerBytes[$0] == Self.slash }.map { $0 + 1 }
+            var shared = 0
+            var near: Candidate?
+            for candidate in candidates {
+                guard shared < lengths.count else { break }
+                guard var path = scope(candidate).filePath else { continue }
+                path.withUTF8 { bytes in
+                    while shared < lengths.count, bytes.count >= lengths[shared],
+                          memcmp(writerBytes.baseAddress, bytes.baseAddress, lengths[shared]) == 0 {
+                        shared += 1
+                        near = candidate
+                    }
+                }
+            }
+            return near
+        }
+    }
+
+    /// What `nearest(among:scope:)` goes by in this scope's file beyond its module and imports,
+    /// when that file holds no candidate: its directory, and with a module, nothing. In bytes, as
+    /// the ranking compares it: a string would hold a name's composed and decomposed spellings
+    /// equal, and a memo keyed by it would give one the other's answer.
+    var rankingDirectory: [UInt8]? {
+        guard module == nil, let filePath else { return nil }
+        let bytes = filePath.utf8
+        return Array(bytes[..<(bytes.lastIndex(of: Self.slash) ?? bytes.startIndex)])
+    }
+
+    private static let slash = UInt8(ascii: "/")
 }
