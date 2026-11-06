@@ -253,6 +253,33 @@ struct SharedLookupFileTests {
 
     // MARK: Writers the guard leaves sharing
 
+    /// Only reading a first component as a module goes by the writer's file, so where no module has
+    /// its name, a file that declares it shares, or each of its writers looks through every rival.
+    @Test("writers in a file declaring a first component no module is named after still share")
+    func ownFirstComponentNamingNoModuleShares() throws {
+        let files: [(module: String?, source: String)] = [
+            (nil, "public enum Outer {\n    public typealias P = Q\n}\npublic protocol Q {}"),
+            (nil, """
+            protocol R {}
+            class Parent {
+                typealias P = R
+            }
+            class Outer: Parent {}
+            struct W1: Outer.P {}
+            struct W2: Outer.P {}
+            """)
+        ]
+        let items = try moduleQualifiedItems(files)
+        let lookup = LayoutGraphBuilder.TypeLookup(of: items)
+        let kinds = LayoutGraphBuilder.AliasKinds()
+        for clause in writers(in: items) where clause.written == "Outer.P" {
+            _ = lookup.typeWithSureKind(
+                lookup.qualifiedName(ofWritten: clause.written, from: clause.scope), from: clause.scope, kinds: kinds
+            )
+        }
+        #expect(kinds.shared.count == 1)
+    }
+
     /// The guard goes by what a writer's own file holds, so writers whose files hold none of the
     /// name's types still share one lookup: without that, the memo saves nothing.
     @Test("writers whose files declare nothing of the name still share", arguments: [nil, "App"] as [String?])

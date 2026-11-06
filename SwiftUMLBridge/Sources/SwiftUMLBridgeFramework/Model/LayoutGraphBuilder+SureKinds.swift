@@ -58,14 +58,14 @@ extension LayoutGraphBuilder.TypeLookup {
 
     /// Whether a type or typealias of `file` can change what `name` means there, so a writer in it
     /// takes no other's answer, nor gives one: under the name, only that file sees one that is
-    /// `private`, and it ranks first there; under the rest of a dotted name, the same goes for
-    /// reading its first component as a module (`moduleMatch(named:from:depth:)`); and under that
-    /// first component, one only that file sees keeps it from being read so (`shadows`). What a
-    /// first component means otherwise is `QualifiedName.start`, or read only where
-    /// `fitsEachAlone(_:)` is false.
+    /// `private`, and it ranks first there. When a module has the name of a dotted name's first
+    /// component, the same goes under the rest of the name, for reading that component as the
+    /// module (`moduleMatch(named:from:depth:)`), and under the component itself, one only that
+    /// file sees keeps it from being read so (`shadows`). What a first component means otherwise is
+    /// `QualifiedName.start`, or read only where `fitsEachAlone(_:)` is false.
     private func ownFileBears(on name: LayoutGraphBuilder.QualifiedName, _ file: String) -> Bool {
         var names = spellings(of: name)
-        if let dot = name.name.firstIndex(of: ".") {
+        if let dot = name.name.firstIndex(of: "."), !modules.modules(namedBy: String(name.name[..<dot])).isEmpty {
             names.append(String(name.name[..<dot]))
             names.append(String(name.name[name.name.index(after: dot)...]))
         }
