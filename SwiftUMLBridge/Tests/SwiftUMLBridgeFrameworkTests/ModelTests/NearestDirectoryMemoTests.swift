@@ -93,9 +93,9 @@ struct NearestDirectoryMemoTests {
         #expect(text.contains("Base <|.. SubD : conforms to"), "\(text)")
     }
 
-    /// A `private` alias in an extension is seen only in that file, but ranks, once merged, in
-    /// the extended type's. A writer in its file used to keep a list of candidates with it in,
-    /// and the next writer ranked the alias, so `W0`'s end went by the order files were read.
+    /// A `private` alias in an extension is seen only in that file. Without a module it ranks
+    /// there too (#230), so `W7` finds it before the memo, which this no longer exercises:
+    /// `SharedLookupFileTests` does, with a module.
     /// `Foo.V` for `W0` is not what Swift means, `r/B/V.swift`'s `V`, an older gap: this pins only
     /// that `W0` never gets the alias, whichever is read first.
     @Test("a private alias a merged extension adds is not ranked for a writer that can't see it",
@@ -115,7 +115,7 @@ struct NearestDirectoryMemoTests {
         #expect(text.contains("Foo.V <|.. Foo.W0 : conforms to"), "\(text)")
     }
 
-    /// The same when the other candidate is an alias too, where main already let `W0` have it.
+    /// The same when the other candidate is an alias too.
     @Test("nor when the other candidate is a typealias", arguments: [false, true])
     func privateAliasBesideAnotherAlias(reversed: Bool) throws {
         let files: [Fixture.File] = [

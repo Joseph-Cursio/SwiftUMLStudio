@@ -107,7 +107,8 @@ extension LayoutGraphBuilder.TypeLookup {
     /// but only when the candidates are not all of one root: a name the diagram does not mix up
     /// keeps every candidate, as it always has, and costs no lookup. So are a started name's
     /// when that type has none, among those the file can reach
-    /// (`fallbackCandidates(_:for:from:depth:)`).
+    /// (`fallbackCandidates(_:for:from:depth:)`). With no module, where an extension adds one of
+    /// them, they are also that type's alone (`membersOfWrittenStart(_:named:from:depth:)`).
     func fitting(
         _ candidates: [LayoutGraphBuilder.Declared], for name: LayoutGraphBuilder.QualifiedName,
         from scope: LayoutGraphBuilder.Scope, depth: Int
@@ -131,10 +132,49 @@ extension LayoutGraphBuilder.TypeLookup {
             guard candidates.count > 1, candidates.contains(where: { $0.extended != nil }) else {
                 return candidates
             }
+            candidates = membersOfWrittenStart(candidates, named: name.name, from: scope, depth: depth)
+            guard candidates.count > 1 else { return candidates }
             let isOutside = candidates.map { isInExtensionOfOutsideType($0, depth: depth) }
             guard isOutside.contains(true), isOutside.contains(false) else { return candidates }
             let startsOutside = firstComponentType(of: name.name, from: scope, depth: depth) == nil
             return zip(candidates, isOutside).filter { $0.1 == startsOutside }.map(\.0)
         }
+    }
+
+    /// In a file of no known module, where no start is worked out (`started(_:from:depth:)`), the
+    /// `candidates` of the dotted `name` that belong to the type its first component means from
+    /// `scope`, or every candidate when none does or it is outside the diagram (#230). A member
+    /// that type's body declares for every module to see then goes before an extension's in another
+    /// directory: a file that sees both does not compile, so one that compiles means the body's.
+    /// An `internal` one proves nothing, as another module cannot see it, and an extension in the
+    /// writer's directory stays, since there the `Foo` both read may be another target's unrelated
+    /// one, first read of those equally near.
+    private func membersOfWrittenStart(
+        _ candidates: [LayoutGraphBuilder.Declared], named name: String,
+        from scope: LayoutGraphBuilder.Scope, depth: Int
+    ) -> [LayoutGraphBuilder.Declared] {
+        guard scope.module == nil, depth < 8,
+              let start = firstComponentType(of: name, from: scope, depth: depth),
+              let owner = owningDeclaration(of: start, depth: depth) else { return candidates }
+        let members = candidates.filter { candidate in
+            owningDeclaration(of: candidate, depth: depth).map { $0 == owner } ?? false
+        }
+        guard !members.isEmpty else { return candidates }
+        let isPublicBodyMember = { (member: LayoutGraphBuilder.Declared) in
+            member.extended == nil && member.ownAccess >= .package
+        }
+        guard members.contains(where: isPublicBodyMember), let writer = scope.rankingDirectory else { return members }
+        return members.filter { isPublicBodyMember($0) || $0.scope.rankingDirectory == writer }
+    }
+
+    /// The outermost type `declared` belongs to past any extension, by name and file, which tell
+    /// same-named types apart where they have no module; `nil` for one in an extension of a type
+    /// outside the diagram.
+    private func owningDeclaration(
+        of declared: LayoutGraphBuilder.Declared, depth: Int
+    ) -> (name: String?, filePath: String?)? {
+        guard declared.extended != nil else { return (declared.outermostName, declared.outermostFilePath) }
+        guard depth < 8, let type = enclosingExtensionType(of: declared, depth: depth) else { return nil }
+        return owningDeclaration(of: type, depth: depth + 1)
     }
 }

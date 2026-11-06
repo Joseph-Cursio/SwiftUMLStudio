@@ -143,11 +143,31 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   reports them: a directory argument's files come back under its real
   path, while a file argument keeps the spelling typed, so a file typed
   through a symlink, such as `/tmp` for `/private/tmp`, or with `./`,
-  shares only what the two spellings have in common. Under
-  `--merge-extensions`, typealiases of one name that extensions in
-  different directories add to one type all rank in that type's file, so
-  the first is taken there, and an extension's members can merge into a
-  different box than an edge of that name ends on.
+  shares only what the two spellings have in common.
+
+  A typealias an extension adds to a type ranks where the extension is, not
+  where the type is, whether the extension spells the type directly or
+  through a typealias and whether or not it is merged, and so does a nested
+  type merged in with nested types hidden (#230). So `class W: Foo.X {}`
+  beside `extension Foo { typealias X = R }` means that `X`, not the first
+  read in another target. When an extension's member is among a dotted
+  name's candidates, the name means a member of the type its first component
+  means to the writer, so a nearer `Foo.X` of another `Foo` does not win. A
+  `public` or `package` member of `Foo`'s body then comes before an
+  extension's in another directory, since a file that sees both does not
+  compile.
+
+  That leaves these wrong, without `--package`. A writer that imports only
+  `Core` takes an extension's `Foo.X` in a sibling directory before one in
+  `Core`, when `Foo`'s body declares no such member for it to see. A name
+  built on the type around the writer, in `extension Foo` or, merged, in
+  `struct Foo`, can take the `X` near it that an extension adds to another
+  target's `Foo` through a typealias of it. An extension equally near two
+  `Foo`s extends the first read, so a directory's name can decide whose
+  member it adds. And extensions equally near fall to the first read, which
+  merging and edges can take differently, so with one written `extension
+  Crate` and another `extension Outer`, an `extension Outer.X`'s members can
+  merge into a different box than an edge of that name ends on.
 
   `--entry` has no file to rank from, so `--entry Alias.method` means the
   first declaration of `Alias` with a body for the method, a top-level type

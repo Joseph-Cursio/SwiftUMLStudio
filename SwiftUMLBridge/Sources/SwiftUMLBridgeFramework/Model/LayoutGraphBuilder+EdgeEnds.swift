@@ -53,9 +53,9 @@ extension LayoutGraphBuilder {
         private(set) var typesForNameInFile: [String: [String: [Declared]]] = [:]
         /// The files that declare a type or typealias recorded under each name, or that it ranks
         /// in. Those can differ for a typealias an extension adds, which `memberRank` can rank in the
-        /// extended type's file. A `private` one is seen only by the file declaring it, and whatever
-        /// ranks in a file comes first only there, so a writer in such a file doesn't share
-        /// (`TypeLookup.ownFileBears(on:_:)`).
+        /// extended type's file, given a module. A `private` one is seen only by the file declaring
+        /// it, and whatever ranks in a file comes first only there, so a writer in such a file
+        /// doesn't share (`TypeLookup.ownFileBears(on:_:)`).
         private(set) var filesOfName: [String: Set<String>] = [:]
         /// Each declaration as recorded, by its identity.
         private(set) var recordForDeclaration: [ObjectIdentifier: RecordedDeclaration] = [:]
