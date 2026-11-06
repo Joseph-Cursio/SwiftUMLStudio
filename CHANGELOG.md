@@ -139,11 +139,37 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   the first is taken there, and an extension's members can merge into a
   different box than an edge of that name ends on.
 
-  Still unread: `--entry` has no file to rank from, so it means a type of
-  that name, else the first typealias. A method in an `extension Alias`
-  that a later directory's typealias claims is now that type's, so
-  `--entry Alias.method` no longer reaches it and draws an empty diagram;
-  name the aliased type instead, as in `--entry Real.method`.
+  `--entry` has no file to rank from, so `--entry Alias.method` means the
+  first declaration of `Alias` with a body for the method, a top-level type
+  of that name before a typealias, and a typealias before a nested type of
+  that name or a type the files only extend. Sequence and activity diagrams
+  find a method in an `extension Alias` whichever directory claims it. In
+  choosing among several declarations, a protocol requirement has no body, a
+  function local to any body is no member, and a type local to one cannot be
+  named from outside it, so none of them counts; macros are not expanded, so
+  a function in a macro's closure reads as local to it. The activity diagram
+  also passes over a function local to an initializer, accessor or closure
+  for the member of that name, and draws nothing when there is no member, as
+  it already did for a function local to a method.
+
+  When several have a body, the first is meant, with no warning; name the
+  aliased type to choose, as in `--entry Real.method`. That works only for a
+  type with a name of its own: `--entry` takes exactly `Type.method`, so
+  same-named aliased types cannot be told apart, and a nested type or
+  extension that loses to a typealias with the method cannot be typed. A
+  method in a nested type's own body is typed by its innermost name. An
+  extension is filed under what its written name comes to, so one in
+  `extension Outer.Inner`, `extension App.Real` or `extension O.Inner` is
+  reached only through a typealias that comes to that same spelling, and
+  counts for no other. A dotted target with a module or a typealias before
+  its last part, as in `typealias Svc = App.Real`, or `typealias Svc = O.Inner`
+  after `typealias O = Outer`, reaches only those extensions, not the type's
+  own body, and a target of `any P` or `P & Q` is not followed. Those draw an
+  empty diagram, so name the type where one can be typed. Once a type is
+  chosen, the activity diagram takes the first body filed under its name, so
+  a same-named type local to an initializer, accessor or closure, read first,
+  can draw in its place, and the sequence diagram merges every body filed
+  under the name.
 
 - **An SVG class diagram links an extension's box to the type it
   extends** (#75). PlantUML, Mermaid and Nomnoml draw this `ext` edge,
