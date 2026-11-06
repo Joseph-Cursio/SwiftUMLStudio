@@ -52,6 +52,25 @@ struct TypeAliasResolver {
         resolve(name, from: DeclarationScope(filePath: file?.path, module: nil))
     }
 
+    /// What `name` can come to when it is typed in, as an entry point, with no file to rank from:
+    /// what it comes to with no file (`resolve(_:in:)`), then what each declaration of it comes
+    /// to, in the order they were read, then `name` itself, each once. A method in
+    /// `extension Alias` is filed under whichever type `Alias` means there: what one of those
+    /// declarations comes to, or `Alias` itself where none of them is visible. A nested type's
+    /// method is filed under its innermost name, so `name` itself also finds that.
+    func entryTypes(of name: String) -> [String] {
+        var types = [resolve(name, in: nil)]
+        for declared in lookup?.typesForName[name] ?? [] {
+            var type = name
+            if let target = declared.aliasTarget {
+                type = declared.isSugared ? target : resolve(target, from: declared.scope)
+            }
+            if !types.contains(type) { types.append(type) }
+        }
+        if !types.contains(name) { types.append(name) }
+        return types
+    }
+
     /// The type name `name` comes to where a declaration in `scope` writes it in its inheritance
     /// clause: a member of a type around the declaration first, as Swift looks it up
     /// (`TypeLookup.qualifiedName(ofWritten:from:)`, #157), then through every typealias. A module

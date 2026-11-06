@@ -1,5 +1,17 @@
 import SwiftSyntax
 
+extension FunctionDeclSyntax {
+    /// Whether a function, initializer, accessor or closure holds this, or a statement in
+    /// top-level code does. A function local to one is no member, and a type local to one can be
+    /// named only inside it, so choosing among several types for an entry counts neither.
+    var isInsideBody: Bool {
+        sequence(first: Syntax(self), next: \.parent).dropFirst().contains {
+            $0.is(CodeBlockSyntax.self) || $0.is(ClosureExprSyntax.self)
+                || $0.is(AccessorBlockSyntax.self) || $0.is(SwitchCaseSyntax.self)
+        }
+    }
+}
+
 /// A `SyntaxVisitor` that maintains a stack of the enclosing type names while it
 /// walks class / struct / enum / actor / protocol / extension declarations.
 ///
