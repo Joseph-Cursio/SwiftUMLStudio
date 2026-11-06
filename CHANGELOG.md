@@ -8,6 +8,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.2.0] — 2026-11-06
+
+The first release since v1.1.0 (2026-08-16), covering about 350 commits, not
+counting merges, most of them correctness work.
+
+Two themes dominate. **Name resolution**: a class-diagram edge now ends on the
+type Swift means in far more cases, through typealiases, enclosing types,
+module-qualified extensions and, under `--package`, each file's imports. Without
+`--package` that is still a guess from directories, and issues remain open,
+#232, #233, #252 and #253 among them. **Output that holds up**: Nomnoml class
+diagrams parse again, Mermaid no longer rejects a diagram over `@unchecked
+Sendable`, SVG class diagrams draw only the types the text formats draw, and
+deep nesting and long chains that crashed a run now draw, though past 256 levels
+of nesting the rest of a file is still dropped.
+
+Alongside those: filters and config files do what they say, and Studio sends no
+PlantUML anywhere until you agree. Upgraders should read Changed — Bridge first:
+a bad `--config` and an empty `classdiagram` selection now exit 1, diagram text
+changes, two public protocols gain requirements, and swift-syntax is 602.x only.
+
 ### Added — Studio
 
 - **A banner names each file whose nested `[` were read as spaces**
