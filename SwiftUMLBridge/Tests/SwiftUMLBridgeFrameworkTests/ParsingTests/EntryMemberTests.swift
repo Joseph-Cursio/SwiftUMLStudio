@@ -45,6 +45,21 @@ struct EntryMemberTests {
         }
     }
 
+    @Test("the activity diagram draws the member, not a function local to an initializer read first")
+    func memberAfterLocal() throws {
+        let (root, paths) = try EntryFixture.written([
+            (
+                "Pkg/Real.swift",
+                "struct Real { init() { func run() { inLocal() }\n    run() }\n    func run() { inMember() }\n"
+                    + "    func inLocal() {}\n    func inMember() {} }"
+            )
+        ])
+        defer { try? FileManager.default.removeItem(at: root) }
+        let text = EntryFixture.activity(paths, "Real", "run")
+        #expect(text.contains("inMember()"), "\(text)")
+        #expect(!text.contains("inLocal"), "\(text)")
+    }
+
     /// The list offers it and a sequence with no typealias draws it, but beside a typealias the name
     /// is the typealias's, wherever the local type is. Swift reads it so outside that function.
     @Test("a type local to a function is not what a typealias of its name means", arguments: ["run", "step"])

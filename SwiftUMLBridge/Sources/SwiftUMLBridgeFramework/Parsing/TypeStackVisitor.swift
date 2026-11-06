@@ -1,6 +1,13 @@
 import SwiftSyntax
 
 extension FunctionDeclSyntax {
+    /// Whether this is a member of the type around it: written directly in a member block, under
+    /// an `#if` too. A function local to a method, initializer, accessor, subscript or closure is
+    /// not, though the type's name is still on the stack: `T.method` cannot name it.
+    var isMember: Bool {
+        parent?.is(MemberBlockItemSyntax.self) == true
+    }
+
     /// Whether a function, initializer, accessor or closure holds this, or a statement in
     /// top-level code does. A function local to one is no member, and a type local to one can be
     /// named only inside it, so choosing among several types for an entry counts neither.
