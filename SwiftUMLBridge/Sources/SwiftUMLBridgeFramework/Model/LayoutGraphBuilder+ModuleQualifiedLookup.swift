@@ -115,11 +115,15 @@ extension LayoutGraphBuilder.TypeLookup {
 
     /// Whether `name`, written in `scope`, means a type only once its first component is read as
     /// a module: `ModA.Foo`, but not `Foo`, nor `Outer.Inner` for a nested type. A name that
-    /// cannot be read so (`mayReadModule`) is answered without a lookup.
-    func readsModule(_ name: String, from scope: Scope) -> Bool {
-        guard mayReadModule(name) else { return false }
-        return nearestMatch(named: name, from: scope, depth: 0, readingModules: false) == nil
-            && moduleMatch(named: name, from: scope, depth: 0) != nil
+    /// cannot be read so (`mayReadModule`) is answered without a lookup. `depth` is the lookup's own,
+    /// and the guard is what ends a loop through a name that means both a module and a type around
+    /// the writer (#244): reading the enclosing `M` takes what `M.V`'s first component means, and
+    /// that takes reading `M` again. Depth 8 itself still reads, unlike the guards that stop at
+    /// `depth < 8`, as an alias chain's walk takes its last link's name there.
+    func readsModule(_ name: String, from scope: Scope, depth: Int = 0) -> Bool {
+        guard depth <= 8, mayReadModule(name) else { return false }
+        return nearestMatch(named: name, from: scope, depth: depth, readingModules: false) == nil
+            && moduleMatch(named: name, from: scope, depth: depth) != nil
     }
 
     /// Whether `name`, written in `scope`, spells a typealias through its module, as
