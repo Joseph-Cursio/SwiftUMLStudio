@@ -62,7 +62,7 @@ eval "$(/opt/homebrew/bin/brew shellenv)"
 
 ### Build-from-source: `error: package manifest cannot be loaded`
 
-Means the toolchain doesn't understand `swift-tools-version: 6.2`. Same fix as above — install Xcode 16+ and re-run `xcode-select -s`.
+Means the toolchain doesn't understand `swift-tools-version: 6.2`. Same fix as above — install Xcode 26+ and re-run `xcode-select -s`.
 
 ---
 
@@ -136,7 +136,7 @@ The CLI shells out to `swift package describe --type json`. The directory you pa
 
 ### `The file “MyPackage” doesn’t exist.` from `--package ../MyPackage`
 
-Fixed in the release after 1.1.0. On 1.1.0 and earlier, `classdiagram`, `deps` and `component` fail on a relative `--package` path that climbs above the current directory, even though the directory and its `Package.swift` exist. `--package ..` does not fail, but it reads the package around the current directory, which inside a nested package is the nested one. Pass an absolute path instead:
+Fixed in 1.2.0. On 1.1.0 and earlier, `classdiagram`, `deps` and `component` fail on a relative `--package` path that climbs above the current directory, even though the directory and its `Package.swift` exist. `--package ..` does not fail, but it reads the package around the current directory, which inside a nested package is the nested one. Pass an absolute path instead:
 
 ```bash
 swiftumlbridge component --package "$PWD/../MyPackage"

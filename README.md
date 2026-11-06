@@ -53,9 +53,9 @@ with `subgraph` clusters.
 
 ## Requirements
 
-- **Bridge** (CLI / Swift Package) — macOS 15+ (per `SwiftUMLBridge/Package.swift`), Swift 6.0+, Xcode 16+
-- **Studio** (macOS app) — macOS 26.4+
-- A Swift toolchain new enough for SourceKitten and SwiftSyntax 600.x
+- **Bridge** (CLI / Swift Package) — macOS 15+ (per `SwiftUMLBridge/Package.swift`), Swift 6.2+, Xcode 26+
+- **Studio** (macOS app) — macOS 26.2+
+- A Swift toolchain new enough for SourceKitten and SwiftSyntax 602.x
 
 ## Project Structure
 

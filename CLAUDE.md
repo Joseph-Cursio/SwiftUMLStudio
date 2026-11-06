@@ -50,7 +50,7 @@ swift test  --package-path SwiftUMLBridge
 swift run --package-path SwiftUMLBridge swiftumlbridge classdiagram <paths...>
 ```
 
-- **Studio target platform**: macOS 26.4+, `SDKROOT = macosx`
+- **Studio target platform**: macOS 26.2+, `SDKROOT = macosx`
 - **Bridge target platform**: macOS 15+ (per `Package.swift`). Lower than Studio because nothing in the Bridge requires macOS 26 — kept at 15 so the CLI and the package still run on Sequoia hosts. CI no longer runs on macOS 15: the deployment target still makes the compiler reject newer APIs used without `#available`, but nothing runs the tests there.
 - **Swift toolchain**: Swift 6.0 strict concurrency enabled across all targets
 - **Bundle ID**: `name.JosephCursio.SwiftUMLStudio`
