@@ -385,7 +385,7 @@ and is not yet in a tagged release. See §9.2.
 
 | Milestone | Done | Outstanding |
 |---|---|---|
-| M13 — Bridge v1.0 release | `v1.0.0` tag + GitHub release (2026-05-12), `.spi.yml` SPI listing, migration guide (`docs/user/migration-from-SwiftPlantUML.md`), Homebrew formula drafted | Formula is a draft — no `homebrew-tap` repo published yet (see `homebrew/README.md`); no announcement |
+| M13 — Bridge v1.0 release | `v1.0.0` tag + GitHub release (2026-05-12), `.spi.yml` SPI listing, migration guide (`docs/user/migration-from-SwiftPlantUML.md`), public Homebrew tap [`Joseph-Cursio/homebrew-tap`](https://github.com/Joseph-Cursio/homebrew-tap) (see `homebrew/README.md`), at v1.1.0 since 2026-11-06 | No announcement |
 | M14 — Studio v1.0 (App Store) | Sandboxing audit complete (2026-05): `AppStoreRelease` config + `APP_STORE_BUILD` flag, App Sandbox entitlements, security-scoped bookmarks, PlantUML third-party-upload consent gate, CDN fallbacks removed | App Store submission; the App Store Connect privacy nutrition label and a hosted privacy policy (the *user-facing* disclosure is now written — see [Studio User Guide](../user/studio-user-guide.md#plantuml-sends-your-diagram-source-to-a-third-party)); marketing site |
 
 ### 9.3 Roadmap (planned)
