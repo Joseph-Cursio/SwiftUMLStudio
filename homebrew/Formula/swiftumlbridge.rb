@@ -1,8 +1,8 @@
 class Swiftumlbridge < Formula
   desc "Generate architectural UML diagrams from Swift source"
   homepage "https://github.com/Joseph-Cursio/SwiftUMLStudio"
-  url "https://github.com/Joseph-Cursio/SwiftUMLStudio/archive/refs/tags/v1.1.0.tar.gz"
-  sha256 "db35f1a5ef5ba3a0ba1ebf43ee887f385777fc115352476e8d91f5265addc3b4"
+  url "https://github.com/Joseph-Cursio/SwiftUMLStudio/archive/refs/tags/v1.2.0.tar.gz"
+  sha256 "db739506cf5bcc2e69f982c01901c282af2e095caaa5797412e40f0b4f549d8f"
   license "MIT"
   head "https://github.com/Joseph-Cursio/SwiftUMLStudio.git", branch: "main"
 
@@ -31,7 +31,7 @@ class Swiftumlbridge < Formula
   end
 
   test do
-    assert_match "1.1.0", shell_output("#{bin}/swiftumlbridge --version")
+    assert_match "1.2.0", shell_output("#{bin}/swiftumlbridge --version")
     assert_match "swiftumlbridge", shell_output("#{bin}/swiftumlbridge --help")
     (testpath/"Sample.swift").write "class Base {}\nclass Sub: Base {}\n"
     svg = shell_output("#{bin}/swiftumlbridge classdiagram #{testpath} --format svg --output consoleOnly")
