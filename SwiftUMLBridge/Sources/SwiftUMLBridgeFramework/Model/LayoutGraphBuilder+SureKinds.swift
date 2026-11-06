@@ -37,23 +37,27 @@ extension LayoutGraphBuilder.TypeLookup {
             } == true
         }
         guard scope.filePath != nil, fitsEachAlone(name), !ownUnlisted else {
-            return uncachedTypeWithSureKind(name, from: scope, depth: depth, kinds: kinds)
+            let own = LayoutGraphBuilder.SharedLookup(found: candidates(name, from: scope, depth: depth))
+            return uncachedTypeWithSureKind(name, among: own, from: scope, depth: depth, kinds: kinds)
         }
         let key = LayoutGraphBuilder.SharedLookupKey(
             name: name.name, root: name.root, isRecorded: name.isRecorded, start: name.start,
             module: scope.module, imports: scope.imports, depth: depth
         )
-        if let known = kinds.shared[key] { return known }
-        let result = uncachedTypeWithSureKind(name, from: scope, depth: depth, kinds: kinds)
-        kinds.shared[key] = result
+        let shared = kinds.shared[key]
+            ?? LayoutGraphBuilder.SharedLookup(found: candidates(name, from: scope, depth: depth))
+        kinds.shared[key] = shared
+        if let known = shared.answer { return known }
+        let result = uncachedTypeWithSureKind(name, among: shared, from: scope, depth: depth, kinds: kinds)
+        shared.answer = result
         return result
     }
 
     private func uncachedTypeWithSureKind(
-        _ name: LayoutGraphBuilder.QualifiedName, from scope: LayoutGraphBuilder.Scope, depth: Int,
-        kinds: LayoutGraphBuilder.AliasKinds
+        _ name: LayoutGraphBuilder.QualifiedName, among shared: LayoutGraphBuilder.SharedLookup,
+        from scope: LayoutGraphBuilder.Scope, depth: Int, kinds: LayoutGraphBuilder.AliasKinds
     ) -> (type: LayoutGraphBuilder.Declared?, kindIsSure: Bool) {
-        let found = candidates(name, from: scope, depth: depth)
+        let found = shared.found
         guard let nearest = scope.nearest(among: found, scope: \.rankScope),
               !unlistedMemberShadows(nearest, named: name, from: scope, depth: depth) else {
             guard name.root != .outsideType, let match = moduleMatch(named: name.name, from: scope, depth: depth)
@@ -68,7 +72,10 @@ extension LayoutGraphBuilder.TypeLookup {
         let isOwn = scope.filePath.map { $0 == nearest.scope.filePath } == true
             || scope.module.map { $0 == nearest.scope.module } == true
         guard found.count > 1, !isOwn else { return (type, true) }
-        return (type, found.allSatisfy { resolvedKind(of: $0, depth: depth, kinds: kinds) == (.protocol, true) })
+        if let known = shared.everyComesToProtocol { return (type, known) }
+        let every = found.allSatisfy { resolvedKind(of: $0, depth: depth, kinds: kinds) == (.protocol, true) }
+        shared.everyComesToProtocol = every
+        return (type, every)
     }
 
     /// The kind `declared` comes to, through a typealias the kind of the type it aliases, or

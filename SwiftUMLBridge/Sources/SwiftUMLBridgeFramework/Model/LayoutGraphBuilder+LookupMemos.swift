@@ -63,8 +63,20 @@ extension LayoutGraphBuilder {
         let depth: Int
     }
 
+    /// What the writers of one `SharedLookupKey` share: the candidates, whether every one comes to
+    /// a protocol, each candidate coming to what it does from its own scope, and the answer.
+    final class SharedLookup {
+        let found: [Declared]
+        var everyComesToProtocol: Bool?
+        var answer: (type: Declared?, kindIsSure: Bool)?
+
+        init(found: [Declared]) {
+            self.found = found
+        }
+    }
+
     /// The type each typealias comes to, and whether its kind is sure, for each depth a lookup
-    /// reaches it at (`TypeLookup.typeWithSureKind`), and that lookup's answer for each
+    /// reaches it at (`TypeLookup.typeWithSureKind`), and what that lookup shares for each
     /// `SharedLookupKey`, filled the first time one asks. The depth is part of the key because
     /// the lookup's depth guard can cut an alias chain short, so a type worked out deep in one
     /// chain is not the alias's own. A class, so `EdgeEndIds` can fill it without being
@@ -72,7 +84,7 @@ extension LayoutGraphBuilder {
     /// one whenever it records a declaration.
     final class AliasKinds {
         private var typesForAlias: [ObjectIdentifier: [Int: (type: Declared?, isSure: Bool)]] = [:]
-        var shared: [SharedLookupKey: (type: Declared?, kindIsSure: Bool)] = [:]
+        var shared: [SharedLookupKey: SharedLookup] = [:]
 
         subscript(alias: ObjectIdentifier, depth: Int) -> (type: Declared?, isSure: Bool)? {
             get { typesForAlias[alias]?[depth] }
