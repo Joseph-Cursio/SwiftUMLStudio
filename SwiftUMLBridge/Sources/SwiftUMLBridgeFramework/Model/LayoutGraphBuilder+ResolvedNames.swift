@@ -201,7 +201,11 @@ extension LayoutGraphBuilder.TypeLookup {
                        named: "\(containerName).\(name)")
             }
             recordMergedAliases(of: item, named: containerName)
-            unlistedMembers.merge(unlistedMembers(of: item, named: containerName)) { $0 + $1 }
+            let unlisted = unlistedMembers(of: item, named: containerName)
+            unlistedMembers.merge(unlisted) { $0 + $1 }
+            for (name, members) in unlisted where members.contains(where: { $0.extended != nil }) {
+                unlistedNamesWithExtendedTypes.insert(name)
+            }
         }
         for item in items where item.kind == .extension { recordAliasSpelledMembers(of: item) }
     }

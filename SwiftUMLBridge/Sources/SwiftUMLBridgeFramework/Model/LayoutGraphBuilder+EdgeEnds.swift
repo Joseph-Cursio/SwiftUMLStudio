@@ -51,11 +51,12 @@ extension LayoutGraphBuilder {
         /// candidate in the writer's own file, which `DeclarationScope.nearest` always picks, is
         /// looked up there alone.
         private(set) var typesForNameInFile: [String: [String: [Declared]]] = [:]
-        /// The files declaring a type of each name that ranks in another file, with no module, as
-        /// a typealias `mergeExtensions` moved into its type does. `typesForNameInFile` does not
-        /// list it there, yet if it is `private` only that file sees it, so a writer there can't
-        /// share candidates with others of its name (`TypeLookup.typeWithSureKind`).
-        private(set) var filesDeclaringApartFromRank: [String: Set<String>] = [:]
+        /// The files that declare a type or typealias recorded under each name, or that it ranks
+        /// in. Those can differ for a typealias an extension adds, which `memberRank` can rank in the
+        /// extended type's file. A `private` one is seen only by the file declaring it, and whatever
+        /// ranks in a file comes first only there, so a writer in such a file doesn't share
+        /// (`TypeLookup.ownFileBears(on:_:)`).
+        private(set) var filesOfName: [String: Set<String>] = [:]
         /// Each declaration as recorded, by its identity.
         private(set) var recordForDeclaration: [ObjectIdentifier: RecordedDeclaration] = [:]
         /// The type each declaration's enclosing extension extends, once worked out
@@ -64,8 +65,9 @@ extension LayoutGraphBuilder {
         /// The type each first component means, once worked out (`started(_:from:depth:)`);
         /// `record` and a change of `unlistedMembers` start a new one.
         private(set) var nameStarts = NameStarts()
-        /// The names a type declared in an extension is recorded under, the only names a dotted
-        /// name as written can be told apart by (`fitsEachAlone(_:)`).
+        /// The names a type declared in an extension is recorded under, which tell a dotted name as
+        /// written apart (`fitsEachAlone(_:)`), as an unlisted member so declared does too
+        /// (`unlistedNamesWithExtendedTypes`).
         private var namesWithExtendedTypes: Set<String> = []
         /// Every extension recorded, with the name it was recorded under, in recording order.
         private(set) var recordedExtensions: [(name: String, declared: Declared)] = []
@@ -80,6 +82,9 @@ extension LayoutGraphBuilder {
         var unlistedMembers: [String: [Declared]] = [:] {
             didSet { nameStarts = NameStarts() }
         }
+        /// The names in `unlistedMembers` with a type declared in an extension among them
+        /// (`fitsEachAlone(_:)`), so asking costs no scan of a name's many hidden types.
+        var unlistedNamesWithExtendedTypes: Set<String> = []
         /// Which modules each module loads, worked out once every declaration is recorded
         /// (`recordAliases(in:)`): a member that another module's extension adds is seen in the
         /// modules that load that one.
@@ -105,9 +110,8 @@ extension LayoutGraphBuilder {
                     typesForNameInFile[name, default: [:]][filePath, default: []].append(declared)
                 }
                 if declared.extended != nil { namesWithExtendedTypes.insert(name) }
-                if declared.scope.module == nil, let own = declared.scope.filePath,
-                   own != declared.rankScope.filePath {
-                    filesDeclaringApartFromRank[name, default: []].insert(own)
+                for file in [declared.scope.filePath, declared.rankScope.filePath].compactMap(\.self) {
+                    filesOfName[name, default: []].insert(file)
                 }
             }
             if declared.aliasTarget != nil {
@@ -288,11 +292,15 @@ extension LayoutGraphBuilder {
         }
 
         /// Whether `fitting(_:for:from:depth:)` takes or drops each candidate on its own, so the
-        /// candidates of one file fit as they do among the rest. A dotted name as written is fitted
-        /// by what the whole set holds, but only when a type declared in an extension is among them.
+        /// candidates of one file fit as they do among the rest, and without reading what the first
+        /// component means to the writer. A dotted name as written is fitted by what the whole set
+        /// holds, but only when a type declared in an extension is among them, or a nested type
+        /// the items do not list so declared, which `unlistedMemberShadows` fits beside them.
         func fitsEachAlone(_ name: QualifiedName) -> Bool {
             guard name.root == .asWritten, name.name.contains(".") else { return true }
-            return !spellings(of: name).contains(where: namesWithExtendedTypes.contains)
+            return !spellings(of: name).contains { spelling in
+                namesWithExtendedTypes.contains(spelling) || unlistedNamesWithExtendedTypes.contains(spelling)
+            }
         }
 
         /// The nearest candidate when one ranks in `scope`'s own file, found without the rest:
