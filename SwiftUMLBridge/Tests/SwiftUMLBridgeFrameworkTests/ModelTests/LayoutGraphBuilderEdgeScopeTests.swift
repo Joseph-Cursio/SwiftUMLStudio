@@ -3,6 +3,8 @@ import Testing
 
 /// When several drawn types share a name, an edge that names it ends at the one Swift would
 /// most likely mean: declared in the same file, then in the same module, then the first (#55).
+/// Without a module, the nearest by directory comes before the first (`NearestDirectoryTests`, #78);
+/// these paths share no directory.
 @Suite("LayoutGraphBuilder — which same-named type an edge means")
 struct LayoutGraphBuilderEdgeScopeTests {
 

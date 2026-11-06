@@ -46,7 +46,8 @@ struct TypeAliasResolver {
 
     /// The type name `name` comes to where `file` writes it, once every typealias it goes through
     /// is followed (`TypeLookup.resolvedName(of:from:)`); `name` itself when it names no alias
-    /// there. With no `file`, as for an entry point typed in, every file's aliases are seen.
+    /// there. With no `file`, as for an entry point typed in, every file's aliases are seen, and
+    /// of same-named ones the first is taken, no directory ranking them.
     func resolve(_ name: String, in file: URL?) -> String {
         resolve(name, from: DeclarationScope(filePath: file?.path, module: nil))
     }

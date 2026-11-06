@@ -3,8 +3,9 @@ import Testing
 @testable import SwiftUMLBridgeFramework
 
 /// Under `showExtensions: .merged`, an extension's members go into the type of its name that
-/// `LayoutGraphBuilder` resolves the name to: declared in the same file, then in the same module,
-/// then the first. A type nested in the extension hangs off that same box, in every format.
+/// `LayoutGraphBuilder` resolves the name to: declared in the same file, then in the same module
+/// or, with none known, the nearest by directory, then the first. A type nested in the extension
+/// hangs off that same box, in every format.
 /// Merging used to take the first same-named type while the nested type's SVG edge took the
 /// nearest, so the two could land on different boxes (#107).
 @Suite("Merged extensions — which same-named type they merge into")

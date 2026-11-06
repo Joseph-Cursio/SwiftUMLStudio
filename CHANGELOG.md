@@ -106,6 +106,45 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed — Bridge
 
+- **Without `--package`, a name several types share means the one nearest
+  by directory, not the first read** (#78). A run without `--package`, or
+  a folder opened in Studio, gives files no module, so among same-named
+  types in other files an edge ended on the first in the diagram's order,
+  protocols and then other types as the file system lists them, often in
+  another package: with Yams read first, `Parser.StatementLabel`, nested
+  in swift-syntax's `extension Parser`, hung off Yams' `class Parser`. The
+  name now means the type whose file shares the most leading directories
+  with the writer's, compared whole, so `Sources/Foo` shares only `Sources`
+  with `Sources/FooBar`. Types equally near still fall to that first, so a
+  directory every path is under, such as the scan's root, changes
+  nothing. This holds wherever a name is looked up: supertype and
+  extension edges in every format, a nesting edge that ends on a type
+  rather than on an extension's own box (Mermaid draws none),
+  `--merge-extensions`, a hidden type's stand-in, and the typealiases that
+  sequence, activity and `deps --types` follow. A nearer typealias now
+  comes before a farther type.
+
+  With `--package` nothing changes: a directory never decides among
+  modules. Without it, a directory is only a guess at the module. A test
+  in `Tests/FooTests` that imports `Foo` takes a `Base` in
+  `Tests/BarTests` before one in `Sources/Foo`. An edge found this way,
+  among types of different kinds, is still labelled as inheritance unless
+  it ends on the protocol's own box. Paths are compared as the scan
+  reports them: a directory argument's files come back under its real
+  path, while a file argument keeps the spelling typed, so a file typed
+  through a symlink, such as `/tmp` for `/private/tmp`, or with `./`,
+  shares only what the two spellings have in common. Under
+  `--merge-extensions`, typealiases of one name that extensions in
+  different directories add to one type all rank in that type's file, so
+  the first is taken there, and an extension's members can merge into a
+  different box than an edge of that name ends on.
+
+  Still unread: `--entry` has no file to rank from, so it means a type of
+  that name, else the first typealias. A method in an `extension Alias`
+  that a later directory's typealias claims is now that type's, so
+  `--entry Alias.method` no longer reaches it and draws an empty diagram;
+  name the aliased type instead, as in `--entry Real.method`.
+
 - **An SVG class diagram links an extension's box to the type it
   extends** (#75). PlantUML, Mermaid and Nomnoml draw this `ext` edge,
   `Foo <.. Foo0 : ext`, and SVG drew none, so in SVG and on Studio's
