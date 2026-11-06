@@ -17,8 +17,7 @@ extension LayoutGraphBuilder {
         let scope: Scope
         /// The scope that ranks the declaration among others of its name (`DeclarationScope.nearest`):
         /// for a member, that of the outermost type it belongs to, since `Foo.X` is looked up by
-        /// finding `Foo` first. A typealias that `mergeExtensions` moved into ModA's `Foo` from
-        /// ModB's `extension ModA.Foo` ranks as ModA's, not as the file it was written in.
+        /// finding `Foo` first. A member an extension adds ranks by `TypeLookup.memberRank`.
         let rankScope: Scope
         /// The most restrictive access level of the declaration and the declarations enclosing
         /// it, with an enclosing extension's modifier applied. `TypeLookup.access(of:)` also caps
@@ -37,6 +36,9 @@ extension LayoutGraphBuilder {
         /// The name of that outermost type: `Foo` for a `V` that `struct Foo` declares, and a
         /// top-level type's own.
         let outermostName: String?
+        /// The file of that outermost type: `Foo`'s for a member merged in from an extension, which
+        /// `rankScope` need not be (`TypeLookup.memberRank`).
+        let outermostFilePath: String?
 
         /// `container` is the declaration `item` is a member of, when `item.parent` is not set:
         /// a typealias is never flattened out of its type's members. `rankedAs` overrides
@@ -69,6 +71,7 @@ extension LayoutGraphBuilder {
             ownAccess = levels.min() ?? .internal
             outermostModule = declared.last?.module ?? scope.module
             outermostName = declared.last?.name
+            outermostFilePath = declared.last?.sourceLocation?.filePath ?? scope.filePath
             rankScope = rankedAs ?? declared.last.flatMap { $0 === item ? nil : Scope(of: $0) } ?? scope
             extended = chain.first { $0.kind == .extension && $0 !== item }.flatMap { enclosing in
                 enclosing.name.map {

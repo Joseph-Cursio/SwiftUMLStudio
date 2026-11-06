@@ -179,13 +179,11 @@ extension LayoutGraphBuilder.TypeLookup {
     /// after the types are recorded: when nothing else tells two candidates apart, `nearest`
     /// picks the first, and that should be a type. A typealias that an extension merged into
     /// its container declares (`SyntaxStructure.mergedExtensions`) is read where that extension
-    /// declares it, as when the extensions are drawn apart, but ranks as a member of its
-    /// container, where a lookup of the container finds it: moved into ModA's `Foo` from ModB's
-    /// `extension ModA.Foo`, it ranks as ModA's, so ModB's own `Foo.Alias` still comes first in
-    /// ModB. It is recorded under the extension's own spelling too: `extension Crate { typealias
-    /// Desc }` merged into `struct Outer` makes both `Outer.Desc` and `Crate.Desc`. The nested
-    /// types the items do not list are kept apart (`unlistedMembers`), and the modules each
-    /// module loads are read from `items` (`moduleLoads`).
+    /// declares it, as when the extensions are drawn apart, and ranks by `memberRank`. It is
+    /// recorded under the extension's own spelling too: `extension Crate { typealias Desc }`
+    /// merged into `struct Outer` makes both `Outer.Desc` and `Crate.Desc`. The nested types the
+    /// items do not list are kept apart (`unlistedMembers`), and the modules each module loads
+    /// are read from `items` (`moduleLoads`).
     mutating func recordAliases(in items: [SyntaxStructure]) {
         moduleLoads = ModuleLoads(of: items)
         for item in items {
@@ -212,11 +210,11 @@ extension LayoutGraphBuilder.TypeLookup {
 
     /// Records each typealias an extension declares under the name of the type it extends too,
     /// when it spells that type through a typealias or a module, as merging it does
-    /// (`recordMergedAliases`), ranked as a member of that type, where a lookup of the type
-    /// finds it: after `extension Crate { typealias D = Date }`, `Outer.D` is `Date` drawn apart
-    /// as well, and an alias in `extension ModA.Foo` is also `Foo.Alias`. Spelled through a
-    /// module, it is also recorded under the name the declaration the spelling means is recorded
-    /// under, before any typealias is followed: `FA.Alias` in `extension ModA.FA`.
+    /// (`recordMergedAliases`), ranked by `memberRank`: after `extension Crate { typealias
+    /// D = Date }`, `Outer.D` is `Date` drawn apart as well, and an alias in `extension ModA.Foo`
+    /// is also `Foo.Alias`. Spelled through a module, it is also recorded under the name the
+    /// declaration the spelling means is recorded under, before any typealias is followed:
+    /// `FA.Alias` in `extension ModA.FA`.
     private mutating func recordAliasSpelledMembers(of anExtension: SyntaxStructure) {
         let aliases = (anExtension.substructure ?? []).filter { $0.kind == .typealias }
         guard !aliases.isEmpty, !anExtension.isSugared, let spelling = anExtension.fullName ?? anExtension.name
@@ -255,7 +253,7 @@ extension LayoutGraphBuilder.TypeLookup {
     }
 
     /// The typealias `member` of `container`, read in the extension it was merged in from,
-    /// `home`, when there is one, and ranked as a member of `container` (`memberRank`).
+    /// `home`, when there is one, and ranked by `memberRank`.
     private func mergedAlias(
         _ member: SyntaxStructure, in container: SyntaxStructure, from home: SyntaxStructure?
     ) -> LayoutGraphBuilder.Declared {
@@ -265,14 +263,17 @@ extension LayoutGraphBuilder.TypeLookup {
         return LayoutGraphBuilder.Declared(member, kind: .typealias, nodeId: nil, in: home, rankedAs: rank)
     }
 
-    /// The scope a typealias an extension in `adding` adds to a type in `type` ranks by: the
-    /// type's, as a member of it, where a lookup of the type finds it, when the two share a
-    /// module; else its own module's, in no file. A module cannot import one that depends on it,
-    /// so ranked as the type, ModB's `Foo.X` would come first in ModA's own file, where ModA's
-    /// own `Foo.X` is meant.
+    /// The scope a member an extension in `adding` adds to a type in `type` ranks by: the type's,
+    /// as a member of it, where a lookup of the type finds it, when the two share a module; else
+    /// its own module's, in no file. A module cannot import one that depends on it, so ranked as
+    /// the type, ModB's `Foo.X` would come first in ModA's own file, where ModA's own `Foo.X` is
+    /// meant. With no module on either, the extension's own scope: the directory stands in for
+    /// the module, and ranked in the type's file, every extension's `Foo.X` would be as near as
+    /// any other to a writer elsewhere, so the first read would win, in another target (#230).
     private func memberRank(
         adding scope: LayoutGraphBuilder.Scope, to type: LayoutGraphBuilder.Scope
     ) -> LayoutGraphBuilder.Scope {
+        guard scope.module != nil || type.module != nil else { return scope }
         guard let module = scope.module, let typeModule = type.module, module != typeModule else { return type }
         return LayoutGraphBuilder.Scope(filePath: nil, module: module)
     }
