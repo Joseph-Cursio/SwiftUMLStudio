@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 @testable import SwiftUMLBridgeFramework
 
@@ -206,6 +207,9 @@ struct SupertypeEdgeKindCertaintyTests {
     /// through a type's members, `typealias A0 = NS.A1` and `struct NS { typealias A1 = NS.A2 ... }`,
     /// to a protocol in a file of its own, and one writer. A dotted name was looked up among every
     /// same-named alias, and each alias walked the rest of its chain again, to the protocol.
+    ///
+    /// This thread's CPU clock, so the suites running beside this one do not count: a 3-core CI
+    /// runner took some six times as long by the wall clock (8e939be).
     @Test("many alias chains through a type's members are checked once each")
     func manyDottedAliasChains() throws {
         let members = (1..<8).map { "    typealias A\($0) = \($0 == 7 ? "Proto" : "NS.A\($0 + 1)")" }
@@ -216,9 +220,10 @@ struct SupertypeEdgeKindCertaintyTests {
             File(module: nil, path: "Dir\(index)/Proto.swift", source: "protocol Proto {}")
         ] } + [File(module: nil, path: "Dir0/Writer.swift", source: "struct Writer: A0 {}")]
         let items = try parsed(files)
-        var text: [String] = []
-        let elapsed = ContinuousClock().measure { text = lines(items, .plantuml) }
-        #expect(elapsed < .seconds(2), "\(elapsed)")
+        let start = clock_gettime_nsec_np(CLOCK_THREAD_CPUTIME_ID)
+        let text = lines(items, .plantuml)
+        let seconds = Double(clock_gettime_nsec_np(CLOCK_THREAD_CPUTIME_ID) - start) / 1e9
+        #expect(seconds < 2, "\(seconds)")
         #expect(text.contains(edgeLine(.plantuml, "Proto", Self.realizes, "Writer", "conforms to")))
     }
 
