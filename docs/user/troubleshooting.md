@@ -17,12 +17,20 @@ Common errors and remediation steps for the `swiftumlbridge` CLI, the `swiftumlb
 
 ## Installation
 
-### `brew install swiftumlbridge` fails to compile
+### `brew install swiftumlbridge` says "Refusing to load formula … from untrusted tap"
+
+Homebrew 7 refuses a formula from a third-party tap until you trust it. Install by its full name, which adds the tap and trusts the formula:
+
+```bash
+brew install Joseph-Cursio/tap/swiftumlbridge
+```
+
+### `brew install` fails to compile
 
 The Homebrew formula builds from source. Two requirements must be met on your machine:
 
 - **macOS Sequoia (15) or newer** — the formula gates with `depends_on macos: :sequoia`.
-- **Xcode 16+ with the Swift 6.2 toolchain** — required by `SwiftUMLBridge/Package.swift` (`swift-tools-version: 6.2`).
+- **Xcode 26+ with the Swift 6.2 toolchain or newer** — required by `SwiftUMLBridge/Package.swift` (`swift-tools-version: 6.2`). The formula gates with `depends_on xcode: ["26.0", :build]`.
 
 Verify with:
 

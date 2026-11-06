@@ -80,11 +80,10 @@ SwiftUMLBridge ships as a CLI binary, a Homebrew formula, and a reusable GitHub 
 ### Homebrew (recommended for local use)
 
 ```bash
-brew tap Joseph-Cursio/tap
-brew install swiftumlbridge
+brew install Joseph-Cursio/tap/swiftumlbridge
 ```
 
-The formula builds from source on first install and tracks the latest tagged Bridge release. Upgrade with `brew upgrade swiftumlbridge`.
+Use the full name the first time: it adds the tap and trusts the formula, and Homebrew 7 refuses a bare `brew install swiftumlbridge` from a tap it does not trust yet. The formula builds from source on first install and tracks the latest tagged Bridge release. Upgrade with `brew upgrade swiftumlbridge`.
 
 ### Build from source
 

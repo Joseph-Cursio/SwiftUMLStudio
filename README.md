@@ -106,8 +106,7 @@ SwiftSyntax            call edges,            Mermaid.js
 ### Homebrew (recommended for local use)
 
 ```bash
-brew tap Joseph-Cursio/tap
-brew install swiftumlbridge
+brew install Joseph-Cursio/tap/swiftumlbridge
 ```
 
 The formula builds from source on first install and tracks the latest tagged Bridge release.

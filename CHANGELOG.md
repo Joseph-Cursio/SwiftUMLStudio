@@ -106,6 +106,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed — Bridge
 
+- **`brew install` works on Homebrew 7, and a Homebrew install draws SVG.**
+  Homebrew 7 refused to load the formula, because it had `depends_on :macos`
+  beside `depends_on macos:`. It also refuses a bare
+  `brew install swiftumlbridge` from a tap it does not trust yet, so the
+  documented command is now `brew install Joseph-Cursio/tap/swiftumlbridge`.
+  The formula installed only the executable, so `--format svg` crashed for
+  want of its resource bundle. The bundle is now installed, and the formula's
+  test covers SVG. The tap, which still served v1.0.0, is updated to v1.1.0
+  with these fixes.
+
 - **Without `--package`, a name several types share means the one nearest
   by directory, not the first read** (#78). A run without `--package`, or
   a folder opened in Studio, gives files no module, so among same-named
