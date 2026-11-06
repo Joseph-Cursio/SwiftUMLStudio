@@ -51,9 +51,9 @@ extension LayoutGraphBuilder {
         let depth: Int
     }
 
-    /// A name `TypeLookup.typeWithSureKind` looks up for a writer with no candidate in its own
-    /// file: its candidates then depend on the writer's module, its imports, and the type a dotted
-    /// name starts at there, alone (`SharedLookup`).
+    /// A name `TypeLookup.typeWithSureKind` looks up for a writer whose own file does not bear on
+    /// it (`TypeLookup.ownFileBears(on:_:)`): its candidates then depend on the writer's module, its
+    /// imports, and the type a dotted name starts at there, alone (`SharedLookup`).
     struct SharedLookupKey: Hashable {
         let name: String
         let root: NameRoot
@@ -68,8 +68,8 @@ extension LayoutGraphBuilder {
     /// to a protocol, each candidate coming to what it does from its own scope. Which candidate a
     /// writer with no module means goes by its directory too (`DeclarationScope.rankingDirectory`),
     /// so the answer is kept per directory, and a writer with a module has the one, under `nil`.
-    /// A writer that alone can see a candidate never shares
-    /// (`TypeLookup.filesDeclaringApartFromRank`), or the others would rank it.
+    /// A writer whose own file bears on the name never shares (`TypeLookup.ownFileBears(on:_:)`),
+    /// or the others would take what only it can see.
     final class SharedLookup {
         let found: [Declared]
         var everyComesToProtocol: Bool?

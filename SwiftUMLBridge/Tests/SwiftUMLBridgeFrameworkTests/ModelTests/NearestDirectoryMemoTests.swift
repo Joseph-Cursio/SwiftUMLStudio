@@ -115,24 +115,6 @@ struct NearestDirectoryMemoTests {
         #expect(text.contains("Foo.V <|.. Foo.W0 : conforms to"), "\(text)")
     }
 
-    /// With a module nothing about the shared lookup changes, so `--package` draws what it drew:
-    /// a file declaring a type that ranks elsewhere is only noted when it has no module.
-    @Test("a file is noted as declaring apart from its rank only without a module", arguments: [nil, "App"])
-    func apartFromRankNeedsNoModule(module: String?) throws {
-        let items = try Fixture.parsed([
-            ("r/B/Ext.swift", "extension Foo { private typealias V = Helper }"),
-            ("r/B/Foo.swift", "struct Foo {}")
-        ])
-        func setModule(_ item: SyntaxStructure) {
-            item.module = module
-            item.substructure?.forEach(setModule)
-        }
-        items.forEach(setModule)
-        let merged = Configuration(elements: ElementOptions(showExtensions: .merged), format: .svg)
-        let lookup = LayoutGraphBuilder.TypeLookup(of: items.preparedForClassDiagram(with: merged))
-        #expect(lookup.filesDeclaringApartFromRank.isEmpty == (module != nil))
-    }
-
     /// The same when the other candidate is an alias too, where main already let `W0` have it.
     @Test("nor when the other candidate is a typealias", arguments: [false, true])
     func privateAliasBesideAnotherAlias(reversed: Bool) throws {

@@ -15,11 +15,11 @@ extension LayoutGraphBuilder.TypeLookup {
     /// module, `ModA.P`, names the module it means. Only a protocol names an edge apart, so no
     /// other kind costs a check. A directory is a guess at a module, so being nearest by one is
     /// not being the writer's own. `kinds` keeps each typealias's kind once worked out, and the
-    /// candidates and answer for a writer with no candidate in its own file, which depend on its
-    /// module, its imports and the type a dotted name starts at (`QualifiedName.start`) alone, the
-    /// answer with no module on its directory too (`SharedLookup`): without them, a name many
-    /// same-named aliases share looked each alias's target up for every edge, and every alias of
-    /// a chain the next one's.
+    /// candidates and answer for a writer whose own file does not bear on them
+    /// (`ownFileBears(on:_:)`), which then depend on its module, its imports and the type a dotted
+    /// name starts at (`QualifiedName.start`) alone, the answer with no module on its directory too
+    /// (`SharedLookup`): without them, a name many same-named aliases share looked each alias's
+    /// target up for every edge, and every alias of a chain the next one's.
     func typeWithSureKind(
         _ written: LayoutGraphBuilder.QualifiedName, from scope: LayoutGraphBuilder.Scope, depth: Int = 0,
         kinds: LayoutGraphBuilder.AliasKinds
@@ -38,11 +38,7 @@ extension LayoutGraphBuilder.TypeLookup {
                 $0.scope.filePath == scope.filePath || $0.rankScope.filePath == scope.filePath
             } == true
         }
-        // Nor is the answer of a writer that alone can see a candidate, which ranks in another file.
-        let ownApart = scope.filePath.map { file in
-            spellings(of: name).contains { filesDeclaringApartFromRank[$0]?.contains(file) == true }
-        } == true
-        guard scope.filePath != nil, fitsEachAlone(name), !ownUnlisted, !ownApart else {
+        guard let file = scope.filePath, fitsEachAlone(name), !ownUnlisted, !ownFileBears(on: name, file) else {
             let own = LayoutGraphBuilder.SharedLookup(found: candidates(name, from: scope, depth: depth))
             return uncachedTypeWithSureKind(name, among: own, from: scope, depth: depth, kinds: kinds)
         }
@@ -58,6 +54,22 @@ extension LayoutGraphBuilder.TypeLookup {
         let result = uncachedTypeWithSureKind(name, among: shared, from: scope, depth: depth, kinds: kinds)
         shared.answerInDirectory[directory] = result
         return result
+    }
+
+    /// Whether a type or typealias of `file` can change what `name` means there, so a writer in it
+    /// takes no other's answer, nor gives one: under the name, only that file sees one that is
+    /// `private`, and it ranks first there; under the rest of a dotted name, the same goes for
+    /// reading its first component as a module (`moduleMatch(named:from:depth:)`); and under that
+    /// first component, one only that file sees keeps it from being read so (`shadows`). What a
+    /// first component means otherwise is `QualifiedName.start`, or read only where
+    /// `fitsEachAlone(_:)` is false.
+    private func ownFileBears(on name: LayoutGraphBuilder.QualifiedName, _ file: String) -> Bool {
+        var names = spellings(of: name)
+        if let dot = name.name.firstIndex(of: ".") {
+            names.append(String(name.name[..<dot]))
+            names.append(String(name.name[name.name.index(after: dot)...]))
+        }
+        return names.contains { filesOfName[$0]?.contains(file) == true }
     }
 
     private func uncachedTypeWithSureKind(
