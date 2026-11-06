@@ -66,7 +66,8 @@ extension LayoutGraphBuilder {
         /// `record` and a change of `unlistedMembers` start a new one.
         private(set) var nameStarts = NameStarts()
         /// The names a type declared in an extension is recorded under, which tell a dotted name as
-        /// written apart (`fitsEachAlone(_:)`), as an unlisted member so declared does too.
+        /// written apart (`fitsEachAlone(_:)`), as an unlisted member so declared does too
+        /// (`unlistedNamesWithExtendedTypes`).
         private var namesWithExtendedTypes: Set<String> = []
         /// Every extension recorded, with the name it was recorded under, in recording order.
         private(set) var recordedExtensions: [(name: String, declared: Declared)] = []
@@ -81,6 +82,9 @@ extension LayoutGraphBuilder {
         var unlistedMembers: [String: [Declared]] = [:] {
             didSet { nameStarts = NameStarts() }
         }
+        /// The names in `unlistedMembers` with a type declared in an extension among them
+        /// (`fitsEachAlone(_:)`), so asking costs no scan of a name's many hidden types.
+        var unlistedNamesWithExtendedTypes: Set<String> = []
         /// Which modules each module loads, worked out once every declaration is recorded
         /// (`recordAliases(in:)`): a member that another module's extension adds is seen in the
         /// modules that load that one.
@@ -295,8 +299,7 @@ extension LayoutGraphBuilder {
         func fitsEachAlone(_ name: QualifiedName) -> Bool {
             guard name.root == .asWritten, name.name.contains(".") else { return true }
             return !spellings(of: name).contains { spelling in
-                namesWithExtendedTypes.contains(spelling)
-                    || unlistedMembers[spelling]?.contains { $0.extended != nil } == true
+                namesWithExtendedTypes.contains(spelling) || unlistedNamesWithExtendedTypes.contains(spelling)
             }
         }
 
