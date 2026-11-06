@@ -201,6 +201,15 @@ final class DiagramViewModel {
         saveSnapshot(isProUnlocked: isProUnlocked, at: savedAt)
     }
 
+    /// Replace the current selection with what the user just picked.
+    func applySelection(urls: [URL]) {
+        applySelection(
+            paths: urls.map { $0.path(percentEncoded: false) },
+            bookmarks: urls.map { SecurityScopedURL.makeBookmark(for: $0) },
+            urls: urls
+        )
+    }
+
     /// Replace the current selection with a freshly granted set of paths.
     /// Stops security-scoped access on any previously held URLs and starts
     /// access on the new ones. `urls` is the live `URL` array — pass URLs

@@ -1812,6 +1812,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed — Studio
 
+- **A folder whose path needs URL encoding opens.** A folder or file
+  picked in the open panel, or restored from a saved diagram's bookmark,
+  was passed on with its URL's percent-encoded path, so `My Project` was
+  looked for as `My%20Project`, which does not exist: the sidebar stayed
+  empty and the diagram came out with no types or calls, and no error.
+  This hit any path with a space, a non-ASCII letter, `#` or `%`. A saved
+  diagram with no usable bookmark still holds the encoded path, so pick
+  its folder again.
+
 - **A PlantUML diagram reopened from history renders.** A restored
   history item is a `SimpleDiagramScript`, which still overrode
   `encodeText()` with a placeholder from before the Bridge's encoding was
