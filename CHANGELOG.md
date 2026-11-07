@@ -98,9 +98,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   A call reaches only the overloads its argument labels fit, with a
   defaulted parameter left out or a variadic one, so `load()` no longer
   draws the calls of `load(_:)`; a call with a trailing closure, or whose
-  labels fit none, still reaches each. Still merged below the entry: a call to a name same-named nested types
-  share, which Swift tells apart by where the call is written. The activity
-  diagram now reads every file to choose, as the sequence diagram does.
+  labels fit none, still reaches each. Still merged below the entry: a call
+  to a name same-named nested types share, which Swift tells apart by where
+  the call is written. The activity diagram now reads every file to choose,
+  as the sequence diagram does.
+- **`--entry Svc.run` reaches the type's own body through a typealias whose
+  dotted target starts with another typealias or the writer's own module**
+  (#239). After `typealias O = Real` and `typealias Svc = O.In`, or
+  `typealias Svc = Main.Real` in a module Main, the entry came to `O.In.run`
+  or `Main.Real.run`, under which nothing is filed, and both diagrams were
+  empty. A target's first part is now also read through its typealias, so
+  `O.In` comes to `Real.In`, and so is a typed name's, so `--entry O.In.run`
+  does too. The sequence and activity commands read no package, so no
+  module is known by name; but Swift lets a file write another module's
+  name only when it imports it, so a first part the alias's file does not
+  import, which names no type or typealias of the project, is read as the
+  file's own module and dropped. `Main.Real`, `Main.Real.In` and `O.In`
+  after `typealias O = Main.Real` all draw. A typed name with a module
+  first, as `--entry MyModule.Loader.load`, has no file and still draws an
+  empty diagram, as does a target of `any P` or `P & Q`. For those, and any
+  entry that comes to no method with a body, `sequence` and `activity` now
+  print `warning: --entry … came to no method with a body` on stderr. The
+  diagram and exit status are unchanged; `SequenceScript` and
+  `ActivityScript` say which through `foundEntry`.
 
 ### Fixed — Studio
 
