@@ -58,12 +58,14 @@ public struct SequenceDiagramGenerator: SequenceDiagramGenerating, Sendable {
         // With no body chosen, a call filed under this name is a local function's, or a namesake's
         // that cannot be named from outside a body, and the activity diagram draws neither (#235).
         let traversed = chosen.map { callGraph.traverse(from: $0, maxDepth: depth) } ?? []
-        return SequenceScript(
+        var script = SequenceScript(
             traversedEdges: traversed,
             entryType: chosen?.type ?? types[0],
             entryMethod: listed.method,
             configuration: configuration,
             typeLocations: typeLocations
         )
+        script.foundEntry = chosen != nil
+        return script
     }
 }
