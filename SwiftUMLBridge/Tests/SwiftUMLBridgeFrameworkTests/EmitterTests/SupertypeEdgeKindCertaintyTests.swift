@@ -158,14 +158,15 @@ struct SupertypeEdgeKindCertaintyTests {
         return modules + writers
     }
 
-    /// The bound is for a debug build under load. Checking every candidate's typealias again for
-    /// each edge took seconds, growing with the cube of the modules.
+    /// The bound is for a debug build, by this thread's CPU clock, so a busy machine does not
+    /// count (#237). Checking every candidate's typealias again for each edge took seconds,
+    /// growing with the cube of the modules.
     @Test("many modules aliasing a protocol of one name are checked once each")
     func manyAliasedProtocols() throws {
         let items = try parsed(Self.aliasedProtocols())
         var text: [String] = []
-        let elapsed = ContinuousClock().measure { text = lines(items, .plantuml) }
-        WallClockLimit.expect(elapsed, under: .seconds(2), "\(elapsed)")
+        let seconds = ThreadCPUClock.seconds { text = lines(items, .plantuml) }
+        #expect(seconds < 2, "\(seconds)")
         #expect(text.contains(edgeLine(.plantuml, "Model", Self.realizes, "Writer7", "conforms to")))
     }
 
@@ -182,8 +183,8 @@ struct SupertypeEdgeKindCertaintyTests {
         ] } + [File(module: nil, path: "Lib0/Writer.swift", source: "struct Writer: P {}")]
         let items = try parsed(files)
         var text: [String] = []
-        let elapsed = ContinuousClock().measure { text = lines(items, .plantuml) }
-        WallClockLimit.expect(elapsed, under: .seconds(2), "\(elapsed)")
+        let seconds = ThreadCPUClock.seconds { text = lines(items, .plantuml) }
+        #expect(seconds < 2, "\(seconds)")
         #expect(text.contains(edgeLine(.plantuml, "Outer.Q", Self.realizes, "Writer", "conforms to")))
     }
 
@@ -198,8 +199,8 @@ struct SupertypeEdgeKindCertaintyTests {
             + [File(module: nil, path: "Dir0/Writer.swift", source: "struct Writer: A0 {}")]
         let items = try parsed(files)
         var text: [String] = []
-        let elapsed = ContinuousClock().measure { text = lines(items, .plantuml) }
-        WallClockLimit.expect(elapsed, under: .seconds(2), "\(elapsed)")
+        let seconds = ThreadCPUClock.seconds { text = lines(items, .plantuml) }
+        #expect(seconds < 2, "\(seconds)")
         #expect(text.contains(edgeLine(.plantuml, "Proto", Self.realizes, "Writer", "conforms to")))
     }
 
@@ -222,9 +223,8 @@ struct SupertypeEdgeKindCertaintyTests {
             File(module: nil, path: "Dir\(index)/Proto.swift", source: "protocol Proto {}")
         ] } + [File(module: nil, path: "Dir0/Writer.swift", source: "struct Writer: A0 {}")]
         let items = try parsed(files)
-        let start = clock_gettime_nsec_np(CLOCK_THREAD_CPUTIME_ID)
-        let text = lines(items, .plantuml)
-        let seconds = Double(clock_gettime_nsec_np(CLOCK_THREAD_CPUTIME_ID) - start) / 1e9
+        var text: [String] = []
+        let seconds = ThreadCPUClock.seconds { text = lines(items, .plantuml) }
         #expect(seconds < 2, "\(seconds)")
         #expect(text.contains(edgeLine(.plantuml, "Proto", Self.realizes, "Writer", "conforms to")))
     }
@@ -236,8 +236,8 @@ struct SupertypeEdgeKindCertaintyTests {
     func cyclicAliasAmongCandidates() throws {
         let items = try parsed(Self.aliasedProtocols(cyclicLast: true))
         var text: [String] = []
-        let elapsed = ContinuousClock().measure { text = lines(items, .plantuml, excluding: ["Model"]) }
-        WallClockLimit.expect(elapsed, under: .seconds(2), "\(elapsed)")
+        let seconds = ThreadCPUClock.seconds { text = lines(items, .plantuml, excluding: ["Model"]) }
+        #expect(seconds < 2, "\(seconds)")
         #expect(text.contains(edgeLine(.plantuml, "Model", Self.inherits, "Writer7", "inherits")))
     }
 }
