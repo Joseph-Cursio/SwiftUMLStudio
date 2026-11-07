@@ -76,12 +76,11 @@ struct ConfigurationLoader {
 }
 
 extension String {
-    /// Parse a `Type.method` entry-point argument into its two halves,
-    /// throwing `CLIError.invalidEntry` when it is not exactly one dotted pair.
+    /// Parse a `Type.method` entry-point argument into its type and method, split at the last dot
+    /// as `EntryPointName` reads it, throwing `CLIError.invalidEntry` when it is not one.
     func parsedEntryPoint() throws -> (type: String, method: String) {
-        let parts = split(separator: ".").map(String.init)
-        guard parts.count == 2 else { throw CLIError.invalidEntry }
-        return (parts[0], parts[1])
+        guard let name = EntryPointName(self) else { throw CLIError.invalidEntry }
+        return (name.type, name.method)
     }
 }
 

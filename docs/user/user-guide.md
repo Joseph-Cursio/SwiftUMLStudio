@@ -440,6 +440,8 @@ The type and method names are case-sensitive and must exactly match the Swift so
 
 A method declared in an extension of a bound generic type is entered under the type it extends, without the arguments: `Foo.run` for `extension Foo<Int> { func run() }`, `Array.run` for `extension [Int]`.
 
+The method is what follows the last dot, so a method of a nested type is entered with the type's whole name: `--entry Outer.Inner.run` for `run` in `Inner`'s body or in `extension Outer.Inner`. A name with no dot, or with an empty part (`Loader.`, `Loader..load`), is rejected. A module in front (`MyModule.Loader.load`) reads as a type named `MyModule.Loader` and draws an empty diagram.
+
 ### Controlling Traversal Depth
 
 `--depth` sets the maximum number of hops to follow from the entry point. Default is `3`.

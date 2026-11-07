@@ -14,7 +14,8 @@ enum CLIError: Error, CustomStringConvertible {
     var description: String {
         switch self {
         case .invalidEntry:
-            return "Entry must be in the form 'TypeName.methodName'"
+            return "Entry must be in the form 'TypeName.methodName', a nested type by its whole name "
+                + "('Outer.Inner.methodName')"
         case .stateCandidateNotFound(let identifier):
             return "No state machine candidate '\(identifier)' was found in the sources."
         case .erModelNotFound:

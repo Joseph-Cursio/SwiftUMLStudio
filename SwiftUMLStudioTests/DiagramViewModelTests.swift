@@ -138,11 +138,13 @@ struct DiagramViewModelTests {
         #expect(isGenerating == false)
     }
 
-    @Test("generate resets isGenerating for sequenceDiagram with too many dots in entryPoint")
+    /// `Foo.bar.baz` is a method of the nested type `Foo.bar` (#234), so a doubled dot is the
+    /// malformed name with more than one dot.
+    @Test("generate resets isGenerating for sequenceDiagram with a doubled dot in entryPoint")
     @MainActor
-    func generateGuardsMalformedEntryPointTooManyDots() async {
+    func generateGuardsMalformedEntryPointDoubledDot() async {
         let isGenerating = await generateAndWait(
-            mode: .sequenceDiagram, paths: ["/some/path.swift"], entryPoint: "Foo.bar.baz"
+            mode: .sequenceDiagram, paths: ["/some/path.swift"], entryPoint: "Foo..baz"
         )
         #expect(isGenerating == false)
     }

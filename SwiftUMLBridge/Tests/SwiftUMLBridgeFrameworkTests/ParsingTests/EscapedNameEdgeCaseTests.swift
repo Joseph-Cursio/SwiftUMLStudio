@@ -164,11 +164,13 @@ struct EscapedNameEdgeCaseTests {
         #expect(try activity(source, type, method) == activityControl)
     }
 
-    @Test("a protocol declared with backticks lists its requirements under its name")
+    /// A requirement has no body to draw, so it is no entry (#234), and its method in an extension
+    /// is listed under the protocol's name, with backticks or without.
+    @Test("a protocol declared with backticks lists its extension's method, not its requirement, by its name")
     func escapedProtocolRequirements() {
-        let source = "protocol `Doer` { func act() }"
+        let source = "protocol `Doer` { func act() }\nextension `Doer` { func went() {} }"
         let control = CallGraphExtractor.extract(from: unescaped(source)).methods
-        #expect(control == ["Doer.act"])
+        #expect(control == ["Doer.went"])
         #expect(CallGraphExtractor.extract(from: source).methods == control)
     }
 

@@ -114,6 +114,15 @@ struct DiagramPreviewView: View {
                             .padding()
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                             .accessibilityIdentifier("entryPointPrompt")
+                    } else if viewModel.entryPointIsUnreadable {
+                        Text("“\(viewModel.entryPoint)” is not a Type.method name. "
+                            + "Enter the type, a dot, then the method (e.g. MyType.myMethod, "
+                            + "or Outer.Inner.myMethod for a nested type).")
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                            .padding()
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .accessibilityIdentifier("entryPointUnreadablePrompt")
                     } else if viewModel.diagramMode == .componentDiagram
                         && viewModel.packageDescription == nil {
                         #if APP_STORE_BUILD

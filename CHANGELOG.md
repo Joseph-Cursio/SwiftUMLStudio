@@ -41,6 +41,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   read first. Still wrong: written in `Far/`, beside the alias, the edge is
   now left out in both orders, where `Near Far` used to draw it, since a name
   in an extension of an outside type may be one of its members.
+- **An entry splits at its last dot, and the entry list offers only what
+  draws** (#234). A method in `extension NS.Real` is listed as `NS.Real.run`,
+  but `--entry` took exactly two parts, so it was refused, and `Real.run`
+  drew nothing. The method is now what follows the last dot, read by one
+  public `EntryPointName` the CLI and the Studio share, so `NS.Real.run`
+  draws in both diagrams, as does `Outer.Inner.run` for a type nested inline.
+  The list (`findEntryPoints(for:)`) no longer offers a function local to a
+  body, which the activity diagram cannot draw, or a protocol requirement,
+  which has no body. A doubled dot, as `Loader..load`, is now refused, where
+  it read as `Loader.load`. One cost: `--entry MyModule.Loader.load` reads as
+  a type `MyModule.Loader` and draws an empty diagram, where it was an error.
+
+### Fixed — Studio
+
+- **Picking a nested type's method from the entry list draws it** (#234).
+  Picking `NS.Real.run` generated nothing and set no error: the previous
+  entry's diagram stayed up under its own title, or with none, the pane asked
+  for files that were already selected. It now draws, and a name that is no
+  `Type.method`, as `Foo` or `Foo.`, clears the old diagram and says so in
+  the pane, not in an alert, since generating follows each pause in typing.
+  The dashboard's suggestion cards, fed by the same list, no longer offer a
+  local function.
 
 ## [1.2.0] — 2026-11-06
 
