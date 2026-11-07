@@ -26,7 +26,16 @@ struct BoundGenericExtensionCallGraphTests {
         let boundResult = CallGraphExtractor.extract(from: bound + Self.body)
         let constrainedResult = CallGraphExtractor.extract(from: constrained + Self.body)
         #expect(boundResult.methods == constrainedResult.methods)
-        #expect(boundResult.edges == constrainedResult.edges)
+        #expect(Self.calls(boundResult.edges) == Self.calls(constrainedResult.edges))
+    }
+
+    /// Each edge as caller and callee, without the body it is written in, which the two
+    /// spellings' lengths place at different offsets.
+    private static func calls(_ edges: [CallEdge]) -> [String] {
+        edges.map {
+            "\($0.callerType).\($0.callerMethod) -> \($0.calleeType ?? "?").\($0.calleeMethod)"
+                + " async: \($0.isAsync) unresolved: \($0.isUnresolved)"
+        }
     }
 
     @Test("the listed entry point, split as the CLI and Studio split it, finds the activity body",

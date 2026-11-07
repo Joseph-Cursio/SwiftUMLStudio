@@ -48,21 +48,20 @@ public struct SequenceDiagramGenerator: SequenceDiagramGenerating, Sendable {
 
         let listed = CallGraphExtractor.listedEntryPoint(type: entryType, method: entryMethod)
         // `--entry Alias.start` is the aliased type's `start`, as its extension is (#125): the first
-        // the name can come to with a body for it.
+        // the name can come to with a body for it. The activity diagram starts from the same body.
         let types = aliases.entryTypes(of: listed.type)
-        let chosen = CallGraphExtractor.entryType(
-            named: listed.type, among: types, method: listed.method, in: extracted
+        let bodies = extracted.flatMap(\.bodies)
+        let chosen = CallGraphExtractor.entryBody(
+            named: listed.type, among: types, method: listed.method, in: bodies
         )
-        let entry = (type: chosen ?? types[0], method: listed.method)
-        let callGraph = CallGraph(edges: extracted.flatMap(\.edges))
-        // With no body chosen, a call filed under this name is a local function's, or a nested
-        // namesake's, and the activity diagram draws neither.
-        let traversed = chosen == nil
-            ? [] : callGraph.traverse(from: entry.type, entryMethod: entry.method, maxDepth: depth)
+        let callGraph = CallGraph(edges: extracted.flatMap(\.edges), bodies: bodies)
+        // With no body chosen, a call filed under this name is a local function's, or a namesake's
+        // that cannot be named from outside a body, and the activity diagram draws neither (#235).
+        let traversed = chosen.map { callGraph.traverse(from: $0, maxDepth: depth) } ?? []
         return SequenceScript(
             traversedEdges: traversed,
-            entryType: entry.type,
-            entryMethod: entry.method,
+            entryType: chosen?.type ?? types[0],
+            entryMethod: listed.method,
             configuration: configuration,
             typeLocations: typeLocations
         )

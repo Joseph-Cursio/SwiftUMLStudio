@@ -77,6 +77,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   which has no body. A doubled dot, as `Loader..load`, is now refused, where
   it read as `Loader.load`. One cost: `--entry MyModule.Loader.load` reads as
   a type `MyModule.Loader` and draws an empty diagram, where it was an error.
+- **A sequence and an activity diagram of one entry draw the same body, and
+  only one Swift can reach by that name** (#235). The call graph filed each
+  body under its innermost type and function name alone, so overloads,
+  same-named nested types, and functions and types local to a body all
+  shared one `Type.method`. The sequence diagram drew every body filed under
+  it and the activity diagram the first it met: `Over.run` drew both
+  overloads in one and the first in the other, and `--entry Real.run` drew a
+  `Real` local to an initializer in place of the top-level `Real`. Each body
+  is now told apart by where it is declared, and both diagrams start from
+  one, chosen in one place: a member of a type that can be named from
+  outside a body, preferring a top-level type to a nested one of the same
+  name, and of several, the first in read order and source order. So
+  `--entry RealB.run`, where `run` is local to a method, draws nothing in
+  either, and the entry list no longer offers a type local to a body. Below
+  the entry, a bare call reaches a local function before a member of its
+  name, as Swift does, so `Both.outer` draws its local `run` and not the
+  member's calls; a call to `self` in a local type's member stays among
+  that type's members; and nothing else reaches a local function or type.
+  Still merged below the entry: a call to a name same-named nested types
+  share, which Swift tells apart by where the call is written. The activity
+  diagram now reads every file to choose, as the sequence diagram does.
 
 ### Fixed — Studio
 
