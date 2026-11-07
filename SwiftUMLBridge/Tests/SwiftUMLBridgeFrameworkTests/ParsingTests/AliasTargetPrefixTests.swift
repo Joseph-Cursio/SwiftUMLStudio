@@ -3,9 +3,11 @@ import Testing
 @testable import SwiftUMLBridgeFramework
 
 /// A typealias whose dotted target starts with another name for a type, as `typealias Svc = O.In`
-/// after `typealias O = Real`, means the type `Real.In`, whose own body is filed under `In` and
-/// `Real.In`. `--entry Svc.run` came to `O.In.run`, which nothing is filed under, and drew an empty
-/// diagram (#239). Each source here passes `swiftc -module-name Main -typecheck`.
+/// after `typealias O = Real`, or with the writer's own module, as `typealias Svc = Main.Real`,
+/// means a type whose own body is filed under neither spelling. `--entry Svc.run` came to
+/// `O.In.run` or `Main.Real.run`, which nothing is filed under, and drew an empty diagram (#239).
+/// Each source here passes `swiftc -module-name Main -typecheck`, given a module `Lib` declaring
+/// `Real` where one is imported.
 @Suite("An alias target through a prefix")
 struct AliasTargetPrefixTests {
     /// Both diagrams of `type.method` over `files`, written in that order.
@@ -57,11 +59,55 @@ struct AliasTargetPrefixTests {
         }
     }
 
+    private static let plain = "struct Real {\n    func run() { step() }\n    func step() {}\n}\n"
+
+    /// No module is known by name, but the file imports none called `Main`, and no type is.
+    @Test("a target whose first part is the writer's own module reaches the type's own body", arguments: [
+        (plain, "typealias Svc = Main.Real\n"),
+        (nested, "typealias Svc = Main.Real.In\n"),
+        (nested, "typealias O = Main.Real\ntypealias Svc = O.In\n"),
+        (plain, "import Foundation\ntypealias Svc = Main.Real\n")
+    ])
+    func throughOwnModule(type: String, aliases: String) throws {
+        for text in try Self.both([("Pkg/Svc.swift", type + aliases)], "Svc", "run") {
+            #expect(text.contains("step()"), "\(text)")
+        }
+    }
+
+    /// Swift reads a qualifier the file imports as that module, whose `Real` is not the project's.
+    @Test("a qualifier the file imports, or that needs no import, is not the writer's module", arguments: [
+        "import Lib\n", "import struct Lib.Real\n", "@testable import Lib\n"
+    ])
+    func importedQualifier(imports: String) throws {
+        let source = imports + Self.plain + "typealias Svc = Lib.Real\n"
+        for text in try Self.both([("Pkg/Svc.swift", source)], "Svc", "run") {
+            #expect(!text.contains("step()"), "\(text)")
+        }
+        let standard = Self.plain.replacingOccurrences(of: "Real", with: "Int") + "typealias Svc = Swift.Int\n"
+        for text in try Self.both([("Pkg/Svc.swift", standard)], "Svc", "run") {
+            #expect(!text.contains("step()"), "\(text)")
+        }
+    }
+
+    @Test("a qualifier that names a type is that type, not a module")
+    func typeQualifier() throws {
+        let source = "enum NS {\n    struct Real {\n        func run() { inNamespace() }\n"
+            + "        func inNamespace() {}\n    }\n}\n" + Self.plain + "typealias Svc = NS.Real\n"
+        for text in try Self.both([("Pkg/Svc.swift", source)], "Svc", "run") {
+            #expect(text.contains("inNamespace()"), "\(text)")
+            #expect(!text.contains("step()"), "\(text)")
+        }
+    }
+
     @Test("the names a target through a prefix comes to are listed after it")
     func entryTypes() {
         let source = Self.nested + "typealias P = Real\ntypealias O = P\ntypealias Svc = O.In\n"
         let file = URL(fileURLWithPath: "/tmp/Pkg/Svc.swift")
         let resolver = TypeAliasResolver(sources: [(file, source)])
         #expect(resolver.entryTypes(of: "Svc") == ["O.In", "Real.In", "Svc"])
+        let throughModule = Self.nested + "typealias O = Main.Real\ntypealias Svc = O.In\n"
+        let moduleResolver = TypeAliasResolver(sources: [(file, throughModule)])
+        let expected = ["O.In", "Main.Real.In", "Real.In", "Svc"]
+        #expect(moduleResolver.entryTypes(of: "Svc") == expected)
     }
 }

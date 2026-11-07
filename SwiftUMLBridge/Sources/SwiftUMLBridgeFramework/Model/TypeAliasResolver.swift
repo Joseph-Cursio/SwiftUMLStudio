@@ -90,13 +90,31 @@ struct TypeAliasResolver {
     }
 
     /// `name` with its first part read as Swift reads it where `scope` writes it: through the
-    /// typealias it names, so `O.In` is `Real.In` after `typealias O = Real`; `nil` when that
-    /// changes nothing, or `name` has one part.
+    /// typealias it names, so `O.In` is `Real.In` after `typealias O = Real`, or, as the writer's
+    /// own module (`namesOwnModule(_:before:from:)`), dropped, so `Main.Real` is `Real`; `nil`
+    /// when neither changes it, or `name` has one part.
     private func respelled(_ name: String, from scope: DeclarationScope) -> String? {
         guard let dot = name.firstIndex(of: ".") else { return nil }
         let first = String(name[..<dot])
         let resolved = resolve(first, from: scope)
-        return resolved == first ? nil : resolved + name[dot...]
+        if resolved != first { return resolved + name[dot...] }
+        let rest = String(name[name.index(after: dot)...])
+        return namesOwnModule(first, before: rest, from: scope) ? rest : nil
+    }
+
+    /// Whether `qualifier`, written in `scope` as the first part of a name whose `rest` starts
+    /// with a type the project declares, can only be the writer's own module. The commands that
+    /// take `--entry` read no package, so no module is known by name (#239), but Swift lets a file
+    /// write another module's name only when it imports that module, all of it or a declaration
+    /// of it, and reads a name as a type before a module. So a qualifier the file does not import,
+    /// that names no type or typealias of the project, is the file's own module. `Swift` needs no
+    /// import, and a file whose imports are unknown says nothing.
+    private func namesOwnModule(_ qualifier: String, before rest: String, from scope: DeclarationScope) -> Bool {
+        guard let lookup, let imports = scope.imports, qualifier != "Swift",
+              !imports.contains(qualifier), !imports.contains(where: { $0.hasPrefix("\(qualifier).") })
+        else { return false }
+        let declares = { (name: String) in lookup.declarations(named: name).contains { !$0.isExtension } }
+        return !declares(qualifier) && declares(String(rest.prefix { $0 != "." }))
     }
 
     /// The type name `name` comes to where a declaration in `scope` writes it in its inheritance
