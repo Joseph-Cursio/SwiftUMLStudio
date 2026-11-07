@@ -30,9 +30,11 @@ extension LayoutGraphBuilder.TypeLookup {
               !shadows(qualifier, from: scope, depth: depth) else {
             return nil
         }
-        let candidates = declared.filter {
+        // Only a member the writer's module loads, so not `V` from an `extension Foo` in a module
+        // it never imports (#245).
+        let candidates = loaded(declared.filter {
             isVisible($0, from: scope, depth: depth) && owningModule(of: $0, depth: depth).map(named.contains) == true
-        }
+        }, from: scope, depth: depth)
         return scope.nearest(among: candidates, scope: \.rankScope).map { Match(declared: $0, name: rest) }
     }
 

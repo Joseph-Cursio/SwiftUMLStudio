@@ -128,6 +128,10 @@ extension LayoutGraphBuilder.TypeLookup {
             if let start = name.start {
                 if let members = members(of: start, among: candidates, from: scope, depth: depth) { return members }
                 candidates = fallbackCandidates(candidates, for: name, from: scope, depth: depth)
+            } else {
+                // A first component read as a module, `ModA` in `ModA.Foo.V`, sets no start, but
+                // the writer still sees only the extensions its module loads (#245).
+                candidates = loaded(candidates, from: scope, depth: depth)
             }
             guard candidates.count > 1, candidates.contains(where: { $0.extended != nil }) else {
                 return candidates

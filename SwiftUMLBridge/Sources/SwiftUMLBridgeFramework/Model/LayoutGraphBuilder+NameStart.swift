@@ -162,11 +162,12 @@ extension LayoutGraphBuilder.TypeLookup {
         return seen.filter { isScoped($0) != false }
     }
 
-    /// `members` of the type a dotted name starts at without those an extension in a module
-    /// that `scope`'s module does not load adds (`isLoaded(_:from:depth:)`). Items built without
+    /// `members` of the type a dotted name starts at, or of the type a module-qualified name
+    /// names (#245), without those an extension in a module that `scope`'s module does not load
+    /// adds (`isLoaded(_:from:depth:)`). Items built without
     /// `SyntaxStructure.loadedModules` miss the imports of a file that declares nothing
     /// (`ModuleLoads.knowsEveryLoad(of:)`), so for them every member is kept when none is loaded.
-    private func loaded(
+    func loaded(
         _ members: [LayoutGraphBuilder.Declared], from scope: LayoutGraphBuilder.Scope, depth: Int
     ) -> [LayoutGraphBuilder.Declared] {
         let loaded = members.filter { isLoaded($0, from: scope, depth: depth) }
