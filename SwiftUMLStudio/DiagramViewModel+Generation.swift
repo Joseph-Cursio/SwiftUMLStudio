@@ -95,26 +95,22 @@ extension DiagramViewModel {
         stateScript = result
     }
 
-    /// Resolve `entryPoint` into a `Type.method` pair. On missing paths/entry or
-    /// a malformed value, clears `isGenerating` and returns nil so the caller can
-    /// abort the generation.
+    /// Resolve `entryPoint` into a `Type.method` pair, split at the last dot as
+    /// `EntryPointName` reads it, so a listed `NS.Real.run` draws (#234). On missing
+    /// paths/entry or a malformed value, clears `isGenerating` and returns nil so the
+    /// caller can abort the generation. Callers clear their script first, so the pane
+    /// never keeps showing the previous entry's diagram (`entryPointIsUnreadable`).
     private func resolveEntryPoint() -> (entryType: String, entryMethod: String)? {
-        guard !selectedPaths.isEmpty, !entryPoint.isEmpty else {
+        guard !selectedPaths.isEmpty, let name = EntryPointName(entryPoint) else {
             isGenerating = false
             return nil
         }
-        let parts = entryPoint.split(separator: ".").map(String.init)
-        guard parts.count == 2 else {
-            isGenerating = false
-            return nil
-        }
-        return (parts[0], parts[1])
+        return (name.type, name.method)
     }
 
     func generateActivityDiagram() async {
-        guard let (entryType, entryMethod) = resolveEntryPoint() else { return }
-
         activityScript = nil
+        guard let (entryType, entryMethod) = resolveEntryPoint() else { return }
 
         let paths = selectedPaths
         let format = diagramFormat
@@ -185,9 +181,8 @@ extension DiagramViewModel {
     }
 
     func generateSequenceDiagram() async {
-        guard let (entryType, entryMethod) = resolveEntryPoint() else { return }
-
         sequenceScript = nil
+        guard let (entryType, entryMethod) = resolveEntryPoint() else { return }
 
         let paths = selectedPaths
         let format = diagramFormat

@@ -53,6 +53,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   it read as `Loader.load`. One cost: `--entry MyModule.Loader.load` reads as
   a type `MyModule.Loader` and draws an empty diagram, where it was an error.
 
+### Fixed — Studio
+
+- **Picking a nested type's method from the entry list draws it** (#234).
+  Picking `NS.Real.run` generated nothing and set no error: the previous
+  entry's diagram stayed up under its own title, or with none, the pane asked
+  for files that were already selected. It now draws, and a name that is no
+  `Type.method`, as `Foo` or `Foo.`, clears the old diagram and says so in
+  the pane, not in an alert, since generating follows each pause in typing.
+  The dashboard's suggestion cards, fed by the same list, no longer offer a
+  local function.
+
 ## [1.2.0] — 2026-11-06
 
 The first release since v1.1.0 (2026-08-16), covering about 350 commits, not
