@@ -311,6 +311,47 @@ struct NearestDirectoryNameTests {
         ], Self.hiddenNested) == [])
     }
 
+    /// `Box.Inner.Stamp` is a typealias of `Date` in `/r/Far` and a struct in `/r/Near`, both
+    /// hidden. Whether `extension Box.Inner.Stamp` is of a project type took the first hidden
+    /// entry in read order, so with `/r/Far` read first it was judged an extension of `Date`,
+    /// `Style` may have been a member of `Date`, and `T` lost its edge (#232). The drawn
+    /// `extension CustomStringConvertible` is what makes the text formats leave an unsure edge out.
+    private static func hiddenStamp(writerIn writer: String) -> [File] {
+        [
+            ("/r/Far/Box.swift", "import Foundation\nstruct Box { struct Inner { typealias Stamp = Date } }"),
+            ("/r/Near/Box.swift", "struct Box { struct Inner { struct Stamp {} } }"),
+            ("/r/\(writer)/Ext.swift", "extension Box.Inner.Stamp { typealias Style = CustomStringConvertible }"),
+            ("/r/\(writer)/T.swift", "struct T: Box.Inner.Stamp.Style { var description: String { \"\" } }"),
+            ("/r/\(writer)/Thing.swift", "extension CustomStringConvertible { func thi() {} }")
+        ]
+    }
+
+    @Test("an extension of a nearer hidden nested type is the project's, whichever directory is read first",
+          arguments: [ExtensionVisualization.all, .merged], [false, true])
+    func nearerHiddenTypeDecidesTheExtension(mode: ExtensionVisualization, farFirst: Bool) throws {
+        let near = Self.hiddenStamp(writerIn: "Near")
+        let files = farFirst ? near : near.reversed()
+        let elements = ElementOptions(showNestedTypes: false, showExtensions: mode)
+        #expect(try edges(files, elements).contains { $0.hasPrefix("T -> ") })
+        for format in [DiagramFormat.plantuml, .mermaid] {
+            #expect(try lines(files, format, elements).contains("CustomStringConvertible <|-- T : inherits"))
+        }
+        #expect(try lines(files, .nomnoml, elements).contains("[T] -:> inherits [CustomStringConvertible]"))
+    }
+
+    /// Written in `/r/Far`, `Box.Inner.Stamp` is Far's alias of `Date`, so `Style` may be a member
+    /// of `Date` and the edge is left out. `T` does conform; the order of the paths no longer
+    /// decides it, but the caution about an outside type's members still drops the edge.
+    @Test("known wrong: a writer beside the hidden alias of an outside type loses the edge in either order",
+          arguments: [false, true])
+    func writerBesideHiddenOutsideAlias(farFirst: Bool) throws {
+        let far = Self.hiddenStamp(writerIn: "Far")
+        let files = farFirst ? far : far.reversed()
+        let elements = ElementOptions(showNestedTypes: false, showExtensions: .all)
+        #expect(try !edges(files, elements).contains { $0.hasPrefix("T -> ") })
+        #expect(try !lines(files, .plantuml, elements).contains { $0.hasSuffix("<|-- T : inherits") })
+    }
+
     // MARK: - Still a guess
 
     /// A directory is a guess at a module, so a nearer type's kind is no surer than the first's.

@@ -74,7 +74,7 @@ extension LayoutGraphBuilder.TypeLookup {
         for (index, part) in parts.enumerated() {
             prefix = prefix.isEmpty ? part : "\(prefix).\(part)"
             guard let nearest = nearestVisible(named: prefix, from: scope, depth: depth)
-                ?? unlistedMembers[prefix]?.first(where: { isVisible($0, from: scope, depth: depth) })
+                ?? nearestUnlisted(named: prefix, from: scope, depth: depth)
             else { continue }
             deciding = nearest
             used = index + 1
@@ -171,6 +171,18 @@ extension LayoutGraphBuilder.TypeLookup {
             return local
         }
         let visible = (typesForName[name] ?? []).filter { isVisible($0, from: scope, depth: depth) }
+        return scope.nearest(among: visible, scope: \.rankScope)
+    }
+
+    /// The nearest nested type or typealias the items do not list (`unlistedMembers`) under
+    /// `name` that `scope` sees, ranked as `nearestVisible(named:from:depth:)` ranks recorded
+    /// ones, so the answer never turns on the order the paths are read in (#232): with nested
+    /// types hidden, `Box.Inner.Stamp` written in `Near/` is Near's own struct, not a
+    /// `typealias Stamp = Date` that `Far/` hides under the same name.
+    private func nearestUnlisted(
+        named name: String, from scope: LayoutGraphBuilder.Scope, depth: Int
+    ) -> LayoutGraphBuilder.Declared? {
+        let visible = (unlistedMembers[name] ?? []).filter { isVisible($0, from: scope, depth: depth) }
         return scope.nearest(among: visible, scope: \.rankScope)
     }
 
