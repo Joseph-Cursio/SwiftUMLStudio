@@ -35,9 +35,10 @@ struct NestedSquareBracketTests {
         ].map { ($0.0, file($0.1)) }
     }
 
-    private func seconds(_ body: () -> Void) -> Double {
-        let elapsed = ContinuousClock().measure(body)
-        return Double(elapsed.components.seconds) + Double(elapsed.components.attoseconds) / 1e18
+    /// A class diagram of `source`, and the CPU time the parsing thread spent on it.
+    private static func timedClassDiagram(_ source: String) -> (text: String, seconds: Double) {
+        let timed = ThreadCPUClock.onParsingThread { classDiagram(source) }
+        return (timed.result, timed.seconds)
     }
 
     private func withSourceFile<Result>(_ source: String, _ body: (URL) throws -> Result) throws -> Result {
@@ -48,32 +49,42 @@ struct NestedSquareBracketTests {
         return try body(url)
     }
 
-    private func classDiagram(_ source: String) -> String {
+    private static func classDiagram(_ source: String) -> String {
         ClassDiagramGenerator().generateScript(for: source, with: Configuration(format: .plantuml)).text
     }
 
     // MARK: - Time
 
     /// A clock, not `.timeLimit`, because a time limit cannot stop a parse that is running.
-    /// The bounds are for a debug build under load. Unbounded, a 20-deep chain took 8 to 15 s.
+    /// The bounds are for a debug build. Unbounded, a 20-deep chain took 8 to 15 s.
     ///
-    /// The parsing thread's CPU clock, so the suites running beside this one do not count: the
+    /// The parsing thread's CPU clock, so time spent waiting for a core does not count (#237): the
     /// tuple type, parsed in 0.4 s on its own, took 2.4 s by the wall clock on a 3-core CI runner.
     @Test("SwiftParser reads a 20-deep chain in under two seconds", arguments: shapes(depth: 20))
     func swiftParser(shape: String, source: String) {
-        let time = ParsingStack.run {
-            let start = clock_gettime_nsec_np(CLOCK_THREAD_CPUTIME_ID)
-            _ = ParsingStack.parse(source).statements.count
-            return Double(clock_gettime_nsec_np(CLOCK_THREAD_CPUTIME_ID) - start) / 1e9
-        }
+        let time = ThreadCPUClock.onParsingThread { ParsingStack.parse(source).statements.count }.seconds
         #expect(time < 2, "\(shape): \(time) s")
     }
 
-    @Test("a class diagram of a 20-deep chain, read by SourceKit too, takes under two seconds",
+    /// Correct code took 6.5 s by the wall clock on a busy 8-core machine (#237), and with the
+    /// cut turned off, as long as 5.6 s on a quiet one, so no wall-clock bound told them apart.
+    @Test("a class diagram of a 20-deep chain takes under two seconds on the parsing thread",
           arguments: shapes(depth: 20))
     func classDiagramTime(shape: String, source: String) {
-        let time = seconds { _ = classDiagram(source) }
-        WallClockLimit.expect(.seconds(time), under: .seconds(2), "\(shape): \(time) s")
+        let time = Self.timedClassDiagram(source).seconds
+        #expect(time < 2, "\(shape): \(time) s")
+    }
+
+    /// SourceKit reads the source on threads of its own, which the parsing thread's clock does
+    /// not see, and this shape doubled in SourceKit alone: 20 deep with the cut turned off, it
+    /// took 0.0026 s on the parsing thread and 0.45 s by the wall clock. At 26 deep, uncut, it
+    /// took 27 to 48 s by the wall clock, and 0.05 to 0.08 s cut. So the wall clock, with a bound
+    /// a busy machine stays far inside, and checked off CI only (`WallClockLimit`).
+    @Test("SourceKit reads a 26-deep tuple literal after a value in under ten seconds")
+    func sourceKitTime() {
+        let source = Self.file("let x = " + Self.chain("[(1, ", "1", ")]", depth: 26))
+        let elapsed = ContinuousClock().measure { _ = Self.classDiagram(source) }
+        WallClockLimit.expect(elapsed, under: .seconds(10), "\(elapsed)")
     }
 
     /// 100 deep, as a shape with a `(` or `<` at each level is then 200 levels, inside
@@ -81,9 +92,8 @@ struct NestedSquareBracketTests {
     /// unexpected text (#145).
     @Test("a 100-deep chain is read, and the rest of the file with it", arguments: shapes(depth: 100))
     func deepChain(shape: String, source: String) {
-        var text = ""
-        let time = seconds { text = classDiagram(source) }
-        WallClockLimit.expect(.seconds(time), under: .seconds(8), "\(shape): \(time) s")
+        let (text, time) = Self.timedClassDiagram(source)
+        #expect(time < 8, "\(shape): \(time) s")
         #expect(text.contains("as After "), "\(shape)")
         #expect(text.contains("~height"), "\(shape)")
     }
@@ -92,15 +102,14 @@ struct NestedSquareBracketTests {
         file("let x = " + chain("[", "1", "]", depth: 248)), file("let x: " + chain("[", "Int", "]", depth: 248))
     ])
     func issueWitness(source: String) {
-        var text = ""
-        let time = seconds { text = classDiagram(source) }
-        WallClockLimit.expect(.seconds(time), under: .seconds(2), "\(time) s")
+        let (text, time) = Self.timedClassDiagram(source)
+        #expect(time < 2, "\(time) s")
         #expect(text.contains("as After ") && text.contains("~height"))
     }
 
     @Test("the declarations around a chain are drawn")
     func declarationsAroundTheChain() {
-        let text = classDiagram("""
+        let text = Self.classDiagram("""
             struct Before {
                 let width = 1
             }

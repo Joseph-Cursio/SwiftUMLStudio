@@ -4,10 +4,11 @@ import Testing
 /// A limit on wall-clock time, checked only on a developer's machine.
 ///
 /// The wall clock counts time spent waiting for a core, so on a shared CI runner, whose load no
-/// one controls, these limits fail with the code unchanged (#237). Each still guards a cost that
-/// explodes, such as a parse that doubles with each `[`, so they run locally, where a regression
-/// is caught before it is pushed. A limit that reads the thread's CPU clock
-/// (`CLOCK_THREAD_CPUTIME_ID`) counts no waiting, and stays on CI.
+/// one controls, a wall-clock limit fails with the code unchanged (#237). Read a thread's CPU
+/// clock (`ThreadCPUClock`) instead, which counts no waiting and is checked everywhere. This is
+/// for work that clock cannot see, such as SourceKit's, which runs on threads of its own: give it
+/// a bound a busy machine stays far inside, and it still catches a cost that explodes before it
+/// is pushed.
 enum WallClockLimit {
     /// Whether wall-clock limits are checked: not when `CI` is set, as GitHub Actions sets it on
     /// every runner.

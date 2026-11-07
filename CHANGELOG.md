@@ -20,6 +20,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   the limits still apply, so a cost that explodes is still caught before a
   push, though a busy machine can still fail them. The three limits that
   read the thread's CPU clock count no waiting and stay on CI.
+- **Those limits now read a thread's CPU clock, and run on CI again**
+  (#237). The five in `SupertypeEdgeKindCertaintyTests` and
+  `AliasSpelledExtensionScopeTests` read the test thread's CPU clock, and
+  the three class-diagram limits in `NestedSquareBracketTests` read the
+  parsing thread's, timed inside `ParsingStack.run`, since the parse runs
+  on a thread of its own. Both go through the new `ThreadCPUClock`. They
+  passed under 64 busy loops at a load average of 64, and with the `[` cut
+  turned off seven of the eight 20-deep shapes still failed, at 5.7 to
+  64 s of CPU. SourceKit works on threads of its own, which no thread clock
+  sees, so a new `sourceKitTime` case keeps a wall-clock bound, 10 s, on
+  the shape that doubles in SourceKit alone, 26 deep: 27 s uncut, under
+  0.1 s cut. It is the only limit left on `WallClockLimit`, so off CI only.
 
 ### Fixed — Bridge
 
