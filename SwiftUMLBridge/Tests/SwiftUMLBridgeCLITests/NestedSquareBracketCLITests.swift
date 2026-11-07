@@ -8,7 +8,7 @@ import Testing
 @Suite("Chains of nested [ in the CLI")
 struct NestedSquareBracketCLITests {
     private static let source = "struct S {\n    let x = " + String(repeating: "[", count: 248) + "1"
-        + String(repeating: "]", count: 248) + "\n    let height = 2\n}\nstruct After {}\n"
+        + String(repeating: "]", count: 248) + "\n    let height = 2\n    func run() {}\n}\nstruct After {}\n"
 
     private func withSourceDirectory<Result>(_ body: (URL, URL) throws -> Result) throws -> Result {
         let directory = URL(fileURLWithPath: NSTemporaryDirectory())
@@ -22,7 +22,7 @@ struct NestedSquareBracketCLITests {
 
     @Test("each subcommand reads the file and warns once, naming it", arguments: [
         ["classdiagram", ".", "--format", "plantuml"], ["deps", ".", "--types"], ["deps", ".", "--modules"],
-        ["sequence", ".", "--entry", "S.x"], ["activity", ".", "--entry", "S.x"], ["state", ".", "--list"]
+        ["sequence", ".", "--entry", "S.run"], ["activity", ".", "--entry", "S.run"], ["state", ".", "--list"]
     ])
     func warns(arguments: [String]) throws {
         try withSourceDirectory { directory, file in

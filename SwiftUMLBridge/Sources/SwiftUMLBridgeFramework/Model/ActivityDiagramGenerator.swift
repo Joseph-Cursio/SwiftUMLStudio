@@ -41,9 +41,11 @@ public struct ActivityDiagramGenerator: ActivityDiagramGenerating, Sendable {
            ) {
             return ActivityScript(graph: graph, configuration: configuration)
         }
-        return ActivityScript(
+        var script = ActivityScript(
             graph: ActivityGraph(entryType: types[0], entryMethod: listed.method),
             configuration: configuration
         )
+        script.foundEntry = false
+        return script
     }
 }

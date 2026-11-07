@@ -11,6 +11,11 @@ public struct SequenceScript: Sendable {
     /// Positioned sequence layout (available when format is `.svg`).
     public let sequenceLayout: SequenceLayout?
 
+    /// Whether the entry point came to a method with a body, which the diagram starts from.
+    /// `false` when it came to none, so the diagram is empty for that reason and not because the
+    /// method calls nothing, which the CLI warns of (#239).
+    public internal(set) var foundEntry = true
+
     /// An empty script (used when no entry point matches).
     public static let empty = SequenceScript(text: "", format: .plantuml)
 
@@ -51,6 +56,7 @@ public struct SequenceScript: Sendable {
         self.text = text
         self.format = format
         self.sequenceLayout = nil
+        self.foundEntry = false
     }
 }
 
