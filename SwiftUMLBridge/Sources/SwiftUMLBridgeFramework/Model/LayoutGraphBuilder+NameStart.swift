@@ -18,8 +18,12 @@ extension LayoutGraphBuilder {
         /// `typealias API = Networking.API` `API` of `Networking.API`: its members are
         /// recorded under that name.
         case projectType(OwningType?, renamedTo: String?)
-        /// A type outside the diagram, such as Swift's `Array`.
-        case outsideType
+        /// A type outside the diagram, such as Swift's `Array`. `spelledAs` is the name it is
+        /// spelled by when the first component is another name for it, as
+        /// `typealias Array = Date` makes `Array` of Foundation's `Date`, and
+        /// `typealias Arr = [Int]` `Arr` of Swift's `Array`: an extension of it records its
+        /// members under that name (#247).
+        case outsideType(spelledAs: String?)
     }
 
     /// The outermost type a declaration belongs to past any extension, by its module and name
@@ -63,7 +67,9 @@ extension LayoutGraphBuilder.TypeLookup {
         of first: String, in name: String, from scope: LayoutGraphBuilder.Scope, depth: Int
     ) -> LayoutGraphBuilder.NameStart {
         func lookUp() -> LayoutGraphBuilder.NameStart {
-            guard let type = firstComponentType(of: name, from: scope, depth: depth) else { return .outsideType }
+            guard let type = firstComponentType(of: name, from: scope, depth: depth) else {
+                return .outsideType(spelledAs: outsideSpelling(of: first, from: scope, depth: depth))
+            }
             let recorded = recordedName(of: type.declaration)
             return .projectType(owningType(of: type, depth: depth + 1), renamedTo: recorded == first ? nil : recorded)
         }
@@ -86,6 +92,17 @@ extension LayoutGraphBuilder.TypeLookup {
         return type(first, from: scope, depth: depth + 1)
     }
 
+    /// The name of the type outside the diagram that the first component `first`, written in
+    /// `scope`, is another name for, once every typealias on the way is followed
+    /// (`resolvedName(of:from:readingModules:depth:)`): `Date` for `Array` after
+    /// `typealias Array = Date`, and `Array` for `Arr` after `typealias Arr = [Int]`. `nil` when
+    /// `first` is that type's own name.
+    private func outsideSpelling(of first: String, from scope: LayoutGraphBuilder.Scope, depth: Int) -> String? {
+        let written = qualifiedName(ofWritten: first, from: scope, depth: depth + 1)
+        let spelled = resolvedName(of: written, from: scope, depth: depth + 1)
+        return spelled == first ? nil : spelled
+    }
+
     /// The `candidates` that are members of the type a dotted name starts at (`starts(_:at:depth:)`),
     /// an extension's only if the writer's module loads it (`loaded(_:from:depth:)`); `nil` when
     /// none of a project type's is left. Swift code that builds names a member of the type, so
@@ -99,7 +116,8 @@ extension LayoutGraphBuilder.TypeLookup {
         from scope: LayoutGraphBuilder.Scope, depth: Int
     ) -> [LayoutGraphBuilder.Declared]? {
         let members = loaded(candidates.filter { starts($0, at: start, depth: depth) }, from: scope, depth: depth)
-        guard !members.isEmpty || start == .outsideType else { return nil }
+        if case .outsideType = start { return members }
+        guard !members.isEmpty else { return nil }
         return members
     }
 
@@ -188,17 +206,28 @@ extension LayoutGraphBuilder.TypeLookup {
     }
 
     /// `name` spelled through the type its first component is another name for, as that type is
-    /// recorded (`NameStart.projectType`): `Bar.V` for `Foo.V` after `typealias Foo = ModA.Bar`,
-    /// so a name the lookup finds nothing for, as a hidden nested type, comes to the name it
-    /// would through a typealias of the whole. `nil` when its start is no such type, or when
-    /// another type is recorded under that spelling, which an edge to the name would seem to
-    /// end on, as a `Bar.V` that `Foo.V` does not mean.
+    /// recorded (`NameStart.projectType`) or spelled (`NameStart.outsideType`): `Bar.V` for
+    /// `Foo.V` after `typealias Foo = ModA.Bar`, and `Array.Index` for `Arr.Index` after
+    /// `typealias Arr = [Int]`, so a name the lookup finds nothing for, as a hidden nested type,
+    /// comes to the name it would through a typealias of the whole. `nil` when its start is no
+    /// such type, or when another type is recorded under that spelling, which an edge to the name
+    /// would seem to end on, as a `Bar.V` that `Foo.V` does not mean.
     func spelledThroughStart(
         _ name: LayoutGraphBuilder.QualifiedName, from scope: LayoutGraphBuilder.Scope, depth: Int
     ) -> String? {
-        guard case .projectType(_, let renamed?) = started(name, from: scope, depth: depth).start else { return nil }
+        guard let renamed = startSpelling(of: started(name, from: scope, depth: depth).start) else { return nil }
         let spelled = renamed + name.name.drop { $0 != "." }
         return typesForName[spelled] == nil ? spelled : nil
+    }
+
+    /// The name a start's type is recorded or spelled under when the first component is another
+    /// name for it, `nil` otherwise.
+    private func startSpelling(of start: LayoutGraphBuilder.NameStart?) -> String? {
+        switch start {
+        case .projectType(_, let renamed): renamed
+        case .outsideType(let spelled): spelled
+        case nil: nil
+        }
     }
 
     /// The names the declarations `name` can mean are recorded under: `name` itself, and, when
@@ -207,8 +236,12 @@ extension LayoutGraphBuilder.TypeLookup {
     /// where `Foo` is ModA's. When the first component is another name for a type
     /// (`NameStart.projectType`), the rest is also looked for under the name that type is
     /// recorded under, with and without the module an extension spells it through, and
-    /// qualified or not.
+    /// qualified or not. When it is another name for a type outside the diagram
+    /// (`NameStart.outsideType`), the rest is looked for under that type's name alone, since what
+    /// is recorded under the name as written is another type's: after `typealias Array = Date`,
+    /// `Date.V`, and not the `Array.V` that `extension [Int]` declares.
     func spellings(of name: LayoutGraphBuilder.QualifiedName) -> [String] {
+        if case .outsideType(let spelled?) = name.start { return [spelled + name.name.drop { $0 != "." }] }
         guard case .projectType(let owner?, let renamed) = name.start, let module = owner.module else {
             return [name.name]
         }
