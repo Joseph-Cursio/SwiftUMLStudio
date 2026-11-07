@@ -8,6 +8,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed — Bridge
+
+- **An edge through a typealias of a type outside the diagram ends on an
+  extension of that type, not on the first of that spelling** (#231). Each
+  target can have its own `typealias Base`, and each target's
+  `extension Base` gets its own box. With `typealias Base = NSException` in
+  ModA and `typealias Base = NSObject` in ModB, ModB's `class U: Base` ended
+  on the first box drawn, ModA's, so the diagram showed `U` as an
+  `NSException` and the box depended on read order. It now ends on ModB's
+  box, in every format, with or without `--package` and
+  `--merge-extensions`. With no such extension drawn, the edge is written to
+  `NSObject`, as a node of its own. The same goes for a dotted name through
+  an alias of a project type, as `Foo.V` with nested types hidden. With
+  `--package`, an alias whose target is spelled like another target's alias
+  no longer ends on that alias's extension, nor does a name in an extension
+  of an outside type, as `Sendable` in `extension Date`, on another target's
+  `extension Sendable` of something else. Both of those edges are now left
+  out, as a drawn box has the name they would be written to. Still open: a
+  dotted name through an alias of a type outside the diagram, as `Base.Inner`
+  after `typealias Base = First`, resolves to its spelling, so it ends on the
+  first such box and `--merge-extensions` merges them.
+
 ## [1.2.0] — 2026-11-06
 
 The first release since v1.1.0 (2026-08-16), covering about 350 commits, not

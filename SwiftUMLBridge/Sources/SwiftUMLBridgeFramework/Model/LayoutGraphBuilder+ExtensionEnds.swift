@@ -7,10 +7,15 @@ import Foundation
 extension LayoutGraphBuilder {
     /// Where the drawn extensions of one name end edges: for each type their own lookups find,
     /// the first such extension (`EdgeEndIds.standIn`), and the first that finds none
-    /// (`EdgeEndIds.fallback`), each the node id of a drawn extension.
+    /// (`EdgeEndIds.fallback`), each the node id of a drawn extension. One spelling can stand for
+    /// several types outside the diagram, as each target has its own typealiases, so those that
+    /// find none are also kept by the name each comes to
+    /// (`TypeLookup.resolvedExtendedName(named:from:isSugared:)`), and apart when it is not sure.
     struct NameEnds {
         var standIns: [ObjectIdentifier: String] = [:]
         var fallback: String?
+        var fallbacks: [String: String] = [:]
+        var unsureFallback: String?
     }
 
     /// Where the drawn extensions written through a typealias end edges: for each type their own
@@ -67,8 +72,15 @@ extension LayoutGraphBuilder {
                 guard let nodeId = candidate.nodeId else { continue }
                 if let type = lookup.extendedType(named: name, from: candidate.scope, isSugared: candidate.isSugared) {
                     if ends.standIns[type.declaration] == nil { ends.standIns[type.declaration] = nodeId }
-                } else if ends.fallback == nil {
-                    ends.fallback = nodeId
+                    continue
+                }
+                if ends.fallback == nil { ends.fallback = nodeId }
+                if let resolved = lookup.resolvedExtendedName(
+                    named: name, from: candidate.scope, isSugared: candidate.isSugared
+                ) {
+                    if ends.fallbacks[resolved] == nil { ends.fallbacks[resolved] = nodeId }
+                } else if ends.unsureFallback == nil {
+                    ends.unsureFallback = nodeId
                 }
             }
             endsForName[name] = ends
