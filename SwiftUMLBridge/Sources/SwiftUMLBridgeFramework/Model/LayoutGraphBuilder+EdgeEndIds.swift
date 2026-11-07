@@ -126,22 +126,30 @@ extension LayoutGraphBuilder {
         /// `typealias Describable = CustomStringConvertible` (#125). A name no typealias takes is
         /// trusted as written, as the first step trusts it, so `resolved` is worked out only for
         /// one a typealias takes, whole or its first component, or one that may read a module.
-        /// With no sure name for it, as written in an extension of a type outside the diagram,
-        /// where it may be that type's member, a name a typealias takes ends nowhere, and a
-        /// module-first name is trusted as written, as it is anywhere else. An extension of a type
-        /// the reference cannot see, a hidden `fileprivate` one, say, extends something else and
-        /// never stands in.
+        /// One a typealias takes can mean another outside type in each target, so it ends only on
+        /// an extension that comes to the same name: with `typealias Base = NSException` in ModA
+        /// and `typealias Base = NSObject` in ModB, ModB's `class U: Base` ends on ModB's
+        /// `extension Base`, never ModA's (#231). With no sure name for it, as written in an
+        /// extension of a type outside the diagram, where it may be that type's member, a whole
+        /// name a typealias takes ends only on an extension equally unsure of its type, and a
+        /// dotted one, like a module-first name, is trusted as written, as it is anywhere else.
+        /// An extension of a type the reference cannot see, a hidden `fileprivate` one, say,
+        /// extends something else and never stands in.
         private func fallback(named name: String, resolving resolved: @autoclosure () -> String?) -> String? {
-            if let fallback = extensionEnds.ends(named: name, in: lookup).fallback { return fallback }
+            let spelled = extensionEnds.ends(named: name, in: lookup)
             let first = String(name.prefix { $0 != "." })
-            guard lookup.namesTypealias(name) || first != name && lookup.namesTypealias(first)
-                || lookup.mayReadModule(name) else {
+            let isAlias = lookup.namesTypealias(name)
+            let startsAtAlias = isAlias || first != name && lookup.namesTypealias(first)
+            if !startsAtAlias, let fallback = spelled.fallback { return fallback }
+            guard startsAtAlias || lookup.mayReadModule(name) else {
                 return extensionEnds.aliasSpelled(in: lookup).fallbacks[name]
             }
             guard let resolved = resolved() else {
-                return lookup.namesTypealias(name) ? nil : extensionEnds.aliasSpelled(in: lookup).fallbacks[name]
+                if isAlias { return spelled.unsureFallback }
+                return spelled.fallback ?? extensionEnds.aliasSpelled(in: lookup).fallbacks[name]
             }
-            if resolved != name, let fallback = extensionEnds.ends(named: resolved, in: lookup).fallback {
+            if let fallback = spelled.fallbacks[resolved] { return fallback }
+            if resolved != name, let fallback = extensionEnds.ends(named: resolved, in: lookup).fallbacks[resolved] {
                 return fallback
             }
             return extensionEnds.aliasSpelled(in: lookup).fallbacks[resolved]
