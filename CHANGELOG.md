@@ -8,6 +8,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed — Bridge (test infrastructure)
+
+- **Wall-clock time limits are checked only off CI** (#237). Eight limits
+  in `SupertypeEdgeKindCertaintyTests`, `AliasSpelledExtensionScopeTests`
+  and `NestedSquareBracketTests` read the wall clock, which counts time
+  spent waiting for a core, so a busy shared runner failed them with the
+  code unchanged, as PR #259's first run did. They now go through
+  `WallClockLimit.expect`, which skips the limit when `CI` is set, as
+  GitHub Actions sets it. The rest of each test still runs there. Locally
+  the limits still apply, so a cost that explodes is still caught before a
+  push, though a busy machine can still fail them. The three limits that
+  read the thread's CPU clock count no waiting and stay on CI.
+
 ### Fixed — Bridge
 
 - **An edge through a typealias of a type outside the diagram ends on an

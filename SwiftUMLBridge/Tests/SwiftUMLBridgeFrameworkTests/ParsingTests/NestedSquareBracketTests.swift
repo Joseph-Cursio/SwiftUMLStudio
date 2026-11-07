@@ -73,7 +73,7 @@ struct NestedSquareBracketTests {
           arguments: shapes(depth: 20))
     func classDiagramTime(shape: String, source: String) {
         let time = seconds { _ = classDiagram(source) }
-        #expect(time < 2, "\(shape): \(time) s")
+        WallClockLimit.expect(.seconds(time), under: .seconds(2), "\(shape): \(time) s")
     }
 
     /// 100 deep, as a shape with a `(` or `<` at each level is then 200 levels, inside
@@ -83,7 +83,7 @@ struct NestedSquareBracketTests {
     func deepChain(shape: String, source: String) {
         var text = ""
         let time = seconds { text = classDiagram(source) }
-        #expect(time < 8, "\(shape): \(time) s")
+        WallClockLimit.expect(.seconds(time), under: .seconds(8), "\(shape): \(time) s")
         #expect(text.contains("as After "), "\(shape)")
         #expect(text.contains("~height"), "\(shape)")
     }
@@ -94,7 +94,7 @@ struct NestedSquareBracketTests {
     func issueWitness(source: String) {
         var text = ""
         let time = seconds { text = classDiagram(source) }
-        #expect(time < 2, "\(time) s")
+        WallClockLimit.expect(.seconds(time), under: .seconds(2), "\(time) s")
         #expect(text.contains("as After ") && text.contains("~height"))
     }
 

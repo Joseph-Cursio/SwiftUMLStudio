@@ -269,6 +269,6 @@ struct AliasSpelledExtensionScopeTests {
         let items = try #require(SyntaxStructure.create(from: lines.joined(separator: "\n"))?.substructure)
         let configuration = Configuration(elements: ElementOptions(showExtensions: .merged), format: .plantuml)
         let elapsed = ContinuousClock().measure { _ = DiagramScript(items: items, configuration: configuration) }
-        #expect(elapsed < .seconds(2), "\(elapsed)")
+        WallClockLimit.expect(elapsed, under: .seconds(2), "\(elapsed)")
     }
 }

@@ -165,7 +165,7 @@ struct SupertypeEdgeKindCertaintyTests {
         let items = try parsed(Self.aliasedProtocols())
         var text: [String] = []
         let elapsed = ContinuousClock().measure { text = lines(items, .plantuml) }
-        #expect(elapsed < .seconds(2), "\(elapsed)")
+        WallClockLimit.expect(elapsed, under: .seconds(2), "\(elapsed)")
         #expect(text.contains(edgeLine(.plantuml, "Model", Self.realizes, "Writer7", "conforms to")))
     }
 
@@ -183,7 +183,7 @@ struct SupertypeEdgeKindCertaintyTests {
         let items = try parsed(files)
         var text: [String] = []
         let elapsed = ContinuousClock().measure { text = lines(items, .plantuml) }
-        #expect(elapsed < .seconds(2), "\(elapsed)")
+        WallClockLimit.expect(elapsed, under: .seconds(2), "\(elapsed)")
         #expect(text.contains(edgeLine(.plantuml, "Outer.Q", Self.realizes, "Writer", "conforms to")))
     }
 
@@ -199,7 +199,7 @@ struct SupertypeEdgeKindCertaintyTests {
         let items = try parsed(files)
         var text: [String] = []
         let elapsed = ContinuousClock().measure { text = lines(items, .plantuml) }
-        #expect(elapsed < .seconds(2), "\(elapsed)")
+        WallClockLimit.expect(elapsed, under: .seconds(2), "\(elapsed)")
         #expect(text.contains(edgeLine(.plantuml, "Proto", Self.realizes, "Writer", "conforms to")))
     }
 
@@ -237,7 +237,7 @@ struct SupertypeEdgeKindCertaintyTests {
         let items = try parsed(Self.aliasedProtocols(cyclicLast: true))
         var text: [String] = []
         let elapsed = ContinuousClock().measure { text = lines(items, .plantuml, excluding: ["Model"]) }
-        #expect(elapsed < .seconds(2), "\(elapsed)")
+        WallClockLimit.expect(elapsed, under: .seconds(2), "\(elapsed)")
         #expect(text.contains(edgeLine(.plantuml, "Model", Self.inherits, "Writer7", "inherits")))
     }
 }
