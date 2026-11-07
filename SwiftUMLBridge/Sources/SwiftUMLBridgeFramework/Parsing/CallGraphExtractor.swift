@@ -23,7 +23,9 @@ final class CallGraphExtractor: TypeStackVisitor {
     override func visit(_ node: FunctionDeclSyntax) -> SyntaxVisitorContinueKind {
         let methodName = node.name.canonicalName
         if let typeName = typeStack.last {
-            methods.insert("\(typeName).\(methodName)")
+            // Only a member with a body can be an entry: a function local to a body is no member,
+            // and a protocol requirement has nothing to draw (#234).
+            if node.isMember, node.body != nil { methods.insert("\(typeName).\(methodName)") }
             if node.body != nil, !node.isInsideBody {
                 if typeStack.count == 1 {
                     entryMethods.insert("\(typeName).\(methodName)")
@@ -165,14 +167,16 @@ final class CallGraphExtractor: TypeStackVisitor {
     /// however little it does: a `run` with no calls is still that type's. Of one spelling, what is
     /// filed under it wins, so `extension OB.IB` is `OB.IB` whichever file is read first. A nested
     /// type is only what its whole spelling names, or failing every type, what `name` itself was
-    /// typed as: `IB` from a typealias is the top-level `IB`, not `OC.IB`. `results` are in the
-    /// order the files were read, and a single type needs none of them, so a name that is no
-    /// typealias is parsed no more for being chosen.
+    /// typed as: `IB` from a typealias is the top-level `IB`, not `OC.IB`. A single dotted type is
+    /// chosen the same way, so `OB.IB.run` is the `run` of an `IB` declared inside `OB`, filed
+    /// under `IB`, or failing that the type as typed (#234). `results` are in the order the files
+    /// were read, and a single undotted type needs none of them, so a name that is no typealias
+    /// is parsed no more for being chosen.
     static func entryType(
         named name: String, among types: [String], method: String,
         in results: @autoclosure () -> [ExtractionResult]
     ) -> String? {
-        guard types.count > 1 else { return types.first }
+        guard types.count > 1 || types.first?.contains(".") == true else { return types.first }
         var filed: Set<String> = []
         var nested: [String: String] = [:]
         for result in results() {
@@ -183,7 +187,7 @@ final class CallGraphExtractor: TypeStackVisitor {
             if filed.contains("\(type).\(method)") { return type }
             if type.contains("."), let nestedType = nested["\(type).\(method)"] { return nestedType }
         }
-        return nested["\(name).\(method)"]
+        return nested["\(name).\(method)"] ?? (types.count == 1 ? types.first : nil)
     }
 
     /// Collect every `Type.method` entry point defined across the given source paths.
