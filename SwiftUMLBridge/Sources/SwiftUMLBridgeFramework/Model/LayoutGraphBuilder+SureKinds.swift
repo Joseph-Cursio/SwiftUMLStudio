@@ -38,7 +38,8 @@ extension LayoutGraphBuilder.TypeLookup {
                 $0.scope.filePath == scope.filePath || $0.rankScope.filePath == scope.filePath
             } == true
         }
-        guard let file = scope.filePath, fitsEachAlone(name), !ownUnlisted, !ownFileBears(on: name, file) else {
+        guard let file = scope.filePath, fitsEachAlone(name), !ownUnlisted, !ownFileBears(on: name, file),
+              !enclosingTypeBears(on: name, from: scope, depth: depth) else {
             let own = LayoutGraphBuilder.SharedLookup(found: candidates(name, from: scope, depth: depth))
             return uncachedTypeWithSureKind(name, among: own, from: scope, depth: depth, kinds: kinds)
         }
@@ -70,6 +71,19 @@ extension LayoutGraphBuilder.TypeLookup {
             names.append(String(name.name[name.name.index(after: dot)...]))
         }
         return names.contains { filesOfName[$0]?.contains(file) == true }
+    }
+
+    /// Whether a type around `scope` can change what the dotted `name` means there in a way its
+    /// `SharedLookupKey` does not hold: with no start worked out (`QualifiedName.start`), as in a
+    /// file of no known module, a member of it named like a module keeps the first component from
+    /// being read as that module (`shadows`), so a writer in it takes no other's answer, nor gives
+    /// one (#246).
+    private func enclosingTypeBears(
+        on name: LayoutGraphBuilder.QualifiedName, from scope: LayoutGraphBuilder.Scope, depth: Int
+    ) -> Bool {
+        guard name.start == nil, let dot = name.name.firstIndex(of: ".") else { return false }
+        let first = String(name.name[..<dot])
+        return !modules.modules(namedBy: first).isEmpty && isEnclosingMember(first, from: scope, depth: depth)
     }
 
     private func uncachedTypeWithSureKind(

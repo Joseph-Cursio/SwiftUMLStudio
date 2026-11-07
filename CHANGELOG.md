@@ -129,6 +129,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   already checked the writer's loads; the module-qualified spelling now
   does too, whether the extensions are written `extension ModA.Foo` or
   `extension Foo`, in every format.
+- **A typealias in an enclosing type keeps a name from being read as a
+  module** (#246). Swift looks up a dotted name's first component among the
+  enclosing types' members before reading it as a module, so in
+  `enum E { typealias ModA = Other; struct W: ModA.Foo {} }`, `ModA.Foo` is
+  `Other.Foo`, even in a module named ModA. With `--package`, the diagram
+  read `ModA` as the module and ended the edge on its `Foo`, in every
+  format. It now follows the enclosing alias, at any depth and from an
+  extension of the enclosing type too. Without a known module, where no
+  enclosing alias is followed under any name, such an edge ends on an
+  undeclared `ModA.Foo` box rather than the module's `Foo`.
 
 ### Fixed — Studio
 

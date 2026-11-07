@@ -106,13 +106,25 @@ extension LayoutGraphBuilder.TypeLookup {
     /// Whether a type or typealias named `qualifier`, visible from `scope`, keeps it from being
     /// read as a module, as Swift reads a type first: one in the file's own module, or in a module
     /// the file imports — so a namespace `enum Analytics` in a module the file does not import
-    /// leaves `Analytics.Event` to the module Analytics. With the imports unknown, any does.
+    /// leaves `Analytics.Event` to the module Analytics. With the imports unknown, any does. A
+    /// member of a type around `scope` comes first of all (`isEnclosingMember`).
     func shadows(_ qualifier: String, from scope: Scope, depth: Int) -> Bool {
-        declarations(named: qualifier).contains { declared in
+        if isEnclosingMember(qualifier, from: scope, depth: depth) { return true }
+        return declarations(named: qualifier).contains { declared in
             guard !declared.isExtension else { return false }
             if let module = declared.scope.module, !sees(qualifier, in: module, from: scope) { return false }
             return isVisible(declared, from: scope, depth: depth)
         }
+    }
+
+    /// Whether `name`, written bare in `scope`, means a member of a type around it, as `ModA` does
+    /// in `enum E { typealias ModA = Other }`: then `ModA.Foo` there is `Other.Foo`, even in a
+    /// module named ModA (#246). The guard ends the loop of this,
+    /// `qualifiedName(ofWritten:from:depth:readingModules:)` and `started(_:from:depth:)` through a
+    /// name that means both a module and a type around it (#244).
+    func isEnclosingMember(_ name: String, from scope: Scope, depth: Int) -> Bool {
+        guard depth < 8 else { return false }
+        return qualifiedName(ofWritten: name, from: scope, depth: depth + 1, readingModules: false).name != name
     }
 
     /// Whether `name`, written in `scope`, means a type only once its first component is read as
