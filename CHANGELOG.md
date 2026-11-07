@@ -121,6 +121,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   print `warning: --entry … came to no method with a body` on stderr. The
   diagram and exit status are unchanged; `SequenceScript` and
   `ActivityScript` say which through `foundEntry`.
+- **A module-qualified name reads only the members the writer's module
+  loads** (#245). With `--package`, when ModB and ModD each add a `V` to
+  ModA's `Foo` and ModC loads only ModD, ModC's `struct W: ModA.Foo.V` ended
+  on whichever `V` was read first, so the edge could end on ModB's, which
+  ModC never sees, and renaming a target flipped it. The bare `Foo.V`
+  already checked the writer's loads; the module-qualified spelling now
+  does too, whether the extensions are written `extension ModA.Foo` or
+  `extension Foo`, in every format.
 
 ### Fixed — Studio
 
