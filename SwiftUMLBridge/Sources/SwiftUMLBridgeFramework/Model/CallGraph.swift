@@ -58,15 +58,17 @@ public struct CallGraph: Sendable {
 
     /// The bodies a resolved call can reach: the function local to a body it names, or else the
     /// methods filed under its type and name, of the type local to a body it calls into, or that
-    /// can be named from outside a body. A same-named type's method is still among them.
+    /// can be named from outside a body, and of those the overloads its argument labels fit. A
+    /// same-named type's method is still among them.
     private func callees(
         of edge: CallEdge, byIdentifier: [String: CallBody], byName: [String: [CallBody]]
     ) -> [CallBody] {
         if let local = edge.calleeBody { return byIdentifier[local].map { [$0] } ?? [] }
         guard let type = edge.calleeType else { return [] }
         let named = byName["\(type).\(edge.calleeMethod.canonicalMemberIdentifier)"] ?? []
-        if let localType = edge.calleeLocalType { return named.filter { $0.localType == localType } }
-        return named.filter(\.isNameable)
+        let reachable = edge.calleeLocalType.map { localType in named.filter { $0.localType == localType } }
+            ?? named.filter(\.isNameable)
+        return CallParameter.narrowed(reachable, to: edge.argumentLabels)
     }
 
     /// The edges reached from `start`, breadth first, to `maxDepth` calls deep. `outgoing` gives

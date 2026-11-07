@@ -33,6 +33,10 @@ public struct CallEdge: Sendable, Hashable {
     /// such a type's member, or names such a type where it is declared.
     var calleeLocalType: String?
 
+    /// The call's argument labels, `_` for none, which tell the overload it calls; `nil` when
+    /// they cannot, as with a trailing closure.
+    var argumentLabels: [String]?
+
     public init(
         callerType: String,
         callerMethod: String,

@@ -16,6 +16,8 @@ struct CallBody: Sendable, Hashable {
     /// How many types are around it: 1 for a top-level type's body or an extension.
     let depth: Int
     let method: String
+    /// Its parameters, which tell the overload a call means.
+    let parameters: [CallParameter]
     /// Whether `Type.method` can name it from outside a body: a member, of a type that is not
     /// local to a body. Only such a body can be an entry, or be reached by a call through its name.
     let isNameable: Bool
@@ -28,5 +30,42 @@ struct CallBody: Sendable, Hashable {
     /// What tells a declaration from every other: its file and where it starts.
     static func identifier(file: URL?, offset: Int) -> String {
         "\(file?.path ?? ""):\(offset)"
+    }
+}
+
+/// A function's parameter, as a call's argument labels are matched to it.
+struct CallParameter: Sendable, Hashable {
+    /// The argument label, `_` for none.
+    let label: String
+    let hasDefault: Bool
+    let isVariadic: Bool
+
+    /// Whether a call with argument `labels` can mean a function with `parameters`: each label in
+    /// order, where a parameter with a default may be left out, and a variadic one takes none or
+    /// several arguments, the first written with its label and the rest with none.
+    static func accepts(_ parameters: [CallParameter], labels: [String]) -> Bool {
+        var index = 0
+        for parameter in parameters {
+            let isWritten = index < labels.count && labels[index] == parameter.label
+            if parameter.isVariadic {
+                guard isWritten else { continue }
+                index += 1
+                while index < labels.count, labels[index] == "_" { index += 1 }
+            } else if isWritten {
+                index += 1
+            } else if !parameter.hasDefault {
+                return false
+            }
+        }
+        return index == labels.count
+    }
+
+    /// Of `bodies`, those a call with argument `labels` can mean, so `load()` does not reach
+    /// `load(_:)`. All of them when the labels are not known, as with a trailing closure, or when
+    /// none matches, so a call this cannot match still reaches what it did.
+    static func narrowed(_ bodies: [CallBody], to labels: [String]?) -> [CallBody] {
+        guard let labels, bodies.count > 1 else { return bodies }
+        let matching = bodies.filter { accepts($0.parameters, labels: labels) }
+        return matching.isEmpty ? bodies : matching
     }
 }

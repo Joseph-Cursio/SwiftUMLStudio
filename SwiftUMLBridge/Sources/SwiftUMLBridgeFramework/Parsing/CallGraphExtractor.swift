@@ -34,7 +34,14 @@ final class CallGraphExtractor: TypeStackVisitor {
             if isNameable { methods.insert("\(typeName).\(methodName)") }
             bodies.append(CallBody(
                 file: file, offset: offset, type: typeName, path: typeStack.joined(separator: "."),
-                depth: typeStack.count, method: methodName, isNameable: isNameable,
+                depth: typeStack.count, method: methodName,
+                parameters: node.signature.parameterClause.parameters.map {
+                    CallParameter(
+                        label: $0.firstName.canonicalName, hasDefault: $0.defaultValue != nil,
+                        isVariadic: $0.ellipsis != nil
+                    )
+                },
+                isNameable: isNameable,
                 localType: localTypeIdentifier(around: node)
             ))
         }
@@ -62,6 +69,9 @@ final class CallGraphExtractor: TypeStackVisitor {
         let isAsync = node.parent?.as(AwaitExprSyntax.self) != nil
         var edge = resolveCallee(node: node, callerType: callerType, callerMethod: callerMethod, isAsync: isAsync)
         edge.callerBody = bodyStack.last
+        if node.trailingClosure == nil, node.additionalTrailingClosures.isEmpty {
+            edge.argumentLabels = node.arguments.map { $0.label?.canonicalName ?? "_" }
+        }
         if !edge.isUnresolved { locateCallee(of: &edge, at: node) }
         edges.append(edge)
         return .visitChildren

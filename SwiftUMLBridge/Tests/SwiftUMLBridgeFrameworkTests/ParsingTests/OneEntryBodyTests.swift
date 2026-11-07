@@ -134,6 +134,51 @@ struct OneEntryBodyTests {
         #expect(!text.contains("fromMember"), "\(text)")
     }
 
+    /// `Service().start()` reaches only the `load` with no arguments.
+    @Test("a call reaches the overload its argument labels fit", arguments: [
+        ("load()", "fromPlain()", "fromKeyed"), ("load(\"key\")", "fromKeyed()", "fromPlain"),
+        ("self.load(key: \"key\")", "fromLabeled()", "fromPlain")
+    ])
+    func overloadByLabels(call: String, reached: String, passed: String) throws {
+        let source = "struct Service {\n    func start() { \(call) }\n    func load() { fromPlain() }\n"
+            + "    func load(_ key: String) { fromKeyed() }\n    func load(key: String) { fromLabeled() }\n"
+            + "    func fromPlain() {}\n    func fromKeyed() {}\n    func fromLabeled() {}\n}\n"
+        let (root, paths) = try EntryFixture.written([("Pkg/Service.swift", source)])
+        defer { try? FileManager.default.removeItem(at: root) }
+        let text = EntryFixture.sequence(paths, "Service", "start")
+        #expect(text.contains(reached), "\(text)")
+        #expect(!text.contains(passed), "\(text)")
+    }
+
+    @Test("a call whose labels fit no overload, or are not known, still reaches each", arguments: [
+        "load(1, 2)", "load { }"
+    ])
+    func unmatchedCallReachesEach(call: String) throws {
+        let source = "struct Service {\n    func start() { \(call) }\n    func load() { fromPlain() }\n"
+            + "    func load(_ key: String) { fromKeyed() }\n    func fromPlain() {}\n    func fromKeyed() {}\n}\n"
+        let (root, paths) = try EntryFixture.written([("Pkg/Service.swift", source)])
+        defer { try? FileManager.default.removeItem(at: root) }
+        let text = EntryFixture.sequence(paths, "Service", "start")
+        #expect(text.contains("fromPlain()") && text.contains("fromKeyed()"), "\(text)")
+    }
+
+    private static func parameter(_ label: String, defaulted: Bool = false, variadic: Bool = false) -> CallParameter {
+        CallParameter(label: label, hasDefault: defaulted, isVariadic: variadic)
+    }
+
+    @Test("a parameter with a default may be left out, and a variadic one takes any number")
+    func labelMatching() {
+        let defaulted = [Self.parameter("_"), Self.parameter("retry", defaulted: true), Self.parameter("by")]
+        #expect(CallParameter.accepts(defaulted, labels: ["_", "by"]))
+        #expect(CallParameter.accepts(defaulted, labels: ["_", "retry", "by"]))
+        #expect(!CallParameter.accepts(defaulted, labels: ["_", "retry"]))
+        #expect(!CallParameter.accepts(defaulted, labels: ["by", "_"]))
+        let variadic = [Self.parameter("values", variadic: true), Self.parameter("sep", defaulted: true)]
+        #expect(CallParameter.accepts(variadic, labels: []))
+        #expect(CallParameter.accepts(variadic, labels: ["values", "_", "_", "sep"]))
+        #expect(!CallParameter.accepts(variadic, labels: ["_"]))
+    }
+
     @Test("a call through self reaches the member, not the local function")
     func selfCallReachesMember() throws {
         let source = Self.bothSource.replacingOccurrences(of: "        run()\n", with: "        self.run()\n")

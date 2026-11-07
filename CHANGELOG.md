@@ -95,7 +95,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   name, as Swift does, so `Both.outer` draws its local `run` and not the
   member's calls; a call to `self` in a local type's member stays among
   that type's members; and nothing else reaches a local function or type.
-  Still merged below the entry: a call to a name same-named nested types
+  A call reaches only the overloads its argument labels fit, with a
+  defaulted parameter left out or a variadic one, so `load()` no longer
+  draws the calls of `load(_:)`; a call with a trailing closure, or whose
+  labels fit none, still reaches each. Still merged below the entry: a call to a name same-named nested types
   share, which Swift tells apart by where the call is written. The activity
   diagram now reads every file to choose, as the sequence diagram does.
 
