@@ -14,31 +14,51 @@ import SwiftSyntax
 final class CallGraphExtractor: TypeStackVisitor {
     private var edges: [CallEdge] = []
     private var methods: Set<String> = []
-    private var entryMethods: Set<String> = []
-    private var nestedEntryMethods: [String: String] = [:]
+    private var bodies: [CallBody] = []
     private var methodStack: [String] = []
+    /// The `CallBody.identifier` of each function `methodStack` names.
+    private var bodyStack: [String] = []
+    /// The file being read, which with a position tells one declaration from every other.
+    private var file: URL?
 
     // MARK: - Function declarations (push/pop methodStack)
 
     override func visit(_ node: FunctionDeclSyntax) -> SyntaxVisitorContinueKind {
         let methodName = node.name.canonicalName
-        if let typeName = typeStack.last {
-            // Only a member with a body can be an entry: a function local to a body is no member,
-            // and a protocol requirement has nothing to draw (#234).
-            if node.isMember, node.body != nil { methods.insert("\(typeName).\(methodName)") }
-            if node.body != nil, !node.isInsideBody {
-                if typeStack.count == 1 {
-                    entryMethods.insert("\(typeName).\(methodName)")
-                } else {
-                    nestedEntryMethods["\(typeName).\(methodName)"] = typeName
-                    nestedEntryMethods["\(typeStack.joined(separator: ".")).\(methodName)"] = typeName
-                }
-            }
+        let offset = node.positionAfterSkippingLeadingTrivia.utf8Offset
+        if let typeName = typeStack.last, node.body != nil {
+            // Only a member, of a type that can be named, can be an entry: a function local to a
+            // body is no member, a type local to a body cannot be named from outside it, and a
+            // protocol requirement has nothing to draw (#234, #235).
+            let isNameable = node.isMember && !node.isInsideBody
+            if isNameable { methods.insert("\(typeName).\(methodName)") }
+            bodies.append(CallBody(
+                file: file, offset: offset, type: typeName, path: typeStack.joined(separator: "."),
+                depth: typeStack.count, method: methodName,
+                parameters: node.signature.parameterClause.parameters.map {
+                    CallParameter(
+                        label: $0.firstName.canonicalName, hasDefault: $0.defaultValue != nil,
+                        isVariadic: $0.ellipsis != nil
+                    )
+                },
+                isNameable: isNameable,
+                localType: localTypeIdentifier(around: node)
+            ))
         }
         methodStack.append(methodName)
+        bodyStack.append(CallBody.identifier(file: file, offset: offset))
         return .visitChildren
     }
-    override func visitPost(_ node: FunctionDeclSyntax) { methodStack.removeLast() }
+    override func visitPost(_ node: FunctionDeclSyntax) {
+        methodStack.removeLast()
+        bodyStack.removeLast()
+    }
+
+    /// The type local to a body nearest around `node`, when the type nearest around it is one.
+    private func localTypeIdentifier(around node: some SyntaxProtocol) -> String? {
+        guard let type = node.enclosingTypeDeclaration, type.isInsideBody else { return nil }
+        return CallBody.identifier(file: file, offset: type.positionAfterSkippingLeadingTrivia.utf8Offset)
+    }
 
     // MARK: - Function calls
 
@@ -47,9 +67,46 @@ final class CallGraphExtractor: TypeStackVisitor {
               let callerMethod = methodStack.last else { return .visitChildren }
 
         let isAsync = node.parent?.as(AwaitExprSyntax.self) != nil
-        let edge = resolveCallee(node: node, callerType: callerType, callerMethod: callerMethod, isAsync: isAsync)
+        var edge = resolveCallee(node: node, callerType: callerType, callerMethod: callerMethod, isAsync: isAsync)
+        edge.callerBody = bodyStack.last
+        if node.trailingClosure == nil, node.additionalTrailingClosures.isEmpty {
+            edge.argumentLabels = node.arguments.map { $0.label?.canonicalName ?? "_" }
+        }
+        if !edge.isUnresolved { locateCallee(of: &edge, at: node) }
         edges.append(edge)
         return .visitChildren
+    }
+
+    /// Which body a resolved call reaches, where the name alone cannot say (#235). A bare call
+    /// reaches a function local to a body around it before any member. A call to `self` in a
+    /// member of a type local to a body reaches that type's members, and so does a call through
+    /// the name of a type a body around it declares. Any other reaches a member that can be named.
+    private func locateCallee(of edge: inout CallEdge, at node: FunctionCallExprSyntax) {
+        let called = node.calledExpression
+        if let bare = called.as(DeclReferenceExprSyntax.self) {
+            if let local = node.localFunction(named: bare.baseName.canonicalName) {
+                edge.calleeBody = CallBody.identifier(
+                    file: file, offset: local.positionAfterSkippingLeadingTrivia.utf8Offset
+                )
+                return
+            }
+        }
+        if edge.calleeType == edge.callerType, isSelfCall(called) {
+            edge.calleeLocalType = localTypeIdentifier(around: node)
+        } else if let calleeType = edge.calleeType, let local = node.localType(named: calleeType) {
+            edge.calleeLocalType = CallBody.identifier(
+                file: file, offset: local.positionAfterSkippingLeadingTrivia.utf8Offset
+            )
+        }
+    }
+
+    /// Whether `called` calls into `self`: a bare name, `.name`, `self.name` or `self().name`.
+    private func isSelfCall(_ called: ExprSyntax) -> Bool {
+        if called.is(DeclReferenceExprSyntax.self) { return true }
+        guard let member = called.as(MemberAccessExprSyntax.self) else { return false }
+        guard let base = member.base else { return true }
+        let receiver = base.as(FunctionCallExprSyntax.self)?.calledExpression ?? base
+        return receiver.as(DeclReferenceExprSyntax.self)?.baseName.expressionName == "self"
     }
 
     // MARK: - Resolution
@@ -131,15 +188,9 @@ final class CallGraphExtractor: TypeStackVisitor {
     internal struct ExtractionResult: Sendable {
         let edges: [CallEdge]
         let methods: [String]
-        /// The methods an entry through several types can mean in a type that is in no other, as
-        /// `Type.method`: a body's, or an extension's under the type it names, which may be dotted
-        /// (`OB.IB.run`). A requirement has no body, a function local to a body is no member, and a
-        /// type local to a body cannot be named from outside it, so none of those is here.
-        let entryMethods: Set<String>
-        /// The same for a type inside another, which is filed under its innermost name: its
-        /// `Type.method` under that name (`IB.run`) and under the types around it (`OB.IB.run`), to
-        /// the name (`IB`).
-        let nestedEntryMethods: [String: String]
+        /// Every function with a body in a type, in the order it is written, which calls are
+        /// filed under.
+        let bodies: [CallBody]
     }
 
     /// Parse `source` and extract all call edges and method definitions. With the project's
@@ -151,43 +202,36 @@ final class CallGraphExtractor: TypeStackVisitor {
         ParsingStack.run {
             let sourceFile = ParsingStack.parse(source, file: file)
             let extractor = CallGraphExtractor(viewMode: .sourceAccurate)
+            extractor.file = file
             extractor.resolveTypeName = { aliases.resolve($0, in: file) }
             extractor.walk(sourceFile)
             return ExtractionResult(
-                edges: extractor.edges, methods: Array(extractor.methods).sorted(),
-                entryMethods: extractor.entryMethods, nestedEntryMethods: extractor.nestedEntryMethods
+                edges: extractor.edges, methods: Array(extractor.methods).sorted(), bodies: extractor.bodies
             )
         }
     }
 
-    /// What an entry typed as `name`, which can come to any of `types`
-    /// (`TypeAliasResolver.entryTypes(of:)`), is drawn from: the only one, or of several the first
-    /// with a body for `method`, as that method is filed, and `nil` when none has one. Sequence and
-    /// activity diagrams both choose here, so they cannot disagree on the type. A body counts
-    /// however little it does: a `run` with no calls is still that type's. Of one spelling, what is
-    /// filed under it wins, so `extension OB.IB` is `OB.IB` whichever file is read first. A nested
-    /// type is only what its whole spelling names, or failing every type, what `name` itself was
-    /// typed as: `IB` from a typealias is the top-level `IB`, not `OC.IB`. A single dotted type is
-    /// chosen the same way, so `OB.IB.run` is the `run` of an `IB` declared inside `OB`, filed
-    /// under `IB`, or failing that the type as typed (#234). `results` are in the order the files
-    /// were read, and a single undotted type needs none of them, so a name that is no typealias
-    /// is parsed no more for being chosen.
-    static func entryType(
-        named name: String, among types: [String], method: String,
-        in results: @autoclosure () -> [ExtractionResult]
-    ) -> String? {
-        guard types.count > 1 || types.first?.contains(".") == true else { return types.first }
-        var filed: Set<String> = []
-        var nested: [String: String] = [:]
-        for result in results() {
-            filed.formUnion(result.entryMethods)
-            nested.merge(result.nestedEntryMethods) { first, _ in first }
-        }
+    /// The one body an entry typed as `name.method`, where `name` can come to any of `types`
+    /// (`TypeAliasResolver.entryTypes(of:)`), is drawn from, and `nil` when none is. Sequence and
+    /// activity diagrams both start from it, so they draw the same code (#235). A body counts
+    /// however little it does: a `run` with no calls is still that type's. Only a member that can
+    /// be named from outside a body counts, so not a function local to a body, nor a member of a
+    /// type local to one. Each of `types` in turn: a top-level type's body or an extension filed
+    /// under that spelling, so `extension OB.IB` is `OB.IB` whichever file is read first, then a
+    /// nested type whose whole spelling it is, so `OB.IB.run` is the `run` of an `IB` declared
+    /// inside `OB`. Failing every type, a nested type of the innermost name `name` was typed as,
+    /// which is how the entry list offers it: `IB` from a typealias is the top-level `IB`, not
+    /// `OC.IB` (#234). Where several bodies are met, as overloads, or as same-named nested types,
+    /// the first is drawn, in the order the files were read and the code is written in each.
+    static func entryBody(
+        named name: String, among types: [String], method: String, in bodies: [CallBody]
+    ) -> CallBody? {
+        let named = bodies.filter { $0.isNameable && $0.method == method }
         for type in types {
-            if filed.contains("\(type).\(method)") { return type }
-            if type.contains("."), let nestedType = nested["\(type).\(method)"] { return nestedType }
+            if let body = named.first(where: { $0.depth == 1 && $0.path == type }) { return body }
+            if let body = named.first(where: { $0.depth > 1 && $0.path == type }) { return body }
         }
-        return nested["\(name).\(method)"] ?? (types.count == 1 ? types.first : nil)
+        return named.first { $0.depth > 1 && ($0.type == name || $0.path == name) }
     }
 
     /// Collect every `Type.method` entry point defined across the given source paths.

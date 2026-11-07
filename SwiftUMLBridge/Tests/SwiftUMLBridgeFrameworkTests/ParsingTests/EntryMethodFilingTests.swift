@@ -195,17 +195,6 @@ struct EntryMethodFilingTests {
         }
     }
 
-    @Test("choosing among one type parses nothing, so an ordinary entry costs what it did")
-    func oneTypeNeedsNoExtraction() {
-        func notNeeded() -> [CallGraphExtractor.ExtractionResult] {
-            Issue.record("a single type was looked for in the sources")
-            return []
-        }
-        #expect(
-            CallGraphExtractor.entryType(named: "Plain", among: ["Plain"], method: "run", in: notNeeded()) == "Plain"
-        )
-    }
-
     /// `run(_:)` in the body and `run()` in the extension are overloads, which Swift allows.
     private static let nestedBodyAndExtension: [EntryFile] = [
         ("Pkg/Nested.swift", "enum OB { struct IB { func run(_ value: Int) { inBody() }\n    func inBody() {} } }"),

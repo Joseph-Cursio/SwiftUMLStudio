@@ -60,8 +60,9 @@ struct EntryMemberTests {
         #expect(!text.contains("inLocal"), "\(text)")
     }
 
-    /// The list offers it and a sequence with no typealias draws it, but beside a typealias the name
-    /// is the typealias's, wherever the local type is. Swift reads it so outside that function.
+    /// Beside a typealias the name is the typealias's, wherever the local type is, as Swift reads
+    /// it outside that function. The list does not offer the local type, which cannot be named
+    /// from outside the function (#235).
     @Test("a type local to a function is not what a typealias of its name means", arguments: ["run", "step"])
     func localTypeBesideAlias(method: String) throws {
         let (root, paths) = try EntryFixture.written([
@@ -73,7 +74,7 @@ struct EntryMemberTests {
             )
         ])
         defer { try? FileManager.default.removeItem(at: root) }
-        #expect(SequenceDiagramGenerator().findEntryPoints(for: paths).contains("Local.\(method)"))
+        #expect(!SequenceDiagramGenerator().findEntryPoints(for: paths).contains("Local.\(method)"))
         for text in EntryFixture.both(paths, "Local", method) {
             #expect(text.contains("Xen.\(method)"), "\(text)")
             #expect(!text.contains("last()"), "\(text)")

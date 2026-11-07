@@ -11,9 +11,10 @@ public struct ActivityDiagramGenerator: ActivityDiagramGenerating, Sendable {
 
     /// Generate an `ActivityScript` from Swift files at the given paths.
     ///
-    /// Walks files in order; the first file that contains a matching entry point wins.
-    /// Returns an empty script when no file contains the entry point. A name in `entryType` or
-    /// `entryMethod` may be written with backticks: `` `Plain` `` is the listed `Plain`.
+    /// Draws the body the sequence diagram of the same entry starts from
+    /// (`CallGraphExtractor.entryBody`), so the two draw the same code (#235). Returns an empty
+    /// script when no file has one. A name in `entryType` or `entryMethod` may be written with
+    /// backticks: `` `Plain` `` is the listed `Plain`.
     public func generateScript(
         for paths: [String],
         entryType: String,
@@ -24,22 +25,21 @@ public struct ActivityDiagramGenerator: ActivityDiagramGenerating, Sendable {
         let sources = CallGraphExtractor.readSources(for: paths)
         let aliases = TypeAliasResolver(sources: sources)
         // `--entry Alias.helper` is the aliased type's `helper`, as its extension is (#125): the first
-        // the name can come to with a body for it. Chosen before any graph is built, so a name that
-        // is a typealias costs one more pass over the files, not one per declaration.
+        // the name can come to with a body for it. Every file is read for it, as a type of that
+        // name read later can still be the one meant.
         let types = aliases.entryTypes(of: listed.type)
-        let chosen = CallGraphExtractor.entryType(
-            named: listed.type, among: types, method: listed.method,
-            in: sources.map { CallGraphExtractor.extract(from: $0.contents, file: $0.file, aliases: aliases) }
+        let bodies = sources.flatMap {
+            CallGraphExtractor.extract(from: $0.contents, file: $0.file, aliases: aliases).bodies
+        }
+        let chosen = CallGraphExtractor.entryBody(
+            named: listed.type, among: types, method: listed.method, in: bodies
         )
-        if let chosen {
-            for source in sources {
-                if let graph = ActivityFlowExtractor.extract(
-                    from: source.contents, entryType: chosen, entryMethod: listed.method,
-                    file: source.file, aliases: aliases
-                ) {
-                    return ActivityScript(graph: graph, configuration: configuration)
-                }
-            }
+        if let chosen, let source = sources.first(where: { $0.file == chosen.file }),
+           let graph = ActivityFlowExtractor.extract(
+               from: source.contents, entryType: chosen.type, entryMethod: listed.method,
+               at: chosen.offset, file: source.file
+           ) {
+            return ActivityScript(graph: graph, configuration: configuration)
         }
         return ActivityScript(
             graph: ActivityGraph(entryType: types[0], entryMethod: listed.method),
