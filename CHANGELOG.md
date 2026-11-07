@@ -29,6 +29,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   dotted name through an alias of a type outside the diagram, as `Base.Inner`
   after `typealias Base = First`, resolves to its spelling, so it ends on the
   first such box and `--merge-extensions` merges them.
+- **With nested types hidden, an extension of a nested type is judged by the
+  nearest one, not the first read** (#232). With `showNestedTypes: false`,
+  whether `extension Box.Inner.Stamp` extends a project type took the first
+  hidden `Box.Inner.Stamp` in read order, while every other lookup takes the
+  nearest. With a `typealias Stamp = Date` in `Far/` and a `struct Stamp` in
+  `Near/`, `classdiagram Far Near` judged Near's extension to be of `Date`, so
+  a name written in it, such as `Style`, might have been a member of `Date`,
+  and `struct T: Box.Inner.Stamp.Style` lost its edge in every format; `Near
+  Far` drew it. Both orders now draw it, and so does `--package` with `Far`
+  read first. Still wrong: written in `Far/`, beside the alias, the edge is
+  now left out in both orders, where `Near Far` used to draw it, since a name
+  in an extension of an outside type may be one of its members.
 
 ## [1.2.0] — 2026-11-06
 
