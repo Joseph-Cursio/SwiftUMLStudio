@@ -57,18 +57,46 @@ struct TypeAliasResolver {
     /// to, in the order they were read, then `name` itself, each once. A method in
     /// `extension Alias` is filed under whichever type `Alias` means there: what one of those
     /// declarations comes to, or `Alias` itself where none of them is visible. A nested type's
-    /// method is filed under its innermost name, so `name` itself also finds that.
+    /// method is filed under its innermost name, so `name` itself also finds that. Each dotted
+    /// name is followed by what it comes to once its first part is read as Swift reads it
+    /// (`respelled(_:from:)`), so `Svc` after `typealias Svc = O.In` and `typealias O = Real` also
+    /// comes to `Real.In`, under which `In`'s own body is filed (#239).
     func entryTypes(of name: String) -> [String] {
-        var types = [resolve(name, in: nil)]
-        for declared in lookup?.typesForName[name] ?? [] {
-            var type = name
-            if let target = declared.aliasTarget {
-                type = declared.isSugared ? target : resolve(target, from: declared.scope)
+        var types: [String] = []
+        func add(_ type: String, from scope: DeclarationScope) {
+            var spelled = type
+            // Each step reads one more first part; a cycle of aliases, which Swift rejects, ends here.
+            for _ in 0..<8 {
+                if !types.contains(spelled) { types.append(spelled) }
+                guard let next = respelled(spelled, from: scope), next != spelled else { return }
+                spelled = next
             }
-            if !types.contains(type) { types.append(type) }
+        }
+        let anywhere = DeclarationScope(filePath: nil, module: nil)
+        add(resolve(name, in: nil), from: anywhere)
+        for declared in lookup?.typesForName[name] ?? [] {
+            guard let target = declared.aliasTarget else {
+                add(name, from: anywhere)
+                continue
+            }
+            if declared.isSugared {
+                if !types.contains(target) { types.append(target) }
+            } else {
+                add(resolve(target, from: declared.scope), from: declared.scope)
+            }
         }
         if !types.contains(name) { types.append(name) }
         return types
+    }
+
+    /// `name` with its first part read as Swift reads it where `scope` writes it: through the
+    /// typealias it names, so `O.In` is `Real.In` after `typealias O = Real`; `nil` when that
+    /// changes nothing, or `name` has one part.
+    private func respelled(_ name: String, from scope: DeclarationScope) -> String? {
+        guard let dot = name.firstIndex(of: ".") else { return nil }
+        let first = String(name[..<dot])
+        let resolved = resolve(first, from: scope)
+        return resolved == first ? nil : resolved + name[dot...]
     }
 
     /// The type name `name` comes to where a declaration in `scope` writes it in its inheritance
