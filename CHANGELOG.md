@@ -139,6 +139,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   extension of the enclosing type too. Without a known module, where no
   enclosing alias is followed under any name, such an edge ends on an
   undeclared `ModA.Foo` box rather than the module's `Foo`.
+- **A typealias of a type outside the diagram starts a dotted name at that
+  type** (#247). After `typealias Array = Date`, Swift reads `Array.V` as
+  `Date.V`. With `--package`, the diagram searched the name as written, so
+  the edge ended on the `V` that `extension [Int]` declares, or with none,
+  on an undeclared `Array.V` box, in every format. It now follows the alias,
+  whether it is at file scope or in an enclosing type, through a chain of
+  aliases, and for an alias of sugar such as `[Int]`. Two enclosing types
+  that each give `Array` a different meaning no longer share an answer.
+  Without `--package`, the name is still read as written.
 
 ### Fixed — Studio
 
