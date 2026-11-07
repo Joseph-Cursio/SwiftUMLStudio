@@ -21,24 +21,24 @@ public enum ActivityFlowExtractor {
         entryType: String,
         entryMethod: String
     ) -> ActivityGraph? {
-        extract(from: source, entryType: entryType, entryMethod: entryMethod, file: nil, aliases: .none)
+        extract(from: source, entryType: entryType, entryMethod: entryMethod, at: nil, file: nil)
     }
 
-    /// `extract(from:entryType:entryMethod:)`, with a method in `extension Alias` found as the
-    /// aliased type's, by the project's `aliases` as `file` sees them (#125).
+    /// `extract(from:entryType:entryMethod:)` for the function whose declaration starts `offset`
+    /// UTF-8 bytes into `source`, as `CallBody` records it (#235), read from `file`.
     static func extract(
         from source: String,
         entryType: String,
         entryMethod: String,
-        file: URL?,
-        aliases: TypeAliasResolver
+        at offset: Int?,
+        file: URL?
     ) -> ActivityGraph? {
         ParsingStack.run {
             let sourceFile = ParsingStack.parse(source, file: file)
             let finder = ActivityEntryFunctionFinder(viewMode: .sourceAccurate)
-            finder.resolveTypeName = { aliases.resolve($0, in: file) }
             finder.entryType = entryType
             finder.entryMethod = entryMethod
+            finder.entryOffset = offset
             finder.walk(sourceFile)
             guard let body = finder.foundBody else { return nil }
 
@@ -63,9 +63,10 @@ public enum ActivityFlowExtractor {
 final class ActivityEntryFunctionFinder: SyntaxVisitor {
     var entryType: String = ""
     var entryMethod: String = ""
+    /// Where the entry's declaration starts, which finds that one body of the several a name may
+    /// have (#235); `nil` to take the first member of `entryType` named `entryMethod`.
+    var entryOffset: Int?
     var foundBody: CodeBlockSyntax?
-    /// As `TypeStackVisitor.resolveTypeName`: follows typealiases in an extension's name (#125).
-    var resolveTypeName: (String) -> String = { $0 }
     private var typeStack: [String] = []
 
     // MARK: Type declarations
@@ -112,7 +113,7 @@ final class ActivityEntryFunctionFinder: SyntaxVisitor {
 
     override func visit(_ node: ExtensionDeclSyntax) -> SyntaxVisitorContinueKind {
         // Named as `TypeStackVisitor` names it, so every listed entry point is found here (#66).
-        typeStack.append(resolveTypeName(node.extendedType.extendedTypeName ?? node.extendedType.canonicalDescription))
+        typeStack.append(node.extendedType.extendedTypeName ?? node.extendedType.canonicalDescription)
         return .visitChildren
     }
     override func visitPost(_ node: ExtensionDeclSyntax) {
@@ -125,7 +126,9 @@ final class ActivityEntryFunctionFinder: SyntaxVisitor {
     /// walk, and `T.method` cannot name it. A function's own body is not walked, so a type local
     /// to it never takes the entry from a type of that name that can be named.
     override func visit(_ node: FunctionDeclSyntax) -> SyntaxVisitorContinueKind {
-        if foundBody == nil,
+        if let entryOffset {
+            if node.positionAfterSkippingLeadingTrivia.utf8Offset == entryOffset { foundBody = node.body }
+        } else if foundBody == nil,
            node.isMember,
            typeStack.last == entryType,
            node.name.canonicalName == entryMethod,
