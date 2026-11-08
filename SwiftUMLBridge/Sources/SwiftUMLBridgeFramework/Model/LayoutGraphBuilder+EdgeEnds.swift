@@ -274,8 +274,8 @@ extension LayoutGraphBuilder {
             return probes.lazy
                 .map { probe in (probe, QualifiedName(name: probe.name, root: root, isRecorded: probe.isRecorded)) }
                 .first { probe, qualified in
-                    let found = nearestDeclaration(qualified, from: scope, depth: depth, readingModules: readingModules)
-                    if found != nil { return true }
+                    let meant = meansMember(qualified, from: scope, depth: depth, readingModules: readingModules)
+                    if let meant { return meant }
                     // A recorded name's first component is a type, never a module qualifier.
                     guard !probe.isRecorded, throughModule(probe.name),
                           readsModule(probe.enclosing, from: scope, depth: depth)

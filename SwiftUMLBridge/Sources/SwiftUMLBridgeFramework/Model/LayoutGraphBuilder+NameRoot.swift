@@ -210,7 +210,7 @@ extension LayoutGraphBuilder.TypeLookup {
     /// one the outermost name means from the file, as an extension's own lookup finds it.
     /// `nil` at top level, or when the name means no type of the diagram. Kept per name and file
     /// (`EnclosingLookups`), as each writer there asks it of every name it builds on them.
-    private func enclosingOwner(
+    func enclosingOwner(
         of scope: LayoutGraphBuilder.Scope, depth: Int
     ) -> LayoutGraphBuilder.OwningDeclaration? {
         guard depth < 8, let outermost = scope.enclosingTypes.last else { return nil }
