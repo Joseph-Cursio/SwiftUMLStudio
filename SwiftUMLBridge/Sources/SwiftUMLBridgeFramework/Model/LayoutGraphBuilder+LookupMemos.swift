@@ -83,8 +83,9 @@ extension LayoutGraphBuilder {
     /// The type each typealias comes to, and whether its kind is sure, for each depth a lookup
     /// reaches it at (`TypeLookup.typeWithSureKind`), and what that lookup shares for each
     /// `SharedLookupKey`, filled the first time one asks. The depth is part of the key because
-    /// the lookup's depth guard can cut an alias chain short, so a type worked out deep in one
-    /// chain is not the alias's own. A class, so `EdgeEndIds` can fill it without being
+    /// the lookup's depth guard can cut short a lookup made inside a step of an alias chain, as
+    /// of the target's name, so a type worked out deep is not the alias's own; the chain itself
+    /// keeps its depth (`AliasChain`). A class, so `EdgeEndIds` can fill it without being
     /// mutating, and kept out of the lookup, which must stay `Sendable`; `EdgeEndIds` starts a new
     /// one whenever it records a declaration.
     final class AliasKinds {

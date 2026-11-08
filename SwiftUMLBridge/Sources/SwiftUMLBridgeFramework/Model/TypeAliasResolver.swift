@@ -65,11 +65,15 @@ struct TypeAliasResolver {
         var types: [String] = []
         func add(_ type: String, from scope: DeclarationScope) {
             var spelled = type
-            // Each step reads one more first part; a cycle of aliases, which Swift rejects, ends here.
-            for _ in 0..<8 {
+            // Each step reads one more first part, however many a chain of aliases takes (#248). The
+            // same first part read through its alias again is a cycle, which Swift rejects:
+            // `A.Y`, `B.X.Y`, `A.Y.X.Y`. Dropping the writer's own module shortens the name.
+            var aliasFirsts: Set<Substring> = []
+            while true {
                 if !types.contains(spelled) { types.append(spelled) }
-                guard let next = respelled(spelled, from: scope), next != spelled else { return }
-                spelled = next
+                guard let next = respelled(spelled, from: scope), next.name != spelled else { return }
+                if next.throughAlias, !aliasFirsts.insert(spelled.prefix { $0 != "." }).inserted { return }
+                spelled = next.name
             }
         }
         let anywhere = DeclarationScope(filePath: nil, module: nil)
@@ -91,15 +95,16 @@ struct TypeAliasResolver {
 
     /// `name` with its first part read as Swift reads it where `scope` writes it: through the
     /// typealias it names, so `O.In` is `Real.In` after `typealias O = Real`, or, as the writer's
-    /// own module (`namesOwnModule(_:before:from:)`), dropped, so `Main.Real` is `Real`; `nil`
-    /// when neither changes it, or `name` has one part.
-    private func respelled(_ name: String, from scope: DeclarationScope) -> String? {
+    /// own module (`namesOwnModule(_:before:from:)`), dropped, so `Main.Real` is `Real`, and
+    /// whether it was read through a typealias; `nil` when neither changes it, or `name` has one
+    /// part.
+    private func respelled(_ name: String, from scope: DeclarationScope) -> (name: String, throughAlias: Bool)? {
         guard let dot = name.firstIndex(of: ".") else { return nil }
         let first = String(name[..<dot])
         let resolved = resolve(first, from: scope)
-        if resolved != first { return resolved + name[dot...] }
+        if resolved != first { return (resolved + name[dot...], true) }
         let rest = String(name[name.index(after: dot)...])
-        return namesOwnModule(first, before: rest, from: scope) ? rest : nil
+        return namesOwnModule(first, before: rest, from: scope) ? (rest, false) : nil
     }
 
     /// Whether `qualifier`, written in `scope` as the first part of a name whose `rest` starts

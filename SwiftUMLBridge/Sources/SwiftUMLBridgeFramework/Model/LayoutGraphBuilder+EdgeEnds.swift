@@ -65,6 +65,12 @@ extension LayoutGraphBuilder {
         /// The type each first component means, once worked out (`started(_:from:depth:)`);
         /// `record` and a change of `unlistedMembers` start a new one.
         private(set) var nameStarts = NameStarts()
+        /// The type each typealias comes to (`aliased(_:depth:readingModules:chain:)`).
+        private(set) var aliasTargets = AliasWalks<Declared?>()
+        /// The name each typealias comes to (`resolvedName(of:from:readingModules:depth:)`).
+        private(set) var aliasNameTargets = AliasWalks<String>()
+        /// The sure name each typealias comes to, `nil` for none (`sureResolvedName(of:from:depth:)`).
+        private(set) var aliasSureNames = AliasWalks<String?>()
         /// The names a type declared in an extension is recorded under, which tell a dotted name as
         /// written apart (`fitsEachAlone(_:)`), as an unlisted member so declared does too
         /// (`unlistedNamesWithExtendedTypes`).
@@ -80,7 +86,7 @@ extension LayoutGraphBuilder {
         /// typealiases, by full name (`unlistedMembers(of:named:)`). Never what a name means:
         /// only whether an extension is of a project type goes by them.
         var unlistedMembers: [String: [Declared]] = [:] {
-            didSet { nameStarts = NameStarts() }
+            didSet { nameStarts = NameStarts(); forgetAliasWalks() }
         }
         /// The names in `unlistedMembers` with a type declared in an extension among them
         /// (`fitsEachAlone(_:)`), so asking costs no scan of a name's many hidden types.
@@ -125,6 +131,15 @@ extension LayoutGraphBuilder {
             }
             enclosingTypes = EnclosingTypes()
             nameStarts = NameStarts()
+            forgetAliasWalks()
+        }
+
+        /// Starts the walks each typealias's target is kept from (`AliasWalks`) anew, as what one
+        /// comes to may change with what is recorded.
+        private mutating func forgetAliasWalks() {
+            aliasTargets = AliasWalks()
+            aliasNameTargets = AliasWalks()
+            aliasSureNames = AliasWalks()
         }
 
         /// The name `declaration` was recorded under.
@@ -163,23 +178,6 @@ extension LayoutGraphBuilder {
             type(named: name, from: scope, readingModules: false) == nil && type(named: name, from: scope) != nil
         }
 
-        /// `declared` itself, or for a typealias the type it aliases, as seen from the alias. An
-        /// alias of sugar means what an extension so written extends
-        /// (`extendedType(named:from:isSugared:depth:)`): Swift's `Array` for `[Int]`, which is
-        /// outside the diagram (#126). Each step follows one alias; Swift rejects a cycle, and the
-        /// depth guard is a backstop.
-        func aliased(_ declared: Declared, depth: Int, readingModules: Bool = true) -> Declared? {
-            guard let target = declared.aliasTarget else { return declared }
-            guard depth < 8 else { return nil }
-            if declared.isSugared {
-                return extendedType(named: target, from: declared.scope, isSugared: true, depth: depth + 1)
-            }
-            let targetName = qualifiedName(
-                ofWritten: target, from: declared.scope, depth: depth + 1, readingModules: readingModules
-            )
-            return type(targetName, from: declared.scope, depth: depth + 1, readingModules: readingModules)
-        }
-
         /// The name `name` comes to where it is written once every typealias it goes through is
         /// followed: `Dictionary` for `JSON` after `typealias JSON = [String: Int]`, and otherwise
         /// the name the declaration it means is recorded under — `name` itself, or `Foo` for a
@@ -196,23 +194,47 @@ extension LayoutGraphBuilder {
         }
 
         /// `resolvedName(of:from:readingModules:depth:)` for a name whose root is known
-        /// (`qualifiedName(ofWritten:from:)`).
+        /// (`qualifiedName(ofWritten:from:)`). Each typealias is followed at the same depth, in a
+        /// loop, so a chain of any length runs to its end, and a cycle, which Swift rejects, ends
+        /// where it comes back to one (`AliasChain`), on the name it came to there (#248). What a
+        /// walk from each alias comes to is kept (`AliasWalks`), so writers along one chain walk
+        /// it once; a cycle's is not, as it turns on where the walk came into it.
         func resolvedName(
             of name: QualifiedName, from scope: Scope, readingModules: Bool = true, depth: Int = 0
         ) -> String {
             guard depth < 8 else { return name.name }
-            guard let match = nearestMatch(name, from: scope, depth: depth, readingModules: readingModules) else {
-                return spelledThroughStart(name, from: scope, depth: depth) ?? name.name
+            var (name, scope, chain) = (name, scope, AliasChain())
+            var followed: [Declared] = []
+            let resolved: String
+            while true {
+                guard let match = nearestMatch(name, from: scope, depth: depth, readingModules: readingModules) else {
+                    resolved = spelledThroughStart(name, from: scope, depth: depth) ?? name.name
+                    break
+                }
+                let alias = match.declared
+                guard let target = alias.aliasTarget else {
+                    resolved = match.name
+                    break
+                }
+                // Sugar names the standard library's type, which no project type or alias shadows, or
+                // a member path past it, kept as written (#126).
+                guard !alias.isSugared else {
+                    resolved = target
+                    break
+                }
+                if let known = aliasNameTargets.entry(for: alias, depth: depth, readingModules: readingModules) {
+                    resolved = known.value
+                    break
+                }
+                guard chain.follow(alias) else { return name.name }
+                followed.append(alias)
+                scope = alias.scope
+                name = qualifiedName(ofWritten: target, from: scope, depth: depth + 1, readingModules: readingModules)
             }
-            guard let target = match.declared.aliasTarget else { return match.name }
-            // Sugar names the standard library's type, which no project type or alias shadows, or a
-            // member path past it, kept as written (#126).
-            guard !match.declared.isSugared else { return target }
-            let scope = match.declared.scope
-            let targetName = qualifiedName(
-                ofWritten: target, from: scope, depth: depth + 1, readingModules: readingModules
-            )
-            return resolvedName(of: targetName, from: scope, readingModules: readingModules, depth: depth + 1)
+            for alias in followed {
+                aliasNameTargets.record(resolved, for: alias, depth: depth, readingModules: readingModules)
+            }
+            return resolved
         }
 
         /// The name a type written as `name` in a declaration's inheritance clause is recorded
