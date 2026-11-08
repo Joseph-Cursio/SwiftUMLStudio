@@ -133,7 +133,7 @@ extension LayoutGraphBuilder.TypeLookup {
     /// and the guard is what ends a loop through a name that means both a module and a type around
     /// the writer (#244): reading the enclosing `M` takes what `M.V`'s first component means, and
     /// that takes reading `M` again. Depth 8 itself still reads, unlike the guards that stop at
-    /// `depth < 8`, as an alias chain's walk takes its last link's name there.
+    /// `depth < 8`, as the lookup of an alias's target from a step at depth 7 takes its name there.
     func readsModule(_ name: String, from scope: Scope, depth: Int = 0) -> Bool {
         guard depth <= 8, mayReadModule(name) else { return false }
         return nearestMatch(named: name, from: scope, depth: depth, readingModules: false) == nil
