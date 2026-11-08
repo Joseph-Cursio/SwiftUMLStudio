@@ -168,6 +168,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   alias reads one more dotted part. A chain whose every link reads a member
   through the alias before it (`typealias A2 = A1.X`) still stops after
   about 8 links, as before.
+- **SVG draws both of two edges between the same pair of boxes** (#249).
+  `struct Foo: Foo.Base { public protocol Base {} }` has a nesting edge and a
+  supertype edge, both from `Foo` to `Foo.Base`. PlantUML and nomnoml draw
+  both, but the layout kept one edge per pair of boxes, so the SVG and the
+  Studio's canvas drew only the nesting edge. The layout now routes each edge
+  of a different style or label on its own path, side by side. Two edges of
+  one style and label still share one path, as before. The grid layout used
+  when dagre fails still draws parallel edges on one line.
 
 ### Fixed — Studio
 
