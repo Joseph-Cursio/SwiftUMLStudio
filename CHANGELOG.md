@@ -199,9 +199,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   takes a member of the type around the writer before one of another
   same-named type, as a dotted name such as `Foo.X` already did. A `public`
   member of that type's body also comes before an extension's in another
-  directory. Still wrong, with or without `--package`: when the writer's own
-  `Foo` has no `X` at all, another `Foo`'s extension member still beats a
-  top-level `X`.
+  directory. Still wrong without `--package`: when the writer's own `Foo`
+  has no `X` at all, another `Foo`'s `X` still beats a top-level `X`.
+- **A name written inside a type that lacks it means the name further out,
+  with `--package`** (#252). `class W: X {}` inside `extension Foo`, when
+  the writer's own `Foo` has no `X` at all, means the `X` further out, as in
+  Swift, not another same-named `Foo`'s. Before, that other `Foo`'s `X` won,
+  whether its body or an extension declared it, even an extension in a
+  module downstream of the writer's that it cannot see. An `X` the writer's
+  `Foo` inherits still counts, even from a superclass named `Foo` too
+  (`class Foo: Core.Foo`), or through an inherited nested type. The other
+  `Foo`'s `X` gives way only where Swift's rules settle which `Foo` the
+  writer's is: its own module's, or one its file imports alone
+  (`import struct A.Foo`). Elsewhere, as beside a module's own `Foo` that
+  shadows one it re-exports, a member of a `Foo` the file sees is kept.
+  Without `--package` the lookup is as before:
+  which same-named `Foo` a file means is then a guess by directory, and
+  targets sharing a directory, files an Xcode project compiles into several
+  targets, and files a package excludes all defeat it. Still wrong with
+  `--package`: when the writer's `Foo` has an `X` but the writer's own
+  module adds a nearer one to another `Foo`, the edge ends on that one.
 
 ### Fixed — Studio
 
