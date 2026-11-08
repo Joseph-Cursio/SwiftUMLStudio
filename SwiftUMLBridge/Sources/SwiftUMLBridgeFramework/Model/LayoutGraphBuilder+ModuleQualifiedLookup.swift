@@ -117,6 +117,12 @@ extension LayoutGraphBuilder.TypeLookup {
         }
     }
 
+    /// Whether `name`, written in `scope`, means a type only by reading a module on the way:
+    /// `ModA.Foo`, or `FA` after `typealias FA = ModA.Foo`.
+    func resolvesOnlyThroughModule(_ name: String, from scope: Scope) -> Bool {
+        type(named: name, from: scope, readingModules: false) == nil && type(named: name, from: scope) != nil
+    }
+
     /// Whether `name`, written bare in `scope`, means a member of a type around it, as `ModA` does
     /// in `enum E { typealias ModA = Other }`: then `ModA.Foo` there is `Other.Foo`, even in a
     /// module named ModA (#246). The guard ends the loop of this,
@@ -173,6 +179,11 @@ extension LayoutGraphBuilder.TypeLookup {
         }
         guard depth < 8, let type = enclosingExtensionType(of: declared, depth: depth) else { return nil }
         return owningType(of: type, depth: depth + 1)
+    }
+
+    /// The name `declaration` was recorded under.
+    func recordedName(of declaration: ObjectIdentifier) -> String? {
+        recordForDeclaration[declaration]?.name
     }
 
     /// The name the declaration `name` means is recorded under, before any typealias is

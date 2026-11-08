@@ -152,11 +152,6 @@ extension LayoutGraphBuilder {
             aliasSureNames = AliasWalks()
         }
 
-        /// The name `declaration` was recorded under.
-        func recordedName(of declaration: ObjectIdentifier) -> String? {
-            recordForDeclaration[declaration]?.name
-        }
-
         /// Every declaration recorded under `name`, types, typealiases and extensions, in
         /// recording order.
         func declarations(named name: String) -> [Declared] {
@@ -180,12 +175,6 @@ extension LayoutGraphBuilder {
         func type(_ name: QualifiedName, from scope: Scope, depth: Int = 0, readingModules: Bool = true) -> Declared? {
             nearestMatch(name, from: scope, depth: depth, readingModules: readingModules)
                 .flatMap { aliased($0.declared, depth: depth, readingModules: readingModules) }
-        }
-
-        /// Whether `name`, written in `scope`, means a type only by reading a module on the way:
-        /// `ModA.Foo`, or `FA` after `typealias FA = ModA.Foo`.
-        func resolvesOnlyThroughModule(_ name: String, from scope: Scope) -> Bool {
-            type(named: name, from: scope, readingModules: false) == nil && type(named: name, from: scope) != nil
         }
 
         /// The name `name` comes to where it is written once every typealias it goes through is
