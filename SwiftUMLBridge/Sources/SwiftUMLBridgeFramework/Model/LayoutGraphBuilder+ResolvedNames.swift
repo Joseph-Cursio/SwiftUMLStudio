@@ -149,6 +149,9 @@ extension LayoutGraphBuilder.TypeLookup {
             recordMergedAliases(of: item, named: containerName)
             let unlisted = unlistedMembers(of: item, named: containerName)
             unlistedMembers.merge(unlisted) { $0 + $1 }
+            for (name, members) in unlisted {
+                for member in members { inheritableNames.record(member, named: name, isListed: false) }
+            }
             for (name, members) in unlisted where members.contains(where: { $0.extended != nil }) {
                 unlistedNamesWithExtendedTypes.insert(name)
             }

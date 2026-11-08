@@ -174,8 +174,8 @@ struct ModuleQualifiedLookupTests {
         #expect(graph.owner(of: "fromApp") == "Networking.Request")
     }
 
-    /// Module Foo's `class Foo` inherits `Rest` from `Base`, so `Foo.Rest` is `Base.Rest`, which the
-    /// lookup does not follow; the module's own top-level `Rest` is not what it means.
+    /// Module Foo's `class Foo` inherits `Rest` from `Base`, so `Foo.Rest` is `Base.Rest` (#250);
+    /// the module's own top-level `Rest` is not what it means.
     @Test("a type named like the module it is in keeps the qualifier a type")
     func namedModuleTypeShadows() throws {
         let foo = """
@@ -189,7 +189,7 @@ struct ModuleQualifiedLookupTests {
             """
         let app = "import Foo\n\nextension Foo.Rest {\n    func fromApp() {}\n}\n"
         let graph = try graph([("Foo", foo), ("App", app)])
-        #expect(graph.owner(of: "fromApp") == "Foo.Rest")
+        #expect(graph.owner(of: "fromApp") == "Base.Rest")
     }
 
     /// With nested types not drawn, Core's `Analytics.Event` is a member of `enum Analytics`

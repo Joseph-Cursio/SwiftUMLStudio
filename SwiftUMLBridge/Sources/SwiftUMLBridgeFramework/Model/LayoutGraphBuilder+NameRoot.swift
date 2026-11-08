@@ -174,7 +174,7 @@ extension LayoutGraphBuilder.TypeLookup {
     /// The outermost type `declared` belongs to past any extension, by name and file, which tell
     /// same-named types apart where they have no module; `nil` for one in an extension of a type
     /// outside the diagram.
-    private func owningDeclaration(
+    func owningDeclaration(
         of declared: LayoutGraphBuilder.Declared, depth: Int
     ) -> (name: String?, filePath: String?)? {
         guard declared.extended != nil else { return (declared.outermostName, declared.outermostFilePath) }

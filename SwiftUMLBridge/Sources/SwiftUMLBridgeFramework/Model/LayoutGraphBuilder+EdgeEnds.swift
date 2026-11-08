@@ -61,7 +61,7 @@ extension LayoutGraphBuilder {
         private(set) var recordForDeclaration: [ObjectIdentifier: RecordedDeclaration] = [:]
         /// The type each declaration's enclosing extension extends, once worked out
         /// (`enclosingExtensionType(of:depth:)`); `record` starts a new one.
-        private var enclosingTypes = EnclosingTypes()
+        private(set) var enclosingTypes = EnclosingTypes()
         /// The type each first component means, once worked out (`started(_:from:depth:)`);
         /// `record` and a change of `unlistedMembers` start a new one.
         private(set) var nameStarts = NameStarts()
@@ -80,6 +80,12 @@ extension LayoutGraphBuilder {
         /// The names a typealias is recorded under (`namesTypealias(_:)`), so asking costs no scan
         /// of a name's many same-named types.
         private(set) var aliasNames: Set<String> = []
+        /// The names that may be a member a superclass declares, so another costs no lookup of one
+        /// (`inheritedMember(_:from:depth:readingModules:)`).
+        var inheritableNames = InheritableNames()
+        /// The superclass of each class, once worked out (`superclass(of:depth:)`); `record`
+        /// starts a new one.
+        private(set) var superclasses = EnclosingTypes()
         /// A qualifier must name one of these modules to be read as a module (#124).
         private(set) var modules = ModuleQualifiers()
         /// The nested types the items do not list, as while nested types are hidden, and their
@@ -123,6 +129,9 @@ extension LayoutGraphBuilder {
             if declared.aliasTarget != nil {
                 aliasNames.insert(name)
             }
+            if !declared.isExtension {
+                inheritableNames.record(declared, named: name)
+            }
             recordForDeclaration[declared.declaration] = RecordedDeclaration(
                 name: name, order: recordForDeclaration.count, declared: declared
             )
@@ -130,6 +139,7 @@ extension LayoutGraphBuilder {
                 modules.record(module)
             }
             enclosingTypes = EnclosingTypes()
+            superclasses = EnclosingTypes()
             nameStarts = NameStarts()
             forgetAliasWalks()
         }
@@ -261,16 +271,19 @@ extension LayoutGraphBuilder {
             }
             // Most supertypes, `Encodable` say, are no enclosing type's member. Working the root
             // out takes a lookup of the enclosing extension's type, so it waits for a name a type
-            // is recorded under, or one a module may be read in.
+            // is recorded under, one a module may be read in, or one a superclass may declare.
             let throughModule = { (probeName: String) in readingModules && self.mayReadModule(probeName) }
-            guard probes.contains(where: { typesForName[$0.name] != nil || throughModule($0.name) }) else {
+            guard probes.contains(where: {
+                typesForName[$0.name] != nil || throughModule($0.name) || mayBeInherited($0.name)
+            }) else {
                 return asWritten
             }
             let root = enclosingRoot(of: scope, depth: depth)
             return probes.lazy
                 .map { probe in (probe, QualifiedName(name: probe.name, root: root, isRecorded: probe.isRecorded)) }
                 .first { probe, qualified in
-                    if nearestDeclaration(qualified, from: scope, depth: depth) != nil { return true }
+                    let found = nearestDeclaration(qualified, from: scope, depth: depth, readingModules: readingModules)
+                    if found != nil { return true }
                     // A recorded name's first component is a type, never a module qualifier.
                     guard !probe.isRecorded, throughModule(probe.name),
                           readsModule(probe.enclosing, from: scope, depth: depth)
@@ -280,13 +293,23 @@ extension LayoutGraphBuilder {
         }
 
         /// The nearest of the types and typealiases named `name` that are visible from `scope`
-        /// (`nearestDeclaration(_:from:depth:)`). With none, a name whose first component names a
-        /// module means the rest of the name in that module (`moduleMatch`), unless it is a member
-        /// path past sugar.
+        /// (`nearestDeclaration(_:from:depth:readingModules:)`), under the name a superclass's
+        /// member is recorded under (`inheritedLookup(_:from:depth:readingModules:)`). With none, a
+        /// name whose first component names a module means the rest of the name in that module
+        /// (`moduleMatch`), unless it is a member path past sugar.
         func nearestMatch(
-            _ name: QualifiedName, from scope: Scope, depth: Int, readingModules: Bool = true
+            _ written: QualifiedName, from scope: Scope, depth: Int, readingModules: Bool = true
         ) -> Match? {
-            if let nearest = nearestDeclaration(name, from: scope, depth: depth) {
+            let name = started(written, from: scope, depth: depth)
+            switch inheritedLookup(name, from: scope, depth: depth, readingModules: readingModules) {
+            case .member(let inherited)?:
+                return Match(declared: inherited, name: recordedName(of: inherited.declaration) ?? name.name)
+            case .hidden?:
+                return nil
+            case nil:
+                break
+            }
+            if let nearest = ownNearest(name, from: scope, depth: depth) {
                 return Match(declared: nearest, name: name.name)
             }
             guard readingModules, name.root != .outsideType else { return nil }
@@ -301,11 +324,24 @@ extension LayoutGraphBuilder {
             return nearestMatch(written, from: scope, depth: depth, readingModules: readingModules)
         }
 
-        /// The nearest of the types and typealiases recorded under `name` that are visible from
-        /// `scope` and that it can mean there (`fitting(_:for:from:depth:)`), unless a nested type
-        /// the items do not list ranks nearer (`unlistedMemberShadows(_:named:from:depth:)`).
-        func nearestDeclaration(_ written: QualifiedName, from scope: Scope, depth: Int) -> Declared? {
+        /// The member a superclass declares that `name` means (`inheritedLookup`), none for a hidden
+        /// one, or else the nearest of the types and typealiases recorded under `name` that are
+        /// visible from `scope` and that it can mean there (`fitting(_:for:from:depth:)`), unless a
+        /// nested type the items do not list ranks nearer (`unlistedMemberShadows(_:named:from:depth:)`).
+        func nearestDeclaration(
+            _ written: QualifiedName, from scope: Scope, depth: Int, readingModules: Bool = true
+        ) -> Declared? {
             let name = started(written, from: scope, depth: depth)
+            switch inheritedLookup(name, from: scope, depth: depth, readingModules: readingModules) {
+            case .member(let inherited)?: return inherited
+            case .hidden?: return nil
+            case nil: return ownNearest(name, from: scope, depth: depth)
+            }
+        }
+
+        /// `nearestDeclaration(_:from:depth:readingModules:)` without a superclass's members, for a
+        /// name whose start is worked out (`started(_:from:depth:)`).
+        private func ownNearest(_ name: QualifiedName, from scope: Scope, depth: Int) -> Declared? {
             let nearest = localNearest(name, from: scope, depth: depth)
                 ?? scope.nearest(among: candidates(name, from: scope, depth: depth), scope: \.rankScope)
             guard let nearest, !unlistedMemberShadows(nearest, named: name, from: scope, depth: depth) else {
@@ -353,45 +389,6 @@ extension LayoutGraphBuilder {
         /// a type still comes before a typealias among equals gathered under several.
         private func typesFirst(_ declared: [Declared]) -> [Declared] {
             declared.filter { $0.aliasTarget == nil } + declared.filter { $0.aliasTarget != nil }
-        }
-
-        /// Whether a name written in `lookup` can mean `declared`, as Swift's access control
-        /// allows: a `private` or `fileprivate` type only in its own file, and a type below
-        /// `package` only in its own module. A file or module that is unknown on either side is
-        /// taken to be the same; parsed sources always carry a file path.
-        func isVisible(_ declared: Declared, from lookup: Scope, depth: Int) -> Bool {
-            if lookup.filePath == nil || declared.scope.filePath == nil || lookup.filePath == declared.scope.filePath {
-                return true
-            }
-            var required = ElementAccessibility.internal
-            if let module = lookup.module, let own = declared.scope.module, module != own { required = .package }
-            // `access(of:)` only lowers `ownAccess`, so a type its own access already hides needs no
-            // lookup of the type its extension extends. That lookup walks every declaration of the
-            // name, and doing it for each of many same-named private types was cubic in their number.
-            return declared.ownAccess >= required && access(of: declared, depth: depth) >= required
-        }
-
-        /// `declared`'s access, capped by the access of the type its enclosing extension extends,
-        /// as that extension's own lookup finds it. Each step resolves a shorter name, so this
-        /// ends; the depth guard is a backstop.
-        private func access(of declared: Declared, depth: Int) -> ElementAccessibility {
-            guard depth < 8, let type = enclosingExtensionType(of: declared, depth: depth) else {
-                return declared.ownAccess
-            }
-            return min(declared.ownAccess, access(of: type, depth: depth + 1))
-        }
-
-        /// The type `declared`'s enclosing extension extends, as that extension's own lookup finds
-        /// it at `depth + 1`, or `nil` for none. It depends on the declaration alone, so it is
-        /// worked out once: `access(of:depth:)` and `isInExtensionOfOutsideType(_:depth:)` ask it
-        /// of every candidate of a name, and each answer is a lookup of its own.
-        func enclosingExtensionType(of declared: Declared, depth: Int) -> Declared? {
-            guard let extended = declared.extended else { return nil }
-            return enclosingTypes.type(of: declared.declaration, depth: depth) {
-                extendedType(
-                    named: extended.name, from: extended.scope, isSugared: extended.isSugared, depth: depth + 1
-                )
-            }
         }
     }
 }

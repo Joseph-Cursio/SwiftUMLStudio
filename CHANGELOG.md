@@ -176,6 +176,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   of a different style or label on its own path, side by side. Two edges of
   one style and label still share one path, as before. The grid layout used
   when dagre fails still draws parallel edges on one line.
+- **A member a class inherits is read through the class** (#250). A subclass
+  has its superclass's nested types and typealiases as members, so after
+  `class Parent { typealias P = R }` and `class Outer: Parent {}`, `Outer.P`
+  means `R`. The class diagram looked only at what `Outer` and its extensions
+  declare. With `--package`, `struct W: Outer.P` drew `inherits` to an
+  undeclared `Outer.P`, and SVG drew no edge. Without it, the edge ended on
+  another directory's `Outer.P`. A name with a class before its last part
+  now finds the member that class inherits, through any depth of
+  superclasses, when the class declares none of its own. So does a bare name
+  written inside a subclass, ahead of any type further out, and a member of
+  an inherited nested type (`Outer.Inner.X`). A superclass's `private` member
+  stays hidden from its subclasses, as in Swift. A protocol's members are
+  still not read through a type that conforms to it.
 
 ### Fixed — Studio
 
