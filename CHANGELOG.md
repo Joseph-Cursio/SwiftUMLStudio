@@ -189,6 +189,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   an inherited nested type (`Outer.Inner.X`). A superclass's `private` member
   stays hidden from its subclasses, as in Swift. A protocol's members are
   still not read through a type that conforms to it.
+- **A name written inside a type means that type's member, without
+  `--package`** (#252). `class W: X {}` inside `extension Foo` means `Foo.X`,
+  a member of the `Foo` that extension extends. 1.2.0 ranks an alias an
+  extension adds in the extension's own file, so one that `extension AF`
+  adds to another target's `Foo`, through `typealias AF = Foo`, could sit in
+  or near `W`'s file and win. That happened whether `W` sat inside `extension
+  Foo` or, with extensions merged, inside `struct Foo` itself. Such a name now
+  takes a member of the type around the writer before one of another
+  same-named type, as a dotted name such as `Foo.X` already did. A `public`
+  member of that type's body also comes before an extension's in another
+  directory. Still wrong, with or without `--package`: when the writer's own
+  `Foo` has no `X` at all, another `Foo`'s extension member still beats a
+  top-level `X`.
 
 ### Fixed — Studio
 
