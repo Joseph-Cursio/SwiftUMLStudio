@@ -61,11 +61,14 @@ extension LayoutGraphBuilder {
     /// (`TypeLookup.enclosingOwner(of:depth:)`), and each name's candidates for a scope
     /// (`TypeLookup.enclosingCandidates(_:from:depth:lookUp:)`). Without them, each lookup of such a
     /// name scanned all the types of its name and of the outermost one, so many writers among many
-    /// same-named extensions cost the square of their number. A class behind a lock, as
-    /// `EnclosingTypes` is, which the lookup starts anew whenever what a name means may change.
+    /// same-named extensions cost the square of their number. With the writer's module known, it
+    /// also keeps whether the declaration such a name finds belongs to that outermost type
+    /// (`TypeLookup.isMemberOfTypeAround`). A class behind a lock, as `EnclosingTypes` is, which the
+    /// lookup starts anew whenever what a name means may change.
     final class EnclosingLookups: Sendable {
         private let ownerForKey = Mutex<[EnclosingOwnerKey: OwningDeclaration?]>([:])
         private let candidatesForKey = Mutex<[EnclosingCandidatesKey: [Declared]]>([:])
+        private let isMemberForKey = Mutex<[EnclosingMemberKey: Bool]>([:])
 
         /// The owner for `key`, from `lookUp` the first time, which runs outside the lock.
         func owner(for key: EnclosingOwnerKey, lookUp: () -> OwningDeclaration?) -> OwningDeclaration? {
@@ -82,6 +85,25 @@ extension LayoutGraphBuilder {
             candidatesForKey.withLock { $0[key] = candidates }
             return candidates
         }
+
+        /// Whether the declaration `key` found is a member of the type around its writer, from
+        /// `lookUp` the first time, which runs outside the lock.
+        func isMember(for key: EnclosingMemberKey, lookUp: () -> Bool) -> Bool {
+            if let known = isMemberForKey.withLock({ $0[key] }) { return known }
+            let isMember = lookUp()
+            isMemberForKey.withLock { $0[key] = isMember }
+            return isMember
+        }
+    }
+
+    /// A declaration a name built on the types around a writer finds, where it finds it
+    /// (`TypeLookup.isMemberOfTypeAround`): every writer in one extension of a file finds the same
+    /// one and shares the answer, which otherwise scans the name's candidates for each of them. The
+    /// writer's file stands for its module too, as each file has one.
+    struct EnclosingMemberKey: Hashable {
+        let place: EnclosingCandidatesKey
+        let found: ObjectIdentifier
+        let readingModules: Bool
     }
 
     /// A name built on the types around a writer of no known module, with all of the writer's
