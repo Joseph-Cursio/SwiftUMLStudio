@@ -61,7 +61,7 @@ extension LayoutGraphBuilder {
         private(set) var recordForDeclaration: [ObjectIdentifier: RecordedDeclaration] = [:]
         /// The type each declaration's enclosing extension extends, once worked out
         /// (`enclosingExtensionType(of:depth:)`); `record` starts a new one.
-        private var enclosingTypes = EnclosingTypes()
+        private(set) var enclosingTypes = EnclosingTypes()
         /// The type each first component means, once worked out (`started(_:from:depth:)`);
         /// `record` and a change of `unlistedMembers` start a new one.
         private(set) var nameStarts = NameStarts()
@@ -353,45 +353,6 @@ extension LayoutGraphBuilder {
         /// a type still comes before a typealias among equals gathered under several.
         private func typesFirst(_ declared: [Declared]) -> [Declared] {
             declared.filter { $0.aliasTarget == nil } + declared.filter { $0.aliasTarget != nil }
-        }
-
-        /// Whether a name written in `lookup` can mean `declared`, as Swift's access control
-        /// allows: a `private` or `fileprivate` type only in its own file, and a type below
-        /// `package` only in its own module. A file or module that is unknown on either side is
-        /// taken to be the same; parsed sources always carry a file path.
-        func isVisible(_ declared: Declared, from lookup: Scope, depth: Int) -> Bool {
-            if lookup.filePath == nil || declared.scope.filePath == nil || lookup.filePath == declared.scope.filePath {
-                return true
-            }
-            var required = ElementAccessibility.internal
-            if let module = lookup.module, let own = declared.scope.module, module != own { required = .package }
-            // `access(of:)` only lowers `ownAccess`, so a type its own access already hides needs no
-            // lookup of the type its extension extends. That lookup walks every declaration of the
-            // name, and doing it for each of many same-named private types was cubic in their number.
-            return declared.ownAccess >= required && access(of: declared, depth: depth) >= required
-        }
-
-        /// `declared`'s access, capped by the access of the type its enclosing extension extends,
-        /// as that extension's own lookup finds it. Each step resolves a shorter name, so this
-        /// ends; the depth guard is a backstop.
-        private func access(of declared: Declared, depth: Int) -> ElementAccessibility {
-            guard depth < 8, let type = enclosingExtensionType(of: declared, depth: depth) else {
-                return declared.ownAccess
-            }
-            return min(declared.ownAccess, access(of: type, depth: depth + 1))
-        }
-
-        /// The type `declared`'s enclosing extension extends, as that extension's own lookup finds
-        /// it at `depth + 1`, or `nil` for none. It depends on the declaration alone, so it is
-        /// worked out once: `access(of:depth:)` and `isInExtensionOfOutsideType(_:depth:)` ask it
-        /// of every candidate of a name, and each answer is a lookup of its own.
-        func enclosingExtensionType(of declared: Declared, depth: Int) -> Declared? {
-            guard let extended = declared.extended else { return nil }
-            return enclosingTypes.type(of: declared.declaration, depth: depth) {
-                extendedType(
-                    named: extended.name, from: extended.scope, isSugared: extended.isSugared, depth: depth + 1
-                )
-            }
         }
     }
 }
