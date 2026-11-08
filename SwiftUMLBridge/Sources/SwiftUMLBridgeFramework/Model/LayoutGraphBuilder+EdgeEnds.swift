@@ -72,7 +72,7 @@ extension LayoutGraphBuilder {
         /// The sure name each typealias comes to, `nil` for none (`sureResolvedName(of:from:depth:)`).
         private(set) var aliasSureNames = AliasWalks<String?>()
         /// The names a type declared in an extension is recorded under, which tell a dotted name as
-        /// written apart (`fitsEachAlone(_:)`), as an unlisted member so declared does too
+        /// written apart (`fitsEachAlone(_:from:)`), as an unlisted member so declared does too
         /// (`unlistedNamesWithExtendedTypes`).
         private var namesWithExtendedTypes: Set<String> = []
         /// Every extension recorded, with the name it was recorded under, in recording order.
@@ -95,7 +95,7 @@ extension LayoutGraphBuilder {
             didSet { nameStarts = NameStarts(); forgetAliasWalks() }
         }
         /// The names in `unlistedMembers` with a type declared in an extension among them
-        /// (`fitsEachAlone(_:)`), so asking costs no scan of a name's many hidden types.
+        /// (`fitsEachAlone(_:from:)`), so asking costs no scan of a name's many hidden types.
         var unlistedNamesWithExtendedTypes: Set<String> = []
         /// Which modules each module loads, worked out once every declaration is recorded
         /// (`recordAliases(in:)`): a member that another module's extension adds is seen in the
@@ -341,11 +341,16 @@ extension LayoutGraphBuilder {
 
         /// Whether `fitting(_:for:from:depth:)` takes or drops each candidate on its own, so the
         /// candidates of one file fit as they do among the rest, and without reading what the first
-        /// component means to the writer. A dotted name as written is fitted by what the whole set
-        /// holds, but only when a type declared in an extension is among them, or a nested type
+        /// component, or the type around the writer, means to it. A dotted name as written, and in
+        /// a file of no known module a name built on an enclosing type, is fitted by what the whole
+        /// set holds, but only when a type declared in an extension is among them, or a nested type
         /// the items do not list so declared, which `unlistedMemberShadows` fits beside them.
-        func fitsEachAlone(_ name: QualifiedName) -> Bool {
-            guard name.root == .asWritten, name.name.contains(".") else { return true }
+        func fitsEachAlone(_ name: QualifiedName, from scope: Scope) -> Bool {
+            switch name.root {
+            case .outsideType: return true
+            case .projectType: guard scope.module == nil else { return true }
+            case .asWritten: guard name.name.contains(".") else { return true }
+            }
             return !spellings(of: name).contains { spelling in
                 namesWithExtendedTypes.contains(spelling) || unlistedNamesWithExtendedTypes.contains(spelling)
             }
@@ -354,7 +359,7 @@ extension LayoutGraphBuilder {
         /// The nearest candidate when one ranks in `scope`'s own file, found without the rest:
         /// `DeclarationScope.nearest` picks the first visible such, under any of `name`'s spellings.
         func localNearest(_ name: QualifiedName, from scope: Scope, depth: Int) -> Declared? {
-            guard let filePath = scope.filePath, fitsEachAlone(name) else { return nil }
+            guard let filePath = scope.filePath, fitsEachAlone(name, from: scope) else { return nil }
             let local = typesFirst(spellings(of: name).flatMap { typesForNameInFile[$0]?[filePath] ?? [] })
             guard !local.isEmpty else { return nil }
             let visible = local.filter { isVisible($0, from: scope, depth: depth) }

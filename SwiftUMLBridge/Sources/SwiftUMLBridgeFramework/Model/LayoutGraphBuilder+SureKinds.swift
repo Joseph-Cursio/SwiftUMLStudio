@@ -73,7 +73,7 @@ extension LayoutGraphBuilder.TypeLookup {
                 $0.scope.filePath == scope.filePath || $0.rankScope.filePath == scope.filePath
             } == true
         }
-        guard let file = scope.filePath, fitsEachAlone(name), !ownUnlisted, !ownFileBears(on: name, file),
+        guard let file = scope.filePath, fitsEachAlone(name, from: scope), !ownUnlisted, !ownFileBears(on: name, file),
               !enclosingTypeBears(on: name, from: scope, depth: depth) else {
             let own = LayoutGraphBuilder.SharedLookup(found: candidates(name, from: scope, depth: depth))
             return uncachedLookup(name, among: own, from: scope, depth: depth, kinds: kinds)
@@ -106,7 +106,7 @@ extension LayoutGraphBuilder.TypeLookup {
     /// component, the same goes under the rest of the name, for reading that component as the
     /// module (`moduleMatch(named:from:depth:)`), and under the component itself, one only that
     /// file sees keeps it from being read so (`shadows`). What a first component means otherwise is
-    /// `QualifiedName.start`, or read only where `fitsEachAlone(_:)` is false.
+    /// `QualifiedName.start`, or read only where `fitsEachAlone(_:from:)` is false.
     private func ownFileBears(on name: LayoutGraphBuilder.QualifiedName, _ file: String) -> Bool {
         var names = spellings(of: name)
         if let dot = name.name.firstIndex(of: "."), !modules.modules(namedBy: String(name.name[..<dot])).isEmpty {

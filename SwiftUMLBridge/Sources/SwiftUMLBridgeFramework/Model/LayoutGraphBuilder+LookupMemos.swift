@@ -51,6 +51,10 @@ extension LayoutGraphBuilder {
         let depth: Int
     }
 
+    /// The outermost type a declaration belongs to past any extension, by name and file
+    /// (`TypeLookup.owningDeclaration(of:depth:)`).
+    typealias OwningDeclaration = (name: String?, filePath: String?)
+
     /// A name `TypeLookup.typeWithSureKind` looks up for a writer whose own file does not bear on
     /// it (`TypeLookup.ownFileBears(on:_:)`): its candidates then depend on the writer's module, its
     /// imports, and the type a dotted name starts at there, alone (`SharedLookup`).

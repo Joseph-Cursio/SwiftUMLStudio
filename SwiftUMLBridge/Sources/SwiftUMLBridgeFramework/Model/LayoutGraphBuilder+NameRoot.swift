@@ -98,7 +98,9 @@ extension LayoutGraphBuilder.TypeLookup {
     }
 
     /// The `candidates` recorded under `name` that it can mean from `scope`. A name built on an
-    /// enclosing type takes only those of that type's root. A bare name takes those the file
+    /// enclosing type takes only those of that type's root, and with no module, where an
+    /// extension adds one of them, only those of that very type (`membersOfEnclosingType`,
+    /// #252). A bare name takes those the file
     /// sees (`seenAtFileScope(_:named:from:)`). A dotted name as written takes the members of the
     /// type its first component means there. Where that is worked out (`started(_:from:depth:)`),
     /// they are the members of that very type, an extension's if the writer's module loads it.
@@ -119,7 +121,9 @@ extension LayoutGraphBuilder.TypeLookup {
             // does, so `Inner` in it is not one nested in a namespace the file does not import.
             let seen = name.isRecorded
                 ? candidates : seenWhenQualifierIsModule(candidates, named: name.name, from: scope, depth: depth)
-            return seen.filter { !isInExtensionOfOutsideType($0, depth: depth) }
+            let fitted = seen.filter { !isInExtensionOfOutsideType($0, depth: depth) }
+            guard fitted.count > 1, fitted.contains(where: { $0.extended != nil }) else { return fitted }
+            return membersOfEnclosingType(fitted, from: scope, depth: depth)
         case .outsideType:
             return candidates.filter { isInExtensionOfOutsideType($0, depth: depth) }
         case .asWritten:
@@ -147,12 +151,7 @@ extension LayoutGraphBuilder.TypeLookup {
 
     /// In a file of no known module, where no start is worked out (`started(_:from:depth:)`), the
     /// `candidates` of the dotted `name` that belong to the type its first component means from
-    /// `scope`, or every candidate when none does or it is outside the diagram (#230). A member
-    /// that type's body declares for every module to see then goes before an extension's in another
-    /// directory: a file that sees both does not compile, so one that compiles means the body's.
-    /// An `internal` one proves nothing, as another module cannot see it, and an extension in the
-    /// writer's directory stays, since there the `Foo` both read may be another target's unrelated
-    /// one, first read of those equally near.
+    /// `scope` (`members(ownedBy:among:from:depth:)`, #230).
     private func membersOfWrittenStart(
         _ candidates: [LayoutGraphBuilder.Declared], named name: String,
         from scope: LayoutGraphBuilder.Scope, depth: Int
@@ -160,6 +159,44 @@ extension LayoutGraphBuilder.TypeLookup {
         guard scope.module == nil, depth < 8,
               let start = firstComponentType(of: name, from: scope, depth: depth),
               let owner = owningDeclaration(of: start, depth: depth) else { return candidates }
+        return members(ownedBy: owner, among: candidates, from: scope, depth: depth)
+    }
+
+    /// In a file of no known module, the `candidates` of a name built on the types around `scope`
+    /// that belong to the outermost of them (`members(ownedBy:among:from:depth:)`, #252): for
+    /// `class W: X` in `extension Foo`, a member of the `Foo` that extension extends, and not one
+    /// another extension near `W` adds to another target's `Foo`. That type is the one the
+    /// outermost name means from the file, as an extension's own lookup finds it, which is also the
+    /// type a member merged out of an extension sits in.
+    private func membersOfEnclosingType(
+        _ candidates: [LayoutGraphBuilder.Declared], from scope: LayoutGraphBuilder.Scope, depth: Int
+    ) -> [LayoutGraphBuilder.Declared] {
+        guard scope.module == nil, let owner = enclosingOwner(of: scope, depth: depth) else { return candidates }
+        return members(ownedBy: owner, among: candidates, from: scope, depth: depth)
+    }
+
+    /// The outermost type around `scope`, by name and file (`owningDeclaration(of:depth:)`): the
+    /// one the outermost name means from the file, as an extension's own lookup finds it.
+    /// `nil` at top level, or when the name means no type of the diagram.
+    private func enclosingOwner(
+        of scope: LayoutGraphBuilder.Scope, depth: Int
+    ) -> LayoutGraphBuilder.OwningDeclaration? {
+        guard depth < 8, let outermost = scope.enclosingTypes.last else { return nil }
+        let isSugared = scope.enclosingExtension?.isSugared ?? false
+        return extendedType(named: outermost, from: scope.fileScope, isSugared: isSugared, depth: depth + 1)
+            .flatMap { owningDeclaration(of: $0, depth: depth) }
+    }
+
+    /// The `candidates` that belong to the outermost type `owner`, or every candidate when none
+    /// does. A member that type's body declares for every module to see then goes before an
+    /// extension's in another directory: a file that sees both does not compile, so one that
+    /// compiles means the body's. An `internal` one proves nothing, as another module cannot see
+    /// it, and an extension in the writer's directory stays, since there the `Foo` both read may be
+    /// another target's unrelated one, first read of those equally near.
+    private func members(
+        ownedBy owner: LayoutGraphBuilder.OwningDeclaration, among candidates: [LayoutGraphBuilder.Declared],
+        from scope: LayoutGraphBuilder.Scope, depth: Int
+    ) -> [LayoutGraphBuilder.Declared] {
         let members = candidates.filter { candidate in
             owningDeclaration(of: candidate, depth: depth).map { $0 == owner } ?? false
         }
@@ -176,7 +213,7 @@ extension LayoutGraphBuilder.TypeLookup {
     /// outside the diagram.
     func owningDeclaration(
         of declared: LayoutGraphBuilder.Declared, depth: Int
-    ) -> (name: String?, filePath: String?)? {
+    ) -> LayoutGraphBuilder.OwningDeclaration? {
         guard declared.extended != nil else { return (declared.outermostName, declared.outermostFilePath) }
         guard depth < 8, let type = enclosingExtensionType(of: declared, depth: depth) else { return nil }
         return owningDeclaration(of: type, depth: depth + 1)
