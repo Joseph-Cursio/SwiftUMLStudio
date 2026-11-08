@@ -197,13 +197,20 @@ extension LayoutGraphBuilder.TypeLookup {
         lookUp: () -> [LayoutGraphBuilder.Declared]
     ) -> [LayoutGraphBuilder.Declared] {
         guard name.root == .projectType, scope.module == nil, !fitsEachAlone(name, from: scope) else { return lookUp() }
-        let key = LayoutGraphBuilder.EnclosingCandidatesKey(
+        return enclosingLookups.candidates(for: enclosingKey(name, from: scope, depth: depth), lookUp: lookUp)
+    }
+
+    /// `name` built on the types around `scope`, with all of the writer's scope that what it means
+    /// there can depend on (`EnclosingCandidatesKey`).
+    func enclosingKey(
+        _ name: LayoutGraphBuilder.QualifiedName, from scope: LayoutGraphBuilder.Scope, depth: Int
+    ) -> LayoutGraphBuilder.EnclosingCandidatesKey {
+        LayoutGraphBuilder.EnclosingCandidatesKey(
             name: name.name, isRecorded: name.isRecorded, filePath: scope.filePath.map { Array($0.utf8) },
             imports: scope.imports,
             enclosingTypes: scope.enclosingTypes, enclosingExtension: scope.enclosingExtension?.name,
             isSugared: scope.enclosingExtension?.isSugared ?? false, depth: depth
         )
-        return enclosingLookups.candidates(for: key, lookUp: lookUp)
     }
 
     /// The outermost type around `scope`, by name and file (`owningDeclaration(of:depth:)`): the

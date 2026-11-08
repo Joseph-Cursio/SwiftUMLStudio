@@ -149,4 +149,51 @@ struct EnclosingTypeMayHaveMemberTests {
         ]
         #expect(try ModuleFixture.inheritsLines(files, reversed: reversed) == ["X <|-- Foo.W : inherits"])
     }
+
+    // MARK: Each writer's own answer
+
+    /// A's `Foo` has an `X` and B's does not: each writer takes its own, though both write
+    /// `Foo.X` inside `extension Foo`, and what is kept for one is not the other's.
+    @Test("two writers whose types differ in having the member each get their own", arguments: [false, true])
+    func writersApart(reversed: Bool) throws {
+        let files: [ModuleFixture.File] = [
+            ("A", """
+            public struct Foo { public typealias X = RA; public init() {} }
+            open class RA { public init() {} }
+            extension Foo { class W1: X {} }
+            """),
+            ("B", "struct Foo {}\nclass X {}\nextension Foo { class W2: X {} }")
+        ]
+        #expect(try ModuleFixture.inheritsLines(files, reversed: reversed) == [
+            "RA <|-- Foo.W1 : inherits", "X <|-- Foo.W2 : inherits"
+        ])
+    }
+
+    // MARK: Cost
+
+    /// A hundred modules, each with twenty writers inside its own `extension Foo`, whose `Foo`
+    /// lacks `X`, among a hundred other modules' `Foo`s that get one: each writer's `Foo.X` is
+    /// turned down after a scan of every `Foo.X`, once per file, as all of a file's writers find
+    /// the same one (`EnclosingLookups`). About 1.8 s of CPU in a debug build, and 2.9 s scanning
+    /// for each writer, too near to bound apart; the bound keeps the scan from growing past that.
+    @Test("many writers whose type lacks the name cost about a lookup each")
+    func manyWritersLackingMember() throws {
+        var files: [ModuleFixture.File] = []
+        for index in 0..<100 {
+            files.append(("T\(index)", """
+            public struct Foo { public init() {} }
+            extension Foo { public struct X {} }
+            public class X {}
+            """))
+            let writers = (0..<20).map { "class W\(index)x\($0): X {}" }.joined(separator: "\n")
+            files.append(("W\(index)", "import T\(index)\nstruct Foo {}\nextension Foo {\n\(writers)\n}"))
+        }
+        let items = try moduleQualifiedItems(files)
+        let configuration = Configuration(elements: ElementOptions(), format: .plantuml)
+        var text = ""
+        let seconds = ThreadCPUClock.seconds { text = DiagramScript(items: items, configuration: configuration).text }
+        #expect(seconds < 6.0, "\(seconds)")
+        let edge = text.split(separator: "\n").first { $0.hasSuffix("<|-- Foo.W7x3 : inherits") }
+        #expect(edge?.hasPrefix("X") == true, "\(String(describing: edge))")
+    }
 }

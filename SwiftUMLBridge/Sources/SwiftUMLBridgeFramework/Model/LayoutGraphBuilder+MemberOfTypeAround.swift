@@ -32,26 +32,33 @@ extension LayoutGraphBuilder.TypeLookup {
     /// With no module known, which same-named `Foo` a file means is a guess by directory, which a
     /// target sharing a directory, a file an Xcode project compiles into several targets, or one a
     /// package excludes all defeat, so the name stands as before; it does too with no owner to
-    /// tell, as in an extension of a type outside the diagram.
+    /// tell, as in an extension of a type outside the diagram. Every writer in one extension of a
+    /// file finds the same declaration, so the answer is kept for them all (`EnclosingLookups`).
     func isMemberOfTypeAround(
         _ found: Declared, named name: LayoutGraphBuilder.QualifiedName, from scope: Scope, depth: Int,
         readingModules: Bool
     ) -> Bool {
         guard scope.module != nil, let owner = enclosingOwner(of: scope, depth: depth) else { return true }
-        let isSettled = ownerIsSettled(from: scope, depth: depth)
-        let isOwn = { (declared: Declared) in
-            self.belongs(declared, to: owner, from: scope, depth: depth)
-                || !isSettled && self.mayBeTypeAround(declared, named: owner.name, from: scope, depth: depth)
+        let key = LayoutGraphBuilder.EnclosingMemberKey(
+            place: enclosingKey(name, from: scope, depth: depth), found: found.declaration,
+            readingModules: readingModules
+        )
+        return enclosingLookups.isMember(for: key) {
+            let isSettled = ownerIsSettled(from: scope, depth: depth)
+            let isOwn = { (declared: Declared) in
+                self.belongs(declared, to: owner, from: scope, depth: depth)
+                    || !isSettled && self.mayBeTypeAround(declared, named: owner.name, from: scope, depth: depth)
+            }
+            if isOwn(found) { return true }
+            if case .member(let inherited)? = inheritedLookup(
+                name, from: scope, depth: depth, readingModules: readingModules
+            ), inherited.declaration == found.declaration, inheritsThroughOwnType(
+                name, from: scope, depth: depth, readingModules: readingModules, isOwn: isOwn
+            ) {
+                return true
+            }
+            return candidates(name, from: scope, depth: depth).contains(where: isOwn)
         }
-        if isOwn(found) { return true }
-        if case .member(let inherited)? = inheritedLookup(
-            name, from: scope, depth: depth, readingModules: readingModules
-        ), inherited.declaration == found.declaration, inheritsThroughOwnType(
-            name, from: scope, depth: depth, readingModules: readingModules, isOwn: isOwn
-        ) {
-            return true
-        }
-        return candidates(name, from: scope, depth: depth).contains(where: isOwn)
     }
 
     /// Whether the last part of the dotted `name` is inherited through a type that may be the
