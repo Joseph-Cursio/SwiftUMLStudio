@@ -175,16 +175,54 @@ extension LayoutGraphBuilder.TypeLookup {
         return members(ownedBy: owner, among: candidates, from: scope, depth: depth)
     }
 
+    /// Whether `localNearest(_:from:depth:)` may answer a name built on the types around `scope`
+    /// with `local`, the first candidate ranked in the writer's file, without the rest: when it
+    /// belongs to the outermost of those types, or that type is unknown, `fitting` keeps it among
+    /// all of them, and ranked in the writer's file, it comes first. Otherwise the others decide.
+    func mayAnswerAlone(
+        _ local: LayoutGraphBuilder.Declared, builtOnTypesAround scope: LayoutGraphBuilder.Scope, depth: Int
+    ) -> Bool {
+        guard let owner = enclosingOwner(of: scope, depth: depth) else { return true }
+        return owningDeclaration(of: local, depth: depth).map { $0 == owner } ?? false
+    }
+
+    /// `lookUp`'s candidates for `name` from `scope`, kept for a name built on the types around a
+    /// writer of no known module that is fitted by what the whole set holds
+    /// (`fitsEachAlone(_:from:)`). Those depend on the name, the writer's scope and the depth
+    /// alone, and every writer in one extension of a file shares the scope, so each such scope
+    /// scans the name's same-named types once rather than at each of its many lookups (#252). Any
+    /// other name is looked up afresh, as before: its candidates cost no more.
+    func enclosingCandidates(
+        _ name: LayoutGraphBuilder.QualifiedName, from scope: LayoutGraphBuilder.Scope, depth: Int,
+        lookUp: () -> [LayoutGraphBuilder.Declared]
+    ) -> [LayoutGraphBuilder.Declared] {
+        guard name.root == .projectType, scope.module == nil, !fitsEachAlone(name, from: scope) else { return lookUp() }
+        let key = LayoutGraphBuilder.EnclosingCandidatesKey(
+            name: name.name, isRecorded: name.isRecorded, filePath: scope.filePath.map { Array($0.utf8) },
+            imports: scope.imports,
+            enclosingTypes: scope.enclosingTypes, enclosingExtension: scope.enclosingExtension?.name,
+            isSugared: scope.enclosingExtension?.isSugared ?? false, depth: depth
+        )
+        return enclosingLookups.candidates(for: key, lookUp: lookUp)
+    }
+
     /// The outermost type around `scope`, by name and file (`owningDeclaration(of:depth:)`): the
     /// one the outermost name means from the file, as an extension's own lookup finds it.
-    /// `nil` at top level, or when the name means no type of the diagram.
+    /// `nil` at top level, or when the name means no type of the diagram. Kept per name and file
+    /// (`EnclosingLookups`), as each writer there asks it of every name it builds on them.
     private func enclosingOwner(
         of scope: LayoutGraphBuilder.Scope, depth: Int
     ) -> LayoutGraphBuilder.OwningDeclaration? {
         guard depth < 8, let outermost = scope.enclosingTypes.last else { return nil }
         let isSugared = scope.enclosingExtension?.isSugared ?? false
-        return extendedType(named: outermost, from: scope.fileScope, isSugared: isSugared, depth: depth + 1)
-            .flatMap { owningDeclaration(of: $0, depth: depth) }
+        let key = LayoutGraphBuilder.EnclosingOwnerKey(
+            outermost: outermost, isSugared: isSugared, filePath: scope.filePath.map { Array($0.utf8) },
+            imports: scope.imports, depth: depth
+        )
+        return enclosingLookups.owner(for: key) {
+            extendedType(named: outermost, from: scope.fileScope, isSugared: isSugared, depth: depth + 1)
+                .flatMap { owningDeclaration(of: $0, depth: depth) }
+        }
     }
 
     /// The `candidates` that belong to the outermost type `owner`, or every candidate when none

@@ -55,6 +55,62 @@ extension LayoutGraphBuilder {
     /// (`TypeLookup.owningDeclaration(of:depth:)`).
     typealias OwningDeclaration = (name: String?, filePath: String?)
 
+    /// What the names a writer of no known module builds on the types around it take, filled the
+    /// first time one asks, while an extension adds one of their candidates and they are fitted by
+    /// the whole set (#252): the outermost of those types, as the writer's file reads its name
+    /// (`TypeLookup.enclosingOwner(of:depth:)`), and each name's candidates for a scope
+    /// (`TypeLookup.enclosingCandidates(_:from:depth:lookUp:)`). Without them, each lookup of such a
+    /// name scanned all the types of its name and of the outermost one, so many writers among many
+    /// same-named extensions cost the square of their number. A class behind a lock, as
+    /// `EnclosingTypes` is, which the lookup starts anew whenever what a name means may change.
+    final class EnclosingLookups: Sendable {
+        private let ownerForKey = Mutex<[EnclosingOwnerKey: OwningDeclaration?]>([:])
+        private let candidatesForKey = Mutex<[EnclosingCandidatesKey: [Declared]]>([:])
+
+        /// The owner for `key`, from `lookUp` the first time, which runs outside the lock.
+        func owner(for key: EnclosingOwnerKey, lookUp: () -> OwningDeclaration?) -> OwningDeclaration? {
+            if let known = ownerForKey.withLock({ $0[key] }) { return known }
+            let owner = lookUp()
+            ownerForKey.withLock { $0[key] = .some(owner) }
+            return owner
+        }
+
+        /// The candidates for `key`, from `lookUp` the first time, which runs outside the lock.
+        func candidates(for key: EnclosingCandidatesKey, lookUp: () -> [Declared]) -> [Declared] {
+            if let known = candidatesForKey.withLock({ $0[key] }) { return known }
+            let candidates = lookUp()
+            candidatesForKey.withLock { $0[key] = candidates }
+            return candidates
+        }
+    }
+
+    /// A name built on the types around a writer of no known module, with all of the writer's
+    /// scope that its candidates can depend on (`EnclosingLookups`): its file, its imports, the
+    /// types around it and the extension they end at, and the lookup's depth. The file is its
+    /// path's bytes, as the directory ranking compares them: a string would hold a path's composed
+    /// and decomposed spellings equal, and give one directory's writers the other's candidates.
+    struct EnclosingCandidatesKey: Hashable {
+        let name: String
+        let isRecorded: Bool
+        let filePath: [UInt8]?
+        let imports: Set<String>?
+        let enclosingTypes: [String]
+        let enclosingExtension: String?
+        let isSugared: Bool
+        let depth: Int
+    }
+
+    /// What `EnclosingLookups` keeps an owner for: the outermost name around a writer, how its file
+    /// reads it, and the lookup's depth, which its guards depend on. The file is its path's bytes,
+    /// as for `EnclosingCandidatesKey`, since which type the name means can go by its directory.
+    struct EnclosingOwnerKey: Hashable {
+        let outermost: String
+        let isSugared: Bool
+        let filePath: [UInt8]?
+        let imports: Set<String>?
+        let depth: Int
+    }
+
     /// A name `TypeLookup.typeWithSureKind` looks up for a writer whose own file does not bear on
     /// it (`TypeLookup.ownFileBears(on:_:)`): its candidates then depend on the writer's module, its
     /// imports, and the type a dotted name starts at there, alone (`SharedLookup`).

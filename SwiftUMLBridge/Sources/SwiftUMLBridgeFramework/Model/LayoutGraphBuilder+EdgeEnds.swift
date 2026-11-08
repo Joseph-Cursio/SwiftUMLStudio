@@ -62,9 +62,11 @@ extension LayoutGraphBuilder {
         /// The type each declaration's enclosing extension extends, once worked out
         /// (`enclosingExtensionType(of:depth:)`); `record` starts a new one.
         private(set) var enclosingTypes = EnclosingTypes()
-        /// The type each first component means, once worked out (`started(_:from:depth:)`);
-        /// `record` and a change of `unlistedMembers` start a new one.
+        /// The type each first component means (`started(_:from:depth:)`), and what names built on
+        /// the types around a writer take (`EnclosingLookups`), once worked out; `record` and a
+        /// change of `unlistedMembers` start new ones.
         private(set) var nameStarts = NameStarts()
+        private(set) var enclosingLookups = EnclosingLookups()
         /// The type each typealias comes to (`aliased(_:depth:readingModules:chain:)`).
         private(set) var aliasTargets = AliasWalks<Declared?>()
         /// The name each typealias comes to (`resolvedName(of:from:readingModules:depth:)`).
@@ -92,7 +94,7 @@ extension LayoutGraphBuilder {
         /// typealiases, by full name (`unlistedMembers(of:named:)`). Never what a name means:
         /// only whether an extension is of a project type goes by them.
         var unlistedMembers: [String: [Declared]] = [:] {
-            didSet { nameStarts = NameStarts(); forgetAliasWalks() }
+            didSet { forgetNameWalks() }
         }
         /// The names in `unlistedMembers` with a type declared in an extension among them
         /// (`fitsEachAlone(_:from:)`), so asking costs no scan of a name's many hidden types.
@@ -140,13 +142,14 @@ extension LayoutGraphBuilder {
             }
             enclosingTypes = EnclosingTypes()
             superclasses = EnclosingTypes()
-            nameStarts = NameStarts()
-            forgetAliasWalks()
+            forgetNameWalks()
         }
 
-        /// Starts the walks each typealias's target is kept from (`AliasWalks`) anew, as what one
-        /// comes to may change with what is recorded.
-        private mutating func forgetAliasWalks() {
+        /// Starts what is kept of a name's lookup anew, as what it means may change with what is
+        /// recorded: the starts, the types around writers, and each typealias's walk (`AliasWalks`).
+        private mutating func forgetNameWalks() {
+            nameStarts = NameStarts()
+            enclosingLookups = EnclosingLookups()
             aliasTargets = AliasWalks()
             aliasNameTargets = AliasWalks()
             aliasSureNames = AliasWalks()
@@ -358,19 +361,25 @@ extension LayoutGraphBuilder {
 
         /// The nearest candidate when one ranks in `scope`'s own file, found without the rest:
         /// `DeclarationScope.nearest` picks the first visible such, under any of `name`'s spellings.
+        /// A name built on the types around the writer that is not fitted alone takes it only when
+        /// the rest cannot change that (`mayAnswerAlone(_:builtOnTypesAround:depth:)`).
         func localNearest(_ name: QualifiedName, from scope: Scope, depth: Int) -> Declared? {
-            guard let filePath = scope.filePath, fitsEachAlone(name, from: scope) else { return nil }
+            let fitsAlone = fitsEachAlone(name, from: scope)
+            guard let filePath = scope.filePath, fitsAlone || name.root == .projectType else { return nil }
             let local = typesFirst(spellings(of: name).flatMap { typesForNameInFile[$0]?[filePath] ?? [] })
             guard !local.isEmpty else { return nil }
             let visible = local.filter { isVisible($0, from: scope, depth: depth) }
-            return fitting(visible, for: name, from: scope, depth: depth).first
+            guard let first = fitting(visible, for: name, from: scope, depth: depth).first else { return nil }
+            return fitsAlone || mayAnswerAlone(first, builtOnTypesAround: scope, depth: depth) ? first : nil
         }
 
         /// The types and typealiases recorded under any of `name`'s spellings (`spellings(of:)`)
-        /// that are visible from `scope` and that `name` can mean there.
+        /// that are visible from `scope` and that `name` can mean there (`enclosingCandidates`).
         func candidates(_ name: QualifiedName, from scope: Scope, depth: Int) -> [Declared] {
-            let visible = recorded(under: spellings(of: name)).filter { isVisible($0, from: scope, depth: depth) }
-            return fitting(visible, for: name, from: scope, depth: depth)
+            enclosingCandidates(name, from: scope, depth: depth) {
+                let visible = recorded(under: spellings(of: name)).filter { isVisible($0, from: scope, depth: depth) }
+                return fitting(visible, for: name, from: scope, depth: depth)
+            }
         }
 
         /// The types and typealiases recorded under any of `spellings`, types first.

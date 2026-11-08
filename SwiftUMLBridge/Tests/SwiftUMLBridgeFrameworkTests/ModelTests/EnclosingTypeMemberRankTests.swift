@@ -101,4 +101,98 @@ struct EnclosingTypeMemberRankTests {
         ]
         #expect(try enclosingWriterLines(files, mode: mode, reversed: false) == ["RCore <|-- Foo.W : inherits"])
     }
+
+    // MARK: What is kept is keyed by bytes
+
+    /// The directory ranking compares bytes, so what is kept for a writer must too: as strings the
+    /// two spellings of `café` are equal, and the second writer asked took the first's answer.
+    /// RLogin's extension is in `W1`'s directory alone, so only `W1` keeps it beside Core's public `X`.
+    @Test("composed and decomposed spellings of a writer's directory keep candidates of their own",
+          arguments: [false, true])
+    func candidatesKeyIsItsBytes(reversed: Bool) throws {
+        let writers: [Fixture.File] = [
+            ("/r/X/caf\u{E9}/W.swift", "extension Foo { class W1: X {} }"),
+            ("/r/X/cafe\u{301}/W.swift", "extension Foo { class W2: X {} }")
+        ]
+        let files: [Fixture.File] = [
+            ("/r/Core/Foo.swift", """
+            public struct Foo { public typealias X = RCore; public init() {} }
+            open class RCore { public init() {} }
+            """),
+            ("/r/X/caf\u{E9}/E.swift", "extension Foo { typealias X = RLogin }\nclass RLogin {}")
+        ] + (reversed ? writers.reversed() : writers)
+        #expect(try enclosingWriterLines(files, mode: .all, reversed: false) == [
+            "RLogin <|-- Foo.W1 : inherits", "RCore <|-- Foo.W2 : inherits"
+        ])
+    }
+
+    /// The same for the type around each writer: each `extension Foo` extends the `Foo` in its own
+    /// spelling of `café`, so `W1` means A's `X` and `W2` B's.
+    @Test("composed and decomposed spellings of a writer's directory keep the type around it apart",
+          arguments: [false, true])
+    func ownerKeyIsItsBytes(reversed: Bool) throws {
+        let writers: [Fixture.File] = [
+            ("/r/X/caf\u{E9}/W.swift", "extension Foo { class W1: X {} }"),
+            ("/r/X/cafe\u{301}/W.swift", "extension Foo { class W2: X {} }")
+        ]
+        let files: [Fixture.File] = [
+            ("/r/X/caf\u{E9}/A/Foo.swift", "struct Foo { typealias X = RA }\nclass RA {}"),
+            ("/r/X/cafe\u{301}/B/Foo.swift", "struct Foo { typealias X = RB }\nclass RB {}"),
+            ("/r/Z/E.swift", "extension Foo { class X {} }")
+        ] + (reversed ? writers.reversed() : writers)
+        #expect(try enclosingWriterLines(files, mode: .all, reversed: false) == [
+            "RA <|-- Foo.W1 : inherits", "RB <|-- Foo.W2 : inherits"
+        ])
+    }
+
+    // MARK: Cost
+
+    /// A directory's layout, `count` times: in `namespace`, each directory adds `NS.X` and writes
+    /// `class W: X` inside `extension NS`, where the alias in its own file is the one meant; in
+    /// `issue`, each copies `writerInsideOwnExtension`, where only the rest tell the alias in the
+    /// writer's file from its own `Foo`'s, with five writers.
+    private static func manyDirectories(_ layout: String, count: Int) -> [Fixture.File] {
+        guard layout == "issue" else {
+            return [("/r/Sources/Root/NS.swift", "enum NS {}")] + (0..<count).map { index in
+                ("/r/Sources/D\(index)/E.swift", """
+                extension NS { typealias X = R\(index) }
+                class R\(index) {}
+                extension NS { class W\(index): X {} }
+                """)
+            }
+        }
+        return (0..<count).flatMap { index -> [Fixture.File] in
+            let writers = (0..<5).map { "class W\(index)x\($0): X {}" }.joined(separator: "\n")
+            return [
+                ("/r/D\(index)/A/Foo.swift", "public struct Foo { public init() {} }\npublic typealias AF = Foo"),
+                ("/r/D\(index)/B/Foo.swift", "struct Foo { typealias X = RB\(index) }\nclass RB\(index) {}"),
+                ("/r/D\(index)/B/E.swift", """
+                extension AF { typealias X = RE\(index) }
+                class RE\(index) {}
+                extension Foo {
+                \(writers)
+                }
+                """)
+            ]
+        }
+    }
+
+    /// Fitted by the whole set, each lookup of such a name scanned every same-named extension's
+    /// member and looked the type around the writer up anew, so the cost grew with the square of the
+    /// directories. In `namespace`, the alias in the writer's own file, a member of its type, again
+    /// answers alone, which took it from 11 s of CPU in a debug build to half a second, as main.
+    /// In `issue`, where only the rest decide, the writer's type and a scope's candidates are kept,
+    /// which took it from 5 s to 1.2 s, as main, which also grows with the square there; without
+    /// just one of them it takes about twice as long, too near a slow runner's time to bound.
+    @Test("many writers inside extensions among many same-named members cost about a lookup each",
+          arguments: [("namespace", 1000, 2.0), ("issue", 150, 3.0)])
+    func manyDirectoriesCostALookupEach(layout: String, count: Int, limit: Double) throws {
+        let items = try Fixture.parsed(Self.manyDirectories(layout, count: count))
+        let configuration = Configuration(elements: ElementOptions(), format: .plantuml)
+        var text = ""
+        let seconds = ThreadCPUClock.seconds { text = DiagramScript(items: items, configuration: configuration).text }
+        #expect(seconds < limit, "\(seconds)")
+        let expected = layout == "issue" ? "RB7 <|-- Foo.W7x0 : inherits" : "R7 <|-- NS.W7 : inherits"
+        #expect(text.contains(expected))
+    }
 }
