@@ -27,6 +27,13 @@ extension LayoutGraphBuilder {
         let extended: ExtensionTarget?
         /// For a typealias, the name of the type it aliases, looked up from its own scope (#125).
         let aliasTarget: String?
+        /// For a class, the first type its inheritance clause names, without generic arguments,
+        /// looked up from its own scope: its superclass, when that is a class
+        /// (`TypeLookup.superclass(of:depth:)`).
+        let superclassName: String?
+        /// Whether the declaration itself is `private`: a member so declared is seen only inside
+        /// the type, and never through a subclass (`TypeLookup.inheritedMember`).
+        let isPrivate: Bool
         /// For an extension or a typealias, `SyntaxStructure.isSugared`: its name, or its
         /// `aliasTarget`, is a standard-library type's, whatever the project declares (#126).
         let isSugared: Bool
@@ -52,6 +59,9 @@ extension LayoutGraphBuilder {
             self.kind = kind
             isExtension = kind == .extension
             aliasTarget = kind == .typealias ? item.typename : nil
+            superclassName = kind == .class
+                ? item.inheritedTypes?.first?.name.map { $0.removeAngleBracketsWithContent() } : nil
+            isPrivate = item.accessibility == .private
             isSugared = item.isSugared
             scope = Scope(of: item, in: container)
             // Extensions are top level, so a chain holds at most one, last.

@@ -255,15 +255,15 @@ struct SharedLookupFileTests {
 
     /// Only reading a first component as a module goes by the writer's file, so where no module has
     /// its name, a file that declares it shares, or each of its writers looks through every rival.
+    /// `Parent` declares no `P`: one it did would be the member `Outer.P` means, which no rival's
+    /// answer is (#250).
     @Test("writers in a file declaring a first component no module is named after still share")
     func ownFirstComponentNamingNoModuleShares() throws {
         let files: [(module: String?, source: String)] = [
             (nil, "public enum Outer {\n    public typealias P = Q\n}\npublic protocol Q {}"),
             (nil, """
             protocol R {}
-            class Parent {
-                typealias P = R
-            }
+            class Parent {}
             class Outer: Parent {}
             struct W1: Outer.P {}
             struct W2: Outer.P {}

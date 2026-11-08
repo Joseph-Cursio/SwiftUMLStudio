@@ -56,7 +56,11 @@ extension LayoutGraphBuilder {
             let name = lookup.qualifiedName(ofWritten: written, from: scope)
             let (type, kindIsSure) = lookup.typeWithSureKind(name, from: scope, kinds: aliasKinds)
             guard let type else {
-                return (fallback(named: name.name, resolving: lookup.sureResolvedName(of: name, from: scope)), false)
+                let end = fallback(
+                    named: name.name, resolving: lookup.sureResolvedName(of: name, from: scope),
+                    throughInheritedAlias: lookup.meansInheritedAlias(name, from: scope)
+                )
+                return (end, false)
             }
             return (node(for: type, named: name.name), type.kind == .protocol && (kindIsSure || type.nodeId != nil))
         }
@@ -68,7 +72,10 @@ extension LayoutGraphBuilder {
             case .named(let written, let scope):
                 let name = lookup.qualifiedName(ofWritten: written, from: scope)
                 guard let type = lookup.type(name, from: scope) else {
-                    return fallback(named: name.name, resolving: lookup.sureResolvedName(of: name, from: scope))
+                    return fallback(
+                        named: name.name, resolving: lookup.sureResolvedName(of: name, from: scope),
+                        throughInheritedAlias: lookup.meansInheritedAlias(name, from: scope)
+                    )
                 }
                 return node(for: type, named: name.name)
             case .declaration(let declaration, let name, let scope):
@@ -134,11 +141,15 @@ extension LayoutGraphBuilder {
         /// name a typealias takes ends only on an extension equally unsure of its type, and a
         /// dotted one, like a module-first name, is trusted as written, as it is anywhere else.
         /// An extension of a type the reference cannot see, a hidden `fileprivate` one, say,
-        /// extends something else and never stands in.
-        private func fallback(named name: String, resolving resolved: @autoclosure () -> String?) -> String? {
+        /// extends something else and never stands in. A name that means a typealias a superclass
+        /// declares, `Outer.P` after `class Parent { typealias P = CustomStringConvertible }` and
+        /// `class Outer: Parent {}`, is taken by that typealias (`throughInheritedAlias`, #250).
+        private func fallback(
+            named name: String, resolving resolved: @autoclosure () -> String?, throughInheritedAlias: Bool = false
+        ) -> String? {
             let spelled = extensionEnds.ends(named: name, in: lookup)
             let first = String(name.prefix { $0 != "." })
-            let isAlias = lookup.namesTypealias(name)
+            let isAlias = throughInheritedAlias || lookup.namesTypealias(name)
             let startsAtAlias = isAlias || first != name && lookup.namesTypealias(first)
             if !startsAtAlias, let fallback = spelled.fallback { return fallback }
             guard startsAtAlias || lookup.mayReadModule(name) else {

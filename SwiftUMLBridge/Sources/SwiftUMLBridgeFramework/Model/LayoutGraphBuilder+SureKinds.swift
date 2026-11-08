@@ -49,7 +49,18 @@ extension LayoutGraphBuilder.TypeLookup {
         kinds: LayoutGraphBuilder.AliasKinds
     ) -> SureKindLookup {
         let name = started(written, from: scope, depth: depth)
-        // The writer's own candidate is the nearest, and surely the one it means.
+        // A member a superclass declares is the one declaration the name means, as is the writer's
+        // own candidate, the nearest.
+        switch inheritedLookup(name, from: scope, depth: depth) {
+        case .member(let inherited)?:
+            return .through(inherited) { resolved in
+                resolved.type?.kind == .protocol ? resolved : (resolved.type, true)
+            }
+        case .hidden?:
+            return .answer((nil, true))
+        case nil:
+            break
+        }
         if let local = localNearest(name, from: scope, depth: depth),
            !unlistedMemberShadows(local, named: name, from: scope, depth: depth) {
             return .through(local) { resolved in
