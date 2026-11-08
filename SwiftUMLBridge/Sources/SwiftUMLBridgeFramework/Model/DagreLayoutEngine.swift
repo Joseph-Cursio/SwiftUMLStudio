@@ -110,7 +110,7 @@ public struct DagreLayoutEngine: Sendable {
         (function() {
             var Graph = graphre.graphlib.Graph;
             var layout = graphre.layout;
-            var graph = new Graph({ directed: true, compound: \(isCompound), multigraph: false });
+            var graph = new Graph({ directed: true, compound: \(isCompound), multigraph: true });
             graph.setGraph({ rankdir: "TB", nodesep: \(nodeSpacing), ranksep: \(nodeSpacing),
                 marginx: \(canvasMargin), marginy: \(canvasMargin) });
             graph.setDefaultEdgeLabel(function() { return {}; });
@@ -149,14 +149,27 @@ public struct DagreLayoutEngine: Sendable {
         return result
     }
 
+    /// Emits `setEdge` for each edge, named by `edgeName(of:)` in a multigraph. With one edge
+    /// a pair of nodes, the second edge between them replaced the first, so a nested protocol
+    /// its parent conforms to (`struct Foo: Foo.Base { protocol Base {} }`) lost its
+    /// conformance arrow, which PlantUML and nomnoml draw beside the nesting one (#249).
     private static func buildEdgeStatements(for graph: LayoutGraph) -> String {
         var result = ""
         for (idx, edge) in graph.edges.enumerated() {
             let source = jsStringLiteral(nodeIdPrefix + edge.sourceId)
             let target = jsStringLiteral(nodeIdPrefix + edge.targetId)
-            result += "    graph.setEdge(\(source), \(target), { id: \"e\(idx)\" });\n"
+            let name = jsStringLiteral(edgeName(of: edge))
+            result += "    graph.setEdge(\(source), \(target), { id: \"e\(idx)\" }, \(name));\n"
         }
         return result
+    }
+
+    /// What dagre tells apart the edges between one pair of nodes by: the edge's style and
+    /// label. Two edges that differ in either are routed apart, side by side; two that match in
+    /// both are drawn alike, so they share one route as before, and the first gets it.
+    static func edgeName(of edge: LayoutEdge) -> String {
+        // No style holds a `:`, so a name with a label never equals one without.
+        edge.label.map { "\(edge.style.rawValue):\($0)" } ?? edge.style.rawValue
     }
 
     /// Renders `value` as a JavaScript string literal, quotes included, that
@@ -195,7 +208,7 @@ public struct DagreLayoutEngine: Sendable {
             graph.edges().forEach(function(e) {
                 var edge = graph.edge(e);
                 if (edge && edge.points) {
-                    edges.push({ source: e.v, target: e.w,
+                    edges.push({ source: e.v, target: e.w, name: e.name,
                         points: edge.points.map(function(p) { return { x: p.x, y: p.y }; }) });
                 }
             });
@@ -252,28 +265,39 @@ public struct DagreLayoutEngine: Sendable {
         }
     }
 
-    /// Routes dagre's edge points onto the matching `LayoutEdge`s.
+    /// Routes dagre's edge points onto the matching `LayoutEdge`s: each route onto the first
+    /// edge with its ends and name (`edgeName(of:)`). An edge that matches an earlier one in all
+    /// three shares its route, so it is left without points, and the renderers skip it.
     private static func applyEdgePoints(
         _ edgesArray: [[String: Any]], to result: inout LayoutGraph
     ) {
+        var firstEdge: [RouteKey: Int] = [:]
+        for idx in result.edges.indices {
+            let edge = result.edges[idx]
+            let key = RouteKey(
+                source: nodeIdPrefix + edge.sourceId, target: nodeIdPrefix + edge.targetId, name: edgeName(of: edge)
+            )
+            if firstEdge[key] == nil { firstEdge[key] = idx }
+        }
         for edgeInfo in edgesArray {
             guard let source = edgeInfo["source"] as? String,
                   let target = edgeInfo["target"] as? String,
-                  let points = edgeInfo["points"] as? [[String: Double]] else { continue }
+                  let name = edgeInfo["name"] as? String,
+                  let points = edgeInfo["points"] as? [[String: Double]],
+                  let idx = firstEdge[RouteKey(source: source, target: target, name: name)] else { continue }
 
-            let layoutPoints = points.compactMap { point -> LayoutPoint? in
+            result.edges[idx].points = points.compactMap { point -> LayoutPoint? in
                 guard let posX = point["x"], let posY = point["y"] else { return nil }
                 return LayoutPoint(posX: posX, posY: posY)
             }
-
-            for idx in result.edges.indices
-            where nodeIdPrefix + result.edges[idx].sourceId == source
-                && nodeIdPrefix + result.edges[idx].targetId == target
-                && result.edges[idx].points.isEmpty {
-                result.edges[idx].points = layoutPoints
-                break
-            }
         }
+    }
+
+    /// The dagre edge a route belongs to: its two prefixed node ids and its name.
+    private struct RouteKey: Hashable {
+        let source: String
+        let target: String
+        let name: String
     }
 
     /// Converts the `clusters` JSON dictionary from a compound-graph layout
