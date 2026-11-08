@@ -78,9 +78,11 @@ struct ExtensionMemberRankTests {
         }
     }
 
-    /// A name built on the extension around the writer does reach the memo the text formats share,
-    /// which keeps an answer per directory: three writers each, so a later one reads the first's.
-    @Test("writers inside an extension share an answer within a directory, not across them",
+    /// Three writers inside `extension Outer` in each directory. A name built on the extension
+    /// around them, with an extension's member among its candidates, is fitted by what the whole
+    /// set holds, so it takes no answer the text formats keep for another writer (#252): no writer
+    /// reads another directory's.
+    @Test("writers inside an extension take their own directory's alias, not another's",
           arguments: [false, true])
     func sharedMemoKeepsDirectoriesApart(reversed: Bool) throws {
         func writers(_ directory: String) -> [Fixture.File] {
@@ -287,27 +289,6 @@ struct ExtensionMemberRankTests {
         let files = [Self.nestedVendored, Self.nestedOwn, Self.nestedExtension]
         #expect(supertypeLines(in: try Fixture.lines(files, .plantuml, ElementOptions(showExtensions: mode))) == [
             "RV <|-- W : inherits"
-        ])
-    }
-
-    /// Known wrong: `X` here is built on the `extension Foo` around `W`, B's `Foo`, so RB is meant.
-    /// A name so built does not ask whose member a candidate is, whether it ranks in `W`'s file, as
-    /// here, or only near it, and RE's alias belongs to A's `Foo`. Main has it right, since RE's
-    /// alias ranked in A's file there.
-    @Test("known wrong: a writer inside an extension takes an alias near it added to another same-named type",
-          arguments: [ExtensionVisualization.all, .merged])
-    func writerInsideOwnExtension(mode: ExtensionVisualization) throws {
-        let files: [Fixture.File] = [
-            ("/r/Sources/A/Foo.swift", "public struct Foo { public init() {} }\npublic typealias AF = Foo"),
-            ("/r/Sources/B/Foo.swift", "struct Foo { typealias X = RB }\nclass RB {}"),
-            ("/r/Sources/B/E.swift", """
-            extension AF { typealias X = RE }
-            class RE {}
-            extension Foo { class W: X {} }
-            """)
-        ]
-        #expect(supertypeLines(in: try Fixture.lines(files, .plantuml, ElementOptions(showExtensions: mode))) == [
-            "RE <|-- Foo.W : inherits"
         ])
     }
 
