@@ -148,6 +148,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   aliases, and for an alias of sugar such as `[Int]`. Two enclosing types
   that each give `Array` a different meaning no longer share an answer.
   Without `--package`, the name is still read as written.
+- **A chain of typealiases is followed to its end, however long** (#248).
+  Each alias in a chain used up a level of the lookup's depth limit of 8, so
+  `struct W: A9 {}` after nine aliases from `A1 = P1` to `A9 = A8` stopped
+  partway. The text formats drew an `inherits` edge to an undeclared `A1`,
+  SVG drew no edge, and `sequence`/`activity --entry` found nothing past 9 or
+  10 links. Steps along a chain no longer count against the limit, and a
+  cycle of aliases, which Swift rejects, ends where it comes back to an alias
+  it has followed. The chain is walked in a loop rather than one nested call
+  per alias, so a chain of thousands of links doesn't overflow the stack.
+  What each alias leads to is remembered, so a thousand writers along one
+  chain walk it once. When the
+  walk checks whether an extension's type is the project's, a name that
+  several readings lead to is judged once, so a chain whose links each read
+  two ways (as with nested types hidden) no longer takes time that doubles
+  with each link. This holds across files and modules, inside enclosing
+  types, for module-qualified and sugared links, for dotted names and
+  extensions spelled through a chain, and for `--entry` names whose every
+  alias reads one more dotted part. A chain whose every link reads a member
+  through the alias before it (`typealias A2 = A1.X`) still stops after
+  about 8 links, as before.
 
 ### Fixed — Studio
 
