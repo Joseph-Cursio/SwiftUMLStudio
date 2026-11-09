@@ -245,16 +245,26 @@ extension LayoutGraphBuilder.TypeLookup {
         guard candidates.count > 1 else { return candidates }
         let opensSPI = scope.imports?.contains(ImportExtractor.spiImport) == true
         var shadowed: Set<String> = []
+        // What re-exporters the file names in a scoped import, `import class ModX.Base`, re-export:
+        // that import names their own type, so a direct import does not lift their shadowing.
+        var shadowedByScoped: Set<String> = []
         for candidate in candidates where candidate.scope.module != scope.module && !candidate.isConditional
             && candidate.unavailability != .everyBuild && (!candidate.isSPIInEveryBuild || opensSPI) {
-            shadowed.formUnion(candidate.scope.reexports ?? [])
+            let reexports = candidate.scope.reexports ?? []
+            shadowed.formUnion(reexports)
+            if let module = candidate.scope.module,
+               scope.imports?.contains("\(modules.writtenName(of: module)).\(name)") == true {
+                shadowedByScoped.formUnion(reexports)
+            }
         }
         guard !shadowed.isEmpty else { return candidates }
         return candidates.filter { candidate in
             guard let module = candidate.scope.module, module != scope.module else { return true }
             let written = modules.writtenName(of: module)
             let direct = ModuleReexports.directImportPrefix
-            if scope.imports?.contains(direct + written) == true || scope.imports?.contains(direct + module) == true {
+            let isScopedOver = shadowedByScoped.contains(module) || shadowedByScoped.contains(written)
+            if !isScopedOver,
+               scope.imports?.contains(direct + written) == true || scope.imports?.contains(direct + module) == true {
                 return true
             }
             return !shadowed.contains(module) && !shadowed.contains(written) && !shadowed.contains("\(written).\(name)")

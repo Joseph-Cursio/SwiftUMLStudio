@@ -98,6 +98,10 @@ struct ReexportShadowingTests {
             base("ModA", "aOnly"), reexporter("ModX", of: "ModA", "xOnly"),
             writer("import ModX\nimport class ModA.Base\n")
         ], member: "aOnly", hiddenLabel: nil),
+        Case(name: "a scoped import of the re-exporter's type wins over a direct import of the other", files: [
+            base("ModA", "aOnly"), reexporter("ModX", of: "ModA", "xOnly"),
+            writer("import ModX\nimport ModA\nimport class ModX.Base\n")
+        ], member: "xOnly", hiddenLabel: nil),
         Case(name: "through a chain of re-exports, the nearest declaring module's type", files: [
             base("ModA", "aOnly"), reexporter("ModX", of: "ModA", "xOnly"),
             File(module: "Top", source: "@_exported import ModX\n"), writer("import Top\n")
