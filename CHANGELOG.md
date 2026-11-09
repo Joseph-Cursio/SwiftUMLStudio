@@ -35,6 +35,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed — Bridge
 
+- **With `--package`, a bare name seen in two targets follows Swift's shadowing by
+  re-export and by availability, not read order** (#200). A target's own type
+  shadows a same-named one of a target it re-exports: in a file that imports
+  ModX, which has `@_exported import ModA` and its own `Base`, `class C: Base`
+  now ends on ModX's `Base`, through a chain of re-exports too, and for a
+  typealias or the first component of `Foo.V`. An available type shadows
+  another target's marked `@available(..., unavailable)`, as a stub
+  `@available(*, unavailable, renamed: "NewBase")` is: in a file that imports
+  that target and another with its own `Base`, `Base` is the other's. A mark for
+  one platform alone or under an `#if` counts too. As in Swift, the writer's own
+  target, a scoped import and a re-exporter each shadow first, unavailable or
+  not, and a member such as `Foo.X` is never shadowed by availability. Without
+  `--package` no file has a target, so neither rule applies.
 - **An edge through a typealias of a type outside the diagram ends on an
   extension of that type, not on the first of that spelling** (#231). Each
   target can have its own `typealias Base`, and each target's
