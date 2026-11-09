@@ -219,6 +219,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   targets, and files a package excludes all defeat it. Still wrong with
   `--package`: when the writer's `Foo` has an `X` but the writer's own
   module adds a nearer one to another `Foo`, the edge ends on that one.
+- **A public member an extension in the type's own file adds comes before a
+  sibling directory's, without `--package`** (#253). With Core's `extension
+  Foo { public typealias X = RCore }` in `Foo`'s own file, `class W: Foo.X {}`
+  in `Features/Profile` took the `X` that `Features/Login`'s extension adds,
+  nearest by directory, though `Profile` cannot see it. That file is compiled
+  wherever `Foo` is, so every file that sees `Foo` sees the member, and a
+  file that saw a second `Foo.X` would not compile. So it now comes first, as
+  a `public` member of `Foo`'s body already did. That holds in every format,
+  in `deps --types` and the typealiases sequence and activity follow, and for
+  a bare `X` written inside `extension Foo`. The member must be `public` once
+  capped by the type it extends, not `@_spi`, and not inside an `#if`, and
+  no other type may share `Foo`'s name, as then which `Foo` the writer means
+  is itself a guess. Still wrong without
+  `--package`: #253's own layout, with Core's extension in a file of its own
+  beside `Foo`'s. Another file in `Foo`'s directory can belong to another
+  target, in an Xcode project or through a package's `sources:` and
+  `exclude:`, and reading the directory as `Foo`'s module turned right
+  answers wrong there.
 
 ### Fixed — Studio
 
