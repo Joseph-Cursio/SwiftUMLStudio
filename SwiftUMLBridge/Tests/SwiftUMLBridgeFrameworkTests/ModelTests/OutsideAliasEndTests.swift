@@ -5,8 +5,9 @@ import Testing
 /// Two extensions can share a spelling and extend different types outside the diagram, as each
 /// target has its own typealiases. An edge ended on the first drawn extension of that spelling,
 /// whatever its own alias came to, so which box it reached depended on read order (#231). Every
-/// source passes `swift build` as a SwiftPM package, with `Real` in `targetSpelledLikeAnotherAlias`
-/// declared in a target `Out` that the diagram does not read.
+/// source passes `swift build` as a SwiftPM package, with `Real` in `targetSpelledLikeAnotherAlias`,
+/// and `First` and `Second` in the dotted names', declared in a target `Out` that the diagram does
+/// not read.
 @Suite("An edge through a typealias ends only on an extension of the type the alias comes to")
 struct OutsideAliasEndTests {
     private typealias Files = [(module: String?, source: String)]
@@ -24,12 +25,12 @@ struct OutsideAliasEndTests {
         class U: Base {}
         """
 
-    private func graph(_ items: [SyntaxStructure], _ mode: ExtensionVisualization) -> LayoutGraph {
+    func graph(_ items: [SyntaxStructure], _ mode: ExtensionVisualization) -> LayoutGraph {
         let configuration = Configuration(elements: ElementOptions(showExtensions: mode), format: .svg)
         return LayoutGraphBuilder.buildClassDiagram(from: items, configuration: configuration)
     }
 
-    private func script(
+    func script(
         _ items: [SyntaxStructure], _ format: DiagramFormat, _ mode: ExtensionVisualization = .all
     ) -> String {
         let configuration = Configuration(elements: ElementOptions(showExtensions: mode), format: format)
@@ -37,7 +38,7 @@ struct OutsideAliasEndTests {
     }
 
     /// Each file parsed as a directory-mode run parses it: no module, in a directory of its own.
-    private func directoryItems(_ files: [(directory: String, source: String)]) throws -> [SyntaxStructure] {
+    func directoryItems(_ files: [(directory: String, source: String)]) throws -> [SyntaxStructure] {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: root) }
         var urls: [(url: URL, module: String?)] = []

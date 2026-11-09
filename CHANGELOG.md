@@ -94,10 +94,53 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   no longer ends on that alias's extension, nor does a name in an extension
   of an outside type, as `Sendable` in `extension Date`, on another target's
   `extension Sendable` of something else. Both of those edges are now left
-  out, as a drawn box has the name they would be written to. Still open: a
-  dotted name through an alias of a type outside the diagram, as `Base.Inner`
-  after `typealias Base = First`, resolves to its spelling, so it ends on the
-  first such box and `--merge-extensions` merges them.
+  out, as a drawn box has the name they would be written to. A dotted name
+  through an alias of a type outside the diagram is followed too, with
+  `--package` since #247's fix below and now without it: with
+  `typealias Base = First` and `extension Base.Inner` in ModA, and
+  `typealias Base = Second` and `extension Base.Inner` in ModB, ModB's
+  `struct U: Base.Inner` ends on ModB's box, and `--merge-extensions` keeps
+  the two boxes apart, where without `--package` it merged them. With no
+  `Base.Inner` extension in ModB, the edge is written to `Second.Inner`, as a
+  node of its own. `extension Day.FormatStyle` after `typealias Day = Date`
+  merges with `extension Date.FormatStyle` without `--package` too, and the
+  call graphs file a method of `extension Base.Inner` under `Second.Inner`, as
+  they file a whole alias's. Without `--package`, the name is still read as
+  written when it comes to a member the project itself declares, as
+  `extension Second { protocol Inner {} }` does. With or without it, the name
+  is read as written inside an extension of a type outside the diagram, as
+  `extension Host`, whose own member `Base` may be, as the SVG already read
+  it; with `--package` the text formats had written it to `First.Inner`, or,
+  with an `extension First.Inner` drawn, left the edge out. An alias's dotted
+  target written there, as `typealias Base = Second.Inner` in
+  `extension Host`, is now read the same way, in the SVG too. A `Base` the
+  project itself declares there, as a `typealias Base = First` in its own
+  `extension Host`, is still followed, as Swift rejects the name as ambiguous
+  were Host to have one too. Read as written, the edge is left out when a
+  drawn box has that name, as `Array.V` does beside
+  `extension [Int] { class V {} }` after `typealias Array = First`, where the
+  text formats with `--package` had written `First.V`. The call graphs,
+  which see no enclosing type, follow it there anyway, as they do a whole
+  alias. Without `--package`, nothing says which directories a file sees, so
+  another directory's alias of the same name as the target, as a
+  `typealias Second = First` beside ModA's extension, may be followed instead,
+  and the edge can end on that directory's `extension First.Inner`, as it does
+  for a whole alias.
+- **A dotted name whose first component is a typealias declared inside a type
+  ends on the extension of the member it comes to.** With
+  `extension First.Inner` drawn,
+  `struct Mine { typealias Base = First; class X: Base.Inner {} }` lost
+  `X`'s edge in every format, with or without `--package`: the SVG's end for
+  a type outside the diagram followed only an alias recorded under its own
+  name, where `Mine`'s is recorded as `Mine.Base`, and the text formats left
+  the edge out as the graph's. With an `extension Base.Inner` of another
+  type drawn, the edge ended on that box instead. It now ends on
+  `First.Inner`'s box everywhere, as it does for a `typealias Base = First`
+  at file scope, and so does one through an alias in the project's own
+  extension of a type outside the diagram, in a type around the writer, or
+  in a project superclass, as `P.Inner` in a subclass of
+  `class Parent { typealias P = First }`. A name that spells out the alias's
+  type, as `Mine.Base.Inner`, still ends on no box.
 - **With nested types hidden, an extension of a nested type is judged by the
   nearest one, not the first read** (#232). With `showNestedTypes: false`,
   whether `extension Box.Inner.Stamp` extends a project type took the first
@@ -191,7 +234,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   whether it is at file scope or in an enclosing type, through a chain of
   aliases, and for an alias of sugar such as `[Int]`. Two enclosing types
   that each give `Array` a different meaning no longer share an answer.
-  Without `--package`, the name is still read as written.
+  Inside an extension of a type outside the diagram, where `Array` may be
+  that type's member, the name is read as written (#231's follow-up above),
+  so with the `V` of `extension [Int]` drawn, the edge is left out.
+  Without `--package` it is followed too since #231's follow-up above, except
+  to a member the project declares, as an `extension Date { typealias V = P2 }`
+  would; such a name is still read as written.
 - **A chain of typealiases is followed to its end, however long** (#248).
   Each alias in a chain used up a level of the lookup's depth limit of 8, so
   `struct W: A9 {}` after nine aliases from `A1 = P1` to `A9 = A8` stopped

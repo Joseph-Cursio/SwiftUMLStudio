@@ -12,6 +12,16 @@ extension LayoutGraphBuilder.TypeLookup {
         aliasNames.contains(name)
     }
 
+    /// Whether the first component of the dotted name `name`, written in `scope`, means a
+    /// typealias there, as one declared inside a type does, which `namesTypealias(_:)` cannot
+    /// tell: it is recorded under its type's name, as `Mine.Base` for
+    /// `struct Mine { typealias Base = First }`, where `Base.Inner` is `First.Inner`.
+    func startsAtTypealias(_ name: LayoutGraphBuilder.QualifiedName, from scope: LayoutGraphBuilder.Scope) -> Bool {
+        guard name.root == .asWritten, let dot = name.name.firstIndex(of: ".") else { return false }
+        let first = qualifiedName(ofWritten: String(name.name[..<dot]), from: scope)
+        return nearestMatch(first, from: scope, depth: 0)?.declared.aliasTarget != nil
+    }
+
     /// `resolvedName(of:from:depth:)` when the type the name comes to is sure, else `nil`. Swift
     /// looks a name written inside an extension of a type outside the diagram up among that
     /// type's members first, which the lookup cannot see, so a name, or an alias's target,
@@ -32,7 +42,7 @@ extension LayoutGraphBuilder.TypeLookup {
         let resolved: String?
         while true {
             let match = nearestMatch(name, from: scope, depth: depth)
-            if match == nil, name.root == .asWritten, mayMeanOutsideMember(from: scope, depth: depth) {
+            if match == nil, mayStartAtOutsideMember(name, from: scope, depth: depth) {
                 resolved = nil
                 break
             }
@@ -59,6 +69,21 @@ extension LayoutGraphBuilder.TypeLookup {
             aliasSureNames.record(resolved, for: alias, depth: depth, readingModules: true)
         }
         return resolved
+    }
+
+    /// Whether `name`, written in `scope`, may start at a member of a type outside the diagram
+    /// (`mayMeanOutsideMember(from:depth:)`), unless its first component means a type or
+    /// typealias the project declares inside a type, which it sees only as a member of a type
+    /// around it: `Base` in the project's own `extension Host { typealias Base = First }`. Swift
+    /// rejects such a name as ambiguous when the outside type has a `Base` too, so in code that
+    /// builds it is the project's.
+    func mayStartAtOutsideMember(
+        _ name: LayoutGraphBuilder.QualifiedName, from scope: LayoutGraphBuilder.Scope, depth: Int
+    ) -> Bool {
+        guard name.root == .asWritten, mayMeanOutsideMember(from: scope, depth: depth) else { return false }
+        let first = qualifiedName(ofWritten: String(name.name.prefix { $0 != "." }), from: scope, depth: depth + 1)
+        guard let match = nearestMatch(first, from: scope, depth: depth + 1) else { return true }
+        return match.declared.scope.enclosingTypes.isEmpty
     }
 
     /// Whether a name written in `scope` may be a member of a type outside the diagram: it is
