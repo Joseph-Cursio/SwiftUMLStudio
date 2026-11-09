@@ -103,11 +103,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   the two boxes apart, where without `--package` it merged them. With no
   `Base.Inner` extension in ModB, the edge is written to `Second.Inner`, as a
   node of its own. `extension Day.FormatStyle` after `typealias Day = Date`
-  merges with `extension Date.FormatStyle` without `--package` too. Without
-  `--package`, nothing says which directories a file sees, so an alias of the
-  first component's target in another directory, as a `typealias Second =
-  First` beside ModA's extension, is still followed, and the edge can end on
-  that directory's `extension First.Inner`, as it does for a whole alias.
+  merges with `extension Date.FormatStyle` without `--package` too, and the
+  call graphs file a method of `extension Base.Inner` under `Second.Inner`, as
+  they file a whole alias's. Without `--package`, the name is still read as
+  written when it comes to a member the project itself declares, as
+  `extension Second { protocol Inner {} }` does, and inside an extension of a
+  type outside the diagram, whose own member `Base` may be. The call graphs,
+  which see no enclosing type, follow it there anyway, as they do a whole
+  alias. Without `--package`, nothing says which directories a file sees, so
+  another directory's alias of the same name as the target, as a
+  `typealias Second = First` beside ModA's extension, may be followed instead,
+  and the edge can end on that directory's `extension First.Inner`, as it does
+  for a whole alias.
 - **With nested types hidden, an extension of a nested type is judged by the
   nearest one, not the first read** (#232). With `showNestedTypes: false`,
   whether `extension Box.Inner.Stamp` extends a project type took the first
@@ -201,7 +208,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   whether it is at file scope or in an enclosing type, through a chain of
   aliases, and for an alias of sugar such as `[Int]`. Two enclosing types
   that each give `Array` a different meaning no longer share an answer.
-  Without `--package`, the name is still read as written.
+  Without `--package` it is followed too since #231's follow-up above, except
+  to a member the project declares, as an `extension Date { typealias V = P2 }`
+  would; such a name is still read as written.
 - **A chain of typealiases is followed to its end, however long** (#248).
   Each alias in a chain used up a level of the lookup's depth limit of 8, so
   `struct W: A9 {}` after nine aliases from `A1 = P1` to `A9 = A8` stopped
