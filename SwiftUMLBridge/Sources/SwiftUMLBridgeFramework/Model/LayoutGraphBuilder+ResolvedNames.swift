@@ -32,7 +32,7 @@ extension LayoutGraphBuilder.TypeLookup {
         let resolved: String?
         while true {
             let match = nearestMatch(name, from: scope, depth: depth)
-            if match == nil, name.root == .asWritten, mayMeanOutsideMember(from: scope, depth: depth) {
+            if match == nil, mayStartAtOutsideMember(name, from: scope, depth: depth) {
                 resolved = nil
                 break
             }
@@ -61,10 +61,25 @@ extension LayoutGraphBuilder.TypeLookup {
         return resolved
     }
 
+    /// Whether `name`, written in `scope`, may start at a member of a type outside the diagram
+    /// (`mayMeanOutsideMember(from:depth:)`), unless its first component means a type or
+    /// typealias the project declares inside a type, which it sees only as a member of a type
+    /// around it: `Base` in the project's own `extension Host { typealias Base = First }`. Swift
+    /// rejects such a name as ambiguous when the outside type has a `Base` too, so in code that
+    /// builds it is the project's.
+    func mayStartAtOutsideMember(
+        _ name: LayoutGraphBuilder.QualifiedName, from scope: LayoutGraphBuilder.Scope, depth: Int
+    ) -> Bool {
+        guard name.root == .asWritten, mayMeanOutsideMember(from: scope, depth: depth) else { return false }
+        let first = qualifiedName(ofWritten: String(name.name.prefix { $0 != "." }), from: scope, depth: depth + 1)
+        guard let match = nearestMatch(first, from: scope, depth: depth + 1) else { return true }
+        return match.declared.scope.enclosingTypes.isEmpty
+    }
+
     /// Whether a name written in `scope` may be a member of a type outside the diagram: it is
     /// written in an extension of sugar, or of a type the project does not declare
     /// (`startsAtProjectType(_:from:depth:)`).
-    func mayMeanOutsideMember(from scope: LayoutGraphBuilder.Scope, depth: Int) -> Bool {
+    private func mayMeanOutsideMember(from scope: LayoutGraphBuilder.Scope, depth: Int) -> Bool {
         guard let enclosing = scope.enclosingExtension else { return false }
         guard !enclosing.isSugared else { return true }
         // An extension's own clause sees no enclosing types, only its file, module and imports.

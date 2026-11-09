@@ -365,6 +365,23 @@ extension OutsideAliasEndTests {
         }
     }
 
+    /// A `Base` the project declares in its own `extension Host` is the one Swift means there:
+    /// were Host to have a `Base` of its own, Swift would reject the name as ambiguous. So
+    /// `Base.Inner` is `First.Inner`, written to that name as for an alias at file scope.
+    @Test("a dotted name through an alias the project declares in an outside type's extension is followed",
+          arguments: [true, false])
+    func dottedOutsideAliasDeclaredInOutsideExtension(withModules: Bool) throws {
+        let source = """
+            import Out
+            extension Host { typealias Base = First; class X: Base.Inner {} }
+            """
+        let items = try dottedItems([("App", source)], withModules: withModules)
+        for format in [DiagramFormat.plantuml, .mermaid] {
+            #expect(ClassDiagramIds.lines(of: script(items, format), containing: "<|--")
+                == ["First.Inner <|-- Host.X : inherits"])
+        }
+    }
+
     /// `Day.FormatStyle` is `Date.FormatStyle` to Swift, as `Day` is `Date`.
     @Test("an outside type's nested name through its alias merges with the name spelled directly",
           arguments: [true, false])

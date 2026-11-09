@@ -307,14 +307,14 @@ extension LayoutGraphBuilder.TypeLookup {
     /// such type, or when another type is recorded under that spelling, which an edge to the name
     /// would seem to end on, as a `Bar.V` that `Foo.V` does not mean. `nil` too inside an
     /// extension of a type outside the diagram, where the first component may be one of that
-    /// type's members (`mayMeanOutsideMember(from:depth:)`), as `Base` in `extension Host` is
-    /// `Host.Base` when Host has one: the name is left as written, as
+    /// type's members (`mayStartAtOutsideMember(_:from:depth:)`), as `Base` in `extension Host`
+    /// is `Host.Base` when Host has one: the name is left as written, as
     /// `sureResolvedName(of:from:depth:)` leaves it unsure, so the text formats never write the
-    /// edge to a box the graph does not end it on, nor leave it out as the graph's.
+    /// edge to a box the graph does not end it on.
     func spelledThroughStart(
         _ name: LayoutGraphBuilder.QualifiedName, from scope: LayoutGraphBuilder.Scope, depth: Int
     ) -> String? {
-        guard name.root != .asWritten || !mayMeanOutsideMember(from: scope, depth: depth) else { return nil }
+        guard !mayStartAtOutsideMember(name, from: scope, depth: depth) else { return nil }
         let start = started(name, from: scope, depth: depth).start
             ?? outsideStartWithoutModule(of: name, from: scope, depth: depth)
         guard let renamed = startSpelling(of: start) else { return nil }
