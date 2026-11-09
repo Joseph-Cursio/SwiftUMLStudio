@@ -59,7 +59,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   declared twice under `#if`; an `@_spi` re-exporter's type in a file that
   imports any module with `@_spi`, whichever module or group it opens. Still
   wrong: a re-exporter's type unavailable on one platform where the file also
-  reaches the re-exported target through a second re-exporter; a re-exporter's
+  reaches the re-exported target through a second re-exporter or its own
+  target's re-export; a re-exporter's
   `@available(*, unavailable)` type used from unavailable code; the short form
   `@available(swift 99)`, which is not read; a scoped re-export,
   `@_exported import class ModA.Base`, beside the re-exporter's own `Base`,
