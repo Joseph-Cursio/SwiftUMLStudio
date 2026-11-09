@@ -58,7 +58,8 @@ extension LayoutGraphBuilder {
             guard let type else {
                 let end = fallback(
                     named: name.name, resolving: lookup.sureResolvedName(of: name, from: scope),
-                    throughInheritedAlias: lookup.meansInheritedAlias(name, from: scope)
+                    throughInheritedAlias: lookup.meansInheritedAlias(name, from: scope),
+                    startingAtAlias: lookup.startsAtTypealias(name, from: scope)
                 )
                 return (end, false)
             }
@@ -74,7 +75,8 @@ extension LayoutGraphBuilder {
                 guard let type = lookup.type(name, from: scope) else {
                     return fallback(
                         named: name.name, resolving: lookup.sureResolvedName(of: name, from: scope),
-                        throughInheritedAlias: lookup.meansInheritedAlias(name, from: scope)
+                        throughInheritedAlias: lookup.meansInheritedAlias(name, from: scope),
+                        startingAtAlias: lookup.startsAtTypealias(name, from: scope)
                     )
                 }
                 return node(for: type, named: name.name)
@@ -143,14 +145,18 @@ extension LayoutGraphBuilder {
         /// An extension of a type the reference cannot see, a hidden `fileprivate` one, say,
         /// extends something else and never stands in. A name that means a typealias a superclass
         /// declares, `Outer.P` after `class Parent { typealias P = CustomStringConvertible }` and
-        /// `class Outer: Parent {}`, is taken by that typealias (`throughInheritedAlias`, #250).
+        /// `class Outer: Parent {}`, is taken by that typealias (`throughInheritedAlias`, #250). A
+        /// dotted name whose first component the writer's scope reads as a typealias, as one
+        /// declared inside a type that the lookup records under that type's name, starts at one
+        /// too (`startingAtAlias`, `TypeLookup.startsAtTypealias(_:from:)`).
         private func fallback(
-            named name: String, resolving resolved: @autoclosure () -> String?, throughInheritedAlias: Bool = false
+            named name: String, resolving resolved: @autoclosure () -> String?, throughInheritedAlias: Bool = false,
+            startingAtAlias: Bool = false
         ) -> String? {
             let spelled = extensionEnds.ends(named: name, in: lookup)
             let first = String(name.prefix { $0 != "." })
             let isAlias = throughInheritedAlias || lookup.namesTypealias(name)
-            let startsAtAlias = isAlias || first != name && lookup.namesTypealias(first)
+            let startsAtAlias = isAlias || first != name && (startingAtAlias || lookup.namesTypealias(first))
             if !startsAtAlias, let fallback = spelled.fallback { return fallback }
             guard startsAtAlias || lookup.mayReadModule(name) else {
                 return extensionEnds.aliasSpelled(in: lookup).fallbacks[name]

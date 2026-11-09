@@ -12,6 +12,16 @@ extension LayoutGraphBuilder.TypeLookup {
         aliasNames.contains(name)
     }
 
+    /// Whether the first component of the dotted name `name`, written in `scope`, means a
+    /// typealias there, as one declared inside a type does, which `namesTypealias(_:)` cannot
+    /// tell: it is recorded under its type's name, as `Mine.Base` for
+    /// `struct Mine { typealias Base = First }`, where `Base.Inner` is `First.Inner`.
+    func startsAtTypealias(_ name: LayoutGraphBuilder.QualifiedName, from scope: LayoutGraphBuilder.Scope) -> Bool {
+        guard name.root == .asWritten, let dot = name.name.firstIndex(of: ".") else { return false }
+        let first = qualifiedName(ofWritten: String(name.name[..<dot]), from: scope)
+        return nearestMatch(first, from: scope, depth: 0)?.declared.aliasTarget != nil
+    }
+
     /// `resolvedName(of:from:depth:)` when the type the name comes to is sure, else `nil`. Swift
     /// looks a name written inside an extension of a type outside the diagram up among that
     /// type's members first, which the lookup cannot see, so a name, or an alias's target,

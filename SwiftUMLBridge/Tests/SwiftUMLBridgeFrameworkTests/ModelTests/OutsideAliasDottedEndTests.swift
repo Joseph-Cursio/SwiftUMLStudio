@@ -164,6 +164,27 @@ extension OutsideAliasEndTests {
         }
     }
 
+    /// A typealias declared inside a type is a member, recorded under `Mine.Base`, not `Base`, but
+    /// `Base.Inner` written beside it is `First.Inner` all the same, so the edge ends on the
+    /// project's `extension First.Inner` box, in the text formats too, which before left it out
+    /// as the graph's while the graph drew nothing.
+    @Test("a dotted name through a nested alias ends on the extension of the member it comes to",
+          arguments: [true, false], ["struct Mine", "struct Mine {}\nextension Mine", "extension Host"])
+    func dottedNestedAliasEndsOnExtension(withModules: Bool, host: String) throws {
+        let source = """
+            import Out
+            extension First.Inner { func viaFirst() {} }
+            \(host) { typealias Base = First; class X: Base.Inner {} }
+            """
+        let items = try dottedItems([("App", source)], withModules: withModules)
+        let owner = host.hasSuffix("Host") ? "Host" : "Mine"
+        let drawn = graph(items, .all)
+        let box = try #require(drawn.owner(of: "viaFirst"))
+        #expect(drawn.edgeEnds.contains("\(owner).X -> \(box)"))
+        #expect(ClassDiagramIds.lines(of: script(items, .plantuml), containing: "<|--")
+            == ["\(box) <|-- \(owner).X : inherits"])
+    }
+
     /// `Day.FormatStyle` is `Date.FormatStyle` to Swift, as `Day` is `Date`.
     @Test("an outside type's nested name through its alias merges with the name spelled directly",
           arguments: [true, false])
