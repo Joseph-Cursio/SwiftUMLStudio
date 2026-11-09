@@ -107,8 +107,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   call graphs file a method of `extension Base.Inner` under `Second.Inner`, as
   they file a whole alias's. Without `--package`, the name is still read as
   written when it comes to a member the project itself declares, as
-  `extension Second { protocol Inner {} }` does, and inside an extension of a
-  type outside the diagram, whose own member `Base` may be. The call graphs,
+  `extension Second { protocol Inner {} }` does. With or without it, the name
+  is read as written inside an extension of a type outside the diagram, as
+  `extension Host`, whose own member `Base` may be, as the SVG already read
+  it; with `--package` the text formats had written it to `First.Inner`, or,
+  with an `extension First.Inner` drawn, left the edge out. The call graphs,
   which see no enclosing type, follow it there anyway, as they do a whole
   alias. Without `--package`, nothing says which directories a file sees, so
   another directory's alias of the same name as the target, as a
@@ -208,6 +211,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   whether it is at file scope or in an enclosing type, through a chain of
   aliases, and for an alias of sugar such as `[Int]`. Two enclosing types
   that each give `Array` a different meaning no longer share an answer.
+  Inside an extension of a type outside the diagram, where `Array` may be
+  that type's member, the name is read as written (#231's follow-up above).
   Without `--package` it is followed too since #231's follow-up above, except
   to a member the project declares, as an `extension Date { typealias V = P2 }`
   would; such a name is still read as written.
