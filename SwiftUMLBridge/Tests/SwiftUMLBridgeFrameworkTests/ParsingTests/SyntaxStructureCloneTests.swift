@@ -11,7 +11,7 @@ struct SyntaxStructureCloneTests {
         "accessibility", "attribute", "attributes", "elements", "inheritedTypes", "kind", "name",
         "runtimename", "substructure", "typename", "memberSuffix", "parent", "sourceLocation", "module",
         "imports", "loadedModules", "mergedInto", "carriedSupertypes", "mergedExtensions", "standsInFor",
-        "boundGenericArguments", "isSugared"
+        "boundGenericArguments", "isSugared", "isSPI", "isConditional"
     ]
 
     /// A structure with every stored property set.
@@ -41,6 +41,8 @@ struct SyntaxStructureCloneTests {
         item.mergedExtensions = [SyntaxStructure(kind: .extension, name: "Inner")]
         item.boundGenericArguments = "Int"
         item.isSugared = true
+        item.isSPI = true
+        item.isConditional = true
         return item
     }
 

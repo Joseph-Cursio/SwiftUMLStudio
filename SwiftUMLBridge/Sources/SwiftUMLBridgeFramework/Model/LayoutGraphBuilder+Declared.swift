@@ -23,6 +23,13 @@ extension LayoutGraphBuilder {
         /// it, with an enclosing extension's modifier applied. `TypeLookup.access(of:)` also caps
         /// it by the type that extension extends.
         let ownAccess: ElementAccessibility
+        /// Whether the declaration, a declaration enclosing it, or its enclosing extension is
+        /// marked `@_spi(...)` (`SyntaxStructure.isSPI`), so not every file that imports its
+        /// module sees it, whatever `ownAccess` says.
+        let isSPI: Bool
+        /// Whether the declaration, a declaration enclosing it, or its enclosing extension sits in
+        /// a clause of an `#if` block (`SyntaxStructure.isConditional`), so a build may drop it.
+        let isConditional: Bool
         /// The type the enclosing extension extends, as written there, when there is one.
         let extended: ExtensionTarget?
         /// For a typealias, the name of the type it aliases, looked up from its own scope (#125).
@@ -68,7 +75,10 @@ extension LayoutGraphBuilder {
             let chain = Array(sequence(first: item) { $0 === item ? container ?? $0.parent : $0.parent })
             let declared = chain.prefix { $0.kind != .extension }
             var levels = declared.map { $0.accessibility.flatMap { $0 == .other ? nil : $0 } ?? .internal }
-            if let enclosing = chain.first(where: { $0.kind == .extension }), !levels.isEmpty,
+            let enclosingExtension = chain.first { $0.kind == .extension }
+            isSPI = declared.contains { $0.isSPI } || enclosingExtension?.isSPI == true
+            isConditional = declared.contains { $0.isConditional } || enclosingExtension?.isConditional == true
+            if let enclosing = enclosingExtension, !levels.isEmpty,
                let modifier = enclosing.accessibility {
                 // `private extension` and `fileprivate extension` cap what they hold; `public` and
                 // `package` ones set their members' default, which the parser reports as internal.
