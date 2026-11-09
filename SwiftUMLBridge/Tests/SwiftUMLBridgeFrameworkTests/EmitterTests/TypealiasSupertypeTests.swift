@@ -112,7 +112,7 @@ struct TypealiasSupertypeTests {
         ])
         defer { try? FileManager.default.removeItem(at: root) }
         let edges = DependencyGraphGenerator().extractEdges(for: [root.path], mode: .types)
-            .map { "\($0.from) -> \($0.to)" }
+            .map { "\($0.from) -> \($0.toNode)" }
         #expect(edges.sorted() == ["Sub -> Base", "User -> Proto"])
     }
 

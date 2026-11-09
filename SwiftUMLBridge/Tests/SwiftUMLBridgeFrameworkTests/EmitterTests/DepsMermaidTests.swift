@@ -29,7 +29,7 @@ struct DepsMermaidTests {
 
     @Test("nodes appear as quoted label declarations")
     func nodeDeclsHaveQuotedLabels() {
-        let edge = DependencyEdge(from: "ServiceA", to: "Protocol1", kind: .conforms)
+        let edge = DependencyEdge(from: "ServiceA", toNode: "Protocol1", kind: .conforms)
         let script = makeScript(edges: [edge])
         #expect(script.text.contains("\"ServiceA\""))
         #expect(script.text.contains("\"Protocol1\""))
@@ -38,8 +38,8 @@ struct DepsMermaidTests {
     @Test("each unique node is declared once")
     func eachNodeDeclaredOnce() {
         let edges = [
-            DependencyEdge(from: "A", to: "B", kind: .conforms),
-            DependencyEdge(from: "A", to: "C", kind: .conforms)
+            DependencyEdge(from: "A", toNode: "B", kind: .conforms),
+            DependencyEdge(from: "A", toNode: "C", kind: .conforms)
         ]
         let script = makeScript(edges: edges)
         let aCount = script.text.components(separatedBy: "\"A\"").count - 1
@@ -51,7 +51,7 @@ struct DepsMermaidTests {
 
     @Test("edges rendered as 'ID --> ID' lines")
     func edgesRenderedWithArrow() {
-        let edge = DependencyEdge(from: "Dog", to: "Animal", kind: .inherits)
+        let edge = DependencyEdge(from: "Dog", toNode: "Animal", kind: .inherits)
         let script = makeScript(edges: [edge])
         // Node IDs are sanitized; check that arrow is present
         #expect(script.text.contains("-->"))
@@ -60,8 +60,8 @@ struct DepsMermaidTests {
     @Test("multiple edges all have arrow lines")
     func multipleEdgesHaveArrows() {
         let edges = [
-            DependencyEdge(from: "A", to: "B", kind: .conforms),
-            DependencyEdge(from: "B", to: "C", kind: .imports)
+            DependencyEdge(from: "A", toNode: "B", kind: .conforms),
+            DependencyEdge(from: "B", toNode: "C", kind: .imports)
         ]
         let script = makeScript(edges: edges)
         let arrowLines = script.text.components(separatedBy: "\n").filter { $0.contains("-->") }
@@ -73,8 +73,8 @@ struct DepsMermaidTests {
     @Test("cyclic nodes receive red-fill style")
     func cyclicNodesReceiveRedFill() {
         let edges = [
-            DependencyEdge(from: "Alpha", to: "Beta", kind: .imports),
-            DependencyEdge(from: "Beta", to: "Alpha", kind: .imports)
+            DependencyEdge(from: "Alpha", toNode: "Beta", kind: .imports),
+            DependencyEdge(from: "Beta", toNode: "Alpha", kind: .imports)
         ]
         let script = makeScript(edges: edges)
         #expect(script.text.contains("#ffcccc"))
@@ -84,7 +84,7 @@ struct DepsMermaidTests {
     @Test("no cycles means no style annotation")
     func noCyclesNoStyleAnnotation() {
         let edges = [
-            DependencyEdge(from: "A", to: "B", kind: .conforms)
+            DependencyEdge(from: "A", toNode: "B", kind: .conforms)
         ]
         let script = makeScript(edges: edges)
         #expect(script.text.contains("#ffcccc") == false)
@@ -94,14 +94,14 @@ struct DepsMermaidTests {
 
     @Test("spaces in node names become underscores in IDs")
     func spacesBecomUnderscoresInIds() {
-        let edge = DependencyEdge(from: "My Module", to: "Base", kind: .imports)
+        let edge = DependencyEdge(from: "My Module", toNode: "Base", kind: .imports)
         let script = makeScript(edges: [edge])
         #expect(script.text.contains("My_Module"))
     }
 
     @Test("dots in node names become underscores in IDs")
     func dotsBecomUnderscoresInIds() {
-        let edge = DependencyEdge(from: "SwiftUI.View", to: "Base", kind: .imports)
+        let edge = DependencyEdge(from: "SwiftUI.View", toNode: "Base", kind: .imports)
         let script = makeScript(edges: [edge])
         #expect(script.text.contains("SwiftUI_View"))
     }

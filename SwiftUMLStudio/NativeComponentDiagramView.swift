@@ -101,7 +101,7 @@ struct NativeComponentDiagramView: View {
         for dependency in layout.dependencies {
             guard
                 let source = layout.component(named: dependency.from),
-                let target = layout.component(named: dependency.to)
+                let target = layout.component(named: dependency.toComponent)
             else { continue }
             let start = Self.edgePoint(from: source, towards: target)
             let end = Self.edgePoint(from: target, towards: source)

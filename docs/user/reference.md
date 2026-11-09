@@ -2066,7 +2066,7 @@ A single directed dependency relationship between two named nodes.
 
 ```swift
 public let from: String              // Dependent node name (the type or module that depends)
-public let to: String                // Depended-upon node name (the parent, conformance target, or imported module)
+public let toNode: String            // Depended-upon node name (the parent, conformance target, or imported module)
 public let kind: DependencyEdgeKind  // The nature of the dependency
 ```
 
@@ -2273,9 +2273,9 @@ A `target_dependencies` edge between two components.
 
 ```swift
 public let from: String
-public let to: String
+public let toComponent: String
 
-public init(from: String, to: String)
+public init(from: String, toComponent: String)
 ```
 
 ---

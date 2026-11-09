@@ -15,14 +15,14 @@ struct DepsSVGTests {
 
     @Test("SVG output starts with '<svg'")
     func startsWithSVGTag() {
-        let edge = DependencyEdge(from: "Alpha", to: "Beta", kind: .conforms)
+        let edge = DependencyEdge(from: "Alpha", toNode: "Beta", kind: .conforms)
         let script = makeScript(edges: [edge])
         #expect(script.text.hasPrefix("<svg"))
     }
 
     @Test("format property is svg")
     func formatIsSVG() {
-        let script = makeScript(edges: [DependencyEdge(from: "Src", to: "Dst", kind: .imports)])
+        let script = makeScript(edges: [DependencyEdge(from: "Src", toNode: "Dst", kind: .imports)])
         #expect(script.format == .svg)
     }
 
@@ -30,14 +30,14 @@ struct DepsSVGTests {
 
     @Test("layoutGraph is populated for SVG format")
     func layoutGraphIsPopulated() {
-        let edge = DependencyEdge(from: "Alpha", to: "Beta", kind: .conforms)
+        let edge = DependencyEdge(from: "Alpha", toNode: "Beta", kind: .conforms)
         let script = makeScript(edges: [edge])
         #expect(script.layoutGraph != nil)
     }
 
     @Test("layoutGraph has nodes matching edge endpoints")
     func layoutGraphHasExpectedNodes() {
-        let edge = DependencyEdge(from: "Service", to: "Repository", kind: .imports)
+        let edge = DependencyEdge(from: "Service", toNode: "Repository", kind: .imports)
         let script = makeScript(edges: [edge])
         let nodeLabels = script.layoutGraph?.nodes.map(\.label) ?? []
         #expect(nodeLabels.contains("Service"))
@@ -47,8 +47,8 @@ struct DepsSVGTests {
     @Test("layoutGraph has edges matching the model")
     func layoutGraphHasExpectedEdges() {
         let edges = [
-            DependencyEdge(from: "Alpha", to: "Beta", kind: .conforms),
-            DependencyEdge(from: "Beta", to: "Gamma", kind: .inherits)
+            DependencyEdge(from: "Alpha", toNode: "Beta", kind: .conforms),
+            DependencyEdge(from: "Beta", toNode: "Gamma", kind: .inherits)
         ]
         let script = makeScript(edges: edges)
         #expect(script.layoutGraph?.edges.count == 2)
@@ -57,7 +57,7 @@ struct DepsSVGTests {
     @Test("a module directory named with a backslash is laid out by dagre",
           arguments: ["Old\\Code", "Trail\\"])
     func backslashModuleIsLaidOut(name: String) throws {
-        let edge = DependencyEdge(from: name, to: "Foundation", kind: .imports)
+        let edge = DependencyEdge(from: name, toNode: "Foundation", kind: .imports)
         let graph = try #require(makeScript(edges: [edge]).layoutGraph)
         let module = try #require(graph.nodes.first { $0.id == name })
         let foundation = try #require(graph.nodes.first { $0.id == "Foundation" })
@@ -70,7 +70,7 @@ struct DepsSVGTests {
 
     @Test("SVG output contains node names as text elements")
     func svgContainsNodeNames() {
-        let edge = DependencyEdge(from: "Controller", to: "View", kind: .imports)
+        let edge = DependencyEdge(from: "Controller", toNode: "View", kind: .imports)
         let script = makeScript(edges: [edge])
         #expect(script.text.contains("Controller"))
         #expect(script.text.contains("View"))
@@ -78,7 +78,7 @@ struct DepsSVGTests {
 
     @Test("SVG output contains closing svg tag")
     func svgContainsClosingTag() {
-        let edge = DependencyEdge(from: "Alpha", to: "Beta", kind: .conforms)
+        let edge = DependencyEdge(from: "Alpha", toNode: "Beta", kind: .conforms)
         let script = makeScript(edges: [edge])
         #expect(script.text.contains("</svg>"))
     }
@@ -86,9 +86,9 @@ struct DepsSVGTests {
     @Test("multiple edges produce SVG with all node names")
     func multipleEdgesAllNodesInSVG() {
         let edges = [
-            DependencyEdge(from: "AppModel", to: "DataStore", kind: .imports),
-            DependencyEdge(from: "DataStore", to: "Network", kind: .imports),
-            DependencyEdge(from: "Network", to: "Foundation", kind: .imports)
+            DependencyEdge(from: "AppModel", toNode: "DataStore", kind: .imports),
+            DependencyEdge(from: "DataStore", toNode: "Network", kind: .imports),
+            DependencyEdge(from: "Network", toNode: "Foundation", kind: .imports)
         ]
         let script = makeScript(edges: edges)
         #expect(script.text.contains("AppModel"))
@@ -99,7 +99,7 @@ struct DepsSVGTests {
 
     @Test("a module name containing a double hyphen leaves the SVG well-formed")
     func doubleHyphenModuleNameIsWellFormed() {
-        let script = makeScript(edges: [DependencyEdge(from: "Old--Code", to: "Foundation", kind: .imports)])
+        let script = makeScript(edges: [DependencyEdge(from: "Old--Code", toNode: "Foundation", kind: .imports)])
         #expect(WellFormedXML.error(in: script.text) == nil)
         #expect(script.text.contains(">Old--Code</text>"))
     }

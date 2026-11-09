@@ -53,6 +53,6 @@ struct AmpersandInSupertypeNameTests {
         let url = root.appendingPathComponent("Source.swift")
         try Self.source.write(to: url, atomically: true, encoding: .utf8)
         let edges = DependencyGraphGenerator().extractEdges(for: [url.path], mode: .types)
-        #expect(edges.map { "\($0.from) -> \($0.to)" } == ["Sub -> Base<any P & Q>", "File -> `Read & Write`"])
+        #expect(edges.map { "\($0.from) -> \($0.toNode)" } == ["Sub -> Base<any P & Q>", "File -> `Read & Write`"])
     }
 }

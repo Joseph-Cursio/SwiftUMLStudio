@@ -16,7 +16,7 @@ struct DiagramExportMenuTests {
     private func depsScript(format: DiagramFormat) -> DepsScript {
         var config = Configuration.default
         config.format = format
-        let model = DependencyGraphModel(edges: [DependencyEdge(from: "A", to: "B", kind: .conforms)])
+        let model = DependencyGraphModel(edges: [DependencyEdge(from: "A", toNode: "B", kind: .conforms)])
         return DepsScript(model: model, configuration: config)
     }
 

@@ -34,13 +34,13 @@ public struct Component: Sendable, Hashable, Identifiable {
     }
 }
 
-/// `from` depends on `to`. Mirrors a target's `target_dependencies` entry.
+/// `from` depends on `toComponent`. Mirrors a target's `target_dependencies` entry.
 public struct ComponentDependency: Sendable, Hashable {
     public let from: String
-    public let to: String
+    public let toComponent: String
 
-    public init(from: String, to: String) {
+    public init(from: String, toComponent: String) {
         self.from = from
-        self.to = to
+        self.toComponent = toComponent
     }
 }

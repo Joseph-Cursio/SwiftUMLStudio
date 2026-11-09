@@ -53,7 +53,7 @@ struct DepsNomnomlTests {
 
     @Test("inherits edge uses '-:>' arrow")
     func inheritsEdgeArrow() {
-        let edge = DependencyEdge(from: "Dog", to: "Animal", kind: .inherits)
+        let edge = DependencyEdge(from: "Dog", toNode: "Animal", kind: .inherits)
         let script = makeScript(edges: [edge])
         #expect(script.text.contains("-:>"))
         #expect(script.text.contains("[Dog] -:> [Animal]"))
@@ -61,7 +61,7 @@ struct DepsNomnomlTests {
 
     @Test("conforms edge uses '--:>' arrow")
     func conformsEdgeArrow() {
-        let edge = DependencyEdge(from: "Report", to: "Printable", kind: .conforms)
+        let edge = DependencyEdge(from: "Report", toNode: "Printable", kind: .conforms)
         let script = makeScript(edges: [edge])
         #expect(script.text.contains("--:>"))
         #expect(script.text.contains("[Report] --:> [Printable]"))
@@ -69,7 +69,7 @@ struct DepsNomnomlTests {
 
     @Test("imports edge uses '-->' arrow")
     func importsEdgeArrow() {
-        let edge = DependencyEdge(from: "App", to: "Foundation", kind: .imports)
+        let edge = DependencyEdge(from: "App", toNode: "Foundation", kind: .imports)
         let script = makeScript(edges: [edge])
         #expect(script.text.contains("-->"))
         #expect(script.text.contains("[App] --> [Foundation]"))
@@ -78,9 +78,9 @@ struct DepsNomnomlTests {
     @Test("multiple edges all appear in output")
     func multipleEdgesAllAppear() {
         let edges = [
-            DependencyEdge(from: "Alpha", to: "Beta", kind: .conforms),
-            DependencyEdge(from: "Beta", to: "Gamma", kind: .inherits),
-            DependencyEdge(from: "Gamma", to: "Delta", kind: .imports)
+            DependencyEdge(from: "Alpha", toNode: "Beta", kind: .conforms),
+            DependencyEdge(from: "Beta", toNode: "Gamma", kind: .inherits),
+            DependencyEdge(from: "Gamma", toNode: "Delta", kind: .imports)
         ]
         let script = makeScript(edges: edges)
         #expect(script.text.contains("[Alpha] --:> [Beta]"))
@@ -93,8 +93,8 @@ struct DepsNomnomlTests {
     @Test("cyclic nodes receive warning style annotation")
     func cyclicNodesReceiveWarning() {
         let edges = [
-            DependencyEdge(from: "Alpha", to: "Beta", kind: .imports),
-            DependencyEdge(from: "Beta", to: "Alpha", kind: .imports)
+            DependencyEdge(from: "Alpha", toNode: "Beta", kind: .imports),
+            DependencyEdge(from: "Beta", toNode: "Alpha", kind: .imports)
         ]
         let script = makeScript(edges: edges)
         #expect(script.text.contains("#.warning: fill=#ffcccc stroke=#cc0000"))
@@ -104,8 +104,8 @@ struct DepsNomnomlTests {
     @Test("cyclic nodes comment lists the node names")
     func cyclicNodesCommentListsNames() {
         let edges = [
-            DependencyEdge(from: "Alpha", to: "Beta", kind: .imports),
-            DependencyEdge(from: "Beta", to: "Alpha", kind: .imports)
+            DependencyEdge(from: "Alpha", toNode: "Beta", kind: .imports),
+            DependencyEdge(from: "Beta", toNode: "Alpha", kind: .imports)
         ]
         let script = makeScript(edges: edges)
         #expect(script.text.contains("// Cyclic nodes: Alpha, Beta"))
@@ -114,7 +114,7 @@ struct DepsNomnomlTests {
     @Test("no cycles means no warning annotation")
     func noCyclesNoWarning() {
         let edges = [
-            DependencyEdge(from: "Alpha", to: "Beta", kind: .conforms)
+            DependencyEdge(from: "Alpha", toNode: "Beta", kind: .conforms)
         ]
         let script = makeScript(edges: edges)
         #expect(script.text.contains("#.warning") == false)
@@ -125,7 +125,7 @@ struct DepsNomnomlTests {
 
     @Test("brackets in node names are escaped to parentheses")
     func bracketsEscapedInNodeNames() {
-        let edge = DependencyEdge(from: "Array[Int]", to: "Base", kind: .imports)
+        let edge = DependencyEdge(from: "Array[Int]", toNode: "Base", kind: .imports)
         let script = makeScript(edges: [edge])
         // The node name inside [] would conflict with nomnoml syntax
         #expect(script.text.contains("Array(Int)"))
@@ -133,14 +133,14 @@ struct DepsNomnomlTests {
 
     @Test("pipe characters in node names are escaped to slashes")
     func pipesEscapedInNodeNames() {
-        let edge = DependencyEdge(from: "A|B", to: "Target", kind: .imports)
+        let edge = DependencyEdge(from: "A|B", toNode: "Target", kind: .imports)
         let script = makeScript(edges: [edge])
         #expect(script.text.contains("A/B"))
     }
 
     @Test("semicolons in node names are escaped to commas")
     func semicolonsEscapedInNodeNames() {
-        let edge = DependencyEdge(from: "X;Y", to: "Target", kind: .imports)
+        let edge = DependencyEdge(from: "X;Y", toNode: "Target", kind: .imports)
         let script = makeScript(edges: [edge])
         #expect(script.text.contains("X,Y"))
     }

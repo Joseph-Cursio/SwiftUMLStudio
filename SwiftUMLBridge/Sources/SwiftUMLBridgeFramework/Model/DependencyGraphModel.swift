@@ -54,7 +54,7 @@ private struct CycleSearch {
         var numbers: [String: Int] = [:]
         for edge in edges {
             let source = number(of: edge.from, in: &numbers)
-            let target = number(of: edge.to, in: &numbers)
+            let target = number(of: edge.toNode, in: &numbers)
             successors[source].append(target)
             if source == target {
                 hasSelfLoop[source] = true

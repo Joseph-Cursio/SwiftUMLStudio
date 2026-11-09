@@ -36,7 +36,7 @@ struct ComponentSVGRendererLayoutTests {
                 Component(name: "App", kind: .executable),
                 Component(name: "Networking", kind: .library)
             ],
-            dependencies: [ComponentDependency(from: "App", to: "Networking")]
+            dependencies: [ComponentDependency(from: "App", toComponent: "Networking")]
         )
         let layout = ComponentSVGRenderer.computeLayout(model)
         let app = try #require(layout.component(named: "App"))
@@ -53,8 +53,8 @@ struct ComponentSVGRendererLayoutTests {
                 Component(name: "B", kind: .library)
             ],
             dependencies: [
-                ComponentDependency(from: "A", to: "B"),
-                ComponentDependency(from: "B", to: "A")
+                ComponentDependency(from: "A", toComponent: "B"),
+                ComponentDependency(from: "B", toComponent: "A")
             ]
         )
         let layout = ComponentSVGRenderer.computeLayout(model)
@@ -89,8 +89,8 @@ struct ComponentSVGRendererLayoutTests {
                 Component(name: "C", kind: .library)
             ],
             dependencies: [
-                ComponentDependency(from: "A", to: "C"),
-                ComponentDependency(from: "B", to: "C")
+                ComponentDependency(from: "A", toComponent: "C"),
+                ComponentDependency(from: "B", toComponent: "C")
             ]
         )
         let layout = ComponentSVGRenderer.computeLayout(model)
@@ -108,7 +108,7 @@ struct ComponentSVGRendererSVGTests {
                 Component(name: "Networking", kind: .library, providedInterfaces: ["HttpClient"]),
                 Component(name: "App", kind: .executable)
             ],
-            dependencies: [ComponentDependency(from: "App", to: "Networking")]
+            dependencies: [ComponentDependency(from: "App", toComponent: "Networking")]
         )
         let svg = ComponentSVGRenderer.render(model).svg
         #expect(svg.contains("<svg"))
