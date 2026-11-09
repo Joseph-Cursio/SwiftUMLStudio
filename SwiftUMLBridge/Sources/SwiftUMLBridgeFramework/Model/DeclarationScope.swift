@@ -10,6 +10,9 @@ struct DeclarationScope {
     let module: String?
     /// The modules the declaration's file imports; nil when unknown (`SyntaxStructure.imports`).
     let imports: Set<String>?
+    /// What the declaration's module re-exports, transitively; nil when unknown
+    /// (`SyntaxStructure.reexportedModules`).
+    let reexports: Set<String>?
     /// The full names of the types whose members a name written in the declaration's
     /// inheritance clause sees, innermost first: each type around it, up to and including the
     /// type an enclosing extension extends, which sees no further out. Empty for a top-level
@@ -26,6 +29,7 @@ struct DeclarationScope {
         filePath = item.sourceLocation?.filePath ?? container?.sourceLocation?.filePath
         module = item.module ?? container?.module
         imports = item.imports ?? container?.imports
+        reexports = item.reexportedModules ?? container?.reexportedModules
         let enclosing = item.kind == .extension ? [] : Self.enclosingTypes(from: container ?? item.parent)
         enclosingTypes = enclosing.compactMap { $0.fullName ?? $0.name }
         enclosingExtension = enclosing.last.flatMap { outermost in
@@ -37,6 +41,7 @@ struct DeclarationScope {
         self.filePath = filePath
         self.module = module
         self.imports = imports
+        reexports = nil
         enclosingTypes = []
         enclosingExtension = nil
     }

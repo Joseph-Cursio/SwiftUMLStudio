@@ -38,7 +38,10 @@ internal extension SyntaxStructure {
         reexports.widenImports(of: items)
         let loads = ModuleLoads(importsForModule: importsForModule)
         func stamp(_ item: SyntaxStructure) {
-            if let module = item.module { item.loadedModules = loads.loaded(by: module) }
+            if let module = item.module {
+                item.loadedModules = loads.loaded(by: module)
+                item.reexportedModules = reexports.widened([], in: module)
+            }
             item.substructure?.forEach(stamp)
         }
         items.forEach(stamp)

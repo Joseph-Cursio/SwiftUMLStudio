@@ -84,6 +84,11 @@ internal class SyntaxStructure: NSObject, Codable, @unchecked Sendable {
     /// `SyntaxStructure.declarations(inPackageFiles:)`; nil when unknown.
     internal var loadedModules: Set<String>?
 
+    /// The modules the declaration's module re-exports, transitively (`ModuleReexports`), so a
+    /// type of its own shadows a same-named one of those (#200). Stamped by
+    /// `SyntaxStructure.declarations(inPackageFiles:)`; nil when unknown.
+    internal var reexportedModules: Set<String>?
+
     /// Set by `mergeExtensions` on an extension it merges away: the item that now shows its
     /// members. A type nested in that extension keeps the extension as its `parent`, which its
     /// name, scope and access come from, and is drawn hanging off this item (`nestingParent`).
@@ -162,6 +167,7 @@ internal class SyntaxStructure: NSObject, Codable, @unchecked Sendable {
         module = original.module
         imports = original.imports
         loadedModules = original.loadedModules
+        reexportedModules = original.reexportedModules
         carriedSupertypes = original.carriedSupertypes
         mergedExtensions = original.mergedExtensions
         boundGenericArguments = original.boundGenericArguments
