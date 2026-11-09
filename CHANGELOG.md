@@ -111,7 +111,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   is read as written inside an extension of a type outside the diagram, as
   `extension Host`, whose own member `Base` may be, as the SVG already read
   it; with `--package` the text formats had written it to `First.Inner`, or,
-  with an `extension First.Inner` drawn, left the edge out. The call graphs,
+  with an `extension First.Inner` drawn, left the edge out. An alias's dotted
+  target written there, as `typealias Base = Second.Inner` in
+  `extension Host`, is now read the same way, in the SVG too. A `Base` the
+  project itself declares there, as a `typealias Base = First` in its own
+  `extension Host`, is still followed, as Swift rejects the name as ambiguous
+  were Host to have one too. Read as written, the edge is left out when a
+  drawn box has that name, as `Array.V` does beside
+  `extension [Int] { class V {} }` after `typealias Array = First`, where the
+  text formats with `--package` had written `First.V`. The call graphs,
   which see no enclosing type, follow it there anyway, as they do a whole
   alias. Without `--package`, nothing says which directories a file sees, so
   another directory's alias of the same name as the target, as a
@@ -212,7 +220,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   aliases, and for an alias of sugar such as `[Int]`. Two enclosing types
   that each give `Array` a different meaning no longer share an answer.
   Inside an extension of a type outside the diagram, where `Array` may be
-  that type's member, the name is read as written (#231's follow-up above).
+  that type's member, the name is read as written (#231's follow-up above),
+  so with the `V` of `extension [Int]` drawn, the edge is left out.
   Without `--package` it is followed too since #231's follow-up above, except
   to a member the project declares, as an `extension Date { typealias V = P2 }`
   would; such a name is still read as written.
