@@ -59,7 +59,7 @@ extension ComponentSVGRenderer {
     ) -> String? {
         guard
             let source = layout.component(named: dependency.from),
-            let target = layout.component(named: dependency.to)
+            let target = layout.component(named: dependency.toComponent)
         else { return nil }
         let (startX, startY) = edgePoint(from: source, towards: target)
         let (endX, endY) = edgePoint(from: target, towards: source)

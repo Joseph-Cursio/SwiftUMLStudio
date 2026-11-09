@@ -223,8 +223,8 @@ struct DependencyGraphGeneratorTests {
         // (type cycles are harder to produce with SourceKitten without real source)
         // Test with DependencyGraphModel directly that annotation works
         let cycleEdges = [
-            DependencyEdge(from: "A", to: "B", kind: .imports),
-            DependencyEdge(from: "B", to: "A", kind: .imports)
+            DependencyEdge(from: "A", toNode: "B", kind: .imports),
+            DependencyEdge(from: "B", toNode: "A", kind: .imports)
         ]
         let model = DependencyGraphModel(edges: cycleEdges)
         let script = DepsScript(model: model, configuration: .default)

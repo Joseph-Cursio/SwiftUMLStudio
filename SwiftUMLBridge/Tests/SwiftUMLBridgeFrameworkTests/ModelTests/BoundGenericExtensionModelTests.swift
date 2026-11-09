@@ -29,6 +29,6 @@ struct BoundGenericExtensionModelTests {
         try source.write(to: url, atomically: true, encoding: .utf8)
         defer { try? FileManager.default.removeItem(at: url) }
         let edges = DependencyGraphGenerator().extractEdges(for: [url.path], mode: .types)
-        #expect(edges.map { "\($0.from) -> \($0.to)" } == ["Foo -> P", "Array -> P"])
+        #expect(edges.map { "\($0.from) -> \($0.toNode)" } == ["Foo -> P", "Array -> P"])
     }
 }

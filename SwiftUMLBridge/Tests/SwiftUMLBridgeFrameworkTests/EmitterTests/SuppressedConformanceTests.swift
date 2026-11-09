@@ -53,7 +53,8 @@ struct SuppressedConformanceTests {
     @Test("deps --types draws no edge to a suppressed protocol")
     func depsEdges() throws {
         let edges = try Self.withFile { DependencyGraphGenerator().extractEdges(for: [$0], mode: .types) }
-        #expect(edges.map { "\($0.from) -> \($0.to)" } == ["Token -> Resource", "Token -> Sendable", "Box -> Copyable"])
+        #expect(edges.map { "\($0.from) -> \($0.toNode)" }
+            == ["Token -> Resource", "Token -> Sendable", "Box -> Copyable"])
     }
 
     @Test("TypeInfo lists no suppressed protocol")

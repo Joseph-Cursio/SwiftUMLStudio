@@ -9,8 +9,7 @@ import XCTest
 
 final class SwiftUMLStudioUITestsLaunchTests: XCTestCase {
 
-    // swiftlint:disable:next static_over_final_class
-    override class var runsForEachTargetApplicationUIConfiguration: Bool {
+    override static var runsForEachTargetApplicationUIConfiguration: Bool {
         true
     }
 

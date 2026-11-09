@@ -51,7 +51,7 @@ private extension DepsScript {
 
         // Emit one edge per line
         for edge in model.edges {
-            lines.append("\(edge.from) --> \(edge.to) : \(edge.kind.rawValue)")
+            lines.append("\(edge.from) --> \(edge.toNode) : \(edge.kind.rawValue)")
         }
 
         // Annotate cycle nodes with a note block
@@ -107,7 +107,7 @@ internal extension DepsScript {
         var result: [String: String] = [:]
         for edge in model.edges {
             if let module = edge.fromModule { result[edge.from] = module }
-            if let module = edge.toModule { result[edge.to] = module }
+            if let module = edge.toModule { result[edge.toNode] = module }
         }
         return result
     }
@@ -123,7 +123,7 @@ private extension DepsScript {
         var seenNodes = Set<String>()
         for edge in model.edges {
             seenNodes.insert(edge.from)
-            seenNodes.insert(edge.to)
+            seenNodes.insert(edge.toNode)
         }
 
         let stereotypes = DepsScript.nodeStereotypes(model: model)
@@ -156,7 +156,7 @@ private extension DepsScript {
         // Emit edge lines
         for edge in model.edges {
             let fromId = ids.id(for: edge.from)
-            let toId = ids.id(for: edge.to)
+            let toId = ids.id(for: edge.toNode)
             lines.append("    \(fromId) --> \(toId)")
         }
 
@@ -229,7 +229,7 @@ private extension DepsScript {
                 arrow = "-->"
             }
             let safeFrom = nomnomlLabel(edge.from, stereotype: stereotypes[edge.from])
-            let safeTo = nomnomlLabel(edge.to, stereotype: stereotypes[edge.to])
+            let safeTo = nomnomlLabel(edge.toNode, stereotype: stereotypes[edge.toNode])
             lines.append("[\(safeFrom)] \(arrow) [\(safeTo)]")
         }
 

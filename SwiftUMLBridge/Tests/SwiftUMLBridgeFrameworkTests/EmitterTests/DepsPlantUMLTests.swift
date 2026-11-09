@@ -35,21 +35,21 @@ struct DepsPlantUMLTests {
 
     @Test("inherits edge renders with 'inherits' label")
     func inheritsEdgeRendered() {
-        let edge = DependencyEdge(from: "Dog", to: "Animal", kind: .inherits)
+        let edge = DependencyEdge(from: "Dog", toNode: "Animal", kind: .inherits)
         let script = makeScript(edges: [edge])
         #expect(script.text.contains("Dog --> Animal : inherits"))
     }
 
     @Test("conforms edge renders with 'conforms' label")
     func conformsEdgeRendered() {
-        let edge = DependencyEdge(from: "Report", to: "Printable", kind: .conforms)
+        let edge = DependencyEdge(from: "Report", toNode: "Printable", kind: .conforms)
         let script = makeScript(edges: [edge])
         #expect(script.text.contains("Report --> Printable : conforms"))
     }
 
     @Test("imports edge renders with 'imports' label")
     func importsEdgeRendered() {
-        let edge = DependencyEdge(from: "App", to: "Foundation", kind: .imports)
+        let edge = DependencyEdge(from: "App", toNode: "Foundation", kind: .imports)
         let script = makeScript(edges: [edge])
         #expect(script.text.contains("App --> Foundation : imports"))
     }
@@ -57,9 +57,9 @@ struct DepsPlantUMLTests {
     @Test("multiple edges all appear in output")
     func multipleEdgesAllAppear() {
         let edges = [
-            DependencyEdge(from: "A", to: "B", kind: .conforms),
-            DependencyEdge(from: "B", to: "C", kind: .inherits),
-            DependencyEdge(from: "C", to: "D", kind: .imports)
+            DependencyEdge(from: "A", toNode: "B", kind: .conforms),
+            DependencyEdge(from: "B", toNode: "C", kind: .inherits),
+            DependencyEdge(from: "C", toNode: "D", kind: .imports)
         ]
         let script = makeScript(edges: edges)
         #expect(script.text.contains("A --> B"))
@@ -72,8 +72,8 @@ struct DepsPlantUMLTests {
     @Test("cyclic nodes are annotated with a note block")
     func cyclicNodesAnnotated() {
         let edges = [
-            DependencyEdge(from: "Alpha", to: "Beta", kind: .imports),
-            DependencyEdge(from: "Beta", to: "Alpha", kind: .imports)
+            DependencyEdge(from: "Alpha", toNode: "Beta", kind: .imports),
+            DependencyEdge(from: "Beta", toNode: "Alpha", kind: .imports)
         ]
         let script = makeScript(edges: edges)
         #expect(script.text.contains("CyclicDependencies"))
@@ -84,7 +84,7 @@ struct DepsPlantUMLTests {
     @Test("no cycles means no cycle note block")
     func noCyclesNoNote() {
         let edges = [
-            DependencyEdge(from: "A", to: "B", kind: .conforms)
+            DependencyEdge(from: "A", toNode: "B", kind: .conforms)
         ]
         let script = makeScript(edges: edges)
         #expect(script.text.contains("CyclicDependencies") == false)
@@ -97,7 +97,7 @@ struct DepsPlantUMLTests {
         // With no edges the script is just "@startuml\n@enduml", and with one it is barely
         // longer. Neither compresses below its own length, so both once encoded to "" (#57).
         let edges = (0..<edgeCount).map { num in
-            DependencyEdge(from: "Dog\(num)", to: "Animal\(num)", kind: .inherits)
+            DependencyEdge(from: "Dog\(num)", toNode: "Animal\(num)", kind: .inherits)
         }
         let script = makeScript(edges: edges)
         #expect(PlantUMLTextDecoding.decode(script.encodeText()) == script.text)

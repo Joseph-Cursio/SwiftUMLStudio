@@ -64,7 +64,7 @@ struct ComponentExtractorTests {
         let model = ComponentExtractor.extract(
             package: makeDemoPackage(), packageRoot: dummyRoot
         )
-        let edges = Set(model.dependencies.map { "\($0.from)→\($0.to)" })
+        let edges = Set(model.dependencies.map { "\($0.from)→\($0.toComponent)" })
         #expect(edges == ["Persistence→Networking", "App→Persistence", "App→Networking"])
     }
 
@@ -89,7 +89,7 @@ struct ComponentExtractorTests {
             ]
         )
         let model = ComponentExtractor.extract(package: extras, packageRoot: dummyRoot)
-        let edges = Set(model.dependencies.map { "\($0.from)→\($0.to)" })
+        let edges = Set(model.dependencies.map { "\($0.from)→\($0.toComponent)" })
         // Only the Other → Lib edge survives; Other → TestHelpers is pruned.
         #expect(edges == ["Other→Lib"])
     }
@@ -169,7 +169,7 @@ struct ComponentScriptPlantUMLTests {
                 Component(name: "Networking", kind: .library, providedInterfaces: ["HttpClient"]),
                 Component(name: "App", kind: .executable, providedInterfaces: ["AppMain"])
             ],
-            dependencies: [ComponentDependency(from: "App", to: "Networking")]
+            dependencies: [ComponentDependency(from: "App", toComponent: "Networking")]
         )
         let script = ComponentScript(model: model, configuration: .default)
         #expect(script.text.contains("@startuml"))
@@ -188,7 +188,7 @@ struct ComponentScriptPlantUMLTests {
                 Component(name: "swift-syntax", kind: .library),
                 Component(name: "App.Main", kind: .executable)
             ],
-            dependencies: [ComponentDependency(from: "App.Main", to: "swift-syntax")]
+            dependencies: [ComponentDependency(from: "App.Main", toComponent: "swift-syntax")]
         )
         let script = ComponentScript(model: model, configuration: .default)
         #expect(script.text.contains("as swift_syntax"))
@@ -214,7 +214,7 @@ struct ComponentScriptMermaidTests {
                 Component(name: "Networking", kind: .library, providedInterfaces: ["HttpClient"]),
                 Component(name: "App", kind: .executable, providedInterfaces: [])
             ],
-            dependencies: [ComponentDependency(from: "App", to: "Networking")]
+            dependencies: [ComponentDependency(from: "App", toComponent: "Networking")]
         )
         var configuration = Configuration.default
         configuration.format = .mermaid

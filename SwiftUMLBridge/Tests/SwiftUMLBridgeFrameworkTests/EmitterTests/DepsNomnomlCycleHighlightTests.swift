@@ -66,9 +66,9 @@ struct DepsNomnomlCycleHighlightTests {
     @Test("a modules cycle's boxes are the warning ones, and a box off the cycle is not")
     func modulesCycle() throws {
         let (graph, text) = try graph([
-            DependencyEdge(from: "Alpha", to: "Beta", kind: .imports),
-            DependencyEdge(from: "Beta", to: "Alpha", kind: .imports),
-            DependencyEdge(from: "App", to: "Alpha", kind: .imports)
+            DependencyEdge(from: "Alpha", toNode: "Beta", kind: .imports),
+            DependencyEdge(from: "Beta", toNode: "Alpha", kind: .imports),
+            DependencyEdge(from: "App", toNode: "Alpha", kind: .imports)
         ])
         let types = Dictionary(uniqueKeysWithValues: graph.nodes.map { ($0.id, $0.type) })
         #expect(types == ["Alpha": "warning", "Beta": "warning", "App": "class"], "\(text)")
@@ -77,8 +77,8 @@ struct DepsNomnomlCycleHighlightTests {
     @Test("a cycle between stereotyped targets colours the targets' own boxes")
     func stereotypedModulesCycle() throws {
         let (graph, text) = try graph([
-            DependencyEdge(from: "Core", to: "UI", kind: .imports),
-            DependencyEdge(from: "UI", to: "Core", kind: .imports)
+            DependencyEdge(from: "Core", toNode: "UI", kind: .imports),
+            DependencyEdge(from: "UI", toNode: "Core", kind: .imports)
         ], targetKinds: ["Core": .library, "UI": .executable])
         let types = Dictionary(uniqueKeysWithValues: graph.nodes.map { ($0.id, $0.type) })
         #expect(types == ["Core «library»": "warning", "UI «executable»": "warning"], "\(text)")
@@ -87,8 +87,8 @@ struct DepsNomnomlCycleHighlightTests {
     @Test("a node with an edge to itself is a warning box")
     func selfLoop() throws {
         let (graph, text) = try graph([
-            DependencyEdge(from: "Node", to: "Node", kind: .inherits),
-            DependencyEdge(from: "Leaf", to: "Node", kind: .inherits)
+            DependencyEdge(from: "Node", toNode: "Node", kind: .inherits),
+            DependencyEdge(from: "Leaf", toNode: "Node", kind: .inherits)
         ])
         let types = Dictionary(uniqueKeysWithValues: graph.nodes.map { ($0.id, $0.type) })
         #expect(types == ["Node": "warning", "Leaf": "class"], "\(text)")
@@ -97,8 +97,8 @@ struct DepsNomnomlCycleHighlightTests {
     @Test("a cycle node whose name nomnoml escapes keeps one box")
     func escapedName() throws {
         let (graph, text) = try graph([
-            DependencyEdge(from: "Box<T>", to: "Wrap|Of", kind: .inherits),
-            DependencyEdge(from: "Wrap|Of", to: "Box<T>", kind: .conforms)
+            DependencyEdge(from: "Box<T>", toNode: "Wrap|Of", kind: .inherits),
+            DependencyEdge(from: "Wrap|Of", toNode: "Box<T>", kind: .conforms)
         ])
         #expect(graph.nodes.count == 2, "\(graph.nodes)\n\(text)")
         #expect(graph.nodes.allSatisfy { $0.type == "warning" }, "\(graph.nodes)\n\(text)")
@@ -107,9 +107,9 @@ struct DepsNomnomlCycleHighlightTests {
     @Test("the warning style is declared once, however many nodes are on a cycle")
     func styleDeclaredOnce() throws {
         let (_, text) = try graph([
-            DependencyEdge(from: "Alpha", to: "Beta", kind: .imports),
-            DependencyEdge(from: "Beta", to: "Gamma", kind: .imports),
-            DependencyEdge(from: "Gamma", to: "Alpha", kind: .imports)
+            DependencyEdge(from: "Alpha", toNode: "Beta", kind: .imports),
+            DependencyEdge(from: "Beta", toNode: "Gamma", kind: .imports),
+            DependencyEdge(from: "Gamma", toNode: "Alpha", kind: .imports)
         ])
         let directives = text.components(separatedBy: "\n")
             .filter { $0 == "#.warning: fill=#ffcccc stroke=#cc0000" }

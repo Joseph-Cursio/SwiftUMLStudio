@@ -6,7 +6,7 @@ struct ThemeTests {
 
     @Test("directive theme uses given string as rawValue")
     func directiveThemeRawValue() {
-        let theme = Theme.__directive__("my-custom-theme")
+        let theme = Theme.directive("my-custom-theme")
         #expect(theme.rawValue == "my-custom-theme")
     }
 

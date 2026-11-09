@@ -87,7 +87,7 @@ nonisolated enum ProjectAnalyzer {
 
         let typeBreakdown = buildTypeBreakdown(from: types)
         let topConnected = findTopConnectedTypes(from: typeEdges)
-        let modules = Array(Set(moduleEdges.map(\.to))).sorted()
+        let modules = Array(Set(moduleEdges.map(\.toNode))).sorted()
 
         let fileCount = countSwiftFiles(in: paths)
 
@@ -166,7 +166,7 @@ nonisolated enum ProjectAnalyzer {
     ) -> [(name: String, connectionCount: Int)] {
         var counts: [String: Int] = [:]
         for edge in edges {
-            counts[edge.to, default: 0] += 1
+            counts[edge.toNode, default: 0] += 1
         }
         return counts
             .sorted { $0.value > $1.value }

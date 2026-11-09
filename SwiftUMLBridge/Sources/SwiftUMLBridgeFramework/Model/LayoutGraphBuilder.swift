@@ -179,7 +179,7 @@ struct LayoutGraphBuilder {
         var nodeNames = Set<String>()
         for edge in model.edges {
             nodeNames.insert(edge.from)
-            nodeNames.insert(edge.to)
+            nodeNames.insert(edge.toNode)
         }
 
         // In package mode the text formats label each node with its target (`--types`) or its
@@ -204,7 +204,7 @@ struct LayoutGraphBuilder {
             case .conforms: style = .realization
             case .imports: style = .dependency
             }
-            return LayoutEdge(sourceId: edge.from, targetId: edge.to, style: style)
+            return LayoutEdge(sourceId: edge.from, targetId: edge.toNode, style: style)
         }
 
         return LayoutGraph(nodes: nodes, edges: edges)
