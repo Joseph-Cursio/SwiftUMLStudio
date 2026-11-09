@@ -130,16 +130,22 @@ internal class SyntaxStructure: NSObject, Codable, @unchecked Sendable {
     /// with that SPI sees it, however `public` it is (`TypeLookup.members(ownedBy:among:from:depth:)`).
     internal var isSPI = false
 
+    /// Whether `@_spi(...)` marks the declaration in every build: outside any `#if` around the
+    /// attribute. A type of another module so marked surely does not shadow one for a file that
+    /// imports nothing with `@_spi` (`TypeLookup.seenAtFileScope(_:named:from:)`, #200).
+    internal var isSPIInEveryBuild = false
+
     /// Whether the declaration sits in a clause of an `#if` block. The parser reads every clause
     /// (#135), so it is drawn and looked up though a build may drop it
     /// (`TypeLookup.members(ownedBy:among:from:depth:)`).
     internal var isConditional = false
 
-    /// Whether an `@available` makes the declaration unavailable somewhere: `unavailable` or
-    /// `obsoleted:`, for every platform or one alone, or a Swift version it is introduced in, in
-    /// any clause of an `#if` around the attribute too. Swift lets an available type of another
-    /// module shadow it (`TypeLookup.seenAtFileScope(_:named:from:)`, #200).
-    internal var isUnavailable = false
+    /// Where an `@available` makes the declaration unavailable: in every build, for
+    /// `@available(*, unavailable)` outside any `#if`; in some builds, for `unavailable` on one
+    /// platform, `obsoleted:`, a Swift version it is introduced in, or a mark under an `#if`.
+    /// Swift lets an available type of another module shadow it
+    /// (`TypeLookup.seenAtFileScope(_:named:from:)`, #200).
+    internal var unavailability = AttributeReach.never
 
     private enum CodingKeys: String, CodingKey {
         case accessibility = "key.accessibility"
@@ -180,7 +186,8 @@ internal class SyntaxStructure: NSObject, Codable, @unchecked Sendable {
         isSugared = original.isSugared
         isSPI = original.isSPI
         isConditional = original.isConditional
-        isUnavailable = original.isUnavailable
+        isSPIInEveryBuild = original.isSPIInEveryBuild
+        unavailability = original.unavailability
         super.init()
     }
 
@@ -342,4 +349,12 @@ extension ElementKind: Codable {}
 
 extension ElementKind: UnknownCaseRepresentable {
     static let unknownCase: ElementKind = .other
+}
+
+/// In which builds an attribute that limits who sees a declaration applies: never, in some
+/// builds, as one for a platform alone or under an `#if`, or in every build.
+enum AttributeReach: Comparable, Sendable {
+    case never
+    case someBuilds
+    case everyBuild
 }

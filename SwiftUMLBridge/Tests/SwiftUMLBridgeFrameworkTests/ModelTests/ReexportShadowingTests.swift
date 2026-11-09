@@ -70,6 +70,24 @@ struct ReexportShadowingTests {
                  source: "@_exported import ModA\n\n" + base("ModX", "xOnly", access: "@_spi(Ex) open").source),
             writer("import ModX\n")
         ], member: "aOnly", hiddenLabel: nil),
+        Case(name: "a type of the re-exporter marked @_spi under an #if still shadows", files: [
+            base("ModA", "aOnly"),
+            File(module: "ModX", source: "@_exported import ModA\n\n#if os(Linux)\n@_spi(Ex)\n#endif\n"
+                 + base("ModX", "xOnly").source),
+            writer("import ModX\n")
+        ], member: "xOnly", hiddenLabel: nil),
+        Case(name: "a type of the re-exporter unavailable on another platform still shadows", files: [
+            base("ModA", "aOnly"),
+            File(module: "ModX", source: "@_exported import ModA\n\n@available(iOS, unavailable)\n"
+                 + base("ModX", "xOnly").source),
+            writer("import ModX\n")
+        ], member: "xOnly", hiddenLabel: nil),
+        Case(name: "a type of the re-exporter obsoleted in a later version still shadows", files: [
+            base("ModA", "aOnly"),
+            File(module: "ModX", source: "@_exported import ModA\n\n"
+                 + "@available(macOS, introduced: 10.15, obsoleted: 99)\n" + base("ModX", "xOnly").source),
+            writer("import ModX\n")
+        ], member: "xOnly", hiddenLabel: nil),
         Case(name: "an @_spi type of the re-exporter shadows for a file that imports it with @_spi", files: [
             base("ModA", "aOnly"),
             File(module: "ModX",

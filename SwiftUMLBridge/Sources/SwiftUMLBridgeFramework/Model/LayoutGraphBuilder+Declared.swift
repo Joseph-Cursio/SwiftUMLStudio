@@ -30,9 +30,12 @@ extension LayoutGraphBuilder {
         /// Whether the declaration, a declaration enclosing it, or its enclosing extension sits in
         /// a clause of an `#if` block (`SyntaxStructure.isConditional`), so a build may drop it.
         let isConditional: Bool
-        /// Whether the declaration itself is marked `@available(..., unavailable)`
-        /// (`SyntaxStructure.isUnavailable`), so an available one of its name may shadow it.
-        let isUnavailable: Bool
+        /// Whether `@_spi(...)` marks the declaration, a declaration enclosing it, or its enclosing
+        /// extension in every build (`SyntaxStructure.isSPIInEveryBuild`).
+        let isSPIInEveryBuild: Bool
+        /// Where an `@available` makes the declaration itself unavailable
+        /// (`SyntaxStructure.unavailability`), so an available one of its name may shadow it.
+        let unavailability: AttributeReach
         /// The type the enclosing extension extends, as written there, when there is one.
         let extended: ExtensionTarget?
         /// For a typealias, the name of the type it aliases, looked up from its own scope (#125).
@@ -73,7 +76,7 @@ extension LayoutGraphBuilder {
                 ? item.inheritedTypes?.first?.name.map { $0.removeAngleBracketsWithContent() } : nil
             isPrivate = item.accessibility == .private
             isSugared = item.isSugared
-            isUnavailable = item.isUnavailable
+            unavailability = item.unavailability
             scope = Scope(of: item, in: container)
             // Extensions are top level, so a chain holds at most one, last.
             let chain = Array(sequence(first: item) { $0 === item ? container ?? $0.parent : $0.parent })
@@ -81,6 +84,8 @@ extension LayoutGraphBuilder {
             var levels = declared.map { $0.accessibility.flatMap { $0 == .other ? nil : $0 } ?? .internal }
             let enclosingExtension = chain.first { $0.kind == .extension }
             isSPI = declared.contains { $0.isSPI } || enclosingExtension?.isSPI == true
+            isSPIInEveryBuild = declared.contains { $0.isSPIInEveryBuild }
+                || enclosingExtension?.isSPIInEveryBuild == true
             isConditional = declared.contains { $0.isConditional } || enclosingExtension?.isConditional == true
             if let enclosing = enclosingExtension, !levels.isEmpty,
                let modifier = enclosing.accessibility {

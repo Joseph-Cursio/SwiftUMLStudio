@@ -12,7 +12,7 @@ struct SyntaxStructureCloneTests {
         "runtimename", "substructure", "typename", "memberSuffix", "parent", "sourceLocation", "module",
         "imports", "loadedModules", "reexportedModules", "mergedInto", "carriedSupertypes", "mergedExtensions",
         "standsInFor",
-        "boundGenericArguments", "isSugared", "isSPI", "isConditional", "isUnavailable"
+        "boundGenericArguments", "isSugared", "isSPI", "isSPIInEveryBuild", "isConditional", "unavailability"
     ]
 
     /// A structure with every stored property set.
@@ -45,7 +45,8 @@ struct SyntaxStructureCloneTests {
         item.isSugared = true
         item.isSPI = true
         item.isConditional = true
-        item.isUnavailable = true
+        item.isSPIInEveryBuild = true
+        item.unavailability = .everyBuild
         return item
     }
 

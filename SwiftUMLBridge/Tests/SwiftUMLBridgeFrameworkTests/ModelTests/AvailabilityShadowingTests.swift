@@ -67,6 +67,11 @@ struct AvailabilityShadowingTests {
             base("ModB", "bOnly"),
             writer("import ModA\nimport ModB\n")
         ], member: "bOnly", hiddenLabel: nil),
+        Case(name: "a type unavailable in some builds shadows one unavailable in every build", files: [
+            base("ModA", "aOnly", marked: stub),
+            base("ModZ", "zOnly", marked: "@available(macOS, introduced: 10.15, obsoleted: 99)\n"),
+            writer("import ModA\nimport ModZ\n")
+        ], member: "zOnly", hiddenLabel: nil),
         Case(name: "a type marked unavailable under an #if is shadowed", files: [
             base("ModA", "aOnly", marked: "#if os(macOS)\n@available(*, unavailable)\n#endif\n"),
             base("ModB", "bOnly"), writer("import ModA\nimport ModB\n")
@@ -114,25 +119,35 @@ struct AvailabilityShadowingTests {
         try ImportAwareRankTests.expectMeans(testCase, reversed: reversed)
     }
 
-    @Test("an @available that says unavailable marks the declaration, and no other",
+    @Test("an @available that makes the declaration unavailable marks where, and no other does",
           arguments: [
-            ("@available(*, unavailable)", true),
-            ("@available(*, unavailable, renamed: \"NewBase\")", true),
-            ("@available(macOS, unavailable)", true),
-            ("@available(iOS, unavailable, message: \"use NewBase\")", true),
-            ("#if os(macOS)\n@available(*, unavailable)\n#endif", true),
-            ("@available(*, deprecated)", false),
-            ("@available(*, deprecated, message: \"unavailable\")", false),
-            ("@available(macOS 14, *)", false),
-            ("@available(macOS, introduced: 10.15, obsoleted: 11)", true),
-            ("@available(swift, obsoleted: 5)", true),
-            ("@available(swift, introduced: 99)", true),
-            ("@available(macOS, introduced: 10.15)", false),
-            ("@MainActor", false)
+            ("@available(*, unavailable)", AttributeReach.everyBuild),
+            ("@available(*, unavailable, renamed: \"NewBase\")", .everyBuild),
+            ("@available(macOS, unavailable)", .someBuilds),
+            ("@available(iOS, unavailable, message: \"use NewBase\")", .someBuilds),
+            ("#if os(macOS)\n@available(*, unavailable)\n#endif", .someBuilds),
+            ("@available(*, deprecated)", .never),
+            ("@available(*, deprecated, message: \"unavailable\")", .never),
+            ("@available(macOS 14, *)", .never),
+            ("@available(macOS, introduced: 10.15, obsoleted: 11)", .someBuilds),
+            ("@available(swift, obsoleted: 5)", .someBuilds),
+            ("@available(swift, introduced: 99)", .someBuilds),
+            ("@available(macOS, introduced: 10.15)", .never),
+            ("@MainActor", .never)
           ])
-    func parsed(attribute: String, isUnavailable: Bool) throws {
+    func parsed(attribute: String, unavailability: AttributeReach) throws {
         let source = "\(attribute)\npublic struct Base {}\n"
         let item = try #require(SyntaxStructure.create(from: source)?.substructure?.first)
-        #expect(item.isUnavailable == isUnavailable)
+        #expect(item.unavailability == unavailability)
+    }
+
+    @Test("@_spi marks a declaration in every build only outside an #if",
+          arguments: [
+            ("@_spi(Ex)", true, true), ("#if os(Linux)\n@_spi(Ex)\n#endif", true, false), ("@MainActor", false, false)
+          ])
+    func parsedSPI(attribute: String, isSPI: Bool, inEveryBuild: Bool) throws {
+        let source = "\(attribute)\npublic struct Base {}\n"
+        let item = try #require(SyntaxStructure.create(from: source)?.substructure?.first)
+        #expect(item.isSPI == isSPI && item.isSPIInEveryBuild == inEveryBuild)
     }
 }

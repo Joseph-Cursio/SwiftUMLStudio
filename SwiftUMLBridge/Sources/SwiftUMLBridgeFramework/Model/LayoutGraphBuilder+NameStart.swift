@@ -181,8 +181,9 @@ extension LayoutGraphBuilder.TypeLookup {
         return availableOverUnavailable(unshadowedByReexport(opened, named: name, from: scope), from: scope)
     }
 
-    /// `candidates` without those of other modules marked `@_spi`, when the file imports nothing
-    /// with `@_spi` and another candidate remains: Swift shows such a type only to a file that
+    /// `candidates` without those of other modules marked `@_spi` in every build
+    /// (`Declared.isSPIInEveryBuild`), when the file imports nothing with `@_spi` and another
+    /// candidate remains: Swift shows such a type only to a file that
     /// imports its module with `@_spi`, so one an `@_spi` re-exporter declares does not shadow
     /// the type it re-exports (#200). A file that imports anything with `@_spi` keeps them all, as
     /// it cannot be told which module's group that import opens.
@@ -191,7 +192,7 @@ extension LayoutGraphBuilder.TypeLookup {
     ) -> [LayoutGraphBuilder.Declared] {
         guard scope.imports?.contains(ImportExtractor.spiImport) != true else { return candidates }
         func isUnopened(_ candidate: LayoutGraphBuilder.Declared) -> Bool {
-            candidate.isSPI && candidate.scope.module.map { $0 != scope.module } == true
+            candidate.isSPIInEveryBuild && candidate.scope.module.map { $0 != scope.module } == true
         }
         guard candidates.contains(where: isUnopened), candidates.contains(where: { !isUnopened($0) }) else {
             return candidates
@@ -199,38 +200,45 @@ extension LayoutGraphBuilder.TypeLookup {
         return candidates.filter { !isUnopened($0) }
     }
 
-    /// `candidates` without the unavailable ones (`Declared.isUnavailable`) of other modules, when
-    /// one of another module is available: Swift lets an available type shadow an unavailable one,
-    /// such as a stub `@available(*, unavailable, renamed: "NewBase")` leaves behind (#200). It
-    /// runs last, as the writer's own module and a scoped import each shadow first, unavailable or
-    /// not, so a candidate of the writer's module or of no known module stays. A
-    /// candidate unavailable on one platform alone counts too: where it is available the name is
-    /// ambiguous, and the file builds only where the available one is meant. Swift reads no
-    /// availability in a member's lookup, `Foo.X`, so it does not run there.
+    /// `candidates` without the unavailable ones (`Declared.unavailability`) of other modules, when
+    /// one of another module is less so: Swift lets an available type shadow an unavailable one,
+    /// such as a stub `@available(*, unavailable, renamed: "NewBase")` leaves behind (#200). Those
+    /// unavailable in every build go first, then, among the rest, those unavailable in some
+    /// builds, as on one platform alone or after `obsoleted:`: where such a one is available the
+    /// name is ambiguous, so the file builds only where the other is meant. It runs last, as the
+    /// writer's own module, a scoped import and a re-exporter each shadow first, so a candidate of
+    /// the writer's module or of no known module stays. Swift reads no availability in a
+    /// member's lookup, `Foo.X`, so it does not run there.
     private func availableOverUnavailable(
         _ candidates: [LayoutGraphBuilder.Declared], from scope: LayoutGraphBuilder.Scope
     ) -> [LayoutGraphBuilder.Declared] {
         func isImported(_ candidate: LayoutGraphBuilder.Declared) -> Bool {
             candidate.scope.module.map { $0 != scope.module } ?? false
         }
-        guard candidates.contains(where: { isImported($0) && $0.isUnavailable }),
-              candidates.contains(where: { isImported($0) && !$0.isUnavailable }) else { return candidates }
-        return candidates.filter { !isImported($0) || !$0.isUnavailable }
+        var kept = candidates
+        for reach in [AttributeReach.everyBuild, .someBuilds] {
+            guard kept.contains(where: { isImported($0) && $0.unavailability == reach }),
+                  kept.contains(where: { isImported($0) && $0.unavailability < reach }) else { continue }
+            kept = kept.filter { !isImported($0) || $0.unavailability != reach }
+        }
+        return kept
     }
 
     /// `candidates` without those of a module that another candidate's module re-exports: a file
     /// that sees both through that one means the re-exporter's, as Swift lets a module's own
     /// declaration shadow one it re-exports (#200). It runs only among the candidates the file
     /// already sees, so `import Alpha` alone keeps Alpha's, and an internal one of the
-    /// re-exporter shadows nothing. Nor does one the file may not see: one marked `@_spi`, unless
-    /// the file imports something with `@_spi` (`withoutUnopenedSPI(_:from:)` drops it before),
-    /// and one under an `#if`, which a build may drop, so there the read order decides, as before.
-    /// A file that imports both modules itself does not build, so each candidate's module's
-    /// re-exports are enough, without the file's direct imports, except where the re-exporter's
-    /// candidate is unavailable: there Swift means the re-exported one, reached another way, and
-    /// a file that reaches it only through the re-exporter does not build, so an unavailable
-    /// candidate shadows nothing either. It reads the writer's module and imports and each
-    /// candidate's own data, so `SharedLookupKey` holds what it depends on.
+    /// re-exporter shadows nothing. Nor does one the file may not see: one marked `@_spi` in
+    /// every build, unless the file imports something with `@_spi` (`withoutUnopenedSPI(_:from:)`
+    /// drops it before), and one under an `#if`, which a build may drop, so there the read order
+    /// decides, as before. A file that imports both modules itself does not build, so each
+    /// candidate's module's re-exports are enough, without the file's direct imports, except
+    /// where the re-exporter's candidate is unavailable in every build: there Swift means the
+    /// re-exported one, reached another way, and a file that reaches it only through the
+    /// re-exporter does not build, so it shadows nothing either. One unavailable in some builds
+    /// alone still shadows, as Swift reads re-exports before availability. It reads the writer's
+    /// module and imports and each candidate's own data, so `SharedLookupKey` holds what it
+    /// depends on.
     private func unshadowedByReexport(
         _ candidates: [LayoutGraphBuilder.Declared], named name: String, from scope: LayoutGraphBuilder.Scope
     ) -> [LayoutGraphBuilder.Declared] {
@@ -238,7 +246,7 @@ extension LayoutGraphBuilder.TypeLookup {
         let opensSPI = scope.imports?.contains(ImportExtractor.spiImport) == true
         var shadowed: Set<String> = []
         for candidate in candidates where candidate.scope.module != scope.module && !candidate.isConditional
-            && !candidate.isUnavailable && (!candidate.isSPI || opensSPI) {
+            && candidate.unavailability != .everyBuild && (!candidate.isSPIInEveryBuild || opensSPI) {
             shadowed.formUnion(candidate.scope.reexports ?? [])
         }
         guard !shadowed.isEmpty else { return candidates }
