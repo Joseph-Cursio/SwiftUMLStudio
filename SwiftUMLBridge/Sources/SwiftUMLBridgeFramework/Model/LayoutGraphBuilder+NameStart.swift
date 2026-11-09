@@ -176,8 +176,32 @@ extension LayoutGraphBuilder.TypeLookup {
             guard let module = candidate.scope.module, module != scope.module else { return nil }
             return seesAlone(name, in: module, from: scope)
         }
-        guard seen.contains(where: { isScoped($0) == true }) else { return seen }
-        return seen.filter { isScoped($0) != false }
+        let unscoped = seen.contains { isScoped($0) == true } ? seen.filter { isScoped($0) != false } : seen
+        return unshadowedByReexport(unscoped, named: name, from: scope)
+    }
+
+    /// `candidates` without those of a module that another candidate's module re-exports: a file
+    /// that sees both through that one means the re-exporter's, as Swift lets a module's own
+    /// declaration shadow one it re-exports (#200). It runs only among the candidates the file
+    /// already sees, so `import Alpha` alone keeps Alpha's, and an internal one of the
+    /// re-exporter shadows nothing. A file that imports both modules itself does not build, so
+    /// each candidate's module's re-exports are enough, without the file's direct imports. It
+    /// reads the writer's module and each candidate's own data, so `SharedLookupKey` holds what
+    /// it depends on.
+    private func unshadowedByReexport(
+        _ candidates: [LayoutGraphBuilder.Declared], named name: String, from scope: LayoutGraphBuilder.Scope
+    ) -> [LayoutGraphBuilder.Declared] {
+        guard candidates.count > 1 else { return candidates }
+        var shadowed: Set<String> = []
+        for candidate in candidates where candidate.scope.module != scope.module {
+            shadowed.formUnion(candidate.scope.reexports ?? [])
+        }
+        guard !shadowed.isEmpty else { return candidates }
+        return candidates.filter { candidate in
+            guard let module = candidate.scope.module, module != scope.module else { return true }
+            let written = modules.writtenName(of: module)
+            return !shadowed.contains(module) && !shadowed.contains(written) && !shadowed.contains("\(written).\(name)")
+        }
     }
 
     /// `members` of the type a dotted name starts at, or of the type a module-qualified name
