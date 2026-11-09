@@ -94,10 +94,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   no longer ends on that alias's extension, nor does a name in an extension
   of an outside type, as `Sendable` in `extension Date`, on another target's
   `extension Sendable` of something else. Both of those edges are now left
-  out, as a drawn box has the name they would be written to. Still open: a
-  dotted name through an alias of a type outside the diagram, as `Base.Inner`
-  after `typealias Base = First`, resolves to its spelling, so it ends on the
-  first such box and `--merge-extensions` merges them.
+  out, as a drawn box has the name they would be written to. A dotted name
+  through an alias of a type outside the diagram is followed too, with
+  `--package` since #247's fix below and now without it: with
+  `typealias Base = First` and `extension Base.Inner` in ModA, and
+  `typealias Base = Second` and `extension Base.Inner` in ModB, ModB's
+  `struct U: Base.Inner` ends on ModB's box, and `--merge-extensions` keeps
+  the two boxes apart, where without `--package` it merged them. With no
+  `Base.Inner` extension in ModB, the edge is written to `Second.Inner`, as a
+  node of its own. `extension Day.FormatStyle` after `typealias Day = Date`
+  merges with `extension Date.FormatStyle` without `--package` too. Without
+  `--package`, nothing says which directories a file sees, so an alias of the
+  first component's target in another directory, as a `typealias Second =
+  First` beside ModA's extension, is still followed, and the edge can end on
+  that directory's `extension First.Inner`, as it does for a whole alias.
 - **With nested types hidden, an extension of a nested type is judged by the
   nearest one, not the first read** (#232). With `showNestedTypes: false`,
   whether `extension Box.Inner.Stamp` extends a project type took the first
