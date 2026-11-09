@@ -65,6 +65,17 @@ change; config files, the CLI, and the diagrams it writes do not.
 
 ### Fixed — Bridge
 
+- **A config file's camelCase theme is written in PlantUML's kebab-case.**
+  The reference said `theme: carbonGray` writes `!theme carbon-gray`, but
+  every config value was written as typed, so `!theme carbonGray` named no
+  PlantUML theme. A value that is a built-in theme's case name, exactly as
+  written, now gives that theme's kebab-case name. Any other value is
+  still written as typed, so a hosted theme
+  (`hacker from https://example.com/themes`) and an already-kebab
+  `reddress-darkblue` are unchanged. The reference's theme table listed
+  the reddress themes as `reddress-darkBlue` and the like, written as typed
+  with the capital letter; it now lists their case names, such as
+  `reddressDarkblue`.
 - **With `--package`, a bare name seen in two targets follows Swift's shadowing by
   re-export and by availability, not read order** (#200). A target's own type
   shadows a same-named one of a target it re-exports: in a file that imports

@@ -655,7 +655,7 @@ includeRemoteURL:
 
 # ─── theme ─────────────────────────────────────────────────────────────────
 theme: minty
-  # PlantUML theme name. camelCase names are converted to kebab-case automatically.
+  # PlantUML theme name. A built-in theme's camelCase name (see Themes) is written in kebab-case.
   # Anything else PlantUML's !theme takes, such as "name from <url>", is passed as written.
   # Ignored when format is 'mermaid'. Class diagrams only.
   # Type: String?  Default: nil
@@ -1140,7 +1140,7 @@ This emits: `#line:royalBlue;line.dashed;text:royalBlue` inline on the PlantUML 
 
 ## Themes
 
-Set a PlantUML built-in theme with the `theme` key. camelCase names are automatically converted to kebab-case (e.g., `carbonGray` → `carbon-gray`). This setting is ignored when `format: mermaid`.
+Set a PlantUML built-in theme with the `theme` key. A built-in theme's camelCase name is converted to PlantUML's kebab-case (e.g., `carbonGray` → `carbon-gray`); it must be written exactly so, as `CarbonGray` is not converted. Any other value is written after `!theme` as it is. This setting is ignored when `format: mermaid`.
 
 **Preferred themes (tested):**
 
@@ -1154,11 +1154,11 @@ Set a PlantUML built-in theme with the `theme` key. camelCase names are automati
 | `sketchy` | Hand-drawn look |
 | `sketchyOutline` | `sketchy-outline` |
 | `carbonGray` | `carbon-gray` |
-| `reddress-darkBlue` | Dark blue header style |
-| `reddress-darkOrange` | Dark orange header style |
-| `reddress-darkRed` | Dark red header style |
-| `reddress-darkGreen` | Dark green header style |
-| `reddress-lightBlue` | Light blue header style |
+| `reddressDarkblue` | Dark blue header style |
+| `reddressDarkorange` | Dark orange header style |
+| `reddressDarkred` | Dark red header style |
+| `reddressDarkgreen` | Dark green header style |
+| `reddressLightblue` | Light blue header style |
 | `spacelab` | Bootstrap-inspired |
 | `amiga` | Retro Amiga palette |
 | `cerulean` | Blue-gray |
