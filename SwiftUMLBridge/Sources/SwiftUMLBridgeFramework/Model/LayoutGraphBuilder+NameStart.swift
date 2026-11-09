@@ -305,10 +305,16 @@ extension LayoutGraphBuilder.TypeLookup {
     /// `typealias Arr = [Int]`, so a name the lookup finds nothing for, as a hidden nested type,
     /// comes to the name it would through a typealias of the whole. `nil` when its start is no
     /// such type, or when another type is recorded under that spelling, which an edge to the name
-    /// would seem to end on, as a `Bar.V` that `Foo.V` does not mean.
+    /// would seem to end on, as a `Bar.V` that `Foo.V` does not mean. `nil` too inside an
+    /// extension of a type outside the diagram, where the first component may be one of that
+    /// type's members (`mayMeanOutsideMember(from:depth:)`), as `Base` in `extension Host` is
+    /// `Host.Base` when Host has one: the name is left as written, as
+    /// `sureResolvedName(of:from:depth:)` leaves it unsure, so the text formats never write the
+    /// edge to a box the graph does not end it on, nor leave it out as the graph's.
     func spelledThroughStart(
         _ name: LayoutGraphBuilder.QualifiedName, from scope: LayoutGraphBuilder.Scope, depth: Int
     ) -> String? {
+        guard name.root != .asWritten || !mayMeanOutsideMember(from: scope, depth: depth) else { return nil }
         let start = started(name, from: scope, depth: depth).start
             ?? outsideStartWithoutModule(of: name, from: scope, depth: depth)
         guard let renamed = startSpelling(of: start) else { return nil }
@@ -324,18 +330,13 @@ extension LayoutGraphBuilder.TypeLookup {
     /// `typealias Base` and `extension Base.Inner` stay apart, as two targets' do. With no
     /// modules, a leading component of what the alias comes to may be one, so a spelling that
     /// ends in a name the project records, as `Main.Real` after `typealias O = Main.Real` in the
-    /// module `Main`, may be the project's own `Real` and is no sure outside type. Inside an
-    /// extension of a type outside the diagram the first component may be one of that type's
-    /// members, as `Base` in `extension Host` is `Host.Base` when Host has one, so the name is
-    /// left as written there, as `sureResolvedName(of:from:depth:)` leaves it unsure
-    /// (`mayMeanOutsideMember(from:depth:)`). `nil` for any other name; only the spelling reads
-    /// it, never the lookup's candidates.
+    /// module `Main`, may be the project's own `Real` and is no sure outside type. `nil` for any
+    /// other name; only the spelling reads it, never the lookup's candidates.
     private func outsideStartWithoutModule(
         of name: LayoutGraphBuilder.QualifiedName, from scope: LayoutGraphBuilder.Scope, depth: Int
     ) -> LayoutGraphBuilder.NameStart? {
         guard scope.module == nil, name.root == .asWritten, name.start == nil,
               let dot = name.name.firstIndex(of: "."),
-              !mayMeanOutsideMember(from: scope, depth: depth),
               firstComponentType(of: name.name, from: scope, depth: depth) == nil,
               let spelled = outsideSpelling(of: String(name.name[..<dot]), from: scope, depth: depth)
         else { return nil }

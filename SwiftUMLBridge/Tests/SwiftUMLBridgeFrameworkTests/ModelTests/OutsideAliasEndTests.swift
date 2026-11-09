@@ -344,18 +344,19 @@ extension OutsideAliasEndTests {
 
     /// Inside `extension Host`, `Base` is `Out`'s `Host.Base` when Host has such a member, which
     /// Swift looks in before the module-level alias, so `Base.Inner` may not be `First.Inner`.
-    /// Without modules the name is left as written: never spelled `First.Inner`, which would end
-    /// on the project's `extension First.Inner` box, or with that box drawn, leave the edge out.
-    @Test("without modules, a dotted name in an extension of an outside type is not spelled through the alias",
-          arguments: [true, false])
-    func dottedOutsideAliasMayMeanOutsideMember(withFirstExtension: Bool) throws {
+    /// The name is left as written, as the drawn graph leaves it unsure: never spelled
+    /// `First.Inner`, which would end on the project's `extension First.Inner` box, or with that
+    /// box drawn, leave the edge out of the text formats, which take it for the graph's.
+    @Test("a dotted name in an extension of an outside type is not spelled through the alias",
+          arguments: [true, false], [true, false])
+    func dottedOutsideAliasMayMeanOutsideMember(withModules: Bool, withFirstExtension: Bool) throws {
         let source = """
             import Out
             typealias Base = First
             \(withFirstExtension ? "extension First.Inner { func viaFirst() {} }" : "")
             extension Host { struct U: Base.Inner {} }
             """
-        let items = try directoryItems([("App", source)])
+        let items = try dottedItems([("App", source)], withModules: withModules)
         let drawn = graph(items, .all)
         #expect(!drawn.edgeEnds.contains { $0.hasPrefix("Host.U -> ") })
         for format in [DiagramFormat.plantuml, .mermaid] {
