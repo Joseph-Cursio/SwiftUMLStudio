@@ -169,7 +169,10 @@ extension LayoutGraphBuilder.TypeLookup {
         let seen = candidates.filter { candidate in
             candidate.scope.module.map { sees(name, in: $0, from: scope) } ?? true
         }
-        guard seen.count > 1 else { return seen }
+        // Each step below drops only candidates of a known module other than the writer's, so with
+        // none of those it can drop nothing: sources read without their package skip them all.
+        guard seen.count > 1,
+              seen.contains(where: { $0.scope.module.map { $0 != scope.module } ?? false }) else { return seen }
         // Whether a scoped import names an imported candidate; `nil` for one of the file's own
         // module or of no known module, which ranks as before.
         func isScoped(_ candidate: LayoutGraphBuilder.Declared) -> Bool? {

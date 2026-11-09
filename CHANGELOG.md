@@ -8,6 +8,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed — Bridge and Studio (build)
+
+- **Compiler warnings are errors.** `Package.swift` gives every Bridge
+  target `.treatAllWarnings(as: .error)`, and the Studio project sets
+  `SWIFT_TREAT_WARNINGS_AS_ERRORS` and `GCC_TREAT_WARNINGS_AS_ERRORS` in
+  all three configurations, so a warning now fails the local build and
+  CI. A clean build of each had no warnings. SwiftPM ignores warning
+  settings for a package built as a dependency, so a project that depends
+  on SwiftUMLBridge still builds when a newer compiler adds a warning.
+  Notes from Xcode's App Intents metadata tool are not compiler warnings
+  and do not count.
+
 ### Changed — Bridge (test infrastructure)
 
 - **Wall-clock time limits are checked only off CI** (#237). Eight limits
