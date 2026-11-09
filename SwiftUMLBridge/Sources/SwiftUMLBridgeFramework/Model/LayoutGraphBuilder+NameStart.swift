@@ -324,13 +324,18 @@ extension LayoutGraphBuilder.TypeLookup {
     /// `typealias Base` and `extension Base.Inner` stay apart, as two targets' do. With no
     /// modules, a leading component of what the alias comes to may be one, so a spelling that
     /// ends in a name the project records, as `Main.Real` after `typealias O = Main.Real` in the
-    /// module `Main`, may be the project's own `Real` and is no sure outside type. `nil` for any
-    /// other name; only the spelling reads it, never the lookup's candidates.
+    /// module `Main`, may be the project's own `Real` and is no sure outside type. Inside an
+    /// extension of a type outside the diagram the first component may be one of that type's
+    /// members, as `Base` in `extension Host` is `Host.Base` when Host has one, so the name is
+    /// left as written there, as `sureResolvedName(of:from:depth:)` leaves it unsure
+    /// (`mayMeanOutsideMember(from:depth:)`). `nil` for any other name; only the spelling reads
+    /// it, never the lookup's candidates.
     private func outsideStartWithoutModule(
         of name: LayoutGraphBuilder.QualifiedName, from scope: LayoutGraphBuilder.Scope, depth: Int
     ) -> LayoutGraphBuilder.NameStart? {
         guard scope.module == nil, name.root == .asWritten, name.start == nil,
               let dot = name.name.firstIndex(of: "."),
+              !mayMeanOutsideMember(from: scope, depth: depth),
               firstComponentType(of: name.name, from: scope, depth: depth) == nil,
               let spelled = outsideSpelling(of: String(name.name[..<dot]), from: scope, depth: depth)
         else { return nil }

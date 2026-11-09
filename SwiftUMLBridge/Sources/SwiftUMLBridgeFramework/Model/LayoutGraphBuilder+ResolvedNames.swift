@@ -64,7 +64,7 @@ extension LayoutGraphBuilder.TypeLookup {
     /// Whether a name written in `scope` may be a member of a type outside the diagram: it is
     /// written in an extension of sugar, or of a type the project does not declare
     /// (`startsAtProjectType(_:from:depth:)`).
-    private func mayMeanOutsideMember(from scope: LayoutGraphBuilder.Scope, depth: Int) -> Bool {
+    func mayMeanOutsideMember(from scope: LayoutGraphBuilder.Scope, depth: Int) -> Bool {
         guard let enclosing = scope.enclosingExtension else { return false }
         guard !enclosing.isSugared else { return true }
         // An extension's own clause sees no enclosing types, only its file, module and imports.

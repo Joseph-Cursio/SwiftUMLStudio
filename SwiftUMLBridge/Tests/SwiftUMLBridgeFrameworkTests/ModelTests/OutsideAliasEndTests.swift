@@ -342,6 +342,28 @@ extension OutsideAliasEndTests {
             == ["Base.Inner <|-- Date.U : inherits"])
     }
 
+    /// Inside `extension Host`, `Base` is `Out`'s `Host.Base` when Host has such a member, which
+    /// Swift looks in before the module-level alias, so `Base.Inner` may not be `First.Inner`.
+    /// Without modules the name is left as written: never spelled `First.Inner`, which would end
+    /// on the project's `extension First.Inner` box, or with that box drawn, leave the edge out.
+    @Test("without modules, a dotted name in an extension of an outside type is not spelled through the alias",
+          arguments: [true, false])
+    func dottedOutsideAliasMayMeanOutsideMember(withFirstExtension: Bool) throws {
+        let source = """
+            import Out
+            typealias Base = First
+            \(withFirstExtension ? "extension First.Inner { func viaFirst() {} }" : "")
+            extension Host { struct U: Base.Inner {} }
+            """
+        let items = try directoryItems([("App", source)])
+        let drawn = graph(items, .all)
+        #expect(!drawn.edgeEnds.contains { $0.hasPrefix("Host.U -> ") })
+        for format in [DiagramFormat.plantuml, .mermaid] {
+            #expect(ClassDiagramIds.lines(of: script(items, format), containing: "<|--")
+                == ["Base.Inner <|-- Host.U : inherits"])
+        }
+    }
+
     /// `Day.FormatStyle` is `Date.FormatStyle` to Swift, as `Day` is `Date`.
     @Test("an outside type's nested name through its alias merges with the name spelled directly",
           arguments: [true, false])
