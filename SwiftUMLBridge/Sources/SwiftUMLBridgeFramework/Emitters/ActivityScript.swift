@@ -92,12 +92,12 @@ private extension ActivityScript {
     }
 
     static func plantUMLEdgeLine(_ edge: ActivityEdge, graph: ActivityGraph) -> String {
-        let from = plantUMLRef(id: edge.fromId, graph: graph)
-        let to = plantUMLRef(id: edge.toId, graph: graph)
+        let source = plantUMLRef(id: edge.fromId, graph: graph)
+        let target = plantUMLRef(id: edge.toId, graph: graph)
         if let label = edge.label, !label.isEmpty {
-            return "\(from) --> \(to) : \(plantUMLEscape(label))"
+            return "\(source) --> \(target) : \(plantUMLEscape(label))"
         }
-        return "\(from) --> \(to)"
+        return "\(source) --> \(target)"
     }
 
     static func plantUMLRef(id: Int, graph: ActivityGraph) -> String {
@@ -160,14 +160,14 @@ private extension ActivityScript {
     }
 
     static func mermaidEdgeLine(_ edge: ActivityEdge) -> String {
-        let from = "N\(edge.fromId)"
-        let to = "N\(edge.toId)"
+        let source = "N\(edge.fromId)"
+        let target = "N\(edge.toId)"
         if let label = edge.label, !label.isEmpty {
             // Quoted, since Mermaid rejects a `(` or `[` in a bare edge label and with it the whole
             // diagram: `-->|.failure(let error)|` and `-->|#if os(iOS)|` did not parse.
-            return "\(from) -->|\"\(mermaidEscape(label))\"| \(to)"
+            return "\(source) -->|\"\(mermaidEscape(label))\"| \(target)"
         }
-        return "\(from) --> \(to)"
+        return "\(source) --> \(target)"
     }
 }
 

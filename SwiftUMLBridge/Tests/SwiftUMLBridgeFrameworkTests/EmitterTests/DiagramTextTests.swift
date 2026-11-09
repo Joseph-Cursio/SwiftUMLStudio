@@ -12,8 +12,8 @@ struct DiagramTextTests {
         // Provide exactly 2 bytes: exercises the byteIndex + 2 == count branch
         let bytes: [UInt8] = [0xAB, 0xCD]
         let data = NSData(bytes: bytes, length: bytes.count)
-        let dt = DiagramText(rawValue: "")
-        let encoded = dt.base64plantuml(data)
+        let diagramText = DiagramText(rawValue: "")
+        let encoded = diagramText.base64plantuml(data)
         // Two input bytes → three encoded chars + one '=' padding
         let encodedBytes = Array(encoded.utf8)
         #expect(encodedBytes.last == 61) // '=' is ASCII 61
@@ -24,8 +24,8 @@ struct DiagramTextTests {
     func base64plantumlNoPadding() {
         let bytes: [UInt8] = [0x01, 0x02, 0x03]
         let data = NSData(bytes: bytes, length: bytes.count)
-        let dt = DiagramText(rawValue: "")
-        let encoded = dt.base64plantuml(data)
+        let diagramText = DiagramText(rawValue: "")
+        let encoded = diagramText.base64plantuml(data)
         // Three input bytes → four encoded chars, no padding
         let encodedBytes = Array(encoded.utf8)
         #expect(encodedBytes.last != 61)
@@ -36,8 +36,8 @@ struct DiagramTextTests {
     func base64plantumlOneBytePadding() {
         let bytes: [UInt8] = [0xFF]
         let data = NSData(bytes: bytes, length: bytes.count)
-        let dt = DiagramText(rawValue: "")
-        let encoded = dt.base64plantuml(data)
+        let diagramText = DiagramText(rawValue: "")
+        let encoded = diagramText.base64plantuml(data)
         // One input byte → two encoded chars + two '=' padding
         let encodedBytes = Array(encoded.utf8)
         #expect(encodedBytes.filter { $0 == 61 }.count == 2)
