@@ -126,6 +126,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   `typealias Second = First` beside ModA's extension, may be followed instead,
   and the edge can end on that directory's `extension First.Inner`, as it does
   for a whole alias.
+- **A dotted name through a typealias declared inside a type ends on the
+  extension of the member it comes to.** With `extension First.Inner` drawn,
+  `struct Mine { typealias Base = First; class X: Base.Inner {} }` lost
+  `X`'s edge in every format, with or without `--package`: the SVG's end for
+  a type outside the diagram followed only an alias recorded under its own
+  name, where `Mine`'s is recorded as `Mine.Base`, and the text formats left
+  the edge out as the graph's. It now ends on that box everywhere, as it does
+  for a `typealias Base = First` at file scope, and so does one in the
+  project's own extension of a type outside the diagram.
 - **With nested types hidden, an extension of a nested type is judged by the
   nearest one, not the first read** (#232). With `showNestedTypes: false`,
   whether `extension Box.Inner.Stamp` extends a project type took the first
