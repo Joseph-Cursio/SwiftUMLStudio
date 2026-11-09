@@ -231,14 +231,14 @@ extension LayoutGraphBuilder.TypeLookup {
     /// re-exporter shadows nothing. Nor does one the file may not see: one marked `@_spi` in
     /// every build, unless the file imports something with `@_spi` (`withoutUnopenedSPI(_:from:)`
     /// drops it before), and one under an `#if`, which a build may drop, so there the read order
-    /// decides, as before. A file that imports both modules itself does not build, so each
-    /// candidate's module's re-exports are enough, without the file's direct imports, except
-    /// where the re-exporter's candidate is unavailable in every build: there Swift means the
-    /// re-exported one, reached another way, and a file that reaches it only through the
-    /// re-exporter does not build, so it shadows nothing either. One unavailable in some builds
-    /// alone still shadows, as Swift reads re-exports before availability. It reads the writer's
-    /// module and imports and each candidate's own data, so `SharedLookupKey` holds what it
-    /// depends on.
+    /// decides, as before. Nor does a re-export shadow a module the file imports directly
+    /// (`ModuleReexports.directImportPrefix`): where both types are available that file does not
+    /// build, and where the re-exporter's is unavailable Swift means the other. A re-exporter's
+    /// candidate unavailable in every build shadows nothing at all, as a file that reaches the
+    /// other only through it does not build either, and so it stays right for a file that
+    /// reaches the other through a second re-exporter. One unavailable in some builds alone
+    /// still shadows, as Swift reads re-exports before availability. It reads the writer's module
+    /// and imports and each candidate's own data, so `SharedLookupKey` holds what it depends on.
     private func unshadowedByReexport(
         _ candidates: [LayoutGraphBuilder.Declared], named name: String, from scope: LayoutGraphBuilder.Scope
     ) -> [LayoutGraphBuilder.Declared] {
@@ -253,6 +253,10 @@ extension LayoutGraphBuilder.TypeLookup {
         return candidates.filter { candidate in
             guard let module = candidate.scope.module, module != scope.module else { return true }
             let written = modules.writtenName(of: module)
+            let direct = ModuleReexports.directImportPrefix
+            if scope.imports?.contains(direct + written) == true || scope.imports?.contains(direct + module) == true {
+                return true
+            }
             return !shadowed.contains(module) && !shadowed.contains(written) && !shadowed.contains("\(written).\(name)")
         }
     }

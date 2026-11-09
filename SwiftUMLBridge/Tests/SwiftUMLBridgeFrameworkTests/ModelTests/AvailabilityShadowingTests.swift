@@ -90,6 +90,18 @@ struct AvailabilityShadowingTests {
                  source: "@_exported import ModA\n\n" + base("ModX", "xOnly", marked: unavailable).source),
             writer("import ModX\nimport ModA\n")
         ], member: "aOnly", hiddenLabel: nil),
+        Case(name: "a re-exporter's type unavailable here shadows nothing the file imports directly", files: [
+            base("ModA", "aOnly"),
+            File(module: "ModX", source: "@_exported import ModA\n\n"
+                 + base("ModX", "xOnly", marked: "@available(macOS, unavailable)\n").source),
+            writer("import ModX\nimport ModA\n")
+        ], member: "aOnly", hiddenLabel: nil),
+        Case(name: "a re-exporter's obsoleted type shadows nothing the file imports directly", files: [
+            base("ModA", "aOnly"),
+            File(module: "ModX", source: "@_exported import ModA\n\n"
+                 + base("ModX", "xOnly", marked: "@available(macOS, obsoleted: 10.15)\n").source),
+            writer("import ModA\nimport ModX\n")
+        ], member: "aOnly", hiddenLabel: nil),
         Case(name: "a re-exporter's unavailable type shadows nothing another re-exporter shows", files: [
             base("ModA", "aOnly"),
             File(module: "ModX",
@@ -117,6 +129,30 @@ struct AvailabilityShadowingTests {
     @Test("a name means the type Swift picks among available and unavailable ones", arguments: cases, [false, true])
     func meansTheAvailableType(_ testCase: Case, reversed: Bool) throws {
         try ImportAwareRankTests.expectMeans(testCase, reversed: reversed)
+    }
+
+    /// `W1` imports ModX alone and `W2` imports ModA too: their imports widen to the same modules,
+    /// but only `W2`'s re-exported ModA is direct, so each gets its own answer, whichever is read
+    /// first. In Swift they are two targets sharing a directory through `sources:`: `W1` builds for
+    /// iOS, where it means ModX's `Base`, and `W2` for macOS, where it means ModA's.
+    @Test("writers whose imports differ only in a direct import each get their own answer")
+    func directImportWritersApart() throws {
+        let files: [(module: String?, source: String)] = [
+            (module: "ModA", source: Self.base("ModA", "aOnly").source),
+            (module: "ModX", source: "@_exported import ModA\n\n"
+                + Self.base("ModX", "xOnly", marked: "@available(macOS, unavailable)\n").source),
+            (module: "ModC", source: "import ModX\n\nfinal class W1: Base {}\n"),
+            (module: "ModC", source: "import ModX\nimport ModA\n\nfinal class W2: Base {}\n")
+        ]
+        for ordered in [files, files.reversed()] {
+            let graph = LayoutGraphBuilder.buildClassDiagram(
+                from: try moduleQualifiedItems(ordered), configuration: Configuration(format: .svg)
+            )
+            let xOwner = try #require(graph.owner(of: "xOnly"))
+            let aOwner = try #require(graph.owner(of: "aOnly"))
+            #expect(graph.edgeEnds.filter { $0.hasPrefix("W1 -> ") } == ["W1 -> \(xOwner)"])
+            #expect(graph.edgeEnds.filter { $0.hasPrefix("W2 -> ") } == ["W2 -> \(aOwner)"])
+        }
     }
 
     @Test("an @available that makes the declaration unavailable marks where, and no other does",

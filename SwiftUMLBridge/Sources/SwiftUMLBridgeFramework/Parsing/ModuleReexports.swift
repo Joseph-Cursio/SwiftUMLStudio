@@ -42,11 +42,33 @@ struct ModuleReexports {
         }
     }
 
-    /// Widens (`widened(_:in:)`) the `imports` of every structure in `items`, members included.
+    /// The entry `widenImports(of:)` adds before the name of a module a file imports directly
+    /// that another of its imports, or its own module, also re-exports: Swift lets a re-exporter's
+    /// type shadow a re-exported one only for a file that reaches it through the re-export alone
+    /// (`TypeLookup.seenAtFileScope(_:named:from:)`, #200). No module's name holds it, and memo
+    /// keys that hold `imports` keep writers that differ in it apart.
+    static let directImportPrefix = "="
+
+    /// Widens (`widened(_:in:)`) the `imports` of every structure in `items`, members included,
+    /// and marks each module a file imports directly that is also re-exported to it
+    /// (`directImportPrefix`).
     func widenImports(of items: [SyntaxStructure]) {
         guard !reexportsForModule.isEmpty else { return }
+        // Every declaration of a file shares its imports and module, so each pair is widened once.
+        var widenedFor: [Set<String>: [String?: Set<String>]] = [:]
+        func wider(_ imports: Set<String>, in module: String?) -> Set<String> {
+            if let known = widenedFor[imports]?[module] { return known }
+            var wider = widened(imports, in: module)
+            let reexported = widened([], in: module)
+                .union(imports.flatMap { widened([$0], in: nil).subtracting([$0]) })
+            for imported in imports where !imported.contains(".") && reexported.contains(imported) {
+                wider.insert(Self.directImportPrefix + imported)
+            }
+            widenedFor[imports, default: [:]][module] = wider
+            return wider
+        }
         func widen(_ item: SyntaxStructure) {
-            if let imports = item.imports { item.imports = widened(imports, in: item.module) }
+            if let imports = item.imports { item.imports = wider(imports, in: item.module) }
             item.substructure?.forEach(widen)
         }
         items.forEach(widen)
