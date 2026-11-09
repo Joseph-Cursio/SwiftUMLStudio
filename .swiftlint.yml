@@ -1,4 +1,7 @@
 excluded:
+# Claude Code sessions keep their git worktrees here, each a full copy of the repo with its own
+# .build, so a lint from the repo root would read every copy and its dependencies' sources.
+- .claude
 - SwiftUMLBridge/.build
 - SwiftUMLBridge/.build/checkouts
 opt_in_rules:
