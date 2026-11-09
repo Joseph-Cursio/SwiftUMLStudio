@@ -185,6 +185,41 @@ extension OutsideAliasEndTests {
             == ["\(box) <|-- \(owner).X : inherits"])
     }
 
+    /// A typealias a project superclass declares is a member of the subclass too, so `P.Inner`
+    /// in `Outer`, a `Parent`, is `First.Inner`. Without modules the class lookup is the same.
+    @Test("a dotted name through a superclass's typealias ends on the extension of the member it comes to",
+          arguments: [true, false])
+    func dottedInheritedAliasEndsOnExtension(withModules: Bool) throws {
+        let source = """
+            import Out
+            extension First.Inner { func viaFirst() {} }
+            class Parent { typealias P = First }
+            class Outer: Parent { class X: P.Inner {} }
+            """
+        let drawn = graph(try dottedItems([("App", source)], withModules: withModules), .all)
+        let box = try #require(drawn.owner(of: "viaFirst"))
+        #expect(drawn.edgeEnds.contains("Outer.X -> \(box)"))
+    }
+
+    /// `extension Base.Inner` at file scope is `Out`'s `Base.Inner`, another type: inside `Mine`,
+    /// `Base` is `Mine.Base`, so `X` ends on `extension First.Inner`, never on the first box
+    /// spelled as the name is written.
+    @Test("a dotted name through a nested alias does not end on a same-spelled extension of another type",
+          arguments: [true, false])
+    func dottedNestedAliasPassesSameSpelledExtension(withModules: Bool) throws {
+        let source = """
+            import Out
+            extension Base.Inner { func viaOutBase() {} }
+            extension First.Inner { func viaFirst() {} }
+            struct Mine { typealias Base = First; class X: Base.Inner {} }
+            """
+        let drawn = graph(try dottedItems([("App", source)], withModules: withModules), .all)
+        let box = try #require(drawn.owner(of: "viaFirst"))
+        let other = try #require(drawn.owner(of: "viaOutBase"))
+        #expect(drawn.edgeEnds.contains("Mine.X -> \(box)"))
+        #expect(!drawn.edgeEnds.contains("Mine.X -> \(other)"))
+    }
+
     /// `Day.FormatStyle` is `Date.FormatStyle` to Swift, as `Day` is `Date`.
     @Test("an outside type's nested name through its alias merges with the name spelled directly",
           arguments: [true, false])
