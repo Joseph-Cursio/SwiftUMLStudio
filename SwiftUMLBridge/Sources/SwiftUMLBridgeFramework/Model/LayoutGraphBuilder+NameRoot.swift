@@ -248,26 +248,37 @@ extension LayoutGraphBuilder.TypeLookup {
             owningDeclaration(of: candidate, depth: depth).map { $0 == owner } ?? false
         }
         guard !members.isEmpty else { return candidates }
-        let isSeen = { (member: LayoutGraphBuilder.Declared) in self.seenWithType(member, owner: owner, depth: depth) }
+        let isSeen = { (member: LayoutGraphBuilder.Declared) in
+            self.seenWithType(member, owner: owner, from: scope, depth: depth)
+        }
         guard members.contains(where: isSeen), let writer = scope.rankingDirectory else { return members }
         return members.filter { isSeen($0) || $0.scope.rankingDirectory == writer }
     }
 
     /// Whether every module that sees `owner` sees its member `member`, as far as the files tell:
     /// a member of its body that is `public` or `package`, or one an extension in its own file
-    /// adds that is `public` (#253). A file is compiled whole into each target that compiles it,
-    /// so that extension goes wherever the type does; another file in the type's directory can be
-    /// another target's, in an Xcode project or through a package's `sources:` and `exclude:`.
+    /// adds that is `public` (#253). A body member marked `@_spi` counts only for a writer whose
+    /// file, in `scope`, imports something with `@_spi(...)`: a file that imports nothing so
+    /// cannot see it from another module. Which module's SPI an import opens is not known
+    /// without a package, so a file that has one still counts it, as does a writer in the type's
+    /// own module, which sees it unimported. An extension's member so marked never counts. A file is
+    /// compiled whole into each target that compiles it, so that extension goes wherever the type
+    /// does; another file in the type's directory can be another target's, in an Xcode project or
+    /// through a package's `sources:` and `exclude:`.
     /// The extension's member must be `public` once capped by the type it extends, as `public`
-    /// inside `extension Foo.Inner` is no more than `Inner`, and not `@_spi`, which a plain
-    /// import does not show; `package` stops at a package, which a scan cannot see. It must not
+    /// inside `extension Foo.Inner` is no more than `Inner`; `package` stops at a package, which a
+    /// scan cannot see. It must not
     /// sit in an `#if`, whose clause a build may drop. And the type must be the only one of its
     /// name: of two `Foo`s, the one the writer means is a guess, and the other's member would
     /// then drop the one the writer sees.
     private func seenWithType(
-        _ member: LayoutGraphBuilder.Declared, owner: LayoutGraphBuilder.OwningDeclaration, depth: Int
+        _ member: LayoutGraphBuilder.Declared, owner: LayoutGraphBuilder.OwningDeclaration,
+        from scope: LayoutGraphBuilder.Scope, depth: Int
     ) -> Bool {
-        guard member.extended != nil else { return member.ownAccess >= .package }
+        guard member.extended != nil else {
+            return member.ownAccess >= .package
+                && (!member.isSPI || scope.imports?.contains(ImportExtractor.spiImport) == true)
+        }
         guard member.ownAccess >= .public, !member.isSPI, !member.isConditional, let typeFile = owner.filePath,
               let file = member.scope.filePath, file.utf8.elementsEqual(typeFile.utf8), let typeName = owner.name,
               declarations(named: typeName).count(where: { !$0.isExtension }) == 1 else { return false }
