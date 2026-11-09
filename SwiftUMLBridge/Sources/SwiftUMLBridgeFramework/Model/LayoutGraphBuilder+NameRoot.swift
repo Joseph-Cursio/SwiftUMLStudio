@@ -233,11 +233,13 @@ extension LayoutGraphBuilder.TypeLookup {
     }
 
     /// The `candidates` that belong to the outermost type `owner`, or every candidate when none
-    /// does. A member that type's body declares for every module to see then goes before an
-    /// extension's in another directory: a file that sees both does not compile, so one that
-    /// compiles means the body's. An `internal` one proves nothing, as another module cannot see
-    /// it, and an extension in the writer's directory stays, since there the `Foo` both read may be
-    /// another target's unrelated one, first read of those equally near.
+    /// does. A member every module that sees the type sees then goes before an extension's in
+    /// another directory: a file that sees both does not compile (`ambiguous type name`), so one
+    /// that compiles means the seen one. That is a member the type's body declares for every
+    /// module to see, or one an extension in the type's own file does (`seenWithType`, #253). An
+    /// `internal` one proves nothing, as another module cannot see it, and an extension in the
+    /// writer's directory stays, since there the `Foo` both read may be another target's
+    /// unrelated one, first read of those equally near.
     private func members(
         ownedBy owner: LayoutGraphBuilder.OwningDeclaration, among candidates: [LayoutGraphBuilder.Declared],
         from scope: LayoutGraphBuilder.Scope, depth: Int
@@ -246,11 +248,30 @@ extension LayoutGraphBuilder.TypeLookup {
             owningDeclaration(of: candidate, depth: depth).map { $0 == owner } ?? false
         }
         guard !members.isEmpty else { return candidates }
-        let isPublicBodyMember = { (member: LayoutGraphBuilder.Declared) in
-            member.extended == nil && member.ownAccess >= .package
-        }
-        guard members.contains(where: isPublicBodyMember), let writer = scope.rankingDirectory else { return members }
-        return members.filter { isPublicBodyMember($0) || $0.scope.rankingDirectory == writer }
+        let isSeen = { (member: LayoutGraphBuilder.Declared) in self.seenWithType(member, owner: owner, depth: depth) }
+        guard members.contains(where: isSeen), let writer = scope.rankingDirectory else { return members }
+        return members.filter { isSeen($0) || $0.scope.rankingDirectory == writer }
+    }
+
+    /// Whether every module that sees `owner` sees its member `member`, as far as the files tell:
+    /// a member of its body that is `public` or `package`, or one an extension in its own file
+    /// adds that is `public` (#253). A file is compiled whole into each target that compiles it,
+    /// so that extension goes wherever the type does; another file in the type's directory can be
+    /// another target's, in an Xcode project or through a package's `sources:` and `exclude:`.
+    /// The extension's member must be `public` once capped by the type it extends, as `public`
+    /// inside `extension Foo.Inner` is no more than `Inner`, and not `@_spi`, which a plain
+    /// import does not show; `package` stops at a package, which a scan cannot see. It must not
+    /// sit in an `#if`, whose clause a build may drop. And the type must be the only one of its
+    /// name: of two `Foo`s, the one the writer means is a guess, and the other's member would
+    /// then drop the one the writer sees.
+    private func seenWithType(
+        _ member: LayoutGraphBuilder.Declared, owner: LayoutGraphBuilder.OwningDeclaration, depth: Int
+    ) -> Bool {
+        guard member.extended != nil else { return member.ownAccess >= .package }
+        guard member.ownAccess >= .public, !member.isSPI, !member.isConditional, let typeFile = owner.filePath,
+              let file = member.scope.filePath, file.utf8.elementsEqual(typeFile.utf8), let typeName = owner.name,
+              declarations(named: typeName).count(where: { !$0.isExtension }) == 1 else { return false }
+        return access(of: member, depth: depth) >= .public
     }
 
     /// The outermost type `declared` belongs to past any extension, by name and file, which tell

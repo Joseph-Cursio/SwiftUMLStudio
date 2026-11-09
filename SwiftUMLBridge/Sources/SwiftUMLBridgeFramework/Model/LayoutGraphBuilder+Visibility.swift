@@ -27,7 +27,7 @@ extension LayoutGraphBuilder.TypeLookup {
     /// `declared`'s access, capped by the access of the type its enclosing extension extends,
     /// as that extension's own lookup finds it. Each step resolves a shorter name, so this
     /// ends; the depth guard is a backstop.
-    private func access(of declared: LayoutGraphBuilder.Declared, depth: Int) -> ElementAccessibility {
+    func access(of declared: LayoutGraphBuilder.Declared, depth: Int) -> ElementAccessibility {
         guard depth < 8, let type = enclosingExtensionType(of: declared, depth: depth) else {
             return declared.ownAccess
         }
