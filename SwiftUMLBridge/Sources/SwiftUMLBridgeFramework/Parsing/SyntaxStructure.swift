@@ -135,9 +135,10 @@ internal class SyntaxStructure: NSObject, Codable, @unchecked Sendable {
     /// (`TypeLookup.members(ownedBy:among:from:depth:)`).
     internal var isConditional = false
 
-    /// Whether the declaration is marked `@available(..., unavailable)`, for every platform or one
-    /// alone, in any clause of an `#if` around the attribute too. Swift lets an available type of
-    /// another module shadow it (`TypeLookup.seenAtFileScope(_:named:from:)`, #200).
+    /// Whether an `@available` makes the declaration unavailable somewhere: `unavailable` or
+    /// `obsoleted:`, for every platform or one alone, or a Swift version it is introduced in, in
+    /// any clause of an `#if` around the attribute too. Swift lets an available type of another
+    /// module shadow it (`TypeLookup.seenAtFileScope(_:named:from:)`, #200).
     internal var isUnavailable = false
 
     private enum CodingKeys: String, CodingKey {

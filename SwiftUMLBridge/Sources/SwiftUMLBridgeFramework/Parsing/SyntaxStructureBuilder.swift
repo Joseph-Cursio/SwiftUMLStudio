@@ -356,15 +356,23 @@ extension AttributeListSyntax {
         attributesInEveryClause.contains { $0.attributeName.trimmedDescription == "_spi" }
     }
 
-    /// Whether these attributes hold an `@available` whose arguments say `unavailable`
-    /// (`SyntaxStructure.isUnavailable`), in any clause of an `#if` around them too.
+    /// Whether these attributes hold an `@available` that makes the declaration unavailable
+    /// somewhere (`SyntaxStructure.isUnavailable`), in any clause of an `#if` around them too: one
+    /// that says `unavailable` or `obsoleted:`, for any platform, or `@available(swift, introduced:)`.
     var hasUnavailable: Bool {
         attributesInEveryClause.contains { attribute in
             guard attribute.attributeName.trimmedDescription == "available",
                   case .availability(let arguments)? = attribute.arguments else { return false }
+            let isSwiftVersion = arguments.first.map { $0.argument.trimmedDescription == "swift" } ?? false
             return arguments.contains { argument in
-                guard case .token(let token) = argument.argument else { return false }
-                return token.text == "unavailable"
+                switch argument.argument {
+                case .token(let token):
+                    return token.text == "unavailable"
+                case .availabilityLabeledArgument(let labeled):
+                    return labeled.label.text == "obsoleted" || (isSwiftVersion && labeled.label.text == "introduced")
+                default:
+                    return false
+                }
             }
         }
     }

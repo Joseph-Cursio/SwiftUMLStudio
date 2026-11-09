@@ -62,6 +62,11 @@ struct AvailabilityShadowingTests {
             base("ModA", "aOnly", marked: "@available(macOS, unavailable)\n"), base("ModB", "bOnly"),
             writer("import ModA\nimport ModB\n")
         ], member: "bOnly", hiddenLabel: nil),
+        Case(name: "an obsoleted type is shadowed", files: [
+            base("ModA", "aOnly", marked: "@available(macOS, introduced: 10.15, obsoleted: 11)\n"),
+            base("ModB", "bOnly"),
+            writer("import ModA\nimport ModB\n")
+        ], member: "bOnly", hiddenLabel: nil),
         Case(name: "a type marked unavailable under an #if is shadowed", files: [
             base("ModA", "aOnly", marked: "#if os(macOS)\n@available(*, unavailable)\n#endif\n"),
             base("ModB", "bOnly"), writer("import ModA\nimport ModB\n")
@@ -119,7 +124,10 @@ struct AvailabilityShadowingTests {
             ("@available(*, deprecated)", false),
             ("@available(*, deprecated, message: \"unavailable\")", false),
             ("@available(macOS 14, *)", false),
-            ("@available(macOS, introduced: 10.15, obsoleted: 11)", false),
+            ("@available(macOS, introduced: 10.15, obsoleted: 11)", true),
+            ("@available(swift, obsoleted: 5)", true),
+            ("@available(swift, introduced: 99)", true),
+            ("@available(macOS, introduced: 10.15)", false),
             ("@MainActor", false)
           ])
     func parsed(attribute: String, isUnavailable: Bool) throws {
