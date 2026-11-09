@@ -15,11 +15,11 @@ public enum Theme: Codable, Sendable {
     case reddressDarkred, reddressLightblue, reddressLightgreen, reddressLightorange, reddressLightred
     case sandstone, silver, sketchyOutline, sketchy, spacelab
     case spacelabWhite, superheroOutline, superhero, toy, united, vibrant
-    case __directive__(String)
+    case directive(String)
 
     public var rawValue: String {
         switch self {
-        case let .__directive__(name):
+        case let .directive(name):
             return "\(name)"
         default:
             return String(describing: self).camelCaseToKebapCase()
