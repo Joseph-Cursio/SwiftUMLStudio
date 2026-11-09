@@ -61,9 +61,21 @@ struct ReexportShadowingTests {
         ], member: "aOnly", hiddenLabel: nil),
         Case(name: "an internal type of the re-exporter shadows nothing", files: [
             base("ModA", "aOnly"),
-            File(module: "ModX", source: "@_exported import ModA\n\n" + base("ModX", "xOnly", access: "class").source),
+            File(module: "ModX", source: "@_exported import ModA\n\n" + base("ModX", "xOnly", access: "").source),
             writer("import ModX\n")
         ], member: "aOnly", hiddenLabel: nil),
+        Case(name: "an @_spi type of the re-exporter shadows nothing for a file without an @_spi import", files: [
+            base("ModA", "aOnly"),
+            File(module: "ModX",
+                 source: "@_exported import ModA\n\n" + base("ModX", "xOnly", access: "@_spi(Ex) open").source),
+            writer("import ModX\n")
+        ], member: "aOnly", hiddenLabel: nil),
+        Case(name: "an @_spi type of the re-exporter shadows for a file that imports it with @_spi", files: [
+            base("ModA", "aOnly"),
+            File(module: "ModX",
+                 source: "@_exported import ModA\n\n" + base("ModX", "xOnly", access: "@_spi(Ex) open").source),
+            writer("@_spi(Ex) import ModX\n")
+        ], member: "xOnly", hiddenLabel: nil),
         Case(name: "a scoped import of the re-exported type still names it", files: [
             base("ModA", "aOnly"), reexporter("ModX", of: "ModA", "xOnly"),
             writer("import ModX\nimport class ModA.Base\n")
@@ -92,5 +104,19 @@ struct ReexportShadowingTests {
     @Test("a name means the re-exporter's own type", arguments: cases, [false, true])
     func meansTheReexportersType(_ testCase: Case, reversed: Bool) throws {
         try ImportAwareRankTests.expectMeans(testCase, reversed: reversed)
+    }
+
+    /// A build may drop a type under an `#if`, so one the re-exporter declares there shadows
+    /// nothing, and the name is ranked as it was before re-exports were read: here, by read order,
+    /// with the re-exported module's `Base` read first. On macOS Swift means that one.
+    @Test("a type of the re-exporter under an #if shadows nothing")
+    func conditionalReexporterType() throws {
+        let testCase = Case(name: "conditional", files: [
+            Self.base("ModA", "aOnly"),
+            File(module: "ModX",
+                 source: "@_exported import ModA\n\n#if os(Linux)\n" + Self.base("ModX", "xOnly").source + "#endif\n"),
+            Self.writer("import ModX\n")
+        ], member: "aOnly", hiddenLabel: nil)
+        try ImportAwareRankTests.expectMeans(testCase, reversed: false)
     }
 }

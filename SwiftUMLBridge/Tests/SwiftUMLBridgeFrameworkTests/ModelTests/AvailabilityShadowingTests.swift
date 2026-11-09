@@ -6,7 +6,9 @@ import Testing
 /// (#200): in a file that imports ModA, whose `Base` is a stub left by a rename, and ModB, `Base`
 /// is ModB's. Each case was built as a package with `swift build`, and calling the member only
 /// the other `Base` has failed with `has no member`. Where Swift picks an unavailable `Base` by
-/// an earlier rule, the build fails with `'Base' is unavailable`, naming that declaration.
+/// an earlier rule, the build fails with `'Base' is unavailable`, naming that declaration. A
+/// re-exporter's unavailable `Base` is that only for a file that reaches the re-exported module
+/// through it alone, which does not build, so the diagram lets it shadow nothing.
 @Suite("An available type shadows an unavailable one of another module")
 struct AvailabilityShadowingTests {
 
@@ -72,12 +74,19 @@ struct AvailabilityShadowingTests {
             base("ModA", "aOnly", marked: unavailable), File(module: "ModC", source: base("ModC", "cOnly").source),
             writer("import ModA\n")
         ], member: "cOnly", hiddenLabel: nil),
-        Case(name: "a re-exporter's unavailable type shadows the re-exported one", files: [
+        Case(name: "a re-exporter's unavailable type shadows nothing the file reaches another way", files: [
             base("ModA", "aOnly"),
             File(module: "ModX",
                  source: "@_exported import ModA\n\n" + base("ModX", "xOnly", marked: unavailable).source),
-            writer("import ModX\n")
-        ], member: "xOnly", hiddenLabel: nil),
+            writer("import ModX\nimport ModA\n")
+        ], member: "aOnly", hiddenLabel: nil),
+        Case(name: "a re-exporter's unavailable type shadows nothing another re-exporter shows", files: [
+            base("ModA", "aOnly"),
+            File(module: "ModX",
+                 source: "@_exported import ModA\n\n" + base("ModX", "xOnly", marked: unavailable).source),
+            File(module: "ModY", source: "@_exported import ModA\n\npublic struct YThing {}\n"),
+            writer("import ModX\nimport ModY\n")
+        ], member: "aOnly", hiddenLabel: nil),
         Case(name: "a re-exporter's type shadows an unavailable re-exported one", files: [
             base("ModA", "aOnly", marked: unavailable),
             File(module: "ModX", source: "@_exported import ModA\n\n" + base("ModX", "xOnly").source),
