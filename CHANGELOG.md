@@ -47,13 +47,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   `@available(*, unavailable, renamed: "NewBase")` is: in a file that imports
   that target and another with its own `Base`, `Base` is the other's. A mark
   for one platform alone, `obsoleted:`, `@available(swift, introduced:)` and a
-  mark under an `#if` count too. As in Swift, the writer's own target and a
-  scoped import shadow first, unavailable or not, and a member such as `Foo.X`
-  is never shadowed by availability. Still read by read order, as before: a
-  re-exporter's type under an `#if` or marked unavailable, which shadows
-  nothing; two types each marked unavailable, for different platforms; a scoped
-  re-export, `@_exported import class ModA.Base`, beside the re-exporter's own
-  `Base`, which still ends on ModA's; and an internal type seen through
+  mark under an `#if` count too, after one for every platform: a type obsoleted
+  in a later version shadows a stub. As in Swift, the writer's own target, a
+  scoped import and a re-exporter shadow first, though a re-exporter's type
+  marked `@available(*, unavailable)` shadows nothing, as Swift then means the
+  type the file reaches another way. A member such as `Foo.X` is never shadowed
+  by availability. Still read by read order, as before: a re-exporter's type
+  under an `#if`, which shadows nothing; two types each marked unavailable for
+  different platforms; an `@_spi` re-exporter's type in a file that imports any
+  module with `@_spi`, whichever module or group it opens; a scoped re-export,
+  `@_exported import class ModA.Base`, beside the re-exporter's own `Base`,
+  which still ends on ModA's; and an internal type seen through
   `@testable import`. Without `--package` no file has a target, so none of this
   applies.
 - **An edge through a typealias of a type outside the diagram ends on an
