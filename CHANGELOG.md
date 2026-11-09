@@ -237,6 +237,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   target, in an Xcode project or through a package's `sources:` and
   `exclude:`, and reading the directory as `Foo`'s module turned right
   answers wrong there.
+- **A body member marked `@_spi` no longer comes first for a file with only
+  plain imports, without `--package`.** A `public` member of `Foo`'s body
+  came before an extension's `Foo.X` in another directory even when marked
+  `@_spi(T)`, which a file that imports `Core` without `@_spi` cannot see, so
+  such a file's edge ended on a member it could not name. It now comes first
+  only for a file that imports something with `@_spi(...)`. Which module's
+  SPI that opens is not known without `--package`, so it still comes first
+  there, even when the import opens another module's group. A file inside
+  `Foo`'s own module sees the member with no import at all, which a scan
+  without `--package` cannot tell either: when another target, nested in
+  `Foo`'s module's directory, adds a nearer `Foo.X`, that file's edge now
+  ends there instead. Left as they were, since the files cannot say which is
+  right: a body member inside an `#if`, which one build has and another
+  lacks; a `package` one, which a file of the same package sees and one of
+  another package does not; and a member of a `Foo` that shares its name
+  with another type.
 
 ### Fixed — Studio
 
