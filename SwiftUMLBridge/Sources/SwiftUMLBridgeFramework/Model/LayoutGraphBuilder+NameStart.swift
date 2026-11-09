@@ -177,7 +177,26 @@ extension LayoutGraphBuilder.TypeLookup {
             return seesAlone(name, in: module, from: scope)
         }
         let unscoped = seen.contains { isScoped($0) == true } ? seen.filter { isScoped($0) != false } : seen
-        return unshadowedByReexport(unscoped, named: name, from: scope)
+        return availableOverUnavailable(unshadowedByReexport(unscoped, named: name, from: scope), from: scope)
+    }
+
+    /// `candidates` without the unavailable ones (`Declared.isUnavailable`) of other modules, when
+    /// one of another module is available: Swift lets an available type shadow an unavailable one,
+    /// such as a stub `@available(*, unavailable, renamed: "NewBase")` leaves behind (#200). It
+    /// runs last, as the writer's own module, a re-exporter and a scoped import each shadow first,
+    /// unavailable or not, so a candidate of the writer's module or of no known module stays. A
+    /// candidate unavailable on one platform alone counts too: where it is available the name is
+    /// ambiguous, and the file builds only where the available one is meant. Swift reads no
+    /// availability in a member's lookup, `Foo.X`, so it does not run there.
+    private func availableOverUnavailable(
+        _ candidates: [LayoutGraphBuilder.Declared], from scope: LayoutGraphBuilder.Scope
+    ) -> [LayoutGraphBuilder.Declared] {
+        func isImported(_ candidate: LayoutGraphBuilder.Declared) -> Bool {
+            candidate.scope.module.map { $0 != scope.module } ?? false
+        }
+        guard candidates.contains(where: { isImported($0) && $0.isUnavailable }),
+              candidates.contains(where: { isImported($0) && !$0.isUnavailable }) else { return candidates }
+        return candidates.filter { !isImported($0) || !$0.isUnavailable }
     }
 
     /// `candidates` without those of a module that another candidate's module re-exports: a file
