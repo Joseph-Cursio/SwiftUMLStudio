@@ -355,6 +355,19 @@ extension AttributeListSyntax {
     var hasSPI: Bool {
         attributesInEveryClause.contains { $0.attributeName.trimmedDescription == "_spi" }
     }
+
+    /// Whether these attributes hold an `@available` whose arguments say `unavailable`
+    /// (`SyntaxStructure.isUnavailable`), in any clause of an `#if` around them too.
+    var hasUnavailable: Bool {
+        attributesInEveryClause.contains { attribute in
+            guard attribute.attributeName.trimmedDescription == "available",
+                  case .availability(let arguments)? = attribute.arguments else { return false }
+            return arguments.contains { argument in
+                guard case .token(let token) = argument.argument else { return false }
+                return token.text == "unavailable"
+            }
+        }
+    }
 }
 
 extension SyntaxProtocol {
@@ -367,9 +380,11 @@ extension SyntaxProtocol {
 
 extension SyntaxStructure {
     /// Records what limits who sees the declaration `node`, whose attributes are `attributes`:
-    /// `@_spi` (`isSPI`), and an `#if` around it (`isConditional`).
+    /// `@_spi` (`isSPI`), an `#if` around it (`isConditional`), and `@available(..., unavailable)`
+    /// (`isUnavailable`).
     func markReach(of node: some SyntaxProtocol, attributes: AttributeListSyntax) {
         isSPI = attributes.hasSPI
+        isUnavailable = attributes.hasUnavailable
         isConditional = node.isInIfConfigClause
     }
 }
