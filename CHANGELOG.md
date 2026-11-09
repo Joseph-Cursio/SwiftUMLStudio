@@ -49,13 +49,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   for one platform alone, `obsoleted:`, `@available(swift, introduced:)` and a
   mark under an `#if` count too, after one for every platform: a type obsoleted
   in a later version shadows a stub. As in Swift, the writer's own target, a
-  scoped import and a re-exporter shadow first, though a re-exporter's type
-  marked `@available(*, unavailable)` shadows nothing, as Swift then means the
-  type the file reaches another way. A member such as `Foo.X` is never shadowed
-  by availability. Still read by read order, as before: a re-exporter's type
-  under an `#if`, which shadows nothing; two types each marked unavailable for
-  different platforms; an `@_spi` re-exporter's type in a file that imports any
-  module with `@_spi`, whichever module or group it opens; a scoped re-export,
+  scoped import and a re-exporter shadow first. A re-export does not shadow a
+  target the file also imports directly, and a re-exporter's type marked
+  `@available(*, unavailable)` shadows nothing: Swift then means the type the
+  file reaches another way. A member such as `Foo.X` is never shadowed by
+  availability. Still read by read order, as before: a re-exporter's type under
+  an `#if`, which shadows nothing; two types each marked unavailable in some
+  builds, as for different platforms or one platform two ways, or one type
+  declared twice under `#if`; an `@_spi` re-exporter's type in a file that
+  imports any module with `@_spi`, whichever module or group it opens. Still
+  wrong: a re-exporter's type unavailable on one platform where the file also
+  reaches the re-exported target through a second re-exporter; a re-exporter's
+  `@available(*, unavailable)` type used from unavailable code; the short form
+  `@available(swift 99)`, which is not read; a scoped re-export,
   `@_exported import class ModA.Base`, beside the re-exporter's own `Base`,
   which still ends on ModA's; and an internal type seen through
   `@testable import`. Without `--package` no file has a target, so none of this
