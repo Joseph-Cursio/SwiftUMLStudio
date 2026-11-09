@@ -348,28 +348,3 @@ final class SyntaxStructureBuilder: SyntaxVisitor {
         return false
     }
 }
-
-extension AttributeListSyntax {
-    /// Whether these attributes hold `@_spi(...)` (`SyntaxStructure.isSPI`), in any clause of an
-    /// `#if` around them too.
-    var hasSPI: Bool {
-        attributesInEveryClause.contains { $0.attributeName.trimmedDescription == "_spi" }
-    }
-}
-
-extension SyntaxProtocol {
-    /// Whether this node sits in a clause of an `#if` block, which the parser reads whatever the
-    /// condition (`SyntaxStructure.isConditional`).
-    var isInIfConfigClause: Bool {
-        sequence(first: Syntax(self)) { $0.parent }.contains { $0.is(IfConfigClauseSyntax.self) }
-    }
-}
-
-extension SyntaxStructure {
-    /// Records what limits who sees the declaration `node`, whose attributes are `attributes`:
-    /// `@_spi` (`isSPI`), and an `#if` around it (`isConditional`).
-    func markReach(of node: some SyntaxProtocol, attributes: AttributeListSyntax) {
-        isSPI = attributes.hasSPI
-        isConditional = node.isInIfConfigClause
-    }
-}

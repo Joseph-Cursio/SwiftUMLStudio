@@ -35,6 +35,38 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed — Bridge
 
+- **With `--package`, a bare name seen in two targets follows Swift's shadowing by
+  re-export and by availability, not read order** (#200). A target's own type
+  shadows a same-named one of a target it re-exports: in a file that imports
+  ModX, which has `@_exported import ModA` and its own `Base`, `class C: Base`
+  now ends on ModX's `Base`, through a chain of re-exports too, and for a
+  typealias or the first component of `Foo.V`. A re-exporter's type marked
+  `@_spi` shadows only for a file that imports something with `@_spi`, and is
+  not seen at all by one that does not. An available type shadows another
+  target's marked unavailable, as a stub
+  `@available(*, unavailable, renamed: "NewBase")` is: in a file that imports
+  that target and another with its own `Base`, `Base` is the other's. A mark
+  for one platform alone, `obsoleted:`, `@available(swift, introduced:)` and a
+  mark under an `#if` count too, after one for every platform: a type obsoleted
+  in a later version shadows a stub. As in Swift, the writer's own target, a
+  scoped import and a re-exporter shadow first. A re-export does not shadow a
+  target the file also imports directly, and a re-exporter's type marked
+  `@available(*, unavailable)` shadows nothing: Swift then means the type the
+  file reaches another way. A member such as `Foo.X` is never shadowed by
+  availability. Still read by read order, as before: a re-exporter's type under
+  an `#if`, which shadows nothing; two types each marked unavailable in some
+  builds, as for different platforms or one platform two ways, or one type
+  declared twice under `#if`; an `@_spi` re-exporter's type in a file that
+  imports any module with `@_spi`, whichever module or group it opens. Still
+  wrong: a re-exporter's type unavailable on one platform where the file also
+  reaches the re-exported target through a second re-exporter or its own
+  target's re-export; a re-exporter's
+  `@available(*, unavailable)` type used from unavailable code; the short form
+  `@available(swift 99)`, which is not read; a scoped re-export,
+  `@_exported import class ModA.Base`, beside the re-exporter's own `Base`,
+  which still ends on ModA's; and an internal type seen through
+  `@testable import`. Without `--package` no file has a target, so none of this
+  applies.
 - **An edge through a typealias of a type outside the diagram ends on an
   extension of that type, not on the first of that spelling** (#231). Each
   target can have its own `typealias Base`, and each target's

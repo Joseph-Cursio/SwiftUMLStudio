@@ -176,8 +176,99 @@ extension LayoutGraphBuilder.TypeLookup {
             guard let module = candidate.scope.module, module != scope.module else { return nil }
             return seesAlone(name, in: module, from: scope)
         }
-        guard seen.contains(where: { isScoped($0) == true }) else { return seen }
-        return seen.filter { isScoped($0) != false }
+        let unscoped = seen.contains { isScoped($0) == true } ? seen.filter { isScoped($0) != false } : seen
+        let opened = withoutUnopenedSPI(unscoped, from: scope)
+        return availableOverUnavailable(unshadowedByReexport(opened, named: name, from: scope), from: scope)
+    }
+
+    /// `candidates` without those of other modules marked `@_spi` in every build
+    /// (`Declared.isSPIInEveryBuild`), when the file imports nothing with `@_spi` and another
+    /// candidate remains: Swift shows such a type only to a file that
+    /// imports its module with `@_spi`, so one an `@_spi` re-exporter declares does not shadow
+    /// the type it re-exports (#200). A file that imports anything with `@_spi` keeps them all, as
+    /// it cannot be told which module's group that import opens.
+    private func withoutUnopenedSPI(
+        _ candidates: [LayoutGraphBuilder.Declared], from scope: LayoutGraphBuilder.Scope
+    ) -> [LayoutGraphBuilder.Declared] {
+        guard scope.imports?.contains(ImportExtractor.spiImport) != true else { return candidates }
+        func isUnopened(_ candidate: LayoutGraphBuilder.Declared) -> Bool {
+            candidate.isSPIInEveryBuild && candidate.scope.module.map { $0 != scope.module } == true
+        }
+        guard candidates.contains(where: isUnopened), candidates.contains(where: { !isUnopened($0) }) else {
+            return candidates
+        }
+        return candidates.filter { !isUnopened($0) }
+    }
+
+    /// `candidates` without the unavailable ones (`Declared.unavailability`) of other modules, when
+    /// one of another module is less so: Swift lets an available type shadow an unavailable one,
+    /// such as a stub `@available(*, unavailable, renamed: "NewBase")` leaves behind (#200). Those
+    /// unavailable in every build go first, then, among the rest, those unavailable in some
+    /// builds, as on one platform alone or after `obsoleted:`: where such a one is available the
+    /// name is ambiguous, so the file builds only where the other is meant. It runs last, as the
+    /// writer's own module, a scoped import and a re-exporter each shadow first, so a candidate of
+    /// the writer's module or of no known module stays. Swift reads no availability in a
+    /// member's lookup, `Foo.X`, so it does not run there.
+    private func availableOverUnavailable(
+        _ candidates: [LayoutGraphBuilder.Declared], from scope: LayoutGraphBuilder.Scope
+    ) -> [LayoutGraphBuilder.Declared] {
+        func isImported(_ candidate: LayoutGraphBuilder.Declared) -> Bool {
+            candidate.scope.module.map { $0 != scope.module } ?? false
+        }
+        var kept = candidates
+        for reach in [AttributeReach.everyBuild, .someBuilds] {
+            guard kept.contains(where: { isImported($0) && $0.unavailability == reach }),
+                  kept.contains(where: { isImported($0) && $0.unavailability < reach }) else { continue }
+            kept = kept.filter { !isImported($0) || $0.unavailability != reach }
+        }
+        return kept
+    }
+
+    /// `candidates` without those of a module that another candidate's module re-exports: a file
+    /// that sees both through that one means the re-exporter's, as Swift lets a module's own
+    /// declaration shadow one it re-exports (#200). It runs only among the candidates the file
+    /// already sees, so `import Alpha` alone keeps Alpha's, and an internal one of the
+    /// re-exporter shadows nothing. Nor does one the file may not see: one marked `@_spi` in
+    /// every build, unless the file imports something with `@_spi` (`withoutUnopenedSPI(_:from:)`
+    /// drops it before), and one under an `#if`, which a build may drop, so there the read order
+    /// decides, as before. Nor does a re-export shadow a module the file imports directly
+    /// (`ModuleReexports.directImportPrefix`): where both types are available that file does not
+    /// build, and where the re-exporter's is unavailable Swift means the other. A re-exporter's
+    /// candidate unavailable in every build shadows nothing at all, as a file that reaches the
+    /// other only through it does not build either, and so it stays right for a file that
+    /// reaches the other through a second re-exporter. One unavailable in some builds alone
+    /// still shadows, as Swift reads re-exports before availability. It reads the writer's module
+    /// and imports and each candidate's own data, so `SharedLookupKey` holds what it depends on.
+    private func unshadowedByReexport(
+        _ candidates: [LayoutGraphBuilder.Declared], named name: String, from scope: LayoutGraphBuilder.Scope
+    ) -> [LayoutGraphBuilder.Declared] {
+        guard candidates.count > 1 else { return candidates }
+        let opensSPI = scope.imports?.contains(ImportExtractor.spiImport) == true
+        var shadowed: Set<String> = []
+        // What re-exporters the file names in a scoped import, `import class ModX.Base`, re-export:
+        // that import names their own type, so a direct import does not lift their shadowing.
+        var shadowedByScoped: Set<String> = []
+        for candidate in candidates where candidate.scope.module != scope.module && !candidate.isConditional
+            && candidate.unavailability != .everyBuild && (!candidate.isSPIInEveryBuild || opensSPI) {
+            let reexports = candidate.scope.reexports ?? []
+            shadowed.formUnion(reexports)
+            if let module = candidate.scope.module,
+               scope.imports?.contains("\(modules.writtenName(of: module)).\(name)") == true {
+                shadowedByScoped.formUnion(reexports)
+            }
+        }
+        guard !shadowed.isEmpty else { return candidates }
+        return candidates.filter { candidate in
+            guard let module = candidate.scope.module, module != scope.module else { return true }
+            let written = modules.writtenName(of: module)
+            let direct = ModuleReexports.directImportPrefix
+            let isScopedOver = shadowedByScoped.contains(module) || shadowedByScoped.contains(written)
+            if !isScopedOver,
+               scope.imports?.contains(direct + written) == true || scope.imports?.contains(direct + module) == true {
+                return true
+            }
+            return !shadowed.contains(module) && !shadowed.contains(written) && !shadowed.contains("\(written).\(name)")
+        }
     }
 
     /// `members` of the type a dotted name starts at, or of the type a module-qualified name
