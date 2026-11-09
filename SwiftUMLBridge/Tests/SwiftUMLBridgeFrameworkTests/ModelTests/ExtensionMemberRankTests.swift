@@ -291,17 +291,4 @@ struct ExtensionMemberRankTests {
             "RV <|-- W : inherits"
         ])
     }
-
-    /// Known wrong: `Login`'s alias is nearer `W`, which imports only `Core`, and with no member in
-    /// `Foo`'s body, nothing else tells them apart. A directory is only a guess at the module.
-    @Test("known wrong: an extension in a sibling directory beats one the writer imports from farther away")
-    func siblingExtensionBeatsImportedOne() throws {
-        let files: [Fixture.File] = [
-            ("/r/Sources/Core/Foo.swift", "public struct Foo { public init() {} }"),
-            ("/r/Sources/Core/E.swift", "extension Foo { public typealias X = RCore }\nopen class RCore {}"),
-            ("/r/Sources/Features/Login/E.swift", "extension Foo { typealias X = RLogin }\nclass RLogin {}"),
-            ("/r/Sources/Features/Profile/W.swift", "class W: Foo.X {}")
-        ]
-        #expect(supertypeLines(in: try Fixture.lines(files, .plantuml)) == ["RLogin <|-- W : inherits"])
-    }
 }

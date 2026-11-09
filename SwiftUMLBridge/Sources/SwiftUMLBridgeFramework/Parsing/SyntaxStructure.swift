@@ -121,6 +121,15 @@ internal class SyntaxStructure: NSObject, Codable, @unchecked Sendable {
     /// `extension [Int]` extends (#126).
     internal var isSugared = false
 
+    /// Whether the declaration is marked `@_spi(...)`: then only a file that imports its module
+    /// with that SPI sees it, however `public` it is (`TypeLookup.members(ownedBy:among:from:depth:)`).
+    internal var isSPI = false
+
+    /// Whether the declaration sits in a clause of an `#if` block. The parser reads every clause
+    /// (#135), so it is drawn and looked up though a build may drop it
+    /// (`TypeLookup.members(ownedBy:among:from:depth:)`).
+    internal var isConditional = false
+
     private enum CodingKeys: String, CodingKey {
         case accessibility = "key.accessibility"
         case attribute = "key.attribute"
@@ -157,6 +166,8 @@ internal class SyntaxStructure: NSObject, Codable, @unchecked Sendable {
         mergedExtensions = original.mergedExtensions
         boundGenericArguments = original.boundGenericArguments
         isSugared = original.isSugared
+        isSPI = original.isSPI
+        isConditional = original.isConditional
         super.init()
     }
 
