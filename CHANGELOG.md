@@ -40,14 +40,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   shadows a same-named one of a target it re-exports: in a file that imports
   ModX, which has `@_exported import ModA` and its own `Base`, `class C: Base`
   now ends on ModX's `Base`, through a chain of re-exports too, and for a
-  typealias or the first component of `Foo.V`. An available type shadows
-  another target's marked `@available(..., unavailable)`, as a stub
+  typealias or the first component of `Foo.V`. A re-exporter's type marked
+  `@_spi` shadows only for a file that imports something with `@_spi`, and is
+  not seen at all by one that does not. An available type shadows another
+  target's marked unavailable, as a stub
   `@available(*, unavailable, renamed: "NewBase")` is: in a file that imports
-  that target and another with its own `Base`, `Base` is the other's. A mark for
-  one platform alone or under an `#if` counts too. As in Swift, the writer's own
-  target, a scoped import and a re-exporter each shadow first, unavailable or
-  not, and a member such as `Foo.X` is never shadowed by availability. Without
-  `--package` no file has a target, so neither rule applies.
+  that target and another with its own `Base`, `Base` is the other's. A mark
+  for one platform alone, `obsoleted:`, `@available(swift, introduced:)` and a
+  mark under an `#if` count too. As in Swift, the writer's own target and a
+  scoped import shadow first, unavailable or not, and a member such as `Foo.X`
+  is never shadowed by availability. Still read by read order, as before: a
+  re-exporter's type under an `#if` or marked unavailable, which shadows
+  nothing; two types each marked unavailable, for different platforms; a scoped
+  re-export, `@_exported import class ModA.Base`, beside the re-exporter's own
+  `Base`, which still ends on ModA's; and an internal type seen through
+  `@testable import`. Without `--package` no file has a target, so none of this
+  applies.
 - **An edge through a typealias of a type outside the diagram ends on an
   extension of that type, not on the first of that spelling** (#231). Each
   target can have its own `typealias Base`, and each target's
