@@ -656,7 +656,7 @@ includeRemoteURL:
 # ─── theme ─────────────────────────────────────────────────────────────────
 theme: minty
   # PlantUML theme name. camelCase names are converted to kebab-case automatically.
-  # Use __directive__("name") to pass a raw PlantUML theme directive as-is.
+  # Anything else PlantUML's !theme takes, such as "name from <url>", is passed as written.
   # Ignored when format is 'mermaid'. Class diagrams only.
   # Type: String?  Default: nil
   # See the Themes section for available values.
@@ -1164,13 +1164,13 @@ Set a PlantUML built-in theme with the `theme` key. camelCase names are automati
 | `cerulean` | Blue-gray |
 | `superhero` | Dark with purple accents |
 
-**Using a raw PlantUML directive:**
+**Using a custom or remotely hosted theme:**
 
 ```yaml
-theme: "__directive__(\"!theme hacker from https://example.com/themes\")"
+theme: "hacker from https://example.com/themes"
 ```
 
-The `__directive__(...)` syntax passes the string verbatim to PlantUML, bypassing the camelCase-to-kebab-case conversion. Use this for custom or remotely hosted themes.
+The value is written after `!theme` as it is, so anything PlantUML's `!theme` directive takes works here, including a `from` clause for a theme hosted elsewhere.
 
 ---
 

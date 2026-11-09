@@ -20,6 +20,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   Notes from Xcode's App Intents metadata tool are not compiler warnings
   and do not count.
 
+### Changed — Bridge (API, breaking)
+
+Three public names passed SwiftLint only because the Bridge's own config
+loosened `identifier_name`. They are renamed, and the Bridge now lints with
+the rule as SwiftLint ships it. Swift code that uses the old names must
+change; config files, the CLI, and the diagrams it writes do not.
+
+- **`DependencyEdge.to` is `toNode`, and `ComponentDependency.to` is
+  `toComponent`**, initializer labels included. Each keeps `from`, and names
+  its far end as `StateTransition.toState` and `ERRelationship.toEntity`
+  already do. `DependencyEdge.fromModule` and `toModule` are unchanged.
+- **`Theme.__directive__(String)` is `Theme.directive(String)`.** A config
+  file's `theme:` string is still read as text and wrapped in this case. The
+  reference had documented a `theme: "__directive__(\"…\")"` config form,
+  which wrote `!theme __directive__(…)`, naming no theme. It now says
+  the value goes after `!theme` as written, so a hosted theme is
+  `theme: "hacker from https://example.com/themes"`.
+
 ### Changed — Bridge (test infrastructure)
 
 - **Wall-clock time limits are checked only off CI** (#237). Eight limits
