@@ -267,7 +267,7 @@ struct SugaredExtensionSupertypeScopeTests {
             RelationshipOptions(inheritance: Relationship(label: "inherits", exclude: patterns))
         }
         #expect(ends(from: "Array.Sub", source, .plantuml, relationships: excluding(["Array.Base"])) == ["Base"])
-        #expect(ends(from: "Array.Sub", source, .plantuml, relationships: excluding(["Base"])) == [])
+        #expect(ends(from: "Array.Sub", source, .plantuml, relationships: excluding(["Base"])).isEmpty)
     }
 
     // MARK: - Controls

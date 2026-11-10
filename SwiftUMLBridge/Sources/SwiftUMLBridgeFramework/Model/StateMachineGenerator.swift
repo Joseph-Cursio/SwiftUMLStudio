@@ -2,7 +2,9 @@ import Foundation
 
 /// Generates state machine diagram scripts from Swift source files.
 public struct StateMachineGenerator: StateMachineGenerating, Sendable {
-    public init() {}
+    public init() {
+        // Public because a struct's implicit initializer is internal; there is no state to set.
+    }
 
     /// Find all candidate state machines across the given source files.
     ///

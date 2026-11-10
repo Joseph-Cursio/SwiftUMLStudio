@@ -32,13 +32,12 @@ struct FileCollectorTests {
         #expect(files.first?.lastPathComponent == "Level 0.swift")
     }
 
-    @Test("getFiles(for:) on a non-existent directory returns empty")
+    @Test("getFiles(for:) returns a non-existent directory's URL as given")
     func getFilesForNonExistentDirectory() {
         let url = URL(fileURLWithPath: "/nonexistent/path/dir")
         let files = collector.getFiles(for: url)
-        // A non-directory URL is returned as-is (not filtered)
-        // or is empty if FileManager can't enumerate it
-        #expect(files.isEmpty || files.count >= 0)
+        // Only a directory is enumerated; any other URL, existing or not, is returned as-is.
+        #expect(files == [url])
     }
 
     // MARK: - getFiles(for paths: [String], in directory: String)

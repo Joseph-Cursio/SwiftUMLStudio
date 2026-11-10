@@ -92,7 +92,7 @@ struct SVGClassDiagramNameLookupTests {
             "B.swift": "struct Outer {}",
         ])
         #expect(graph?.nodes.map(\.id).sorted() == ["Outer", "Outer.Inner"])
-        #expect(graph?.edgeEnds == [])
+        #expect(graph?.edgeEnds.isEmpty == true)
     }
 
     /// Two `Outer`s in one file: the nested type of the hidden one is dropped, not hung off the
@@ -190,7 +190,7 @@ struct SVGClassDiagramNameLookupTests {
             "A.swift": "fileprivate class Operation {}\nextension Operation { func run() {} }",
             "C.swift": "class MyOp: Operation {}",
         ])
-        #expect(graph?.edgeEnds == [])
+        #expect(graph?.edgeEnds.isEmpty == true)
     }
 
     // MARK: - Access of Enclosing Declarations

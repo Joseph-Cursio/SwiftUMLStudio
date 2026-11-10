@@ -1,3 +1,4 @@
+import Compression
 import Foundation
 
 /// Decodes PlantUML's text encoding, the inverse of `DiagramText.encodedValue` (#57).
@@ -28,7 +29,24 @@ enum PlantUMLTextDecoding {
             }
             index += 4
         }
-        guard let inflated = try? (Data(bytes) as NSData).decompressed(using: .zlib) else { return nil }
-        return String(data: inflated as Data, encoding: .utf8)
+        guard let inflated = inflate(Data(bytes)) else { return nil }
+        return String(data: inflated, encoding: .utf8)
+    }
+
+    /// The bytes the raw DEFLATE stream `compressed` stands for, or `nil` if it is not one.
+    private static func inflate(_ compressed: Data) -> Data? {
+        var inflated = Data()
+        do {
+            let filter = try OutputFilter(.decompress, using: .zlib) { chunk in
+                if let chunk {
+                    inflated.append(chunk)
+                }
+            }
+            try filter.write(compressed)
+            try filter.finalize()
+        } catch {
+            return nil
+        }
+        return inflated
     }
 }

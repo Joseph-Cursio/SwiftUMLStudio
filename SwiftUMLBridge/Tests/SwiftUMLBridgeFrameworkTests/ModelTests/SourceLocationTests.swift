@@ -117,6 +117,6 @@ struct SyntaxStructureProviderLocationTests {
         let structure = try #require(SyntaxStructure.create(from: "actor Worker {}"))
         let item = try #require(structure.substructure?.first)
         let location = try #require(item.sourceLocation)
-        #expect(location.filePath == "")
+        #expect(location.filePath.isEmpty)
     }
 }

@@ -73,7 +73,7 @@ struct ERStoredPropertyTests {
         let listed = model.entities.flatMap { entity in
             entity.attributes.map { "\(entity.name).\($0.name) transient=\($0.isTransient)" }
         }
-        #expect(relationships == [])
+        #expect(relationships.isEmpty)
         #expect(listed == ["Owner.recent transient=true"])
     }
 

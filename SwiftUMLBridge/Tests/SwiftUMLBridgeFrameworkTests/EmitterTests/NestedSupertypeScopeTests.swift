@@ -77,7 +77,7 @@ struct NestedSupertypeScopeTests {
         shadowed,
     ])
     func oneLevelUp(source: String) {
-        #expect(misses(source, from: "Outer.Near", expected: ["Outer.Base"]) == [])
+        #expect(misses(source, from: "Outer.Near", expected: ["Outer.Base"]).isEmpty)
     }
 
     @Test("nomnoml draws no box of its own for the short name")
@@ -103,7 +103,7 @@ struct NestedSupertypeScopeTests {
                 }
             }
             """
-        #expect(misses(source, from: child, expected: [parent]) == [])
+        #expect(misses(source, from: child, expected: [parent]).isEmpty)
     }
 
     @Test("a type in an extension of a nested type sees that type's members", arguments: [
@@ -123,7 +123,7 @@ struct NestedSupertypeScopeTests {
                 }
             }
             """
-        #expect(misses(source, from: child, expected: ["Outer.Box.Helper"]) == [])
+        #expect(misses(source, from: child, expected: ["Outer.Box.Helper"]).isEmpty)
     }
 
     /// A nested protocol has had a box since #162, so a conformance to it by its short name can
@@ -137,8 +137,8 @@ struct NestedSupertypeScopeTests {
             }
             struct Square: Outer.Shape {}
             """
-        #expect(misses(source, from: "Outer.Circle", expected: ["Outer.Shape"]) == [])
-        #expect(misses(source, from: "Square", expected: ["Outer.Shape"]) == [])
+        #expect(misses(source, from: "Outer.Circle", expected: ["Outer.Shape"]).isEmpty)
+        #expect(misses(source, from: "Square", expected: ["Outer.Shape"]).isEmpty)
     }
 
     /// A typealias declared in a type reads its target as that type's members do, so `Root`
@@ -153,7 +153,7 @@ struct NestedSupertypeScopeTests {
                 class Near: Root {}
             }
             """
-        #expect(misses(source, from: "Outer.Near", expected: ["Outer.Base"]) == [])
+        #expect(misses(source, from: "Outer.Near", expected: ["Outer.Base"]).isEmpty)
     }
 
     /// A macro's conformance belongs to no type around the declaration, so a nested protocol of
@@ -176,21 +176,21 @@ struct NestedSupertypeScopeTests {
         let relationships = RelationshipOptions(
             inheritance: Relationship(label: "inherits", exclude: ["Outer.Base"])
         )
-        #expect(misses(Self.nested, from: "Outer.Near", expected: [], relationships: relationships) == [])
-        #expect(misses(Self.nested, from: "Far", expected: [], relationships: relationships) == [])
+        #expect(misses(Self.nested, from: "Outer.Near", expected: [], relationships: relationships).isEmpty)
+        #expect(misses(Self.nested, from: "Far", expected: [], relationships: relationships).isEmpty)
     }
 
     // MARK: - Guards: what was already right
 
     @Test("a qualified name, and a top-level name written outside the nesting type")
     func namesOutside() {
-        #expect(misses(Self.nested, from: "Far", expected: ["Outer.Base"]) == [])
-        #expect(misses(Self.shadowed, from: "Far", expected: ["Base"]) == [])
+        #expect(misses(Self.nested, from: "Far", expected: ["Outer.Base"]).isEmpty)
+        #expect(misses(Self.shadowed, from: "Far", expected: ["Base"]).isEmpty)
     }
 
     @Test("a nested class inheriting from the class it is nested in")
     func enclosingClass() {
-        #expect(misses("class Node {\n    final class Leaf: Node {}\n}", from: "Node.Leaf", expected: ["Node"]) == [])
+        #expect(misses("class Node {\n    final class Leaf: Node {}\n}", from: "Node.Leaf", expected: ["Node"]).isEmpty)
     }
 
     /// Swift reads an extension's inheritance clause at file scope, so `Shape` here is the
@@ -211,7 +211,7 @@ struct NestedSupertypeScopeTests {
     @Test("inheritance.exclude still matches the supertype as written")
     func excludeAsWritten() {
         let relationships = RelationshipOptions(inheritance: Relationship(label: "inherits", exclude: ["Base"]))
-        #expect(misses(Self.nested, from: "Outer.Near", expected: [], relationships: relationships) == [])
-        #expect(misses(Self.nested, from: "Far", expected: ["Outer.Base"], relationships: relationships) == [])
+        #expect(misses(Self.nested, from: "Outer.Near", expected: [], relationships: relationships).isEmpty)
+        #expect(misses(Self.nested, from: "Far", expected: ["Outer.Base"], relationships: relationships).isEmpty)
     }
 }

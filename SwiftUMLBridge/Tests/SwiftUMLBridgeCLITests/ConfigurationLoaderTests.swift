@@ -53,7 +53,7 @@ struct ConfigurationLoaderTests {
         } throws: { error in
             (error as? CLIError)?.description == "--config \(file.path): \(Self.colourReason)"
         }
-        #expect(warnings.lines.withLock { $0 } == [])
+        #expect(warnings.lines.withLock { $0 }.isEmpty)
     }
 
     @Test("a missing --config file fails the run")
@@ -107,7 +107,7 @@ struct ConfigurationLoaderTests {
         let config = try Self.loader(discovered: discovered, warnings: warnings).load(nil)
 
         #expect(config.format == Configuration.default.format)
-        #expect(warnings.lines.withLock { $0 } == [])
+        #expect(warnings.lines.withLock { $0 }.isEmpty)
     }
 }
 

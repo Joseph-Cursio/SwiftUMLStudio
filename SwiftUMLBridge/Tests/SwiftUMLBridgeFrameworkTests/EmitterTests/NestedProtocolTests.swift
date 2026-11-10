@@ -107,12 +107,12 @@ struct NestedProtocolTests {
         ("enum A {\n    enum B {\n        protocol Deep {}\n    }\n}", "A.B.Deep"),
     ])
     func declared(source: String, id: String) {
-        #expect(misses { protocolIds(classDiagram(source, $0, $1)) == [id] } == [])
+        #expect(misses { protocolIds(classDiagram(source, $0, $1)) == [id] }.isEmpty)
     }
 
     @Test("a conformance written in full ends on its box, with the conformance arrow")
     func conformanceInFull() {
-        #expect(misses { conforms("Square", to: "Outer.Shape", in: classDiagram(Self.shapes, $0, $1)) } == [])
+        #expect(misses { conforms("Square", to: "Outer.Shape", in: classDiagram(Self.shapes, $0, $1)) }.isEmpty)
     }
 
     @Test("hangs off the type it is nested in")
@@ -121,7 +121,7 @@ struct NestedProtocolTests {
         #expect(misses(formats: [.plantuml, .nomnoml, .svg]) {
             nests("Outer.Shape", in: "Outer", classDiagram(Self.shapes, $0, $1))
                 && nests("A.B.Deep", in: "A.B", classDiagram(deep, $0, $1))
-        } == [])
+        }.isEmpty)
     }
 
     @Test("lists its requirements and draws its own supertype as a top-level protocol does", arguments: formats)
@@ -172,11 +172,11 @@ struct NestedProtocolTests {
     @Test("a fileprivate one is hidden by default, as a fileprivate protocol at top level is")
     func hiddenByAccessLevel() {
         let source = "enum Outer {\n    fileprivate protocol Secret {}\n}\nfileprivate protocol TopSecret {}"
-        #expect(misses { protocolIds(classDiagram(source, $0, $1)) == [] } == [])
+        #expect(misses { protocolIds(classDiagram(source, $0, $1)).isEmpty }.isEmpty)
     }
 
     @Test("showNestedTypes: false leaves it out, as it leaves out every nested type")
     func nestedTypesOff() {
-        #expect(misses { protocolIds(classDiagram(Self.shapes, $0, $1, nestedTypes: false)) == [] } == [])
+        #expect(misses { protocolIds(classDiagram(Self.shapes, $0, $1, nestedTypes: false)).isEmpty }.isEmpty)
     }
 }

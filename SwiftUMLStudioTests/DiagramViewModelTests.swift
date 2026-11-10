@@ -45,7 +45,7 @@ struct DiagramViewModelTests {
     @Test("default entryPoint is empty string")
     func defaultEntryPoint() {
         let viewModel = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
-        #expect(viewModel.entryPoint == "")
+        #expect(viewModel.entryPoint.isEmpty)
     }
 
     @Test("default selectedPaths is empty")

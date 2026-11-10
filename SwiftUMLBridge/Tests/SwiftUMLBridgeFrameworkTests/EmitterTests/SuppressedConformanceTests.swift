@@ -47,7 +47,7 @@ struct SuppressedConformanceTests {
                     .map { "\(format) \(mode): \($0.trimmingCharacters(in: .whitespaces))" }
             }
         }
-        #expect(found == [])
+        #expect(found.isEmpty)
     }
 
     @Test("deps --types draws no edge to a suppressed protocol")
@@ -75,7 +75,7 @@ struct SuppressedConformanceTests {
         let configuration = Configuration(format: .plantuml)
         let text = ClassDiagramGenerator()
             .generateScript(for: "protocol P: ~Copyable {}\n" + declaration, with: configuration).text
-        #expect(text.split(separator: "\n").filter { $0.contains("~") } == [])
+        #expect(!text.split(separator: "\n").contains { $0.contains("~") })
     }
 
     // MARK: - Guards: these pass today, and a fix should keep them passing.

@@ -40,7 +40,7 @@ struct NodeInfoTooltip: View {
     /// Returns "filename.swift:line", suitable for a compact tooltip.
     /// Exposed for testing.
     static func shortPath(for location: SourceLocation) -> String {
-        let filename = (location.filePath as NSString).lastPathComponent
+        let filename = location.filePath.split(separator: "/").last.map(String.init) ?? location.filePath
         return "\(filename):\(location.line)"
     }
 }

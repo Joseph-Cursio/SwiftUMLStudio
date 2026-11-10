@@ -222,7 +222,7 @@ final class ERModelExtractor: SyntaxVisitor {
     // MARK: - Post-walk construction
 
     /// Resolve the collected raw data into an `ERModel`.
-    fileprivate func buildModel() -> ERModel {
+    private func buildModel() -> ERModel {
         let modelNames = Set(entities.map(\.name))
 
         var eroEntities: [EREntity] = []

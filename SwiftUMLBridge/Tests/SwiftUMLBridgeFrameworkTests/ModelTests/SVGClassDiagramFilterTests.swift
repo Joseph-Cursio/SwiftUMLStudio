@@ -31,7 +31,7 @@ struct SVGClassDiagramFilterTests {
         let source = "protocol P {}\nstruct Foo {}\nextension Foo: P { func bar() {} }"
         let graph = svg(source, ElementOptions(showExtensions: ExtensionVisualization.none))
         #expect(graph?.nodes.map(\.id) == ["P", "Foo"])
-        #expect(graph?.edgeEnds == [])
+        #expect(graph?.edgeEnds.isEmpty == true)
     }
 
     @Test("elements.exclude drops the excluded type")
@@ -61,7 +61,7 @@ struct SVGClassDiagramFilterTests {
         let source = "class InternalCache {}\nclass PublicAPI: InternalCache {}"
         let graph = svg(source, ElementOptions(exclude: ["Internal*"]))
         #expect(graph?.nodes.map(\.id) == ["PublicAPI"])
-        #expect(graph?.edgeEnds == [])
+        #expect(graph?.edgeEnds.isEmpty == true)
     }
 
     /// A hidden type has no box to merge into, so its extension keeps its own and stands in for

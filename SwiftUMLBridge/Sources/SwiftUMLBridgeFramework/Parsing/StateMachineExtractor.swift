@@ -36,9 +36,9 @@ private struct StateMachineObservedTransition {
 
 final class StateMachineExtractor: TypeStackVisitor {
 
-    fileprivate typealias PropertyInfo = StateMachinePropertyInfo
-    fileprivate typealias SwitchFrame = StateMachineSwitchFrame
-    fileprivate typealias ObservedTransition = StateMachineObservedTransition
+    private typealias PropertyInfo = StateMachinePropertyInfo
+    private typealias SwitchFrame = StateMachineSwitchFrame
+    private typealias ObservedTransition = StateMachineObservedTransition
 
     // MARK: - Collected data
 
@@ -233,7 +233,7 @@ final class StateMachineExtractor: TypeStackVisitor {
         return result.sorted { $0.identifier < $1.identifier }
     }
 
-    fileprivate typealias ClassifiedTransitions = StateMachineClassifiedTransitions
+    private typealias ClassifiedTransitions = StateMachineClassifiedTransitions
 
     private func buildCandidate(from group: [ObservedTransition]) -> StateMachineModel? {
         guard let first = group.first,

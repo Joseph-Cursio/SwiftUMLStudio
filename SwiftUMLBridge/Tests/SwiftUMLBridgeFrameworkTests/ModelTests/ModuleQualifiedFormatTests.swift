@@ -151,7 +151,7 @@ struct ModuleQualifiedFormatTests {
             let nomnoml = try lines(files, Configuration(elements: elements, format: .nomnoml), containing: "-:>")
             #expect(nomnoml == ["[C11] -:> inherits [Foo.V]"], "\(mode)")
             let svg = try graph(files, Configuration(elements: elements, format: .svg))
-            #expect(svg.edges.filter { $0.sourceId == "C11" }.isEmpty, "\(mode)")
+            #expect(!svg.edges.contains { $0.sourceId == "C11" }, "\(mode)")
         }
     }
 

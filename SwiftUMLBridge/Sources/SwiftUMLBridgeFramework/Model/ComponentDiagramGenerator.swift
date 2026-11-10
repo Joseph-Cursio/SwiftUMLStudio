@@ -8,7 +8,9 @@ import Foundation
 /// deferred; the CLI's `swiftumlbridge component --package …` is the only
 /// surface for v1.
 public struct ComponentDiagramGenerator: ComponentDiagramGenerating, Sendable {
-    public init() {}
+    public init() {
+        // Public because a struct's implicit initializer is internal; there is no state to set.
+    }
 
     public func generateScript(
         forPackage description: SPMPackageDescription,

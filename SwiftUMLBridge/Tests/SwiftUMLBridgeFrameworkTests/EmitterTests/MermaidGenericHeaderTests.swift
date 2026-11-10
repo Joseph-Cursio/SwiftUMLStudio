@@ -42,7 +42,7 @@ struct MermaidGenericHeaderTests {
 
     @Test("every line that starts with `<<` is one whole annotation", arguments: modes)
     func annotationLines(mode: ExtensionVisualization) {
-        #expect(Self.lines(mode).filter(Self.isPartialAnnotation) == [])
+        #expect(!Self.lines(mode).contains(where: Self.isPartialAnnotation))
     }
 
     @Test("each generic type keeps its kind")
@@ -77,6 +77,6 @@ struct MermaidGenericHeaderTests {
     @Test("with showGenerics off, no label or line carries a generic clause", arguments: modes)
     func genericsOff(mode: ExtensionVisualization) {
         let lines = Self.lines(mode, generics: false)
-        #expect(lines.filter { $0.contains("&lt;") || Self.isPartialAnnotation($0) } == [])
+        #expect(!lines.contains { $0.contains("&lt;") || Self.isPartialAnnotation($0) })
     }
 }

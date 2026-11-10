@@ -208,7 +208,7 @@ extension LayoutGraphBuilder.TypeLookup {
     /// recorded under, with and without the module an extension spells it through, and
     /// qualified or not.
     func spellings(of name: LayoutGraphBuilder.QualifiedName) -> [String] {
-        guard case .projectType(let owner?, let renamed) = name.start, let module = owner.module else {
+        guard case let .projectType(owner?, renamed) = name.start, let module = owner.module else {
             return [name.name]
         }
         let qualifiers = Set([module, modules.writtenName(of: module)]).sorted()

@@ -221,7 +221,7 @@ struct MermaidHTMLBuilderTests {
 
     @Test("htmlEscape handles empty string")
     func htmlEscapeEmpty() {
-        #expect(MermaidHTMLBuilder.htmlEscape("") == "")
+        #expect(MermaidHTMLBuilder.htmlEscape("").isEmpty)
     }
 
     @Test("htmlEscape handles multiple consecutive special chars")

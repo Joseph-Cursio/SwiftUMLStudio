@@ -181,7 +181,7 @@ struct AttributedSupertypeTests {
     /// (#159). `SuppressedConformanceTests` covers the other formats.
     @Test("a suppressed conformance draws no edge")
     func suppressedConformanceDropped() {
-        #expect(edgeLines(classDiagram("struct Token: ~Copyable {}", .plantuml).text) == [])
+        #expect(edgeLines(classDiagram("struct Token: ~Copyable {}", .plantuml).text).isEmpty)
     }
 
     // MARK: - deps, ER and TypeInfo

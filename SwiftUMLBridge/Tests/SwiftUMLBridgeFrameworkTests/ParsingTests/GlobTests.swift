@@ -86,7 +86,7 @@ struct GlobTests {
     @Test("expandPath expands tilde to home directory")
     func expandPathTilde() {
         let url = expandPath("~/Documents", in: "/tmp")
-        let home = NSString(string: "~").expandingTildeInPath
+        let home = NSHomeDirectory()
         #expect(url.path.hasPrefix(home))
     }
 

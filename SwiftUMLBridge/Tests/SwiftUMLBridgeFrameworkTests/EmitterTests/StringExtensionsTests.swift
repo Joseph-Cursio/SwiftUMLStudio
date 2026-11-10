@@ -231,6 +231,6 @@ struct StringExtensionsTests {
             elements: ElementOptions(showMemberAccessLevelAttribute: false)
         )
         output.addOrSkipMemberAccessLevelAttribute(for: element, basedOn: config)
-        #expect(output == "")
+        #expect(output.isEmpty)
     }
 }

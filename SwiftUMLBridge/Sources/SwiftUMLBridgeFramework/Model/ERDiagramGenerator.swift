@@ -8,7 +8,9 @@ import Foundation
 /// the same merged `ERModel` so a project that mixes the two stacks renders
 /// a single diagram. GRDB schemas are deferred to a follow-up commit.
 public struct ERDiagramGenerator: ERDiagramGenerating, Sendable {
-    public init() {}
+    public init() {
+        // Public because a struct's implicit initializer is internal; there is no state to set.
+    }
 
     public func generateScript(
         for paths: [String],

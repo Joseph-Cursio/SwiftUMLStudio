@@ -68,9 +68,19 @@ internal func expandPath(_ path: String, in directory: String) -> URL {
         return URL(fileURLWithPath: path)
     }
     if path.hasPrefix("~") {
-        return URL(fileURLWithPath: NSString(string: path).expandingTildeInPath)
+        return URL(fileURLWithPath: expandingTilde(in: path))
     }
     return URL(fileURLWithPath: directory).appendingPathComponent(path)
+}
+
+/// `path` with its leading `~` (the current user) or `~user` replaced by that user's home
+/// directory, as a shell reads it; `path` unchanged when there is no such user.
+private func expandingTilde(in path: String) -> String {
+    let afterTilde = path.dropFirst()
+    let user = afterTilde.prefix { $0 != "/" }
+    let home = user.isEmpty ? NSHomeDirectory() : NSHomeDirectoryForUser(String(user))
+    guard let home else { return path }
+    return home + afterTilde.dropFirst(user.count)
 }
 
 /// `path` as directory enumeration spells it: its real path, with every

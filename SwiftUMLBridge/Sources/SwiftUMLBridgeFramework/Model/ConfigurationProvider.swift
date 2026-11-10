@@ -3,7 +3,9 @@ import Yams
 
 /// Load Configuration from file or defaults
 public struct ConfigurationProvider {
-    public init() {}
+    public init() {
+        // Public because a struct's implicit initializer is internal; there is no state to set.
+    }
 
     public func getConfiguration(for path: String?) -> Configuration {
         guard let configPath = path else {

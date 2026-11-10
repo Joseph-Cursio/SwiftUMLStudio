@@ -12,7 +12,9 @@ public final class BridgeLogger: Sendable {
     /// stderr (#138). `nil` until `echo(to:)` sets one.
     private let sink = Mutex<(@Sendable (String) -> Void)?>(nil)
 
-    private init() {}
+    private init() {
+        // Private so that `shared` is the only logger; both properties have their defaults.
+    }
 
     /// Also hands every message from here on to `sink`, prefixed with its level; `nil` stops.
     public func echo(to sink: (@Sendable (String) -> Void)?) {

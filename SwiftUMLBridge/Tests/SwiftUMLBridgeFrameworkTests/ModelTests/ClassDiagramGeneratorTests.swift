@@ -202,9 +202,8 @@ struct ClassDiagramGeneratorTests {
     @Test("analyzeTypes from project mock does not crash")
     func analyzeTypesFromProjectMock() {
         // analyzeTypes relies on SourceKit which may not return results
-        // in all environments, but it should never crash
-        let types = generator.analyzeTypes(for: [projectMockURL.path])
-        #expect(types.count >= 0)
+        // in all environments, but it should never crash; returning at all is the check.
+        _ = generator.analyzeTypes(for: [projectMockURL.path])
     }
 
     // MARK: - generate with empty content

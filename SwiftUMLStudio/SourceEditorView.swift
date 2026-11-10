@@ -31,10 +31,10 @@ struct SourceEditorView: View {
 
         var location = 0
         for index in 0..<(line - 1) {
-            let lineLength = (lines[index] as NSString).length
+            let lineLength = lines[index].utf16.count
             location += lineLength + 1
         }
-        let targetLength = (lines[line - 1] as NSString).length
+        let targetLength = lines[line - 1].utf16.count
         return NSRange(location: location, length: targetLength)
     }
 }

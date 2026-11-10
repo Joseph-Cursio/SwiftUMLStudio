@@ -20,7 +20,7 @@ struct DiagramContextTests {
         let ctx = DiagramContext()
         let item = SyntaxStructure(kind: .class)
         let result = ctx.uniqName(item: item, relationship: "inherits")
-        #expect(result == "")
+        #expect(result.isEmpty)
     }
 
     @Test("uniqName appends index on duplicate name")

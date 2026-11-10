@@ -3,7 +3,9 @@ import Foundation
 /// Collect file paths based on a set of constraints
 public struct FileCollector: Sendable {
     /// default initializer
-    public init() {}
+    public init() {
+        // Public because a struct's implicit initializer is internal; there is no state to set.
+    }
 
     /// get file urls for given constraints
     /// - Parameters:
@@ -99,7 +101,7 @@ public struct FileCollector: Sendable {
     }
 }
 
-fileprivate extension FileOptions {
+private extension FileOptions {
     var someProvided: Bool {
         include?.isEmpty == false || exclude?.isEmpty == false
     }

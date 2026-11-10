@@ -11,7 +11,7 @@ struct SequenceLayoutTests {
         let layout = SequenceLayout()
         #expect(layout.participants.isEmpty)
         #expect(layout.messages.isEmpty)
-        #expect(layout.title == "")
+        #expect(layout.title.isEmpty)
         #expect(layout.totalWidth == 0)
         #expect(layout.totalHeight == 0)
         #expect(layout.lifelineStartY == 0)

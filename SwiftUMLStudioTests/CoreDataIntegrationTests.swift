@@ -224,6 +224,6 @@ struct CoreDataIntegrationTests {
         let results2 = try controller2.container.mainContext.fetch(descriptor)
 
         #expect(results1.count == 1)
-        #expect(results2.count == 0)
+        #expect(results2.isEmpty)
     }
 }

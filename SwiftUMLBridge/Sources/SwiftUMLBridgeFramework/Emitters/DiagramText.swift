@@ -1,3 +1,4 @@
+import Compression
 import Foundation
 
 struct DiagramText: RawRepresentable {
@@ -13,13 +14,26 @@ struct DiagramText: RawRepresentable {
 private extension DiagramText {
     /// Raw DEFLATE (RFC 1951) of every UTF-8 byte of `text`, or `nil` if the encoder fails.
     ///
-    /// Foundation sizes the output itself. `compression_encode_buffer` was handed the
-    /// `Character` count as both the source length and the destination capacity, so non-ASCII
-    /// text lost its last `utf8.count - count` bytes, and text that did not compress below its
-    /// own length encoded to `""` (#57). The encoder is still `COMPRESSION_ZLIB`, so text the
-    /// old call read whole and fit still deflates to the same bytes.
-    func deflate(_ text: String) -> NSData? {
-        try? (Data(text.utf8) as NSData).compressed(using: .zlib)
+    /// The streaming `OutputFilter` sizes the output itself. `compression_encode_buffer` was
+    /// handed the `Character` count as both the source length and the destination capacity, so
+    /// non-ASCII text lost its last `utf8.count - count` bytes, and text that did not compress
+    /// below its own length encoded to `""` (#57). The encoder is still `COMPRESSION_ZLIB`, so
+    /// text the old call read whole and fit still deflates to the same bytes, as do
+    /// `NSData.compressed(using: .zlib)`'s.
+    func deflate(_ text: String) -> Data? {
+        var compressed = Data()
+        do {
+            let filter = try OutputFilter(.compress, using: .zlib) { chunk in
+                if let chunk {
+                    compressed.append(chunk)
+                }
+            }
+            try filter.write(Data(text.utf8))
+            try filter.finalize()
+        } catch {
+            return nil
+        }
+        return compressed
     }
 }
 
@@ -32,7 +46,7 @@ internal extension DiagramText {
         "~h" + text.utf8.map { String(format: "%02x", $0) }.joined()
     }
 
-    func base64plantuml(_ compressedData: NSData) -> String {
+    func base64plantuml(_ compressedData: Data) -> String {
         let bytes = [UInt8](compressedData)
 
         let encodingAlphabetTable: [UInt8] = [

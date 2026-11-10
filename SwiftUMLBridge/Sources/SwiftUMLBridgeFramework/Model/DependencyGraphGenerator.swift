@@ -10,7 +10,9 @@ public enum DepsMode: String, CaseIterable, Sendable {
 
 /// Generates dependency graph scripts from Swift source files.
 public struct DependencyGraphGenerator: DependencyGraphGenerating, Sendable {
-    public init() {}
+    public init() {
+        // Public because a struct's implicit initializer is internal; there is no state to set.
+    }
 
     /// Generate a `DepsScript` from Swift files at the given paths.
     ///
