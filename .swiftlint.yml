@@ -75,6 +75,7 @@ opt_in_rules:
 - shorthand_optional_binding
 - sorted_first_last
 - static_operator
+- strict_fileprivate
 - strong_iboutlet
 - test_case_accessibility
 - toggle_bool
