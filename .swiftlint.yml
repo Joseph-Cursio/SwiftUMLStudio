@@ -5,6 +5,7 @@ excluded:
 - SwiftUMLBridge/.build
 - SwiftUMLBridge/.build/checkouts
 opt_in_rules:
+- accessibility_label_for_image
 - accessibility_trait_for_button
 - array_init
 - closure_end_indentation

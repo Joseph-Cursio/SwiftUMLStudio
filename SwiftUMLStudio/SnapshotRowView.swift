@@ -9,6 +9,7 @@ struct SnapshotRowView: View {
                 Image(systemName: "camera.fill")
                     .foregroundStyle(.tint)
                     .font(.caption)
+                    .accessibilityHidden(true)
                 Text(formattedDate)
                     .font(.caption.bold())
             }

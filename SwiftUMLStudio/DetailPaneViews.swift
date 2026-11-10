@@ -321,6 +321,7 @@ struct StateMachineConfidenceBanner: View {
             Image(systemName: symbol)
                 .foregroundStyle(tint)
                 .font(.title3)
+                .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 4) {
                 Text(headline).font(.subheadline.bold())
                 ForEach(model.notes, id: \.self) { note in
