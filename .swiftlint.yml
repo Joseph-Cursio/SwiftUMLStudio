@@ -49,6 +49,7 @@ opt_in_rules:
 - operator_usage_whitespace
 - optional_enum_case_matching
 - overridden_super_call
+- override_in_extension
 - period_spacing
 - prefer_asset_symbols
 - prefer_self_type_over_type_of_self
