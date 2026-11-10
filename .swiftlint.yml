@@ -52,6 +52,7 @@ opt_in_rules:
 - quick_discouraged_pending_test
 - reduce_into
 - redundant_final
+- redundant_type_annotation
 - required_enum_case
 - return_value_from_void_function
 - self_binding
