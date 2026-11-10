@@ -23,7 +23,7 @@ struct HiddenNestedAliasScopeTests {
     @Test("an extension spelled through an alias of a hidden nested type is the project's",
           arguments: formats, [
             ("struct Outer { struct Inner {}; typealias Me = Inner }\ntypealias Crate = Outer.Me", "Crate"),
-            ("struct Box { struct Inner { struct Real {}; typealias Stamp = Real } }", "Box.Inner.Stamp")
+            ("struct Box { struct Inner { struct Real {}; typealias Stamp = Real } }", "Box.Inner.Stamp"),
           ])
     func aliasOfHiddenNestedTypeIsTheProjects(format: DiagramFormat, declared: (source: String, extended: String)) {
         let alone = """
@@ -59,7 +59,7 @@ struct HiddenNestedAliasScopeTests {
                 extension Date.FormatStyle.Symbol { typealias TZ = TimeZone }
                 extension Date.FormatStyle.Symbol.TZ { func viaMember() {} }
                 extension TimeZone { func direct() {} }
-                """)
+                """),
         ]
         let items = try files.flatMap { file in
             let items = try #require(SyntaxStructure.create(from: file.1)?.substructure)

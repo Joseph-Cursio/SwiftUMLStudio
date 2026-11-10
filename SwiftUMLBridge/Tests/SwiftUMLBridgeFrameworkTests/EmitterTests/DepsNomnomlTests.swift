@@ -80,7 +80,7 @@ struct DepsNomnomlTests {
         let edges = [
             DependencyEdge(from: "Alpha", to: "Beta", kind: .conforms),
             DependencyEdge(from: "Beta", to: "Gamma", kind: .inherits),
-            DependencyEdge(from: "Gamma", to: "Delta", kind: .imports)
+            DependencyEdge(from: "Gamma", to: "Delta", kind: .imports),
         ]
         let script = makeScript(edges: edges)
         #expect(script.text.contains("[Alpha] --:> [Beta]"))
@@ -94,7 +94,7 @@ struct DepsNomnomlTests {
     func cyclicNodesReceiveWarning() {
         let edges = [
             DependencyEdge(from: "Alpha", to: "Beta", kind: .imports),
-            DependencyEdge(from: "Beta", to: "Alpha", kind: .imports)
+            DependencyEdge(from: "Beta", to: "Alpha", kind: .imports),
         ]
         let script = makeScript(edges: edges)
         #expect(script.text.contains("#.warning: fill=#ffcccc stroke=#cc0000"))
@@ -105,7 +105,7 @@ struct DepsNomnomlTests {
     func cyclicNodesCommentListsNames() {
         let edges = [
             DependencyEdge(from: "Alpha", to: "Beta", kind: .imports),
-            DependencyEdge(from: "Beta", to: "Alpha", kind: .imports)
+            DependencyEdge(from: "Beta", to: "Alpha", kind: .imports),
         ]
         let script = makeScript(edges: edges)
         #expect(script.text.contains("// Cyclic nodes: Alpha, Beta"))

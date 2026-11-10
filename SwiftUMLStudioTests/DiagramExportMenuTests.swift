@@ -53,7 +53,7 @@ struct DiagramExportMenuTests {
         arguments: [
             (DiagramFormat.plantuml, "puml"),
             (.mermaid, "mmd"),
-            (.nomnoml, "nomnoml")
+            (.nomnoml, "nomnoml"),
         ]
     )
     func sourceExport(format: DiagramFormat, ext: String) async throws {

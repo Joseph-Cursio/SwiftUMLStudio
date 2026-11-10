@@ -22,7 +22,7 @@ struct DiagramViewModelPlantUMLConsentTests {
             (DiagramFormat.plantuml, PlantUMLConsent.Decision.declined, DiagramFormat.mermaid),
             (.plantuml, .undecided, .plantuml),
             (.plantuml, .granted, .plantuml),
-            (.svg, .declined, .svg)
+            (.svg, .declined, .svg),
         ]
     )
     func launchFormatPreference(

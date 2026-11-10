@@ -64,7 +64,7 @@ private func richLayout() -> SequenceLayout {
         participants: [
             makeParticipant(name: "Caller", centerX: 100),
             makeParticipant(name: "Service", centerX: 320),
-            makeParticipant(name: "Store", centerX: 540)
+            makeParticipant(name: "Store", centerX: 540),
         ],
         messages: [
             makeMessage(id: 0, label: "fetch()", fromX: 100, toX: 320, posY: 90),
@@ -78,7 +78,7 @@ private func richLayout() -> SequenceLayout {
             makeMessage(
                 id: 5, label: "done()", fromX: 320, toX: 100, posY: 350,
                 noteText: "cached for 5 minutes"
-            )
+            ),
         ],
         title: "Caller.fetch()",
         totalWidth: 700,
@@ -238,7 +238,7 @@ struct NativeSequenceDiagramViewArrowKeyTests {
             NativeDiagramGeometry.NavigationDirection.upward,
             .down,
             .left,
-            .right
+            .right,
         ]
     )
     func handlesEveryDirection(direction: NativeDiagramGeometry.NavigationDirection) {

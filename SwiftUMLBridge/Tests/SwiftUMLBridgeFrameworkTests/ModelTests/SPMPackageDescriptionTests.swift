@@ -196,7 +196,7 @@ struct ClassDiagramGeneratorPackageTests {
                     name: "UI", kind: .library,
                     path: "Sources/UI",
                     sources: ["LoginView.swift"], dependencies: ["Networking"]
-                )
+                ),
             ]
         )
 
@@ -235,7 +235,7 @@ struct ClassDiagramGeneratorPackageTests {
                     name: "Networking", kind: .library,
                     path: "Sources/Networking",
                     sources: ["HttpClient.swift"], dependencies: []
-                )
+                ),
             ]
         )
 
@@ -303,7 +303,7 @@ struct ClassDiagramGeneratorPackageTests {
                     name: targetName, kind: .library,
                     path: "Sources/\(targetName)",
                     sources: ["HttpClient.swift"], dependencies: []
-                )
+                ),
             ]
         )
         return (description, tempRoot)

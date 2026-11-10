@@ -213,7 +213,7 @@ struct StringExtensionsTests {
         arguments: [
             (ElementAccessibility.public, "+"),
             (ElementAccessibility.internal, "~"),
-            (ElementAccessibility.private, "-")
+            (ElementAccessibility.private, "-"),
         ]
     )
     func addAccessLevelSymbol(accessibility: ElementAccessibility, expected: String) {

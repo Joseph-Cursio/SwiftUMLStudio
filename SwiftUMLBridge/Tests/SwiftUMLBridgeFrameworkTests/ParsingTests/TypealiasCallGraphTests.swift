@@ -81,7 +81,7 @@ struct TypealiasCallGraphTests {
     func receiverWrittenWithTheAlias() throws {
         let root = try directory([
             "Alias.swift": "struct Real { static func make() { Baz.hit() } }\ntypealias Alias = Real",
-            "Caller.swift": "struct Caller { func go() { Alias.make() } }\nstruct Baz { static func hit() {} }"
+            "Caller.swift": "struct Caller { func go() { Alias.make() } }\nstruct Baz { static func hit() {} }",
         ])
         defer { try? FileManager.default.removeItem(at: root) }
         let text = sequence(root, "Caller", "go")
@@ -109,7 +109,7 @@ struct TypealiasCallGraphTests {
     func fileprivateAliasInAnotherFile() throws {
         let root = try directory([
             "A.swift": "struct Real {}\nfileprivate typealias Alias = Real\nextension Alias { func here() {} }",
-            "B.swift": "extension Alias { func there() {} }"
+            "B.swift": "extension Alias { func there() {} }",
         ])
         defer { try? FileManager.default.removeItem(at: root) }
         let entries = SequenceDiagramGenerator().findEntryPoints(for: [root.path])

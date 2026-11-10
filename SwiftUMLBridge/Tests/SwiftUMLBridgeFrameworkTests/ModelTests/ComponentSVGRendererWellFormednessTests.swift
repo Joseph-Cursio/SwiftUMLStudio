@@ -16,7 +16,7 @@ struct ComponentSVGRendererWellFormednessTests {
         let model = ComponentModel(
             components: [
                 Component(name: "App", kind: .executable),
-                Component(name: label, kind: .library, providedInterfaces: [label])
+                Component(name: label, kind: .library, providedInterfaces: [label]),
             ],
             dependencies: [ComponentDependency(from: "App", to: label)]
         )

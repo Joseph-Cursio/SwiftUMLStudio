@@ -40,7 +40,7 @@ struct SequenceSVGRendererTests {
         let edges = [
             makeEdge(calleeType: "ServiceA", calleeMethod: "run"),
             makeEdge(calleeType: "ServiceB", calleeMethod: "run"),
-            makeEdge(calleeType: "ServiceA", calleeMethod: "again")
+            makeEdge(calleeType: "ServiceA", calleeMethod: "again"),
         ]
         let layout = SequenceSVGRenderer.computeLayout(
             traversedEdges: edges, entryType: "Controller", entryMethod: "handle"
@@ -76,7 +76,7 @@ struct SequenceSVGRendererTests {
     func messageCount() {
         let edges = [
             makeEdge(calleeMethod: "aaa"),
-            makeEdge(calleeMethod: "bbb")
+            makeEdge(calleeMethod: "bbb"),
         ]
         let layout = SequenceSVGRenderer.computeLayout(
             traversedEdges: edges, entryType: "Controller", entryMethod: "handle"
@@ -124,7 +124,7 @@ struct SequenceSVGRendererTests {
         )
         let edges = [
             makeEdge(calleeType: "ServiceA", calleeMethod: "run"),
-            makeEdge(calleeType: "ServiceB", calleeMethod: "run")
+            makeEdge(calleeType: "ServiceB", calleeMethod: "run"),
         ]
         let multiLayout = SequenceSVGRenderer.computeLayout(
             traversedEdges: edges, entryType: "App", entryMethod: "run"
@@ -140,7 +140,7 @@ struct SequenceSVGRendererTests {
             makeEdge(calleeMethod: "bbb"),
             makeEdge(calleeMethod: "ccc"),
             makeEdge(calleeMethod: "ddd"),
-            makeEdge(calleeMethod: "eee")
+            makeEdge(calleeMethod: "eee"),
         ]
         let fewLayout = SequenceSVGRenderer.computeLayout(
             traversedEdges: fewEdges, entryType: "Ctrl", entryMethod: "run"
@@ -168,7 +168,7 @@ struct SequenceSVGRendererTests {
                 callerType: "Service",
                 calleeType: "Service",
                 calleeMethod: "retry"
-            )
+            ),
         ]
         let layout = SequenceSVGRenderer.computeLayout(
             traversedEdges: edges, entryType: "Service", entryMethod: "run"
@@ -206,7 +206,7 @@ struct SequenceSVGParticipantLocationTests {
     func mapStampsLocations() throws {
         let map: [String: FrameworkLocation] = [
             "Service": FrameworkLocation(filePath: "/Service.swift", line: 4, column: 7),
-            "Worker": FrameworkLocation(filePath: "/Worker.swift", line: 11, column: 8)
+            "Worker": FrameworkLocation(filePath: "/Worker.swift", line: 11, column: 8),
         ]
         let layout = SequenceSVGRenderer.computeLayout(
             traversedEdges: [edge(callerType: "Service", calleeType: "Worker")],

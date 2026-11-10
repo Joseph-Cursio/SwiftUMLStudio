@@ -65,7 +65,7 @@ struct ClassDiagramFileSelectionTests {
             label: "a directory with no Swift files",
             config: nil,
             arguments: ["Empty"]
-        )
+        ),
     ]
 
     @Test("classdiagram fails rather than diagramming the cwd", arguments: emptySelections)
@@ -99,7 +99,7 @@ struct ClassDiagramFileSelectionTests {
 
         let run = try runCLI([
             "classdiagram", "--config", configFile.path,
-            "--format", "mermaid", "--output", "consoleOnly"
+            "--format", "mermaid", "--output", "consoleOnly",
         ], in: root)
 
         #expect(run.status == 0)

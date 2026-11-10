@@ -56,7 +56,7 @@ public struct BrowserPresenter: DiagramPresenting {
     private func mermaidLiveURL(for text: String) -> URL {
         let payload: [String: Any] = [
             "code": text,
-            "mermaid": ["theme": "default"]
+            "mermaid": ["theme": "default"],
         ]
         let data = (try? JSONSerialization.data(withJSONObject: payload)) ?? Data()
         let base64 = data.base64EncodedString()

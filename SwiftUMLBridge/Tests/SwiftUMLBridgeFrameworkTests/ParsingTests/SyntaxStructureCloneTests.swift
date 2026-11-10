@@ -11,7 +11,7 @@ struct SyntaxStructureCloneTests {
         "accessibility", "attribute", "attributes", "elements", "inheritedTypes", "kind", "name",
         "runtimename", "substructure", "typename", "memberSuffix", "parent", "sourceLocation", "module",
         "imports", "loadedModules", "mergedInto", "carriedSupertypes", "mergedExtensions", "standsInFor",
-        "boundGenericArguments", "isSugared"
+        "boundGenericArguments", "isSugared",
     ]
 
     /// A structure with every stored property set.

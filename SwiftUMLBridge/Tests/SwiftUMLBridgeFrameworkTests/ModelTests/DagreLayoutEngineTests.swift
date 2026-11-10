@@ -40,7 +40,7 @@ struct DagreLayoutEngineTests {
         let nodes = [
             LayoutNode(id: "aaa", label: "ClassA"),
             LayoutNode(id: "bbb", label: "ClassB"),
-            LayoutNode(id: "ccc", label: "ClassC")
+            LayoutNode(id: "ccc", label: "ClassC"),
         ]
         let graph = LayoutGraph(nodes: nodes)
         let result = DagreLayoutEngine.layout(graph)
@@ -59,7 +59,7 @@ struct DagreLayoutEngineTests {
     func layoutEdgesWithPoints() {
         let nodes = [
             LayoutNode(id: "parent", label: "Parent"),
-            LayoutNode(id: "child", label: "Child")
+            LayoutNode(id: "child", label: "Child"),
         ]
         let edges = [
             LayoutEdge(sourceId: "child", targetId: "parent", style: .inheritance)
@@ -81,7 +81,7 @@ struct DagreLayoutEngineTests {
             id: "rich", label: "Rich",
             compartments: [
                 NodeCompartment(items: ["prop1: Int", "prop2: String", "prop3: Bool"]),
-                NodeCompartment(items: ["method1()", "method2()"])
+                NodeCompartment(items: ["method1()", "method2()"]),
             ]
         )
         let graph = LayoutGraph(nodes: [emptyNode, richNode])
@@ -129,11 +129,11 @@ struct DagreLayoutEngineTests {
         let nodes = [
             LayoutNode(id: "aaa", label: "A"),
             LayoutNode(id: "bbb", label: "B"),
-            LayoutNode(id: "ccc", label: "C")
+            LayoutNode(id: "ccc", label: "C"),
         ]
         let edges = [
             LayoutEdge(sourceId: "aaa", targetId: "bbb", style: .inheritance),
-            LayoutEdge(sourceId: "bbb", targetId: "ccc", style: .inheritance)
+            LayoutEdge(sourceId: "bbb", targetId: "ccc", style: .inheritance),
         ]
         let graph = LayoutGraph(nodes: nodes, edges: edges)
         let result = DagreLayoutEngine.layout(graph)
@@ -152,7 +152,7 @@ struct DagreLayoutEngineTests {
     func noModulesNoClusters() {
         let nodes = [
             LayoutNode(id: "aaa", label: "A"),
-            LayoutNode(id: "bbb", label: "B")
+            LayoutNode(id: "bbb", label: "B"),
         ]
         let result = DagreLayoutEngine.layout(LayoutGraph(nodes: nodes))
         #expect(result.clusters.isEmpty)
@@ -163,7 +163,7 @@ struct DagreLayoutEngineTests {
         let nodes = [
             LayoutNode(id: "Client", label: "Client", module: "Networking"),
             LayoutNode(id: "Session", label: "Session", module: "Networking"),
-            LayoutNode(id: "Store", label: "Store", module: "Persistence")
+            LayoutNode(id: "Store", label: "Store", module: "Persistence"),
         ]
         let result = DagreLayoutEngine.layout(LayoutGraph(nodes: nodes))
 
@@ -182,7 +182,7 @@ struct DagreLayoutEngineTests {
     func clusterEnclosesNodes() throws {
         let nodes = [
             LayoutNode(id: "First", label: "First", module: "Core"),
-            LayoutNode(id: "Second", label: "Second", module: "Core")
+            LayoutNode(id: "Second", label: "Second", module: "Core"),
         ]
         let result = DagreLayoutEngine.layout(LayoutGraph(nodes: nodes))
 
@@ -207,7 +207,7 @@ struct DagreLayoutEngineTests {
     func clusteringPreservesEdges() {
         let nodes = [
             LayoutNode(id: "child", label: "Child", module: "App"),
-            LayoutNode(id: "parent", label: "Parent", module: "App")
+            LayoutNode(id: "parent", label: "Parent", module: "App"),
         ]
         let edges = [LayoutEdge(sourceId: "child", targetId: "parent", style: .inheritance)]
         let result = DagreLayoutEngine.layout(LayoutGraph(nodes: nodes, edges: edges))

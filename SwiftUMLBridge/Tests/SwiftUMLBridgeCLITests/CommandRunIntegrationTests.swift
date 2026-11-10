@@ -158,7 +158,7 @@ struct CommandRunIntegrationTests {
     func runsDepsWithFilters() async throws {
         var command = try SwiftUMLBridgeCLI.DepsCommand.parse([
             fixture("Services"), "--public-only",
-            "--exclude", "NotificationService", "--output", "consoleOnly"
+            "--exclude", "NotificationService", "--output", "consoleOnly",
         ])
 
         try await command.run()
@@ -264,7 +264,7 @@ struct CommandRunIntegrationTests {
         defer { try? FileManager.default.removeItem(at: root) }
         var command = try SwiftUMLBridgeCLI.ComponentCommand.parse([
             "--package", root.path,
-            "--include-test-targets", "--output", "consoleOnly"
+            "--include-test-targets", "--output", "consoleOnly",
         ])
 
         try await command.run()

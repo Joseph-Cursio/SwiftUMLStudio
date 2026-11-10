@@ -110,7 +110,7 @@ struct IfConfigERTests {
         ("#if LEGACY_SCHEMA\n@Attribute(.externalStorage)\n#else\n@Attribute(.unique)\n#endif", true),
         ("#if DEBUG\n@Attribute(.spotlight)\n#endif\n@Attribute(.unique)", true),
         ("@Attribute(.spotlight)\n#if DEBUG\n@Attribute(.unique)\n#endif", false),
-        ("#if DEBUG\n@Attribute(.spotlight)\n#else\n@Attribute(.externalStorage)\n#endif\n@Attribute(.unique)", false)
+        ("#if DEBUG\n@Attribute(.spotlight)\n#else\n@Attribute(.externalStorage)\n#endif\n@Attribute(.unique)", false),
     ])
     func firstAttributeOfEachClause(attributes: String, unique: Bool) {
         #expect(flags(attributes) == ["email unique=\(unique) pk=\(unique) transient=false"])
@@ -128,7 +128,7 @@ struct IfConfigERTests {
 
     @Test("@Relationship(inverse:) inside #if names its inverse", arguments: [
         "#if !LEGACY_SCHEMA\n@Relationship(inverse: \\Book.writer)\n#endif",
-        "#if LEGACY_SCHEMA\n@Relationship(deleteRule: .cascade)\n#else\n@Relationship(inverse: \\Book.writer)\n#endif"
+        "#if LEGACY_SCHEMA\n@Relationship(deleteRule: .cascade)\n#else\n@Relationship(inverse: \\Book.writer)\n#endif",
     ])
     func relationshipAttributeInIfConfig(attribute: String) {
         for ifConfig in [true, false] {
@@ -205,7 +205,7 @@ struct IfConfigERTests {
     /// hold two tables and give neither its columns.
     @Test("a SQLite.swift table declared in two clauses is one table, from the first", arguments: [
         ("users_debug", "users"),
-        ("users", "users")
+        ("users", "users"),
     ])
     func sqliteTableInTwoClauses(debugName: String, releaseName: String) {
         let model = PersistenceSchemaExtractor.extract(from: """

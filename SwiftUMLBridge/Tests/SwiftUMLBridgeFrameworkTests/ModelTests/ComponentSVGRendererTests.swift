@@ -34,7 +34,7 @@ struct ComponentSVGRendererLayoutTests {
         let model = ComponentModel(
             components: [
                 Component(name: "App", kind: .executable),
-                Component(name: "Networking", kind: .library)
+                Component(name: "Networking", kind: .library),
             ],
             dependencies: [ComponentDependency(from: "App", to: "Networking")]
         )
@@ -50,11 +50,11 @@ struct ComponentSVGRendererLayoutTests {
         let model = ComponentModel(
             components: [
                 Component(name: "A", kind: .library),
-                Component(name: "B", kind: .library)
+                Component(name: "B", kind: .library),
             ],
             dependencies: [
                 ComponentDependency(from: "A", to: "B"),
-                ComponentDependency(from: "B", to: "A")
+                ComponentDependency(from: "B", to: "A"),
             ]
         )
         let layout = ComponentSVGRenderer.computeLayout(model)
@@ -86,11 +86,11 @@ struct ComponentSVGRendererLayoutTests {
             components: [
                 Component(name: "A", kind: .library),
                 Component(name: "B", kind: .library),
-                Component(name: "C", kind: .library)
+                Component(name: "C", kind: .library),
             ],
             dependencies: [
                 ComponentDependency(from: "A", to: "C"),
-                ComponentDependency(from: "B", to: "C")
+                ComponentDependency(from: "B", to: "C"),
             ]
         )
         let layout = ComponentSVGRenderer.computeLayout(model)
@@ -106,7 +106,7 @@ struct ComponentSVGRendererSVGTests {
         let model = ComponentModel(
             components: [
                 Component(name: "Networking", kind: .library, providedInterfaces: ["HttpClient"]),
-                Component(name: "App", kind: .executable)
+                Component(name: "App", kind: .executable),
             ],
             dependencies: [ComponentDependency(from: "App", to: "Networking")]
         )
@@ -190,7 +190,7 @@ struct ComponentSVGRendererStereotypeTests {
         arguments: [
             (ComponentKind.executable, "executable"),
             (.library, "library"),
-            (.test, "test")
+            (.test, "test"),
         ]
     )
     func labelsPerKind(kind: ComponentKind, label: String) {

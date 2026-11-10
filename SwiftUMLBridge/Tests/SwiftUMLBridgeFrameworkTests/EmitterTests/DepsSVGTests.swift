@@ -48,7 +48,7 @@ struct DepsSVGTests {
     func layoutGraphHasExpectedEdges() {
         let edges = [
             DependencyEdge(from: "Alpha", to: "Beta", kind: .conforms),
-            DependencyEdge(from: "Beta", to: "Gamma", kind: .inherits)
+            DependencyEdge(from: "Beta", to: "Gamma", kind: .inherits),
         ]
         let script = makeScript(edges: edges)
         #expect(script.layoutGraph?.edges.count == 2)
@@ -88,7 +88,7 @@ struct DepsSVGTests {
         let edges = [
             DependencyEdge(from: "AppModel", to: "DataStore", kind: .imports),
             DependencyEdge(from: "DataStore", to: "Network", kind: .imports),
-            DependencyEdge(from: "Network", to: "Foundation", kind: .imports)
+            DependencyEdge(from: "Network", to: "Foundation", kind: .imports),
         ]
         let script = makeScript(edges: edges)
         #expect(script.text.contains("AppModel"))

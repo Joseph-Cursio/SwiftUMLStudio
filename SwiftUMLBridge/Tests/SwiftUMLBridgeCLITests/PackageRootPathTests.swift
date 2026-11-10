@@ -62,7 +62,7 @@ struct PackageRootPathTests {
         ["classdiagram", "--format", "plantuml"],
         ["deps", "--types"],
         ["deps", "--modules"],
-        ["component"]
+        ["component"],
     ]
 
     private static func expectedName(for subcommand: [String]) -> String {

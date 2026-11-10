@@ -90,7 +90,7 @@ struct AliasSpelledExtensionScopeTests {
     /// `Box.Inner.Stamp` too, with nested types hidden, when the lookup records no `Box.Inner`.
     static let outsideAliases = [
         ("typealias Day = Date", "Day"), ("struct Box { typealias Stamp = Date }", "Box.Stamp"),
-        ("struct Box { struct Inner { typealias Stamp = Date } }", "Box.Inner.Stamp")
+        ("struct Box { struct Inner { typealias Stamp = Date } }", "Box.Inner.Stamp"),
     ]
 
     @Test("an alias written in an extension spelled through an outside type's typealias is no fallback",
@@ -180,7 +180,7 @@ struct AliasSpelledExtensionScopeTests {
 
     static let siblingAliasDeclarations = [
         "struct Outer { struct Inner {}; typealias Alias = Inner }",
-        "struct Outer { struct Inner {} }\nextension Outer { typealias Alias = Inner }"
+        "struct Outer { struct Inner {} }\nextension Outer { typealias Alias = Inner }",
     ]
 
     private func classLines(

@@ -123,7 +123,7 @@ struct DagreFallbackLayoutTests {
         let edges = [
             LayoutEdge(sourceId: "N0", targetId: "N0"),
             LayoutEdge(sourceId: "N0", targetId: "Missing"),
-            LayoutEdge(sourceId: "N0", targetId: "N1")
+            LayoutEdge(sourceId: "N0", targetId: "N1"),
         ]
         let laid = DagreLayoutEngine.fallbackLayout(sizedGraph([(100, 50), (100, 50)], edges: edges), because: "a test")
         #expect(laid.edges.map(\.points.count) == [0, 0, 3])
@@ -135,7 +135,7 @@ struct DagreFallbackLayoutTests {
     func svgDrawsFallbackEdges() {
         let edges = [
             LayoutEdge(sourceId: "N0", targetId: "N1", label: "owns", style: .composition),
-            LayoutEdge(sourceId: "N2", targetId: "N0", label: "extends", style: .inheritance)
+            LayoutEdge(sourceId: "N2", targetId: "N0", label: "extends", style: .inheritance),
         ]
         let graph = sizedGraph([(100, 50), (100, 50), (100, 50)], edges: edges)
         let laid = DagreLayoutEngine.fallbackLayout(graph, because: "a test")

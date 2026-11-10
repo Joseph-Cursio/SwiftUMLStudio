@@ -11,12 +11,12 @@ struct StateMermaidTests {
             states: [
                 StateMachineState(name: "red", isInitial: true),
                 StateMachineState(name: "yellow"),
-                StateMachineState(name: "green")
+                StateMachineState(name: "green"),
             ],
             transitions: [
                 StateTransition(from: "red", toState: "green", trigger: "advance"),
                 StateTransition(from: "green", toState: "yellow", trigger: "advance"),
-                StateTransition(from: "yellow", toState: "red", trigger: "advance")
+                StateTransition(from: "yellow", toState: "red", trigger: "advance"),
             ]
         )
     }
@@ -61,11 +61,11 @@ struct StateMermaidTests {
             states: [
                 StateMachineState(name: "idle", isInitial: true),
                 StateMachineState(name: "running"),
-                StateMachineState(name: "done", isFinal: true)
+                StateMachineState(name: "done", isFinal: true),
             ],
             transitions: [
                 StateTransition(from: "idle", toState: "running", trigger: "run"),
-                StateTransition(from: "running", toState: "done", trigger: "run")
+                StateTransition(from: "running", toState: "done", trigger: "run"),
             ]
         )
         let script = makeScript(model: model)
@@ -86,13 +86,13 @@ struct StateMermaidTests {
             enumType: "Flow",
             states: [
                 StateMachineState(name: "idle", isInitial: true),
-                StateMachineState(name: "retrying")
+                StateMachineState(name: "retrying"),
             ],
             transitions: [
                 StateTransition(
                     from: "idle", toState: "retrying",
                     trigger: "tick", guardText: "retryCount > 0"
-                )
+                ),
             ]
         )
         let script = makeScript(model: model)

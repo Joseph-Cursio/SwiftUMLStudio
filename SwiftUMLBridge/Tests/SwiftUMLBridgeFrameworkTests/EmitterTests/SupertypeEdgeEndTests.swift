@@ -29,7 +29,7 @@ struct SupertypeEdgeEndTests {
     /// the protocol, so its edge ends on the protocol's stand-in, the second box named `P`.
     static let standIns: [(name: String, source: String)] = [
         ("B.swift", "fileprivate struct P {}\nextension P { func fromStructFile() {} }"),
-        ("C.swift", "fileprivate protocol P {}\nextension P { func fromProtocolFile() {} }\nstruct U: P {}")
+        ("C.swift", "fileprivate protocol P {}\nextension P { func fromProtocolFile() {} }\nstruct U: P {}"),
     ]
 
     @Test("an edge to a hidden protocol ends on its stand-in, not another hidden type's",
@@ -61,7 +61,7 @@ struct SupertypeEdgeEndTests {
 
     static let twoFiles: [(name: String, source: String)] = [
         ("A.swift", "fileprivate class Base { var inA = 0 }\nfileprivate class SubA: Base {}"),
-        ("B.swift", "fileprivate class Base { var inB = 0 }\nfileprivate class SubB: Base {}")
+        ("B.swift", "fileprivate class Base { var inB = 0 }\nfileprivate class SubB: Base {}"),
     ]
 
     @Test("an edge ends on the supertype in its own file, not the first of its name", arguments: textFormats)
@@ -109,7 +109,7 @@ struct SupertypeEdgeEndTests {
     /// name, the edge would end on B's `extension P`, another hidden type's stand-in.
     static let noStandIn: [(name: String, source: String)] = [
         ("B.swift", "fileprivate struct P {}\nextension P { func fromStructFile() {} }"),
-        ("C.swift", "fileprivate protocol P {}\nstruct U: P {}")
+        ("C.swift", "fileprivate protocol P {}\nstruct U: P {}"),
     ]
 
     @Test("an edge SVG finds no end for is left out where a drawn box has its name",
@@ -128,7 +128,7 @@ struct SupertypeEdgeEndTests {
         let otherFile = [
             ("A.swift", "private protocol Drawable { func draw() }\n"
                 + "private struct Circle: Drawable { func draw() {} }"),
-            ("B.swift", "fileprivate protocol Drawable { func render() }\nstruct Square: Drawable { func render() {} }")
+            ("B.swift", "fileprivate protocol Drawable { func render() }\nstruct Square: Drawable { func render() {} }"),
         ]
         let realizes = format == .nomnoml ? "--:>" : "<|.."
         #expect(try supertypeEdges(from: "Square", otherFile, format, mode) == [])
@@ -141,7 +141,7 @@ struct SupertypeEdgeEndTests {
     func outsideTypeBesideABoxOfItsName(format: DiagramFormat) throws {
         let files = [
             ("X.swift", "fileprivate protocol Identifiable { func own() }"),
-            ("Y.swift", "struct User: Identifiable { var id: Int }")
+            ("Y.swift", "struct User: Identifiable { var id: Int }"),
         ]
         #expect(try supertypeEdges(from: "User", files, format, access: Self.everyAccessLevel) == [])
         #expect(try svgEndMembers(from: "User", files, access: Self.everyAccessLevel) == [])
@@ -163,7 +163,7 @@ struct SupertypeEdgeEndTests {
     func mergedConformanceToAnotherFilesProtocol(format: DiagramFormat) throws {
         let files = [
             ("A.swift", "fileprivate protocol P { func fromA() }\nstruct Foo: P { func fromA() {} }"),
-            ("B.swift", "fileprivate protocol P { func fromB() }\nextension Foo: P { func fromB() {} }")
+            ("B.swift", "fileprivate protocol P { func fromB() }\nextension Foo: P { func fromB() {} }"),
         ]
         let realizes = format == .nomnoml ? "--:>" : "<|.."
         #expect(try supertypeEdges(from: "Foo", files, format, .merged, access: Self.everyAccessLevel)

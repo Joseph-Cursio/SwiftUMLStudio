@@ -30,7 +30,7 @@ struct ExtendedTypeNameTests {
         ("`Foo`", "Foo"),
         ("`Outer`.`Inner`", "Outer.Inner"),
         ("`Foo Bar`", "`Foo Bar`"),
-        ("`class`", "`class`")
+        ("`class`", "`class`"),
     ])
     func nominal(spelling: String, expected: String) throws {
         #expect(try extendedType(spelling).extendedTypeName == expected)
@@ -48,7 +48,7 @@ struct ExtendedTypeNameTests {
         ("Int!", "Optional"),
         ("(Int)", "Int"),
         ("((Foo<Int>))", "Foo"),
-        ("[Int].Index", "Array.Index")
+        ("[Int].Index", "Array.Index"),
     ])
     func sugar(spelling: String, expected: String) throws {
         #expect(try extendedType(spelling).extendedTypeName == expected)
@@ -69,7 +69,7 @@ struct ExtendedTypeNameTests {
         ("Swift.Array<Int>", false),
         ("Foo<[Int]>", false),
         ("Outer<Int?>.Inner", false),
-        ("(Int)", false)
+        ("(Int)", false),
     ])
     func sugarIsMarked(spelling: String, expected: Bool) throws {
         #expect(try extendedType(spelling).isSugared == expected)
@@ -77,7 +77,7 @@ struct ExtendedTypeNameTests {
 
     @Test("a type no extension can extend has no name", arguments: [
         "(Int, Int)", "()", "(x: Int)", "P & Q", "any P", "some P",
-        "Foo.Type", "() -> Void", "~Copyable", "@Sendable Foo", "Foo."
+        "Foo.Type", "() -> Void", "~Copyable", "@Sendable Foo", "Foo.",
     ])
     func nonNominal(spelling: String) throws {
         #expect(try extendedType(spelling).extendedTypeName == nil)
@@ -99,7 +99,7 @@ struct ExtendedTypeNameTests {
         ("Int?", "Int"),
         ("Int??", "Int?"),
         ("Int!", "Int"),
-        ("(Foo<Int>)", "Int")
+        ("(Foo<Int>)", "Int"),
     ] as [(String, String?)])
     func boundArguments(spelling: String, expected: String?) throws {
         #expect(try extendedType(spelling).boundGenericArguments == expected)
@@ -121,7 +121,7 @@ struct FrameworkTypeNameTests {
         ("`SwiftData.Model`", false),
         ("Models", false),
         ("SwiftData", false),
-        ("[Model]", false)
+        ("[Model]", false),
     ])
     func matches(spelling: String, expected: Bool) throws {
         #expect(try extendedType(spelling).names("Model", bareOrIn: "SwiftData") == expected)

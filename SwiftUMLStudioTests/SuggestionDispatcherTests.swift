@@ -44,7 +44,7 @@ struct SuggestionDispatcherFeatureMappingTests {
         (.stateMachine(identifier: "H.E"), .stateMachine),
         (.activityDiagram(entryPoint: "F.m"), .activityDiagram),
         (.erDiagram, .erDiagram),
-        (.componentDiagram, .componentDiagram)
+        (.componentDiagram, .componentDiagram),
     ])
     func actionMatchesMode(action: SuggestionAction, mode: DiagramMode) {
         #expect(action.diagramMode == mode)

@@ -43,7 +43,7 @@ struct CanonicalNameTests {
         ("[`Foo Bar`]", "[`Foo Bar`]"),
         ("[String: Int]", "[String: Int]"),
         ("any `P` & /* both */ `Q`", "any P & /* both */ Q"),
-        ("Outer.`Type`", "Outer.`Type`")
+        ("Outer.`Type`", "Outer.`Type`"),
     ])
     func typeDescription(spelling: String, expected: String) throws {
         #expect(try annotation(spelling).canonicalDescription == expected)
@@ -54,7 +54,7 @@ struct CanonicalNameTests {
     @Test("a node's description leaves out a comment beside it", arguments: [
         ("[`Pet`] // pets", "[Pet]"),
         ("[Pet] /* pets */", "[Pet]"),
-        ("\n    // pets\n    [`Foo Bar`]", "[`Foo Bar`]")
+        ("\n    // pets\n    [`Foo Bar`]", "[`Foo Bar`]"),
     ])
     func commentBeside(spelling: String, expected: String) throws {
         #expect(try annotation(spelling).canonicalDescription == expected)
@@ -62,7 +62,7 @@ struct CanonicalNameTests {
 
     @Test("a typed-in dotted name reads each component as Swift does", arguments: [
         ("`Lamp`.`Light`", "Lamp.Light"), ("Outer.`Inner`", "Outer.Inner"), ("`Foo Bar`.Light", "`Foo Bar`.Light"),
-        ("Lamp.Light", "Lamp.Light")
+        ("Lamp.Light", "Lamp.Light"),
     ])
     func typedInDottedName(spelling: String, expected: String) {
         #expect(spelling.canonicalDottedName == expected)
@@ -70,7 +70,7 @@ struct CanonicalNameTests {
 
     @Test("a typed-in identifier reads as a parsed one does", arguments: [
         ("`Plain`", "Plain"), ("Plain", "Plain"), ("`Foo Bar`", "`Foo Bar`"), ("`default`", "`default`"),
-        ("`Type`", "`Type`"), ("``", "``"), ("`", "`"), ("`a`b`", "`a`b`")
+        ("`Type`", "`Type`"), ("``", "``"), ("`", "`"), ("`a`b`", "`a`b`"),
     ])
     func typedInIdentifier(spelling: String, expected: String) {
         #expect(spelling.canonicalIdentifier == expected)

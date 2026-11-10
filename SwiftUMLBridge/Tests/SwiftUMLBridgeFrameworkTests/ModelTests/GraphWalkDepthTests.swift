@@ -15,7 +15,7 @@ struct GraphWalkDepthTests {
     /// node, so a depth-first search from any node goes `length` deep, whatever its start order.
     static let ring: [DependencyEdge] = [
         DependencyEdge(from: "Root", to: "Q\(length - 1)", kind: .inherits),
-        DependencyEdge(from: "Q1", to: "Root", kind: .conforms)
+        DependencyEdge(from: "Q1", to: "Root", kind: .conforms),
     ] + (2..<length).map { DependencyEdge(from: "Q\($0)", to: "Q\($0 - 1)", kind: .conforms) }
 
     /// `class C<i>: C<i-1>`, listed from the bottom up, so a search that starts at the first node

@@ -22,7 +22,7 @@ struct NestedSquareBracketCLITests {
 
     @Test("each subcommand reads the file and warns once, naming it", arguments: [
         ["classdiagram", ".", "--format", "plantuml"], ["deps", ".", "--types"], ["deps", ".", "--modules"],
-        ["sequence", ".", "--entry", "S.x"], ["activity", ".", "--entry", "S.x"], ["state", ".", "--list"]
+        ["sequence", ".", "--entry", "S.x"], ["activity", ".", "--entry", "S.x"], ["state", ".", "--list"],
     ])
     func warns(arguments: [String]) throws {
         try withSourceDirectory { directory, file in

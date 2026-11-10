@@ -60,7 +60,7 @@ struct DiagramTextTests {
         "ab",
         "a",
         "é",
-        "🚀"
+        "🚀",
     ]
 
     @Test("encodedValue decodes back to exactly the raw text", arguments: roundTripTexts)

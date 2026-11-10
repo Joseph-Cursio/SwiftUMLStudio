@@ -15,7 +15,7 @@ struct DiagramViewportControlsTests {
             ("viewportZoomIn", "Zoom In"),
             ("viewportFit", "Fit to Window"),
             ("viewportActualSize", "Actual Size"),
-            ("viewportReset", "Reset Zoom and Pan")
+            ("viewportReset", "Reset Zoom and Pan"),
         ]
     )
     func buttonNames(identifier: String, title: String) throws {

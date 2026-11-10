@@ -67,7 +67,7 @@ struct CallGraphTests {
         let graph = CallGraph(edges: [
             edge(callerType: "Foo", callerMethod: "run", calleeType: "Bar", calleeMethod: "a"),
             edge(callerType: "Foo", callerMethod: "run", calleeType: "Bar", calleeMethod: "b"),
-            edge(callerType: "Foo", callerMethod: "run", calleeType: "Baz", calleeMethod: "c")
+            edge(callerType: "Foo", callerMethod: "run", calleeType: "Baz", calleeMethod: "c"),
         ])
         let result = graph.traverse(from: "Foo", entryMethod: "run", maxDepth: 3)
         #expect(result.count == 3)
@@ -77,7 +77,7 @@ struct CallGraphTests {
     func twoHopChainTraversesBothLevels() {
         let graph = CallGraph(edges: [
             edge(callerType: "A", callerMethod: "start", calleeType: "B", calleeMethod: "step"),
-            edge(callerType: "B", callerMethod: "step", calleeType: "C", calleeMethod: "finish")
+            edge(callerType: "B", callerMethod: "step", calleeType: "C", calleeMethod: "finish"),
         ])
         let result = graph.traverse(from: "A", entryMethod: "start", maxDepth: 3)
         let methods = result.map(\.calleeMethod)
@@ -89,7 +89,7 @@ struct CallGraphTests {
     func sameTypeCallChain() {
         let graph = CallGraph(edges: [
             edge(callerType: "Service", callerMethod: "run", calleeType: "Service", calleeMethod: "step"),
-            edge(callerType: "Service", callerMethod: "step", calleeType: "Service", calleeMethod: "done")
+            edge(callerType: "Service", callerMethod: "step", calleeType: "Service", calleeMethod: "done"),
         ])
         let result = graph.traverse(from: "Service", entryMethod: "run", maxDepth: 3)
         let methods = result.map(\.calleeMethod)
@@ -106,7 +106,7 @@ struct CallGraphTests {
         // B.step dequeued at depth 1 (1 < 1 ✗) → skipped.
         let graph = CallGraph(edges: [
             edge(callerType: "A", callerMethod: "start", calleeType: "B", calleeMethod: "step"),
-            edge(callerType: "B", callerMethod: "step", calleeType: "C", calleeMethod: "finish")
+            edge(callerType: "B", callerMethod: "step", calleeType: "C", calleeMethod: "finish"),
         ])
         let result = graph.traverse(from: "A", entryMethod: "start", maxDepth: 1)
         let methods = result.map(\.calleeMethod)
@@ -120,7 +120,7 @@ struct CallGraphTests {
         let graph = CallGraph(edges: [
             edge(callerType: "A", callerMethod: "run", calleeType: "B", calleeMethod: "b"),
             edge(callerType: "B", callerMethod: "b", calleeType: "C", calleeMethod: "c"),
-            edge(callerType: "C", callerMethod: "c", calleeType: "D", calleeMethod: "d")
+            edge(callerType: "C", callerMethod: "c", calleeType: "D", calleeMethod: "d"),
         ])
         let result = graph.traverse(from: "A", entryMethod: "run", maxDepth: 2)
         let methods = result.map(\.calleeMethod)
@@ -135,7 +135,7 @@ struct CallGraphTests {
     func mutualCycleVisitedOnce() {
         let graph = CallGraph(edges: [
             edge(callerType: "A", callerMethod: "ping", calleeType: "B", calleeMethod: "pong"),
-            edge(callerType: "B", callerMethod: "pong", calleeType: "A", calleeMethod: "ping")
+            edge(callerType: "B", callerMethod: "pong", calleeType: "A", calleeMethod: "ping"),
         ])
         let result = graph.traverse(from: "A", entryMethod: "ping", maxDepth: 10)
         // A.ping → B.pong → A.ping (already visited) → stops. Two edges total.
@@ -161,7 +161,7 @@ struct CallGraphTests {
                  calleeType: nil, calleeMethod: "unknown",
                  isUnresolved: true),
             // Would be reachable if "unknown" were expanded — must NOT appear.
-            edge(callerType: "Foo", callerMethod: "unknown", calleeType: "Bar", calleeMethod: "secret")
+            edge(callerType: "Foo", callerMethod: "unknown", calleeType: "Bar", calleeMethod: "secret"),
         ])
         let result = graph.traverse(from: "Foo", entryMethod: "run", maxDepth: 5)
         let methods = result.map(\.calleeMethod)
@@ -175,7 +175,7 @@ struct CallGraphTests {
             edge(callerType: "Foo", callerMethod: "run", calleeType: "Bar", calleeMethod: "process"),
             edge(callerType: "Foo", callerMethod: "run",
                  calleeType: nil, calleeMethod: "unknown",
-                 isUnresolved: true)
+                 isUnresolved: true),
         ])
         let result = graph.traverse(from: "Foo", entryMethod: "run", maxDepth: 3)
         #expect(result.count == 2)
@@ -190,7 +190,7 @@ struct CallGraphTests {
         let graph = CallGraph(edges: [
             edge(callerType: "Foo", callerMethod: "run",
                  calleeType: "Bar", calleeMethod: "load",
-                 isAsync: true)
+                 isAsync: true),
         ])
         let result = graph.traverse(from: "Foo", entryMethod: "run", maxDepth: 3)
         #expect(result.first?.isAsync == true)

@@ -224,7 +224,7 @@ struct DependencyGraphGeneratorTests {
         // Test with DependencyGraphModel directly that annotation works
         let cycleEdges = [
             DependencyEdge(from: "A", to: "B", kind: .imports),
-            DependencyEdge(from: "B", to: "A", kind: .imports)
+            DependencyEdge(from: "B", to: "A", kind: .imports),
         ]
         let model = DependencyGraphModel(edges: cycleEdges)
         let script = DepsScript(model: model, configuration: .default)

@@ -21,7 +21,7 @@ struct SupertypeEdgeNamingTests {
     func classEndTakesInheritanceArrow(format: DiagramFormat) throws {
         let files = [
             ("A.swift", "fileprivate protocol Base {}\nfileprivate struct Conformer: Base {}"),
-            ("B.swift", "fileprivate class Base { var isClass = 0 }\nfileprivate class Sub: Base {}")
+            ("B.swift", "fileprivate class Base { var isClass = 0 }\nfileprivate class Sub: Base {}"),
         ]
         let (inherits, realizes) = format == .nomnoml ? ("-:>", "--:>") : ("<|--", "<|..")
         #expect(try supertypeEdges(from: "Sub", files, format, access: Self.everyAccessLevel) == ["Base0 \(inherits)"])
@@ -64,7 +64,7 @@ struct SupertypeEdgeNamingTests {
         let files = [
             ("A.swift", "private protocol Base {}"),
             ("B.swift", "fileprivate class Base { var isClass = 0 }\nextension Base { func helper() {} }\n"
-                + "private class Sub: Base { func f() -> Int { isClass } }")
+                + "private class Sub: Base { func f() -> Int { isClass } }"),
         ]
         let edge = format == .nomnoml ? "[Sub] -:> inherits [Base0]" : "Base0 <|-- Sub : inherits"
         #expect(try classDiagram(files, format).text.split(separator: "\n").contains { $0.hasPrefix(edge) })
@@ -137,7 +137,7 @@ struct SupertypeEdgeNamingTests {
                     func onlyStruct() {}
                 }
                 private enum Kind: Code { case first = "a"; case second = "b" }
-                """)
+                """),
         ]
         let enumArrow = (text: "--", nomnoml: "-")
         #expect(try edgeLines(files, format).contains(edgeLine(format, "Code0", enumArrow, "Kind", "inherits")))
@@ -159,7 +159,7 @@ struct SupertypeEdgeNamingTests {
         let nsObject = [
             ("A.swift", "private protocol NSObject { func onlyProto() }"),
             ("B.swift", "import Foundation\nextension NSObject { @objc func helperFromB() {} }\n"
-                + "private class V: NSObject { func use() { helperFromB() } }")
+                + "private class V: NSObject { func use() { helperFromB() } }"),
         ]
         #expect(try edgeLines(nsObject, format).contains(edgeLine(format, "NSObject0", Self.inherits, "V", "inherits")))
     }

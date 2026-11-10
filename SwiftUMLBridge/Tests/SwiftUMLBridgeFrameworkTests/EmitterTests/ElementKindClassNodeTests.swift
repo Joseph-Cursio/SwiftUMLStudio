@@ -18,7 +18,7 @@ struct ElementKindClassNodeTests {
         (.extension, "ext", "extension"),
         (.enum, "", "enum"),
         (.protocol, "conforms to", "protocol"),
-        (.actor, "actor", "actor")
+        (.actor, "actor", "actor"),
     ])
     func table(kind: ElementKind, relationship: String, stereotype: String) throws {
         let node = try #require(kind.classNode)

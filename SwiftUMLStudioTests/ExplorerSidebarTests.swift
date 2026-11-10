@@ -54,7 +54,7 @@ struct ExplorerSidebarTests {
             DiagramSuggestion(
                 icon: "doc", title: "Map dependencies", description: "See module edges",
                 action: .classDiagram, requiresPro: false
-            )
+            ),
         ]
         let strings = try await strings(viewModel)
         #expect(strings.contains("Suggested Diagrams"))
@@ -70,7 +70,7 @@ struct ExplorerSidebarTests {
             DiagramSuggestion(
                 icon: "doc", title: "ER", description: "Entities",
                 action: .erDiagram, requiresPro: true
-            )
+            ),
         ]
         try await makeSidebar(viewModel).inspectHosted { view in
             try view.find(SuggestionCardView.self).button().tap()
@@ -86,7 +86,7 @@ struct ExplorerSidebarTests {
             ProjectSnapshot(
                 identifier: UUID(), timestamp: Date(),
                 typeCount: 12, relationshipCount: 7, moduleCount: 4, fileCount: 5
-            )
+            ),
         ]
         let strings = try await strings(viewModel)
         #expect(strings.contains("Architecture Snapshots"))

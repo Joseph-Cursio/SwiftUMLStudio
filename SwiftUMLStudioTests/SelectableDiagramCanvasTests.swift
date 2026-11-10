@@ -12,7 +12,7 @@ struct SelectableDiagramCanvasTests {
         (NativeDiagramGeometry.NavigationDirection.upward, KeyEquivalent.upArrow),
         (.down, .downArrow),
         (.left, .leftArrow),
-        (.right, .rightArrow)
+        (.right, .rightArrow),
     ])
     func arrowKey(direction: NativeDiagramGeometry.NavigationDirection, key: KeyEquivalent) {
         #expect(direction.key == key)

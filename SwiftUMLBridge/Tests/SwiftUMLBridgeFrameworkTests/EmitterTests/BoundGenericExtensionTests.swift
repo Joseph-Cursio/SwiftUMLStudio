@@ -65,7 +65,7 @@ struct BoundGenericExtensionTests {
             extension Optional where Wrapped == Int {}
             extension Swift.Array where Element == Int {}
             """
-        )
+        ),
     ]
 
     static let modes: [ExtensionVisualization] = [.all, .merged, .none]

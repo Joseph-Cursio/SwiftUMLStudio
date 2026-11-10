@@ -40,7 +40,7 @@ struct MergedExtensionOfHiddenTypeTests {
         ("fileprivate protocol Base {}\nextension Base { func run() {} }\nstruct Sub: Base {}",
          ElementOptions.defaultAccessLevels),
         // a hidden type's own nested type, which hangs off its extension
-        ("fileprivate struct Outer { struct Inner {} }\nextension Outer {}", ElementOptions.defaultAccessLevels)
+        ("fileprivate struct Outer { struct Inner {} }\nextension Outer {}", ElementOptions.defaultAccessLevels),
     ]
 
     @Test("PlantUML, Mermaid and Nomnoml: .merged writes what .all writes",

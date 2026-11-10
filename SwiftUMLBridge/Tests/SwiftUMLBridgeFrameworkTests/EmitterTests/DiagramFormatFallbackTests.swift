@@ -14,7 +14,7 @@ struct DiagramFormatFallbackTests {
         (DiagramFormat.plantuml, "plantuml", DiagramFormat.plantuml, Int?.none),
         (.mermaid, "mermaid", .mermaid, nil),
         (.nomnoml, "mermaid", .mermaid, nil),
-        (.svg, "svg", .svg, 7)
+        (.svg, "svg", .svg, 7),
     ])
     func withSVGBuilder(requested: DiagramFormat, text: String, reported: DiagramFormat, layout: Int?) {
         let drawn = Self.drawnWithSVG(requested)
@@ -27,7 +27,7 @@ struct DiagramFormatFallbackTests {
         (DiagramFormat.plantuml, "plantuml", DiagramFormat.plantuml),
         (.mermaid, "mermaid", .mermaid),
         (.nomnoml, "mermaid", .mermaid),
-        (.svg, "mermaid", .mermaid)
+        (.svg, "mermaid", .mermaid),
     ])
     func withoutSVGBuilder(requested: DiagramFormat, text: String, reported: DiagramFormat) {
         let drawn = requested.drawn(plantUML: { "plantuml" }, mermaid: { "mermaid" })

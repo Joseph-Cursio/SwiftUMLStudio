@@ -135,7 +135,7 @@ struct ModuleQualifiedFormatTests {
     /// extension spells the type: the edge finds no end, as when there is no such alias.
     @Test("a hidden nested type is what its name means, not another module's member typealias", arguments: [
         "typealias FA = ModA.Foo\n\nextension FA {\n    typealias V = ModA.Base\n}\n",
-        "extension ModA.Foo {\n    typealias V = ModA.Base\n}\n"
+        "extension ModA.Foo {\n    typealias V = ModA.Base\n}\n",
     ])
     func hiddenNestedTypeBeforeMemberAlias(spelling: String) throws {
         let modA = "public struct Foo {\n    public init() {}\n}\n\nopen class Base {\n    public init() {}\n}\n"
@@ -163,7 +163,7 @@ struct ModuleQualifiedFormatTests {
          "extension Foo {\n    public typealias V = Base\n}\n",
          "final class UseA: Foo.V {}\n"],
         ["public struct Foo {\n    public init() {}\n    public typealias V = Base\n}\n\n"
-            + "open class Base {\n    public init() {}\n}\n\nfinal class UseA: Foo.V {}\n"]
+            + "open class Base {\n    public init() {}\n}\n\nfinal class UseA: Foo.V {}\n"],
     ])
     func hiddenNestedTypeOfOtherModule(modA: [String]) throws {
         let modB = "import ModA\n\nextension ModA.Foo {\n    open class V {\n        public init() {}\n    }\n}\n"
@@ -188,7 +188,7 @@ struct ModuleQualifiedFormatTests {
     /// a hidden `Box` nested in the project's `Array` still shadows `extension [Int]`'s alias.
     @Test("a hidden nested type shadows an alias only when its name can mean it", arguments: [
         ("struct Array {\n    typealias Box = Base\n}\n", "extension [Int] {\n    class Box {}\n}\n", "Base"),
-        ("struct Array {\n    class Box {}\n}\n", "extension [Int] {\n    typealias Box = Base\n}\n", nil)
+        ("struct Array {\n    class Box {}\n}\n", "extension [Int] {\n    typealias Box = Base\n}\n", nil),
     ])
     func hiddenNestedTypeOfOtherRoot(project: String, sugared: String, end: String?) throws {
         let files: [(module: String?, source: String)] = [

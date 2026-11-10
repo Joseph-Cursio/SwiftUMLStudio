@@ -118,7 +118,7 @@ struct SVGClassDiagramFilterTests {
         "public class Visible {}\nclass Hidden: Visible {}\nfileprivate struct Secret {}\nprivate class Private {}",
         "class InternalCache {}\nclass PublicAPI: InternalCache {}\nstruct InternalThing {}",
         "fileprivate struct Outer { struct Inner {} }\nextension Outer {}\npublic struct Box { struct Lid {} }",
-        "fileprivate class Base {}\nextension Base { func run() {} }\nclass Sub: Base {}"
+        "fileprivate class Base {}\nextension Base { func run() {} }\nclass Sub: Base {}",
     ]
 
     static let parityOptions: [ElementOptions] = [
@@ -127,7 +127,7 @@ struct SVGClassDiagramFilterTests {
         ElementOptions(showExtensions: .merged),
         ElementOptions(exclude: ["Internal*", "Lid"]),
         ElementOptions(havingAccessLevel: [.open, .public]),
-        ElementOptions(havingAccessLevel: [.open, .public, .internal, .fileprivate, .private])
+        ElementOptions(havingAccessLevel: [.open, .public, .internal, .fileprivate, .private]),
     ]
 
     @Test("SVG draws the types Mermaid declares", arguments: paritySources.indices, parityOptions.indices)

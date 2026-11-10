@@ -36,7 +36,7 @@ struct TypenameSupplementTests {
         "\u{FEFF}// caf\u{E9} \u{1F600} \u{4E2D}\u{6587}\r\nlet s = \"\u{1F600}\"\r\n"
             + "struct S {\r\n    var a, b: Int\r\n}\r\n",
         "struct Option {\n    var `default`, fallback: Int\n}\n",
-        "struct Point {}\nextension Point {\n    struct Delta { var dx, dy: Int }\n}\n"
+        "struct Point {}\nextension Point {\n    struct Delta { var dx, dy: Int }\n}\n",
     ])
     func keysAreNameOffsets(source: String) {
         let map = SyntaxStructure.buildTypenameMap(from: source, sdkPath: nil)

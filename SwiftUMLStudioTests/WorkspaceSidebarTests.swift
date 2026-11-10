@@ -38,7 +38,7 @@ struct WorkspaceSidebarTests {
         }
         let expected = [
             "square.stack.3d.up", "point.3.connected.trianglepath.dotted", "tablecells",
-            "shippingbox", "arrow.triangle.branch", "flowchart", "circle.hexagonpath"
+            "shippingbox", "arrow.triangle.branch", "flowchart", "circle.hexagonpath",
         ]
         for symbol in expected {
             #expect(names.contains(symbol))

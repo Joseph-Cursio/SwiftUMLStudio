@@ -90,7 +90,7 @@ struct MergedExtensionConformanceSVGTests {
     func svgLooksUpFromTheExtension() throws {
         let graph = try Self.graph(files: [
             "A.swift": "struct Foo {}\nfileprivate protocol P {}",
-            "B.swift": "fileprivate protocol P {}\nextension Foo: P {}"
+            "B.swift": "fileprivate protocol P {}\nextension Foo: P {}",
         ])
         let nodes = graph?.nodes.map { "\($0.id) \($0.sourceLocation?.filePath.split(separator: "/").last ?? "")" }
         #expect(nodes == ["P A.swift", "P_1 B.swift", "Foo A.swift"])
@@ -101,13 +101,13 @@ struct MergedExtensionConformanceSVGTests {
     func svgSameNameInTwoFiles() throws {
         let ownAndCarried = try Self.graph(files: [
             "A.swift": "fileprivate protocol P {}\nstruct Foo: P {}",
-            "B.swift": "fileprivate protocol P {}\nextension Foo: P {}"
+            "B.swift": "fileprivate protocol P {}\nextension Foo: P {}",
         ])
         #expect(ownAndCarried?.edgeEnds == ["Foo -> P", "Foo -> P_1"])
         let twoCarried = try Self.graph(files: [
             "A.swift": "struct Foo {}",
             "B.swift": "fileprivate protocol P {}\nextension Foo: P {}",
-            "C.swift": "fileprivate protocol P {}\nextension Foo: P {}"
+            "C.swift": "fileprivate protocol P {}\nextension Foo: P {}",
         ])
         #expect(twoCarried?.edgeEnds == ["Foo -> P", "Foo -> P_1"])
     }
@@ -117,7 +117,7 @@ struct MergedExtensionConformanceSVGTests {
         let graph = try Self.graph(files: [
             "A.swift": "protocol P {}\nstruct Foo {}",
             "B.swift": "#if DEBUG\nextension Foo: P {}\n#endif",
-            "C.swift": "#if !DEBUG\nextension Foo: P {}\n#endif"
+            "C.swift": "#if !DEBUG\nextension Foo: P {}\n#endif",
         ])
         #expect(graph?.edgeEnds == ["Foo -> P"])
     }
@@ -141,7 +141,7 @@ struct MergedExtensionConformanceSVGTests {
             Self.declared(.struct, "Foo", in: "A.swift", module: "Core", access: .public),
             Self.declared(.protocol, "P", in: "A.swift", module: "Core", access: .public),
             Self.declared(.protocol, "P", in: "B.swift", module: "Ext"),
-            Self.declared(.extension, "Foo", in: "C.swift", module: "Ext", inheriting: ["P"])
+            Self.declared(.extension, "Foo", in: "C.swift", module: "Ext", inheriting: ["P"]),
         ]
         let configuration = Configuration(elements: ElementOptions(showExtensions: .merged), format: .svg)
         let graph = LayoutGraphBuilder.buildClassDiagram(from: items, configuration: configuration)

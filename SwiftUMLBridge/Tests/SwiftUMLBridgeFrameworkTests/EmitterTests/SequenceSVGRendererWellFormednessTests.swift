@@ -25,7 +25,7 @@ struct SequenceSVGRendererWellFormednessTests {
             CallEdge(
                 callerType: "Service", callerMethod: label, calleeType: nil, calleeMethod: label,
                 isAsync: false, isUnresolved: true
-            )
+            ),
         ]
         let svg = SequenceSVGRenderer.render(traversedEdges: edges, entryType: label, entryMethod: "run")
         let escaped = label.xmlEscaped

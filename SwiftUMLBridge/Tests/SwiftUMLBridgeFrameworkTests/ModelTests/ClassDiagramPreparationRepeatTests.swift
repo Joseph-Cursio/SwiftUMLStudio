@@ -154,7 +154,7 @@ struct ClassDiagramPreparationRepeatTests {
         let parsed = [
             declared(.struct, "Foo", in: "A.swift", module: "ModA", members: [count]),
             declared(.struct, "Foo", in: "B.swift", module: "ModB", members: [other]),
-            declared(.extension, "Foo", in: "B.swift", module: "ModB", members: [bar, inner])
+            declared(.extension, "Foo", in: "B.swift", module: "ModB", members: [bar, inner]),
         ]
         for _ in 1...2 {
             let laid = graph(parsed)

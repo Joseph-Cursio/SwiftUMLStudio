@@ -158,7 +158,7 @@ private extension ActivityScript {
         case .fork, .join:
             return [
                 "\(identifier):::forkJoin",
-                "\(identifier)[\" \"]"
+                "\(identifier)[\" \"]",
             ]
         }
     }

@@ -72,7 +72,7 @@ struct InferredTypenameTests {
                 extension Store {
                     static let shared = Store()
                 }
-                """
+                """,
         ], sdkPath: Self.sdkPath)
         #expect(members.contains("~items : [String]"), "\(members)")
         #expect(members.contains("~depth : Double"), "\(members)")
@@ -83,7 +83,7 @@ struct InferredTypenameTests {
     func unresolvedIsLeftOut() throws {
         let members = try members([
             "Store.swift": "struct Store { var cache = Cache() }",
-            "Cache.swift": "struct Cache { var hits = 0 }"
+            "Cache.swift": "struct Cache { var hits = 0 }",
         ], sdkPath: Self.sdkPath)
         #expect(members.contains("~cache"), "\(members)")
         #expect(members.contains("~hits : Int"), "\(members)")
@@ -113,7 +113,7 @@ struct InferredTypenameTests {
         let description = SPMPackageDescription(name: "Demo", targets: [
             SPMTargetDescription(
                 name: "Core", kind: .library, path: "Sources/Core", sources: ["S.swift"], dependencies: []
-            )
+            ),
         ])
         let text = ClassDiagramGenerator().generateScript(
             forPackage: description, packageRoot: root, with: Configuration(format: .plantuml), sdkPath: Self.sdkPath

@@ -72,7 +72,7 @@ struct NestedEdgeStandInTests {
     /// stand-in is A's in either order, never B's, which extends another `Foo`.
     @Test("the stand-in is the extension that sees the hidden type, whichever comes first", arguments: [
         (["B.swift", "A.swift"], "Foo0", "Foo_1"),
-        (["A.swift", "B.swift"], "Foo", "Foo")
+        (["A.swift", "B.swift"], "Foo", "Foo"),
     ])
     func standInIsTheExtensionThatSeesIt(files: [String], plantUMLId: String, svgId: String) {
         let items = [hiddenFoo()] + files.map(fooExtension(in:))
@@ -88,7 +88,7 @@ struct NestedEdgeStandInTests {
         let items = [
             declared(.struct, "Outer", in: "A.swift", members: [hiddenNested]),
             declared(.extension, "Outer.Foo", in: "A.swift",
-                     members: [SyntaxStructure(kind: .functionMethodInstance, name: "bar")])
+                     members: [SyntaxStructure(kind: .functionMethodInstance, name: "bar")]),
         ]
         #expect(edges(items, .plantuml) == ["Outer.Foo +-- Outer.Foo.Inner"])
         #expect(edges(items, .svg) == ["Outer.Foo -> Outer.Foo.Inner"])
@@ -131,7 +131,7 @@ struct NestedEdgeStandInTests {
             declared(.struct, "Foo", in: "A.swift", module: "ModA", access: .public),
             declared(.struct, "Foo", in: "B.swift", module: "ModB", access: .public),
             declared(.extension, "Foo", in: "B.swift", module: "ModB",
-                     members: [declared(.struct, "Inner", in: "B.swift", module: "ModB")])
+                     members: [declared(.struct, "Inner", in: "B.swift", module: "ModB")]),
         ]
         #expect(edges(items, .plantuml, .none) == ["Foo0 +-- Foo.Inner"])
         #expect(edges(items, .nomnoml, .none) == ["[Foo0] +- [Foo.Inner]"])

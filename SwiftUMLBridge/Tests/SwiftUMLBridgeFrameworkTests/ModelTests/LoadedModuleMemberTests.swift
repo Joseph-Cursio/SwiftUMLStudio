@@ -54,20 +54,20 @@ struct LoadedModuleMemberTests {
                 }
                 """),
             File(module: "ModX", source: "import ModB\n"),
-            File(module: "ModC", source: "import ModA\nimport ModX\n\nfinal class C: Foo.V {}\n")
+            File(module: "ModC", source: "import ModA\nimport ModX\n\nfinal class C: Foo.V {}\n"),
         ], member: "otherOnly", hiddenLabel: nil),
         Case(name: "a file that declares nothing loads the module it imports", files: [
             classAddedToFoo(in: "AClass", member: "aOnly"), bareFoo, classAddedToFoo(in: "ZClass", member: "vOnly"),
             File(module: "ModC", source: "import ZClass\n\nfunc load() {}\n"),
-            File(module: "ModC", source: "import ModA\n\nfinal class C: Foo.V {}\n")
+            File(module: "ModC", source: "import ModA\n\nfinal class C: Foo.V {}\n"),
         ], member: "vOnly", hiddenLabel: "Foo.V"),
         Case(name: "the writer module's own member of a type the file does not import is not seen", files: [
             bareFoo, classAddedToFoo(in: "ModB", member: "extOnly"), fooOfModC,
-            File(module: "ModB", source: "import ModC\n\nfinal class C: Foo.V {}\n")
+            File(module: "ModB", source: "import ModC\n\nfinal class C: Foo.V {}\n"),
         ], member: "cOnly", hiddenLabel: "Foo.V"),
         Case(name: "the writer module's own member, spelled bare, of a type the file does not import", files: [
             bareFoo, classAddedToFoo(in: "ModB", member: "extOnly", spelled: "Foo"), fooOfModC,
-            File(module: "ModB", source: "import ModC\n\nfinal class C: Foo.V {}\n")
+            File(module: "ModB", source: "import ModC\n\nfinal class C: Foo.V {}\n"),
         ], member: "cOnly", hiddenLabel: "Foo.V"),
         Case(name: "a type declared under each of two `#if`s is one type", files: [
             File(module: "ModA", source: "#if os(Linux)\npublic struct Foo {\n    public init() {}\n}\n#endif\n"),
@@ -85,14 +85,14 @@ struct LoadedModuleMemberTests {
                 }
                 #endif
                 """),
-            File(module: "ModC", source: "import ModA\n\nfinal class C: Foo.V {}\n")
+            File(module: "ModC", source: "import ModA\n\nfinal class C: Foo.V {}\n"),
         ], member: "vOnly", hiddenLabel: "Foo.V"),
         Case(name: "a bare name never means a type nested in a module's namesake enum", files: [
             File(module: "Other",
                  source: "open class Base {\n    public init() {}\n    public func otherOnly() {}\n}\n"),
             File(module: "App", source: "enum App {\n    class Base {\n        func appOnly() {}\n    }\n}\n"),
-            File(module: "App", source: "import Other\n\nfinal class C: Base {}\n")
-        ], member: "otherOnly", hiddenLabel: nil)
+            File(module: "App", source: "import Other\n\nfinal class C: Base {}\n"),
+        ], member: "otherOnly", hiddenLabel: nil),
     ]
 
     @Test("a name means the member the writer's module loads", arguments: cases, [false, true])
@@ -107,7 +107,7 @@ struct LoadedModuleMemberTests {
         let given: [(module: String?, source: String)] = [
             (nil, "class Base {\n    func aOnly() {}\n}\n"),
             (nil, "class Base {\n    func bOnly() {}\n}\n"),
-            (nil, "import ModB\n\nfinal class C: Base {}\n")
+            (nil, "import ModB\n\nfinal class C: Base {}\n"),
         ]
         let files = reversed ? [given[1], given[0], given[2]] : given
         let graph = LayoutGraphBuilder.buildClassDiagram(

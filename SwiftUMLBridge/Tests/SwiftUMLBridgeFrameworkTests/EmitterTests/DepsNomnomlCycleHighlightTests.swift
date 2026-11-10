@@ -29,7 +29,7 @@ struct DepsNomnomlCycleHighlightTests {
         }
         let description = SPMPackageDescription(name: "Shapes", targets: [
             SPMTargetDescription(name: "Geometry", kind: .library, path: "Sources/Geometry",
-                                 sources: ["Shape.swift"], dependencies: [])
+                                 sources: ["Shape.swift"], dependencies: []),
         ])
         return DependencyGraphGenerator().generateScript(
             forPackage: description, packageRoot: root, mode: .types, with: config
@@ -68,7 +68,7 @@ struct DepsNomnomlCycleHighlightTests {
         let (graph, text) = try graph([
             DependencyEdge(from: "Alpha", to: "Beta", kind: .imports),
             DependencyEdge(from: "Beta", to: "Alpha", kind: .imports),
-            DependencyEdge(from: "App", to: "Alpha", kind: .imports)
+            DependencyEdge(from: "App", to: "Alpha", kind: .imports),
         ])
         let types = Dictionary(uniqueKeysWithValues: graph.nodes.map { ($0.id, $0.type) })
         #expect(types == ["Alpha": "warning", "Beta": "warning", "App": "class"], "\(text)")
@@ -78,7 +78,7 @@ struct DepsNomnomlCycleHighlightTests {
     func stereotypedModulesCycle() throws {
         let (graph, text) = try graph([
             DependencyEdge(from: "Core", to: "UI", kind: .imports),
-            DependencyEdge(from: "UI", to: "Core", kind: .imports)
+            DependencyEdge(from: "UI", to: "Core", kind: .imports),
         ], targetKinds: ["Core": .library, "UI": .executable])
         let types = Dictionary(uniqueKeysWithValues: graph.nodes.map { ($0.id, $0.type) })
         #expect(types == ["Core «library»": "warning", "UI «executable»": "warning"], "\(text)")
@@ -88,7 +88,7 @@ struct DepsNomnomlCycleHighlightTests {
     func selfLoop() throws {
         let (graph, text) = try graph([
             DependencyEdge(from: "Node", to: "Node", kind: .inherits),
-            DependencyEdge(from: "Leaf", to: "Node", kind: .inherits)
+            DependencyEdge(from: "Leaf", to: "Node", kind: .inherits),
         ])
         let types = Dictionary(uniqueKeysWithValues: graph.nodes.map { ($0.id, $0.type) })
         #expect(types == ["Node": "warning", "Leaf": "class"], "\(text)")
@@ -98,7 +98,7 @@ struct DepsNomnomlCycleHighlightTests {
     func escapedName() throws {
         let (graph, text) = try graph([
             DependencyEdge(from: "Box<T>", to: "Wrap|Of", kind: .inherits),
-            DependencyEdge(from: "Wrap|Of", to: "Box<T>", kind: .conforms)
+            DependencyEdge(from: "Wrap|Of", to: "Box<T>", kind: .conforms),
         ])
         #expect(graph.nodes.count == 2, "\(graph.nodes)\n\(text)")
         #expect(graph.nodes.allSatisfy { $0.type == "warning" }, "\(graph.nodes)\n\(text)")
@@ -109,7 +109,7 @@ struct DepsNomnomlCycleHighlightTests {
         let (_, text) = try graph([
             DependencyEdge(from: "Alpha", to: "Beta", kind: .imports),
             DependencyEdge(from: "Beta", to: "Gamma", kind: .imports),
-            DependencyEdge(from: "Gamma", to: "Alpha", kind: .imports)
+            DependencyEdge(from: "Gamma", to: "Alpha", kind: .imports),
         ])
         let directives = text.components(separatedBy: "\n")
             .filter { $0 == "#.warning: fill=#ffcccc stroke=#cc0000" }

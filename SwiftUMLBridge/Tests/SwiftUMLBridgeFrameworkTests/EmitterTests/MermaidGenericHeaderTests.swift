@@ -50,7 +50,7 @@ struct MermaidGenericHeaderTests {
         let kinds = Self.lines(.all).filter { $0.hasPrefix("<<") }
         #expect(kinds == [
             "<<protocol>>", "<<struct>>", "<<class>>", "<<enum>>", "<<actor>>", "<<struct>>", "<<struct>>",
-            "<<struct>>", "<<struct>>", "<<struct>>", "<<class>>", "<<MainActor>>", "<<extension>>"
+            "<<struct>>", "<<struct>>", "<<struct>>", "<<class>>", "<<MainActor>>", "<<extension>>",
         ])
     }
 
@@ -68,7 +68,7 @@ struct MermaidGenericHeaderTests {
             "class Outer[\"Outer&lt;T&gt;\"] {",
             "class Outer.Inner[\"Inner&lt;U&gt;\"] {",
             "class Loader[\"Loader&lt;Item&gt;\"] {",
-            "class Stack0[\"Stack&lt;Int&gt;\"] {"
+            "class Stack0[\"Stack&lt;Int&gt;\"] {",
         ])
     }
 

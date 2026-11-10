@@ -21,7 +21,7 @@ struct ClassDiagramAliasTests {
         // The suffix equals a nested type's full name.
         "struct P { struct Q {} }\nextension P { struct Q {} }\nextension P { struct Q0 {} }",
         // Two base names reach the same suffixed alias: X1 + 0 and, later, X + 10.
-        "struct X1 {}\nstruct X {}\nextension X1 {}\n" + String(repeating: "extension X {}\n", count: 9)
+        "struct X1 {}\nstruct X {}\nextension X1 {}\n" + String(repeating: "extension X {}\n", count: 9),
     ]
 
     @Test("Mermaid never declares two classes under one id", arguments: collidingSources)
@@ -112,7 +112,7 @@ struct ClassDiagramAliasTests {
     private static let macroItems = [
         SyntaxStructure(kind: .struct, name: "Foo"),
         SyntaxStructure(kind: .struct, name: "Foo"),
-        SyntaxStructure(kind: .macro, name: "Foo0")
+        SyntaxStructure(kind: .macro, name: "Foo0"),
     ]
 
     @Test("a macro's PlantUML note id is never taken by a suffix")

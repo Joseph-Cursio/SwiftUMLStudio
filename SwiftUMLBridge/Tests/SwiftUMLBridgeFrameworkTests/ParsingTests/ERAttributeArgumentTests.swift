@@ -20,7 +20,7 @@ struct ERAttributeArgumentTests {
         ("@Attribute(.externalStorage)", false),
         ("@Attribute(.spotlight)", false),
         ("@Attribute(.allowsCloudEncryption, .ephemeral)", false),
-        ("@Attribute", false)
+        ("@Attribute", false),
     ])
     func uniqueOption(attribute: String, isUnique: Bool) {
         let attributes = ERModelExtractor.extract(from: """
@@ -46,7 +46,7 @@ struct ERAttributeArgumentTests {
          ["Author.books -> Book", "Book.author -> Author"]),
         ("@Relationship(deleteRule: /* inverse: \\Book.writer */ .cascade)",
          ["Author.books -> Book", "Book.author -> Author", "Book.writer -> Author"]),
-        ("@Relationship", ["Author.books -> Book", "Book.author -> Author", "Book.writer -> Author"])
+        ("@Relationship", ["Author.books -> Book", "Book.author -> Author", "Book.writer -> Author"]),
     ])
     func inverseKeyPath(attribute: String, relationships: [String]) {
         let model = ERModelExtractor.extract(from: """

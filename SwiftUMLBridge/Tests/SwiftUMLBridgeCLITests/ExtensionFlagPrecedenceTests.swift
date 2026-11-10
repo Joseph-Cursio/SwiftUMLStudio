@@ -38,7 +38,7 @@ struct ExtensionFlagPrecedenceTests {
                  present: [extensionBox], absent: [mergedMember]),
         // With no flag, the config file decides, and without one, extensions get boxes.
         FlagCase(showExtensions: "merged", flags: [], present: [mergedMember], absent: [extensionBox]),
-        FlagCase(showExtensions: nil, flags: [], present: [extensionBox], absent: [mergedMember])
+        FlagCase(showExtensions: nil, flags: [], present: [extensionBox], absent: [mergedMember]),
     ]
 
     @Test("the flag decides", arguments: cases)

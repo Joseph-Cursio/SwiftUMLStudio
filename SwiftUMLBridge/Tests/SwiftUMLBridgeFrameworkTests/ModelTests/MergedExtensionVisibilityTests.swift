@@ -37,7 +37,7 @@ struct MergedExtensionVisibilityTests {
         return [
             declared(.struct, "Foo", in: "B.swift", module: "ModM", access: access, members: [member("hidden")]),
             declared(.struct, "Foo", in: "C.swift", module: "ModN", access: .public, members: [member("shown")]),
-            declared(.extension, "Foo", in: "A.swift", module: "ModM", members: [bar, inner])
+            declared(.extension, "Foo", in: "A.swift", module: "ModM", members: [bar, inner]),
         ]
     }
 
@@ -87,7 +87,7 @@ struct MergedExtensionVisibilityTests {
         let bar = SyntaxStructure(kind: .functionMethodInstance, name: "bar")
         let laid = graph([
             declared(.struct, "Foo", in: "B.swift", module: "ModM", access: .private, members: [member("hidden")]),
-            declared(.extension, "Foo", in: "A.swift", module: "ModM", members: [bar])
+            declared(.extension, "Foo", in: "A.swift", module: "ModM", members: [bar]),
         ], .merged)
         #expect(laid.nodeIds == ["Foo", "Foo_1"])
         #expect(laid.memberLines == [["~ hidden: Int"], ["~ bar()"]])
@@ -100,7 +100,7 @@ struct MergedExtensionVisibilityTests {
         let bar = SyntaxStructure(kind: .functionMethodInstance, name: "bar")
         let items = [
             declared(.struct, "Foo", in: "A.swift", module: "ModA", members: [member("count")]),
-            declared(.extension, "Foo", in: "C.swift", module: "ModC", members: [bar])
+            declared(.extension, "Foo", in: "C.swift", module: "ModC", members: [bar]),
         ]
         #expect(graph(items, .merged).memberLines == [["~ count: Int"], ["~ bar()"]])
         #expect(graph(items, .all).memberLines == [["~ count: Int"], ["~ bar()"]])
@@ -116,7 +116,7 @@ struct MergedExtensionVisibilityTests {
         let items = [
             declared(.struct, "Foo", in: "A.swift", module: "ModA", access: .public),
             declared(.extension, "Foo", in: "A.swift", module: "ModA", access: .public, members: [inner]),
-            declared(.extension, "Foo.Inner", in: "B.swift", module: "ModB", members: [method])
+            declared(.extension, "Foo.Inner", in: "B.swift", module: "ModB", members: [method]),
         ]
         let laid = graph(items, .merged)
         #expect(laid.nodeIds == ["Foo", "Foo.Inner"])
@@ -131,7 +131,7 @@ struct MergedExtensionVisibilityTests {
         let laid = graph([
             declared(.struct, "Foo", in: "B.swift", module: "ModM", access: .private, members: [member("hidden")]),
             declared(.extension, "Foo", in: "A.swift", module: "ModM", members: [one]),
-            declared(.extension, "Foo", in: "C.swift", module: "ModM", members: [two])
+            declared(.extension, "Foo", in: "C.swift", module: "ModM", members: [two]),
         ], .merged)
         #expect(laid.nodeIds == ["Foo", "Foo_1"])
         #expect(laid.memberLines == [["~ hidden: Int"], ["~ one()", "~ two()"]])

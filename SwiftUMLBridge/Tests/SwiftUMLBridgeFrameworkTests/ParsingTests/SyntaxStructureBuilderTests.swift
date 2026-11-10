@@ -193,7 +193,7 @@ struct SyntaxStructureBuilderTests {
         ("struct Foo { var a, b: Int }", ["a": "Int", "b": "Int"]),
         ("struct Foo { var a: Int, b, c: String }", ["a": "Int", "b": "String", "c": "String"]),
         ("struct Foo { var a = 1, b, c: String }", ["a": nil, "b": "String", "c": "String"]),
-        ("struct Foo { var a = 1, b = \"\" }", ["a": nil, "b": nil])
+        ("struct Foo { var a = 1, b = \"\" }", ["a": nil, "b": nil]),
     ] as [(String, [String: String?])])
     func sharedAnnotationFromSyntax(source: String, expected: [String: String?]) {
         let members = build(source).first?.substructure ?? []

@@ -20,7 +20,7 @@ enum MacroConformanceTable: Sendable {
 
     private static let modules: [String: String] = [
         "Observable": "Observation",
-        "PersistentModel": "SwiftData"
+        "PersistentModel": "SwiftData",
     ]
 
     /// Each macro is listed bare and with its own module, as `@SwiftData.Model` writes it (#134).
@@ -31,6 +31,6 @@ enum MacroConformanceTable: Sendable {
         "Observation.Observable": ["Observable"],
         // SwiftData
         "Model": ["Observable", "PersistentModel"],
-        "SwiftData.Model": ["Observable", "PersistentModel"]
+        "SwiftData.Model": ["Observable", "PersistentModel"],
     ]
 }

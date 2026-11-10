@@ -41,7 +41,7 @@ struct DiagramIdentifiersTests {
     /// sanitizers rewrite: distinct names always get distinct identifiers.
     @Test("distinct names never share an identifier", arguments: [
         DepsScript.mermaidId as @Sendable (String) -> String,
-        ComponentScript.safeAlias as @Sendable (String) -> String
+        ComponentScript.safeAlias as @Sendable (String) -> String,
     ])
     func distinctNamesGetDistinctIdentifiers(sanitize: @escaping @Sendable (String) -> String) {
         let alphabet = ["a", "_", "-", ".", " ", "<", ">", "+"]
@@ -62,7 +62,7 @@ struct DiagramIdentifiersTests {
     func depsMermaidKeepsCollidingNodesApart() {
         let model = DependencyGraphModel(edges: [
             DependencyEdge(from: "App", to: "Outer.Inner", kind: .inherits),
-            DependencyEdge(from: "Tool", to: "Outer_Inner", kind: .inherits)
+            DependencyEdge(from: "Tool", to: "Outer_Inner", kind: .inherits),
         ])
         var config = Configuration.default
         config.format = .mermaid
@@ -78,7 +78,7 @@ struct DiagramIdentifiersTests {
         let model = ComponentModel(
             components: [
                 Component(name: "swift-syntax", kind: .library),
-                Component(name: "swift_syntax", kind: .library)
+                Component(name: "swift_syntax", kind: .library),
             ],
             dependencies: [ComponentDependency(from: "swift_syntax", to: "swift-syntax")]
         )
@@ -93,7 +93,7 @@ struct DiagramIdentifiersTests {
         let model = ComponentModel(
             components: [
                 Component(name: "A", kind: .library, providedInterfaces: ["B"]),
-                Component(name: "A_B", kind: .library)
+                Component(name: "A_B", kind: .library),
             ],
             dependencies: [ComponentDependency(from: "A_B", to: "A")]
         )

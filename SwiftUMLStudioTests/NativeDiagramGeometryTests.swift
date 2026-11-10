@@ -261,7 +261,7 @@ struct NativeDiagramGeometryNextNodeTests {
         let nodes = [
             ("A", 0.0, 0.0), ("B", 100.0, 0.0), ("C", 200.0, 0.0),
             ("D", 0.0, 100.0), ("E", 100.0, 100.0), ("F", 200.0, 100.0),
-            ("G", 0.0, 200.0), ("H", 100.0, 200.0), ("I", 200.0, 200.0)
+            ("G", 0.0, 200.0), ("H", 100.0, 200.0), ("I", 200.0, 200.0),
         ].map { makeNode(id: $0.0, posX: $0.1, posY: $0.2) }
         return LayoutGraph(nodes: nodes)
     }

@@ -42,7 +42,7 @@ struct ModuleQualifiedAttributeTests {
         #expect(edges == [
             "Observable <|-- Item : inherits",
             "PersistentModel <|-- Item : inherits",
-            "Observable <|-- Counter : inherits"
+            "Observable <|-- Counter : inherits",
         ])
     }
 
@@ -75,7 +75,7 @@ struct ModuleQualifiedAttributeTests {
     @Test("the module may be written with backticks, spaces or a line break", arguments: [
         "@`SwiftData`.`Model`",
         "@SwiftData . Model",
-        "@SwiftData\n    .Model"
+        "@SwiftData\n    .Model",
     ])
     func moduleSpellings(attribute: String) {
         let entities = ERModelExtractor.extract(from: """

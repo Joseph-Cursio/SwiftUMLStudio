@@ -342,7 +342,7 @@ struct OutputHelpTests {
         ("activity", HelpNotes.mermaidForNomnoml),
         ("component", HelpNotes.mermaidForNomnoml),
         ("state", HelpNotes.mermaidForNomnomlAndSVG),
-        ("er", HelpNotes.mermaidForNomnomlAndSVG)
+        ("er", HelpNotes.mermaidForNomnomlAndSVG),
     ])
     func notesMermaidFallback(commandName: String, note: String) throws {
         #expect(try Self.help(for: commandName).contains(note))

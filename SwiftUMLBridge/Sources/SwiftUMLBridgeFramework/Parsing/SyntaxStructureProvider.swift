@@ -200,7 +200,7 @@ internal extension SyntaxStructure {
             "key.sourcefile": path,
             "key.offset": Int64(offset),
             "key.compilerargs": ["-sdk", sdk, path],
-            "key.cancel_on_subsequent_request": Int64(0)
+            "key.cancel_on_subsequent_request": Int64(0),
         ]
         guard let response = try? Request.customRequest(request: request).send(),
               let typename = response["key.typename"] as? String,
@@ -238,7 +238,7 @@ internal extension SyntaxStructure {
         let varKinds: Set<String> = [
             ElementKind.varInstance.rawValue,
             ElementKind.varStatic.rawValue,
-            ElementKind.varClass.rawValue
+            ElementKind.varClass.rawValue,
         ]
 
         let kind = dict["key.kind"] as? String ?? ""

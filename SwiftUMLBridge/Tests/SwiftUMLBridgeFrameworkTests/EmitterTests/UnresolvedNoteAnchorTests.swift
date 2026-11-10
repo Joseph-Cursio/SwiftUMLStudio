@@ -140,7 +140,7 @@ struct UnresolvedNoteAnchorTests {
         CallEdge(callerType: "Foo", callerMethod: "run", calleeType: "Bar", calleeMethod: "finish",
                  isAsync: true, isUnresolved: false),
         CallEdge(callerType: "Foo", callerMethod: "run", calleeType: nil, calleeMethod: "unknownClosure",
-                 isAsync: false, isUnresolved: true)
+                 isAsync: false, isUnresolved: true),
     ]
 
     @Test("the emitter fixture's note sits beside Foo, which made the call")
@@ -160,7 +160,7 @@ struct UnresolvedNoteAnchorTests {
             CallEdge(callerType: "Foo", callerMethod: "run", calleeType: "Bar", calleeMethod: "process",
                      isAsync: false, isUnresolved: false),
             CallEdge(callerType: "Ghost", callerMethod: "haunt", calleeType: nil, calleeMethod: "boo",
-                     isAsync: false, isUnresolved: true)
+                     isAsync: false, isUnresolved: true),
         ]
         #expect(noteLines(handBuilt(edges, .mermaid).text) == ["Note right of Foo: Unresolved: boo()"])
         #expect(noteLines(handBuilt(edges, .plantuml).text) == ["note right of Foo: Unresolved: boo()"])

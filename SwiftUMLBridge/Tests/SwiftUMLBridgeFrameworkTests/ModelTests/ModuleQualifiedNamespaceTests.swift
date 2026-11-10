@@ -37,7 +37,7 @@ struct ModuleQualifiedNamespaceTests {
         (
             "App", "import Analytics\nimport enum Core.Analytics\n", "Analytics.Event",
             "Analytics.Event <.. Analytics.Event0 : ext"
-        )
+        ),
     ])
     func unimportedNamespaceDoesNotShadow(writer: String, imports: String, owner: String, extEdge: String) throws {
         let analytics = "public struct Event {\n    public init() {}\n}"
@@ -72,7 +72,7 @@ struct ModuleQualifiedNamespaceTests {
         ("", [("Umbrella", "import Core\n")], "import Analytics\nimport Umbrella\n",
          "Event", "Event <.. Analytics.Event0 : ext"),
         ("@_exported import struct Core.Thing\n", [], "import Analytics\n",
-         "Event", "Event <.. Analytics.Event0 : ext")
+         "Event", "Event <.. Analytics.Event0 : ext"),
     ])
     func reexportedNamespaceShadows(
         analyticsImports: String, others: [(module: String?, source: String)], appImports: String,
@@ -96,7 +96,7 @@ struct ModuleQualifiedNamespaceTests {
         ([("Bridge", "@_exported import Core\n"), ("Mid", "@_exported import Bridge\n")],
          "import enum Mid.Analytics\n", "Analytics.Event"),
         ([("Mid", "@_exported import enum Core.Analytics\n")], "import enum Mid.Analytics\n", "Analytics.Event"),
-        ([("Mid", "@_exported import Core\n")], "import struct Mid.Thing\n", "Event")
+        ([("Mid", "@_exported import Core\n")], "import struct Mid.Thing\n", "Event"),
     ])
     func scopedImportThroughReexport(
         others: [(module: String?, source: String)], scoped: String, owner: String
@@ -133,7 +133,7 @@ struct ModuleQualifiedNamespaceTests {
     @Test("a name in an extension named through a module is no member of an unimported namespace", arguments: [
         ("App", "import Analytics\n", "Event.Inner <|-- Analytics.Event.Child : inherits"),
         ("Analytics", "", "Event.Inner <|-- Analytics.Event.Child : inherits"),
-        ("App", "import Analytics\nimport Core\n", "Analytics.Event.Inner <|-- Analytics.Event.Child : inherits")
+        ("App", "import Analytics\nimport Core\n", "Analytics.Event.Inner <|-- Analytics.Event.Child : inherits"),
     ])
     func unimportedNamespaceMemberInExtension(writer: String, imports: String, inherits: String) throws {
         let analytics = "public enum Event {\n    open class Inner {\n        public init() {}\n    }\n}"
@@ -169,7 +169,7 @@ struct ModuleQualifiedNamespaceTests {
     @Test("a scoped import of the qualifier module's type does not show its namesake namespace", arguments: [
         ("import struct Analytics.Event\n", "Event"),
         ("import Analytics\n", "Analytics.Event"),
-        ("import enum Analytics.Analytics\n", "Analytics.Event")
+        ("import enum Analytics.Analytics\n", "Analytics.Event"),
     ])
     func scopedImportOfQualifierModuleTypeBesideNamesake(imports: String, event: String) throws {
         let analytics = "public enum Analytics {\n    public struct Event {\n        open class Inner {}\n    }\n}\n"

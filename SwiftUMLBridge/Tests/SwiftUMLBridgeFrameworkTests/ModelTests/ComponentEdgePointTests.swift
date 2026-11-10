@@ -39,7 +39,7 @@ struct ComponentEdgePointTests {
             (5.0, 100.0, 0.5, 10.0),
             (-100.0, -50.0, -10.0, -5.0),
             (100.0, 0.0, 10.0, 0.0),
-            (30.0, 30.0, 10.0, 10.0)
+            (30.0, 30.0, 10.0, 10.0),
         ]
     )
     func squareBox(targetX: Double, targetY: Double, expectedX: Double, expectedY: Double) {
@@ -56,7 +56,7 @@ struct ComponentEdgePointTests {
         arguments: [
             (100.0, 50.0, 40.0, 20.0),
             (100.0, 20.0, 70.0, 14.0),
-            (-350.0, 100.0, -70.0, 20.0)
+            (-350.0, 100.0, -70.0, 20.0),
         ]
     )
     func wideBox(targetX: Double, targetY: Double, expectedX: Double, expectedY: Double) {
@@ -95,7 +95,7 @@ struct ComponentEdgePointTests {
                 ),
                 PositionedComponent(
                     id: "B", name: "B", kind: .library, centerX: 400, centerY: 200, width: 140, height: 40
-                )
+                ),
             ]
         )
         let line = try #require(
@@ -122,7 +122,7 @@ struct ComponentEdgePointTests {
             (0.0, 0.0005, 0.0, 10.0),
             (0.004, 0.0, 70.0, 0.0),
             (0.0035, 0.0, 70.0, 0.0),
-            (0.0, 0.001, 0.0, 20.0)
+            (0.0, 0.001, 0.0, 20.0),
         ]
     )
     func deltaFloorOnAWideBox(targetX: Double, targetY: Double, expectedX: Double, expectedY: Double) {
@@ -137,7 +137,7 @@ struct ComponentEdgePointTests {
         "for a square box the 0.001 delta floor's reach is 0.001 on both axes",
         arguments: [
             (0.0009, 0.0009, 9.0, 9.0),
-            (0.0009, 0.001, 9.0, 10.0)
+            (0.0009, 0.001, 9.0, 10.0),
         ]
     )
     func deltaFloorOnASquareBox(targetX: Double, targetY: Double, expectedX: Double, expectedY: Double) {

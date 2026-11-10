@@ -29,7 +29,7 @@ struct NomnomlNodeIdTests {
         "struct A { struct Inner { var fromA: Int } }\nstruct B { struct Inner { var fromB: Int } }",
         "struct Box<T> { struct Inner {} }",
         "@MainActor final class Model { enum State {} }",
-        "struct Foo {}\nextension Foo { func bar() {} }\nextension Foo { struct Inner {} }"
+        "struct Foo {}\nextension Foo { func bar() {} }\nextension Foo { struct Inner {} }",
     ])
     func everyEdgeEndsOnADeclaration(source: String) throws {
         let text = script(source)
@@ -77,7 +77,7 @@ struct NomnomlNodeIdTests {
         let graph = try graph("struct Foo {}\nextension Foo { func bar() {} }\nextension Foo { struct Inner {} }")
         #expect(nodes(graph) == [
             ["Foo", "struct", "Foo"], ["Foo.Inner", "struct", "Inner"],
-            ["Foo0", "extension", "Foo"], ["Foo1", "extension", "Foo"]
+            ["Foo0", "extension", "Foo"], ["Foo1", "extension", "Foo"],
         ])
         #expect(graph.node("Foo")?.compartments == [["Foo"]])
         #expect(graph.node("Foo0")?.compartments == [["Foo"], ["~bar()"]])
@@ -136,7 +136,7 @@ struct NomnomlNodeIdTests {
 
     @Test("each character nomnoml reads as syntax is encoded", arguments: [
         (" ", "\u{00A0}"), ("<", "%3C"), (">", "%3E"), ("[", "%5B"), ("]", "%5D"), ("|", "%7C"),
-        (";", "%3B"), ("\\", "%5C"), ("\n", "%0A"), ("\t", "%09"), ("%", "%25"), ("\u{00A0}", "%C2%A0")
+        (";", "%3B"), ("\\", "%5C"), ("\n", "%0A"), ("\t", "%09"), ("%", "%25"), ("\u{00A0}", "%C2%A0"),
     ])
     func reservedCharacters(character: String, encoded: String) {
         #expect("a\(character)b".nomnomlIdentifier == "a\(encoded)b")

@@ -4,7 +4,7 @@ import Foundation
 public enum Theme: Codable, Sendable {
     public static let preferred: [Self] = [
         .amiga, .carbonGray, .cloudscapeDesign, .mars, .minty,
-        .plain, .reddressDarkblue, .sketchy, .sketchyOutline, .toy
+        .plain, .reddressDarkblue, .sketchy, .sketchyOutline, .toy,
     ]
 
     case amiga, awsOrange, blackKnight, bluegray, blueprint

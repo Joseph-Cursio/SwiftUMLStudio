@@ -87,7 +87,7 @@ private extension SequenceScript {
     ) -> String {
         var lines: [String] = [
             "@startuml",
-            "title \(entryType).\(entryMethod)"
+            "title \(entryType).\(entryMethod)",
         ]
 
         let participants = orderedParticipants(entryType: entryType, traversedEdges: traversedEdges)
@@ -124,7 +124,7 @@ private extension SequenceScript {
     ) -> String {
         var lines: [String] = [
             "sequenceDiagram",
-            "%% title: \(entryType).\(entryMethod)"
+            "%% title: \(entryType).\(entryMethod)",
         ]
 
         let participants = orderedParticipants(entryType: entryType, traversedEdges: traversedEdges)

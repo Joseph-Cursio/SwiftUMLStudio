@@ -33,7 +33,7 @@ struct SVGExtensionEdgeTests {
 
     @Test("an extension of a type outside the diagram gets no edge", arguments: [
         "extension String {}\nextension String {}",
-        "extension [Int] {}"
+        "extension [Int] {}",
     ])
     func noEdgeForUndeclaredType(source: String) {
         #expect(svgEdges(source).isEmpty)
@@ -69,7 +69,7 @@ struct SVGExtensionEdgeTests {
         "struct Foo<T> {}\nextension Foo<Int> {}",
         "struct Real {}\ntypealias Alias = Real\nextension Alias {}",
         "extension String {}\nextension String {}",
-        "fileprivate struct Foo {}\nextension Foo {}"
+        "fileprivate struct Foo {}\nextension Foo {}",
     ])
     func agreesWithMermaid(source: String) {
         let mermaid = classDiagram(source, .mermaid).text.split(separator: "\n").filter { $0.hasSuffix(" : ext") }

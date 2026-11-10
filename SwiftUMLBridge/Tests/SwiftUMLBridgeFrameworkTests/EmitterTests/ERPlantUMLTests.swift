@@ -32,7 +32,7 @@ struct ERPlantUMLTests {
         let model = ERModel(entities: [
             EREntity(name: "User", attributes: [
                 ERAttribute(name: "id", type: "UUID", isPrimaryKey: true)
-            ])
+            ]),
         ])
         let script = makeScript(model: model)
         #expect(script.text.contains("* id : UUID"))
@@ -43,7 +43,7 @@ struct ERPlantUMLTests {
         let model = ERModel(entities: [
             EREntity(name: "User", attributes: [
                 ERAttribute(name: "name", type: "String")
-            ])
+            ]),
         ])
         let script = makeScript(model: model)
         let nameLine = script.text.split(separator: "\n")
@@ -56,8 +56,8 @@ struct ERPlantUMLTests {
         let model = ERModel(entities: [
             EREntity(name: "User", attributes: [
                 ERAttribute(name: "id", type: "UUID", isPrimaryKey: true),
-                ERAttribute(name: "name", type: "String")
-            ])
+                ERAttribute(name: "name", type: "String"),
+            ]),
         ])
         let script = makeScript(model: model)
         let lines = script.text.split(separator: "\n").map(String.init)
@@ -75,7 +75,7 @@ struct ERPlantUMLTests {
         let model = ERModel(entities: [
             EREntity(name: "OnlyID", attributes: [
                 ERAttribute(name: "id", type: "UUID", isPrimaryKey: true)
-            ])
+            ]),
         ])
         let script = makeScript(model: model)
         #expect(script.text.contains("  --") == false)
@@ -86,7 +86,7 @@ struct ERPlantUMLTests {
         let model = ERModel(entities: [
             EREntity(name: "Misc", attributes: [
                 ERAttribute(name: "name", type: "String")
-            ])
+            ]),
         ])
         let script = makeScript(model: model)
         #expect(script.text.contains("  --") == false)
@@ -97,7 +97,7 @@ struct ERPlantUMLTests {
         let model = ERModel(entities: [
             EREntity(name: "User", attributes: [
                 ERAttribute(name: "handle", type: "String", isUnique: true)
-            ])
+            ]),
         ])
         let script = makeScript(model: model)
         #expect(script.text.contains("handle : String <<UK>>"))
@@ -108,7 +108,7 @@ struct ERPlantUMLTests {
         let model = ERModel(entities: [
             EREntity(name: "Cached", attributes: [
                 ERAttribute(name: "preview", type: "String", isTransient: true)
-            ])
+            ]),
         ])
         let script = makeScript(model: model)
         #expect(script.text.contains("preview : String <<transient>>"))
@@ -119,7 +119,7 @@ struct ERPlantUMLTests {
         let model = ERModel(entities: [
             EREntity(name: "Profile", attributes: [
                 ERAttribute(name: "bio", type: "String", isOptional: true)
-            ])
+            ]),
         ])
         let script = makeScript(model: model)
         #expect(script.text.contains("bio : String?"))
@@ -136,7 +136,7 @@ struct ERPlantUMLTests {
                     from: "Author", toEntity: "Book",
                     fromCardinality: .exactlyOne, toCardinality: .zeroOrMany,
                     label: "books"
-                )
+                ),
             ]
         )
         let script = makeScript(model: model)
@@ -152,7 +152,7 @@ struct ERPlantUMLTests {
                     from: "Author", toEntity: "Book",
                     fromCardinality: .exactlyOne, toCardinality: .zeroOrMany,
                     label: "books"
-                )
+                ),
             ]
         )
         let script = makeScript(model: model)

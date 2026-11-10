@@ -34,7 +34,7 @@ struct DependencyGraphPackageParityTests {
     func modulesModeMermaidLabelStereotype() {
         let package = makePackage(targets: [
             target("App", kind: .executable, dependencies: ["Core"]),
-            target("Core", kind: .library)
+            target("Core", kind: .library),
         ])
         var config = Configuration.default
         config.format = .mermaid
@@ -54,7 +54,7 @@ struct DependencyGraphPackageParityTests {
     func modulesModeNomnomlInlineStereotype() {
         let package = makePackage(targets: [
             target("App", kind: .executable, dependencies: ["Core"]),
-            target("Core", kind: .library)
+            target("Core", kind: .library),
         ])
         var config = Configuration.default
         config.format = .nomnoml
@@ -131,7 +131,7 @@ struct DependencyGraphPackageParityTests {
             SPMTargetDescription(
                 name: "Networking", kind: .library, path: "Sources/Networking",
                 sources: ["HTTPClient.swift"], dependencies: ["Core"]
-            )
+            ),
         ])
         var config = Configuration.default
         config.format = .mermaid
@@ -172,7 +172,7 @@ struct DependencyGraphPackageParityTests {
             SPMTargetDescription(
                 name: "Networking", kind: .library, path: "Sources/Networking",
                 sources: ["HTTPClient.swift"], dependencies: ["Core"]
-            )
+            ),
         ])
         var config = Configuration.default
         config.format = .nomnoml
@@ -206,7 +206,7 @@ struct DependencyGraphPackageParityTests {
             SPMTargetDescription(
                 name: "Core", kind: .library, path: "Sources/Core",
                 sources: ["MyError.swift"], dependencies: []
-            )
+            ),
         ])
 
         let script = generator.generateScript(

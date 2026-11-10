@@ -69,7 +69,7 @@ struct SuppressedConformanceTests {
         "struct Par: P & (~Copyable) {}",
         "struct Par: P &\n    ~Copyable {}",
         "struct Par: @MainActor (~Copyable) {}",
-        "struct Par: P, ~Swift.Copyable {}"
+        "struct Par: P, ~Swift.Copyable {}",
     ])
     func unwrapped(declaration: String) {
         let configuration = Configuration(format: .plantuml)

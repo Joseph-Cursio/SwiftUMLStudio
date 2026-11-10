@@ -15,11 +15,11 @@ struct ActivityPlantUMLTests {
             nodes: [
                 ActivityNode(id: 0, kind: .start, label: ""),
                 ActivityNode(id: 1, kind: .end, label: ""),
-                ActivityNode(id: 2, kind: .action, label: "doWork()")
+                ActivityNode(id: 2, kind: .action, label: "doWork()"),
             ],
             edges: [
                 ActivityEdge(fromId: 0, toId: 2),
-                ActivityEdge(fromId: 2, toId: 1)
+                ActivityEdge(fromId: 2, toId: 1),
             ],
             entryType: "Foo",
             entryMethod: "run"
@@ -57,11 +57,11 @@ struct ActivityPlantUMLTests {
             nodes: [
                 ActivityNode(id: 0, kind: .start, label: ""),
                 ActivityNode(id: 1, kind: .decision, label: "flag?"),
-                ActivityNode(id: 2, kind: .end, label: "")
+                ActivityNode(id: 2, kind: .end, label: ""),
             ],
             edges: [
                 ActivityEdge(fromId: 0, toId: 1),
-                ActivityEdge(fromId: 1, toId: 2, label: "true")
+                ActivityEdge(fromId: 1, toId: 2, label: "true"),
             ],
             entryType: "Foo",
             entryMethod: "run"
@@ -77,7 +77,7 @@ struct ActivityPlantUMLTests {
                 ActivityNode(id: 0, kind: .start, label: ""),
                 ActivityNode(id: 1, kind: .fork, label: ""),
                 ActivityNode(id: 2, kind: .join, label: ""),
-                ActivityNode(id: 3, kind: .end, label: "")
+                ActivityNode(id: 3, kind: .end, label: ""),
             ],
             edges: [],
             entryType: "Foo",
@@ -100,7 +100,7 @@ struct ActivityPlantUMLTests {
         let graph = ActivityGraph(
             nodes: [
                 ActivityNode(id: 0, kind: .decision, label: "cond?"),
-                ActivityNode(id: 1, kind: .end, label: "")
+                ActivityNode(id: 1, kind: .end, label: ""),
             ],
             edges: [
                 ActivityEdge(fromId: 0, toId: 1, label: "true")

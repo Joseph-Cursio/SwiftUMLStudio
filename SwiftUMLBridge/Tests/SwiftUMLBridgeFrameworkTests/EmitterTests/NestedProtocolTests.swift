@@ -104,7 +104,7 @@ struct NestedProtocolTests {
     @Test("is declared under its qualified name: in an enum, in an extension, and two levels down", arguments: [
         (shapes, "Outer.Shape"),
         ("enum Outer {}\nextension Outer {\n    protocol Drawable {}\n}", "Outer.Drawable"),
-        ("enum A {\n    enum B {\n        protocol Deep {}\n    }\n}", "A.B.Deep")
+        ("enum A {\n    enum B {\n        protocol Deep {}\n    }\n}", "A.B.Deep"),
     ])
     func declared(source: String, id: String) {
         #expect(misses { protocolIds(classDiagram(source, $0, $1)) == [id] } == [])

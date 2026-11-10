@@ -36,7 +36,7 @@ struct MergedExtensionTargetTests {
         return [
             declared(.struct, "Foo", in: "A.swift", module: "ModA", access: .public, members: [count]),
             declared(.struct, "Foo", in: "B.swift", module: "ModB", access: .public, members: [other]),
-            declared(.extension, "Foo", in: file, module: module, members: [bar, inner])
+            declared(.extension, "Foo", in: file, module: module, members: [bar, inner]),
         ]
     }
 
@@ -92,7 +92,7 @@ struct MergedExtensionTargetTests {
         let laid = graph([
             declared(.struct, "Foo", in: "A.swift", access: .public, members: [count]),
             declared(.struct, "Foo", in: "B.swift", access: .public, members: [other]),
-            declared(.extension, "Foo", in: "B.swift", members: [bar])
+            declared(.extension, "Foo", in: "B.swift", members: [bar]),
         ])
         #expect(laid.memberLines == [["~ count: Int"], ["~ other: Int", "~ bar()"]])
     }
@@ -126,7 +126,7 @@ struct MergedExtensionTargetTests {
         let two = SyntaxStructure(kind: .functionMethodInstance, name: "two")
         let laid = graph([
             declared(.extension, "String", in: "A.swift", members: [one]),
-            declared(.extension, "String", in: "B.swift", members: [two, declared(.struct, "Inner", in: "B.swift")])
+            declared(.extension, "String", in: "B.swift", members: [two, declared(.struct, "Inner", in: "B.swift")]),
         ])
         #expect(laid.nodeIds == ["String.Inner", "String"])
         #expect(laid.memberLines == [[], ["~ one()", "~ two()"]])

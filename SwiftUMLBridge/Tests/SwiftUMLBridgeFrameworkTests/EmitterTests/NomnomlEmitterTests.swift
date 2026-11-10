@@ -17,7 +17,7 @@ struct NomnomlEmitterTests {
             ("enum Direction { case north, south }", "<enum id=Direction>", "Direction"),
             ("protocol Drawable { func draw() }", "<interface id=Drawable>", "Drawable"),
             ("actor BankAccount { var balance: Int = 0 }", "<actor id=BankAccount>", "BankAccount"),
-            ("struct Foo {} \nextension Foo { func bar() {} }", "<extension id=Foo0>", "Foo")
+            ("struct Foo {} \nextension Foo { func bar() {} }", "<extension id=Foo0>", "Foo"),
         ]
     )
     func typeStereotype(source: String, stereotype: String, typeName: String) {
@@ -80,7 +80,7 @@ struct NomnomlEmitterTests {
         arguments: [
             ("class Api { public var endpoint: String = \"\" }", "+endpoint"),
             ("class Secret { private var passkey: String = \"\" }", "-passkey"),
-            ("class Worker { var taskCount: Int = 0 }", "~taskCount")
+            ("class Worker { var taskCount: Int = 0 }", "~taskCount"),
         ]
     )
     func accessLevelPrefix(source: String, expected: String) {
@@ -230,7 +230,7 @@ struct NomnomlEmitterTests {
         )
         let items = [SyntaxStructure(kind: .class, name: "Foo", substructure: [
             SyntaxStructure(accessibility: .internal, kind: .varInstance, name: "hidden", typename: "Int"),
-            SyntaxStructure(accessibility: .public, kind: .varInstance, name: "visible", typename: "String")
+            SyntaxStructure(accessibility: .public, kind: .varInstance, name: "visible", typename: "String"),
         ])]
         let script = DiagramScript(items: items, configuration: config)
         #expect(script.text.contains("visible"))

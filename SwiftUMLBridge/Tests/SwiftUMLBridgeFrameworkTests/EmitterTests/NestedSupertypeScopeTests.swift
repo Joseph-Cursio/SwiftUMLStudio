@@ -74,7 +74,7 @@ struct NestedSupertypeScopeTests {
         nested,
         "enum Outer {\n    class Base {}\n}\nextension Outer {\n    class Near: Base {}\n}",
         "enum Outer {\n    class Base<Value> {}\n    class Near: Base<Int> {}\n}",
-        shadowed
+        shadowed,
     ])
     func oneLevelUp(source: String) {
         #expect(misses(source, from: "Outer.Near", expected: ["Outer.Base"]) == [])

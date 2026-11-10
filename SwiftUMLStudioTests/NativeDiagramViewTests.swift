@@ -76,14 +76,14 @@ private func richGraph() -> LayoutGraph {
             stereotype: "class",
             compartments: [
                 NodeCompartment(title: "Properties", items: ["session: URLSession", "retries: Int"]),
-                NodeCompartment(title: "Methods", items: ["send()", "cancel()"])
+                NodeCompartment(title: "Methods", items: ["send()", "cancel()"]),
             ],
             module: "Networking",
             posX: 120, posY: 100
         ),
         makeNode(id: "Transport", stereotype: "protocol", module: "Networking", posX: 320, posY: 100),
         makeNode(id: "Logger", module: "Core", posX: 120, posY: 300),
-        makeNode(id: "Bare", posX: 320, posY: 300)
+        makeNode(id: "Bare", posX: 320, posY: 300),
     ]
     let edges = [
         makeEdge(from: "Client", to: "Transport", style: .inheritance, label: "extends"),
@@ -93,7 +93,7 @@ private func richGraph() -> LayoutGraph {
         makeEdge(
             from: "Client", to: "Bare", style: .composition,
             points: [(120, 100), (220, 200), (320, 300)]
-        )
+        ),
     ]
 
     var graph = LayoutGraph(nodes: nodes, edges: edges)
@@ -160,7 +160,7 @@ struct NativeDiagramViewRenderTests {
             nodes: [makeNode(id: "Only", posX: 100, posY: 100)],
             edges: [
                 makeEdge(from: "Only", to: "Missing", style: .inheritance),
-                makeEdge(from: "AlsoMissing", to: "Only", style: .association)
+                makeEdge(from: "AlsoMissing", to: "Only", style: .association),
             ]
         )
         graph.width = 300
@@ -259,7 +259,7 @@ struct NativeDiagramViewArrowKeyTests {
             NativeDiagramGeometry.NavigationDirection.upward,
             .down,
             .left,
-            .right
+            .right,
         ]
     )
     func handlesEveryDirection(direction: NativeDiagramGeometry.NavigationDirection) {

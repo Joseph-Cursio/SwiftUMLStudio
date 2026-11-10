@@ -47,7 +47,7 @@ struct ActivityIfConfigTests {
             "log() -> merge",
             "trace() -> merge",
             "merge -> render()",
-            "render() -> end"
+            "render() -> end",
         ])
     }
 
@@ -68,7 +68,7 @@ struct ActivityIfConfigTests {
             "#if -#if DEBUG-> merge",
             "#if -#else-> trace()",
             "trace() -> merge",
-            "merge -> end"
+            "merge -> end",
         ])
     }
 
@@ -129,7 +129,7 @@ struct ActivityIfConfigTests {
             "switch phase -.idle-> start()",
             "switch phase -.running-> finish()",
             "switch phase -.paused-> resume()",
-            "switch phase -default-> break"
+            "switch phase -default-> break",
         ]))
     }
 

@@ -63,7 +63,7 @@ struct ActivityMermaidTests {
         let graph = ActivityGraph(
             nodes: [
                 ActivityNode(id: 0, kind: .decision, label: "cond?"),
-                ActivityNode(id: 1, kind: .action, label: "yes")
+                ActivityNode(id: 1, kind: .action, label: "yes"),
             ],
             edges: [
                 ActivityEdge(fromId: 0, toId: 1, label: "true")
@@ -79,7 +79,7 @@ struct ActivityMermaidTests {
         let graph = ActivityGraph(
             nodes: [
                 ActivityNode(id: 0, kind: .action, label: "a"),
-                ActivityNode(id: 1, kind: .action, label: "b")
+                ActivityNode(id: 1, kind: .action, label: "b"),
             ],
             edges: [
                 ActivityEdge(fromId: 0, toId: 1)
@@ -136,7 +136,7 @@ struct ActivityMermaidLabelEscapingTests {
         let graph = ActivityGraph(
             nodes: [
                 ActivityNode(id: 0, kind: .decision, label: nodeLabel),
-                ActivityNode(id: 1, kind: .action, label: "next")
+                ActivityNode(id: 1, kind: .action, label: "next"),
             ],
             edges: [ActivityEdge(fromId: 0, toId: 1, label: edgeLabel)],
             entryType: "Foo", entryMethod: "run"
@@ -149,7 +149,7 @@ struct ActivityMermaidLabelEscapingTests {
     @Test("an edge label is quoted, so parentheses and brackets parse", arguments: [
         ("#elseif os(iOS)", "N0 -->|\"#elseif os(iOS)\"| N1"),
         (".failure(let error)", "N0 -->|\".failure(let error)\"| N1"),
-        ("items[0]", "N0 -->|\"items[0]\"| N1")
+        ("items[0]", "N0 -->|\"items[0]\"| N1"),
     ])
     func edgeLabelQuoted(label: String, line: String) {
         #expect(mermaid(edgeLabel: label).contains(line))

@@ -12,7 +12,7 @@ public struct SVGRenderer: Sendable {
         "protocol": "#50C878",
         "actor": "#E06666",
         "extension": "#999999",
-        "macro": "#CC66CC"
+        "macro": "#CC66CC",
     ]
     private static let bodyFill = "#FAFAFA"
     private static let strokeColor = "#333333"

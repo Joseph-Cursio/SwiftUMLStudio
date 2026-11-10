@@ -220,7 +220,7 @@ struct CallGraphCanonicalNameTests {
     func neededBackticks() {
         #expect(CallGraphExtractor.extract(from: Self.needed).methods == [
             "Keyed.`class`", "Keyed.`default`", "Keyed.start",
-            "`Foo Bar`.deep", "`Foo Bar`.helper", "`Foo Bar`.start"
+            "`Foo Bar`.deep", "`Foo Bar`.helper", "`Foo Bar`.start",
         ])
         #expect(traversed(Self.needed, from: "`Foo Bar`", "start") == [
             "`Foo Bar`.start->`Foo Bar`.helper", "`Foo Bar`.helper->`Foo Bar`.deep"

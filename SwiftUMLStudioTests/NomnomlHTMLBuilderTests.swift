@@ -52,7 +52,7 @@ struct NomnomlHTMLBuilderTests {
         "[Order]->[Customer]\n[Order]+->[LineItem]",
         "[<class> He said \"hi\" \\ to 'me']",
         "line\u{2028}separator\u{2029}paragraph",
-        "</script><script>alert('xss')</script>"
+        "</script><script>alert('xss')</script>",
     ])
     func pageDrawsOriginalText(_ diagramText: String) throws {
         let html = NomnomlHTMLBuilder.nomnomlHTML(diagramText)
@@ -88,7 +88,7 @@ struct NomnomlHTMLBuilderTests {
         "<!--<script>",
         // `<` plus a combining mark is one Character, so a Character-level
         // replace would leave this `<` raw.
-        "[A]<\u{0301}/script>"
+        "[A]<\u{0301}/script>",
     ])
     func scriptHazardsAreEscaped(_ diagramText: String) throws {
         let html = NomnomlHTMLBuilder.nomnomlHTML(diagramText)

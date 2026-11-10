@@ -35,7 +35,7 @@ struct ModuleQualifiedLookupTests {
     /// The names `swift package describe --type json` reports as each target's `c99name`.
     @Test("a target's module name is derived as SwiftPM derives it", arguments: [
         ("my-lib", "my_lib"), ("2D", "_D"), ("1st-party", "_st_party"), ("9", "_"), ("a b.c", "a_b_c"),
-        ("Plain", "Plain")
+        ("Plain", "Plain"),
     ])
     func c99Name(target: String, module: String) {
         #expect(ModuleQualifiers.c99Name(of: target) == module)
@@ -249,7 +249,7 @@ struct ModuleQualifiedLookupTests {
         let sources = [
             "ModA": Self.modA.replacingOccurrences(of: "public struct Inner", with: "struct Inner")
                 + "\nextension Foo {\n    func fromA() {}\n}\n",
-            "ModB": "import ModA\n\nextension ModA.Foo {\n    func fromB() {}\n}\n"
+            "ModB": "import ModA\n\nextension ModA.Foo {\n    func fromB() {}\n}\n",
         ]
         let files = order.map { (module: Optional($0), source: sources[$0] ?? "") }
         let internalOnly = ElementOptions(havingAccessLevel: [.internal])

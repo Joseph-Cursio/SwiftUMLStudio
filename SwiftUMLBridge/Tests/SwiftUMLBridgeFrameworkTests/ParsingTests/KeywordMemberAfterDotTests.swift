@@ -269,7 +269,7 @@ struct MemberReferenceNameTests {
     static let spellings: [(String, String)] = [
         ("default", "`default`"), ("`default`", "`default`"), ("import", "`import`"), ("class", "`class`"),
         ("helper", "helper"), ("`helper`", "helper"), ("open", "open"), ("async", "async"),
-        ("init", "init"), ("self", "self"), ("Type", "Type"), ("`Type`", "`Type`"), ("`go now`", "`go now`")
+        ("init", "init"), ("self", "self"), ("Type", "Type"), ("`Type`", "`Type`"), ("`go now`", "`go now`"),
     ]
 
     @Test("the name after x. reads as its declaration does", arguments: spellings)
@@ -299,7 +299,7 @@ struct MemberReferenceNameTests {
             CallEdge(callerType: "Keyed", callerMethod: "start", calleeType: "Keyed", calleeMethod: "default",
                      isAsync: false, isUnresolved: false),
             CallEdge(callerType: "Keyed", callerMethod: "`default`", calleeType: "Keyed", calleeMethod: "helper",
-                     isAsync: false, isUnresolved: false)
+                     isAsync: false, isUnresolved: false),
         ]
         let graph = CallGraph(edges: edges)
         #expect(graph.traverse(from: "Keyed", entryMethod: "start", maxDepth: 3).map(\.calleeMethod)

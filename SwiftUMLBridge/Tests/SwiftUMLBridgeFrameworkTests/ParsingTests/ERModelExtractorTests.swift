@@ -207,7 +207,7 @@ struct ERModelExtractorTests {
             "}",
             "@Model class Book {",
             "    var author: Author?",
-            "}"
+            "}",
         ].joined(separator: lineBreak)
         let model = ERModelExtractor.extract(from: source)
         #expect(model.relationships.count == 1)

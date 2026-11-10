@@ -25,7 +25,7 @@ struct DiagramModeTests {
             .stateMachine,
             .activityDiagram,
             .erDiagram,
-            .componentDiagram
+            .componentDiagram,
         ])
     }
 

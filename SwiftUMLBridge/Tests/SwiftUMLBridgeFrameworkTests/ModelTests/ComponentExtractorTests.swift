@@ -33,7 +33,7 @@ struct ComponentExtractorTests {
                     name: "AppTests", kind: .test,
                     path: "Tests/AppTests",
                     sources: [], dependencies: ["App"]
-                )
+                ),
             ]
         )
     }
@@ -85,7 +85,7 @@ struct ComponentExtractorTests {
                     name: "TestHelpers", kind: .test,
                     path: "Tests/TestHelpers",
                     sources: [], dependencies: []
-                )
+                ),
             ]
         )
         let model = ComponentExtractor.extract(package: extras, packageRoot: dummyRoot)
@@ -116,7 +116,7 @@ struct ComponentExtractorTests {
                 SPMTargetDescription(
                     name: "Plug", kind: .other, path: "Plugins/Plug",
                     sources: [], dependencies: []
-                )
+                ),
             ]
         )
         let model = ComponentExtractor.extract(package: package, packageRoot: dummyRoot)
@@ -149,7 +149,7 @@ struct ComponentExtractorTests {
                 SPMTargetDescription(
                     name: "Core", kind: .library, path: "Sources/Core",
                     sources: ["Core.swift"], dependencies: []
-                )
+                ),
             ]
         )
         let model = ComponentExtractor.extract(package: package, packageRoot: tempRoot)
@@ -167,7 +167,7 @@ struct ComponentScriptPlantUMLTests {
         let model = ComponentModel(
             components: [
                 Component(name: "Networking", kind: .library, providedInterfaces: ["HttpClient"]),
-                Component(name: "App", kind: .executable, providedInterfaces: ["AppMain"])
+                Component(name: "App", kind: .executable, providedInterfaces: ["AppMain"]),
             ],
             dependencies: [ComponentDependency(from: "App", to: "Networking")]
         )
@@ -186,7 +186,7 @@ struct ComponentScriptPlantUMLTests {
         let model = ComponentModel(
             components: [
                 Component(name: "swift-syntax", kind: .library),
-                Component(name: "App.Main", kind: .executable)
+                Component(name: "App.Main", kind: .executable),
             ],
             dependencies: [ComponentDependency(from: "App.Main", to: "swift-syntax")]
         )
@@ -212,7 +212,7 @@ struct ComponentScriptMermaidTests {
         let model = ComponentModel(
             components: [
                 Component(name: "Networking", kind: .library, providedInterfaces: ["HttpClient"]),
-                Component(name: "App", kind: .executable, providedInterfaces: [])
+                Component(name: "App", kind: .executable, providedInterfaces: []),
             ],
             dependencies: [ComponentDependency(from: "App", to: "Networking")]
         )

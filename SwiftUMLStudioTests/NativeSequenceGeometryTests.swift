@@ -157,7 +157,7 @@ struct SequenceGeometryHitParticipantTests {
     func hitsTopBox() throws {
         let layout = makeLayout(participants: [
             makeParticipant(name: "Service", centerX: 100),
-            makeParticipant(name: "Worker", centerX: 280)
+            makeParticipant(name: "Worker", centerX: 280),
         ])
         let hit = try #require(
             NativeSequenceGeometry.hitParticipant(in: layout, at: CGPoint(x: 100, y: 35))
@@ -218,7 +218,7 @@ struct SequenceGeometryNextParticipantTests {
         let layout = makeLayout(participants: [
             makeParticipant(name: "A", centerX: 100),
             makeParticipant(name: "B", centerX: 250),
-            makeParticipant(name: "C", centerX: 400)
+            makeParticipant(name: "C", centerX: 400),
         ])
         let next = try #require(
             NativeSequenceGeometry.nextParticipant(in: layout, from: "A", direction: .right)
@@ -231,7 +231,7 @@ struct SequenceGeometryNextParticipantTests {
         let layout = makeLayout(participants: [
             makeParticipant(name: "A", centerX: 100),
             makeParticipant(name: "B", centerX: 250),
-            makeParticipant(name: "C", centerX: 400)
+            makeParticipant(name: "C", centerX: 400),
         ])
         let next = try #require(
             NativeSequenceGeometry.nextParticipant(in: layout, from: "B", direction: .left)
@@ -243,7 +243,7 @@ struct SequenceGeometryNextParticipantTests {
     func rightFromRightmost() {
         let layout = makeLayout(participants: [
             makeParticipant(name: "A", centerX: 100),
-            makeParticipant(name: "B", centerX: 250)
+            makeParticipant(name: "B", centerX: 250),
         ])
         #expect(
             NativeSequenceGeometry.nextParticipant(in: layout, from: "B", direction: .right) == nil
@@ -254,7 +254,7 @@ struct SequenceGeometryNextParticipantTests {
     func upDownAreNoops() {
         let layout = makeLayout(participants: [
             makeParticipant(name: "A", centerX: 100),
-            makeParticipant(name: "B", centerX: 250)
+            makeParticipant(name: "B", centerX: 250),
         ])
         #expect(NativeSequenceGeometry.nextParticipant(in: layout, from: "A", direction: .upward) == nil)
         #expect(NativeSequenceGeometry.nextParticipant(in: layout, from: "A", direction: .down) == nil)
@@ -265,7 +265,7 @@ struct SequenceGeometryNextParticipantTests {
         let layout = makeLayout(participants: [
             makeParticipant(name: "right", centerX: 400),
             makeParticipant(name: "left", centerX: 100),
-            makeParticipant(name: "mid", centerX: 250)
+            makeParticipant(name: "mid", centerX: 250),
         ])
         let first = try #require(NativeSequenceGeometry.firstParticipant(in: layout))
         #expect(first.name == "left")

@@ -125,7 +125,7 @@ struct SequenceSVGRendererRenderTests {
                 callerType: "Service",
                 calleeType: "Service",
                 calleeMethod: "retry"
-            )
+            ),
         ]
         let svg = SequenceSVGRenderer.render(
             traversedEdges: edges, entryType: "Service", entryMethod: "run"
@@ -158,7 +158,7 @@ struct SequenceSVGRendererRenderTests {
                 callerType: "Pair<A>",
                 calleeType: "Map<B>",
                 calleeMethod: "get"
-            )
+            ),
         ]
         let svg = SequenceSVGRenderer.render(
             traversedEdges: edges, entryType: "Pair<A>", entryMethod: "run"

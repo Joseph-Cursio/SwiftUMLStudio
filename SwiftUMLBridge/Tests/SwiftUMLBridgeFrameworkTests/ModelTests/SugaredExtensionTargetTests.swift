@@ -165,7 +165,7 @@ struct SugaredExtensionTargetTests {
     @Test("a member the project declares in a sugared extension is the one a sugared path names", arguments: [
         (DiagramFormat.plantuml, "Array.Stats <.. Array.Stats0 : ext"),
         (.mermaid, "Array.Stats <.. Array.Stats0 : ext"),
-        (.nomnoml, "[Array.Stats0] --> ext [Array.Stats]")
+        (.nomnoml, "[Array.Stats0] --> ext [Array.Stats]"),
     ])
     func memberDeclaredInSugaredExtension(format: DiagramFormat, edge: String) {
         let source = """

@@ -89,7 +89,7 @@ struct ClassDiagramPreparationTests {
         MergedCase("struct A { struct B { struct C {} } }\n"
                    + "extension A.B { func m() {} }\nextension A.B.C { func n() {} }",
                    ids: ["A", "A.B", "A.B.C"], members: [[], ["~ m()"], ["~ n()"]],
-                   edges: ["A -> A.B", "A.B -> A.B.C"])
+                   edges: ["A -> A.B", "A.B -> A.B.C"]),
     ]
 
     @Test("the SVG path matches one preparation", arguments: Self.mergedCases)

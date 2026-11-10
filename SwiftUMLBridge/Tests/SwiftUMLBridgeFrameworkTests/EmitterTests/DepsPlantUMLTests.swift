@@ -59,7 +59,7 @@ struct DepsPlantUMLTests {
         let edges = [
             DependencyEdge(from: "A", to: "B", kind: .conforms),
             DependencyEdge(from: "B", to: "C", kind: .inherits),
-            DependencyEdge(from: "C", to: "D", kind: .imports)
+            DependencyEdge(from: "C", to: "D", kind: .imports),
         ]
         let script = makeScript(edges: edges)
         #expect(script.text.contains("A --> B"))
@@ -73,7 +73,7 @@ struct DepsPlantUMLTests {
     func cyclicNodesAnnotated() {
         let edges = [
             DependencyEdge(from: "Alpha", to: "Beta", kind: .imports),
-            DependencyEdge(from: "Beta", to: "Alpha", kind: .imports)
+            DependencyEdge(from: "Beta", to: "Alpha", kind: .imports),
         ]
         let script = makeScript(edges: edges)
         #expect(script.text.contains("CyclicDependencies"))

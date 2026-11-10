@@ -320,7 +320,7 @@ struct DiagramViewModelMockTests {
                 SPMTargetDescription(
                     name: "Demo", kind: .library,
                     path: "Sources/Demo", sources: ["Foo.swift"], dependencies: []
-                )
+                ),
             ]
         )
         viewModel.selectedPaths = ["/tmp/demo-package/Sources/Demo/Foo.swift"]

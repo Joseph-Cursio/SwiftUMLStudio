@@ -124,7 +124,7 @@ struct GlobTests {
     /// It now means exactly the list of its expansions.
     @Test("expandGlobs expands a brace entry into its options", arguments: [
         ("{Mock0,Mock1}File.swift", "Mock0File.swift,Mock1File.swift"),
-        ("{*Kit,?ar}.swift", "*Kit.swift,?ar.swift")
+        ("{*Kit,?ar}.swift", "*Kit.swift,?ar.swift"),
     ])
     func expandGlobsBraceExpansion(braced: String, listed: String) {
         let globs = expandGlobs(braced, in: projectMockURL.path)

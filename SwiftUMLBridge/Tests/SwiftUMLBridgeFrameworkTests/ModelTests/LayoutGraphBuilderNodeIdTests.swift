@@ -29,7 +29,7 @@ struct LayoutGraphBuilderNodeIdTests {
         // Many repeats cycled through three ids.
         "struct Foo {}\n" + String(repeating: "extension Foo {}\n", count: 6),
         // A suffix equal to a name declared later, by an extension of an undeclared type.
-        "struct Foo {}\nextension Foo {}\nextension Foo_1 {}"
+        "struct Foo {}\nextension Foo {}\nextension Foo_1 {}",
     ]
 
     @Test("every node gets a distinct id", arguments: collidingSources)
@@ -73,7 +73,7 @@ struct LayoutGraphBuilderNodeIdTests {
         let items = [
             SyntaxStructure(kind: .struct, name: "Foo"),
             SyntaxStructure(kind: .extension, name: "Foo"),
-            SyntaxStructure(kind: .varGlobal, name: "Foo_1")
+            SyntaxStructure(kind: .varGlobal, name: "Foo_1"),
         ]
         #expect(LayoutGraphBuilder.buildClassDiagram(from: items, configuration: .default).nodes.map(\.id)
             == ["Foo", "Foo_1"])

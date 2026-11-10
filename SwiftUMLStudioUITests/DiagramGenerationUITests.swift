@@ -20,7 +20,7 @@ final class DiagramGenerationUITests: XCTestCase {
         app = XCUIApplication()
         app.launchArguments += [
             "-appMode", "Developer",
-            "-testFixturePath", fixturePath
+            "-testFixturePath", fixturePath,
         ]
         app.launchArguments += UITestLaunchArguments.plantUMLConsentUndecided
         app.launch()

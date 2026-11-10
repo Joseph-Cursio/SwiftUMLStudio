@@ -32,7 +32,7 @@ nonisolated struct PaywallFeature: Identifiable, Hashable {
         Self(
             title: "Unlimited Projects",
             description: "Explore as many codebases as you want"
-        )
+        ),
     ]
 }
 

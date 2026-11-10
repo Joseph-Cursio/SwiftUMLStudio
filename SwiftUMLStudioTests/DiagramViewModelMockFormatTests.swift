@@ -119,7 +119,7 @@ struct DiagramViewModelMockFormatTests {
                 SPMTargetDescription(
                     name: "Demo", kind: .library,
                     path: "Sources/Demo", sources: ["Foo.swift"], dependencies: []
-                )
+                ),
             ]
         )
     }

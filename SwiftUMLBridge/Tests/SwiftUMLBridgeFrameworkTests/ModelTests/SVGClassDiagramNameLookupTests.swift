@@ -54,14 +54,14 @@ struct SVGClassDiagramNameLookupTests {
     func hiddenTypeShadowsItsName() throws {
         let withExtension = try svg(files: [
             "A.swift": "fileprivate class Foo {}\nextension Foo { func run() {} }\nclass SubA: Foo {}",
-            "B.swift": "class Foo {}\nclass SubB: Foo {}"
+            "B.swift": "class Foo {}\nclass SubB: Foo {}",
         ])
         #expect(withExtension?.nodes.map(\.id) == ["SubA", "Foo", "SubB", "Foo_1"])
         #expect(withExtension?.edgeEnds == ["SubA -> Foo_1", "SubB -> Foo"])
 
         let withoutExtension = try svg(files: [
             "A.swift": "fileprivate class Foo {}\nclass SubA: Foo {}",
-            "B.swift": "class Foo {}\nclass SubB: Foo {}"
+            "B.swift": "class Foo {}\nclass SubB: Foo {}",
         ])
         #expect(withoutExtension?.edgeEnds == ["SubB -> Foo"])
     }
@@ -71,7 +71,7 @@ struct SVGClassDiagramNameLookupTests {
     func standInMustExtendTheHiddenType() throws {
         let graph = try svg(files: [
             "A.swift": "fileprivate class Foo {}\nclass SubA: Foo {}",
-            "B.swift": "class Foo {}\nextension Foo {}\nclass SubB: Foo {}"
+            "B.swift": "class Foo {}\nextension Foo {}\nclass SubB: Foo {}",
         ])
         #expect(graph?.edgeEnds == ["SubB -> Foo", "Foo_1 -> Foo"])
     }
@@ -80,7 +80,7 @@ struct SVGClassDiagramNameLookupTests {
     func hiddenProtocolShadowsItsName() throws {
         let graph = try svg(files: [
             "A.swift": "fileprivate protocol Shape {}\nstruct Circle: Shape {}",
-            "B.swift": "protocol Shape {}\nstruct Square: Shape {}"
+            "B.swift": "protocol Shape {}\nstruct Square: Shape {}",
         ])
         #expect(graph?.edgeEnds == ["Square -> Shape"])
     }
@@ -89,7 +89,7 @@ struct SVGClassDiagramNameLookupTests {
     func hiddenParentShadowsItsName() throws {
         let graph = try svg(files: [
             "A.swift": "fileprivate struct Outer { struct Inner {} }",
-            "B.swift": "struct Outer {}"
+            "B.swift": "struct Outer {}",
         ])
         #expect(graph?.nodes.map(\.id).sorted() == ["Outer", "Outer.Inner"])
         #expect(graph?.edgeEnds == [])
@@ -126,7 +126,7 @@ struct SVGClassDiagramNameLookupTests {
         let graph = try svg(files: [
             "A.swift": "class Shape {}",
             "B.swift": "fileprivate protocol Shape {}",
-            "C.swift": "class Circle: Shape {}"
+            "C.swift": "class Circle: Shape {}",
         ])
         #expect(graph?.edgeEnds == ["Circle -> Shape"])
     }
@@ -135,7 +135,7 @@ struct SVGClassDiagramNameLookupTests {
     /// its own edge goes to B's `Foo` (#75).
     @Test("an extension in a third file is no stand-in for another file's fileprivate type", arguments: [
         ("fileprivate class Foo {}\nclass SubA: Foo {}", "class Foo {}", "extension Foo { func run() {} }"),
-        ("fileprivate struct Foo { struct Inner {} }", "struct Foo {}", "extension Foo { func run() {} }")
+        ("fileprivate struct Foo { struct Inner {} }", "struct Foo {}", "extension Foo { func run() {} }"),
     ])
     func thirdFileExtensionIsNoStandIn(fileA: String, fileB: String, fileC: String) throws {
         let graph = try svg(files: ["A.swift": fileA, "B.swift": fileB, "C.swift": fileC])
@@ -149,7 +149,7 @@ struct SVGClassDiagramNameLookupTests {
             declared(.class, "Foo", "Core", access: .internal),
             declared(.extension, "Foo", "Core"),
             declared(.class, "Foo", "Kit", access: .public),
-            declared(.class, "SubC", "App", access: .public, inheriting: ["Foo"])
+            declared(.class, "SubC", "App", access: .public, inheriting: ["Foo"]),
         ]
         let config = Configuration(elements: ElementOptions(havingAccessLevel: [.open, .public]), format: .svg)
         let graph = LayoutGraphBuilder.buildClassDiagram(from: items, configuration: config)
@@ -162,7 +162,7 @@ struct SVGClassDiagramNameLookupTests {
         let items = [
             declared(.class, "Foo", "Core", access: .internal),
             declared(.class, "Foo", "Kit", access: .package),
-            declared(.class, "SubC", "App", access: .public, inheriting: ["Foo"])
+            declared(.class, "SubC", "App", access: .public, inheriting: ["Foo"]),
         ]
         let graph = LayoutGraphBuilder.buildClassDiagram(from: items, configuration: Configuration(format: .svg))
         #expect(graph.nodes.map { "\($0.id)@\($0.module ?? "")" } == ["Foo@Core", "Foo_1@Kit", "SubC@App"])
@@ -175,7 +175,7 @@ struct SVGClassDiagramNameLookupTests {
     @Test("a drawn private type takes no name written in another file", arguments: [
         ("private class Foo {}", ElementOptions()),
         ("fileprivate class Foo {}",
-         ElementOptions(havingAccessLevel: [.open, .public, .package, .internal, .private, .fileprivate]))
+         ElementOptions(havingAccessLevel: [.open, .public, .package, .internal, .private, .fileprivate])),
     ])
     func drawnPrivateTypeStaysInItsFile(fileA: String, elements: ElementOptions) throws {
         let files = ["A.swift": fileA, "B.swift": "class Foo {}", "C.swift": "class SubC: Foo {}"]
@@ -188,7 +188,7 @@ struct SVGClassDiagramNameLookupTests {
     func invisibleTypesLeaveNoFallback() throws {
         let graph = try svg(files: [
             "A.swift": "fileprivate class Operation {}\nextension Operation { func run() {} }",
-            "C.swift": "class MyOp: Operation {}"
+            "C.swift": "class MyOp: Operation {}",
         ])
         #expect(graph?.edgeEnds == [])
     }
@@ -199,7 +199,7 @@ struct SVGClassDiagramNameLookupTests {
     @Test("a nested type takes the access of every type enclosing it", arguments: [
         ("fileprivate struct Outer { class Inner {} }", "struct Outer { class Inner {} }", "Outer.Inner"),
         ("fileprivate struct Outer { struct Mid { class Inner {} } }", "struct Outer { struct Mid { class Inner {} } }",
-         "Outer.Mid.Inner")
+         "Outer.Mid.Inner"),
     ])
     func nestedTypeTakesEnclosingAccess(fileA: String, fileB: String, name: String) throws {
         let graph = try svg(files: ["A.swift": fileA, "B.swift": fileB, "C.swift": "class Sub: \(name) {}"])
@@ -213,14 +213,14 @@ struct SVGClassDiagramNameLookupTests {
         "public struct Foo {}\nprivate extension Foo { class X {} }",
         "public struct Foo {}\nfileprivate extension Foo { class X {} }",
         "public struct Foo {}\npublic extension Foo { fileprivate class X {} }",
-        "fileprivate struct Foo {}\nextension Foo { class X {} }"
+        "fileprivate struct Foo {}\nextension Foo { class X {} }",
     ], [ExtensionVisualization.all, .merged])
     func extensionNestedTypeTakesExtensionAccess(fileA: String, extensions: ExtensionVisualization) throws {
         let publicOnly = ElementOptions(havingAccessLevel: [.open, .public], showExtensions: extensions)
         let graph = try svg(files: [
             "A.swift": fileA,
             "B.swift": "public struct Foo { open class X {} }",
-            "C.swift": "public class SubC: Foo.X {}"
+            "C.swift": "public class SubC: Foo.X {}",
         ], publicOnly)
         let visibleX = try #require(graph?.nodes.first { $0.label == "X" && $0.stereotype == "class" })
         #expect(graph?.edgeEnds.contains("SubC -> \(visibleX.id)") == true)
@@ -237,7 +237,7 @@ struct SVGClassDiagramNameLookupTests {
         let items = [
             declared(.struct, "Foo", "Core", access: .public),
             declared(.extension, "Foo", "Core", access: .public, members: [nested]),
-            declared(.class, "Sub", "App", access: .public, inheriting: ["Foo.X"])
+            declared(.class, "Sub", "App", access: .public, inheriting: ["Foo.X"]),
         ]
         let configuration = Configuration(elements: ElementOptions(showExtensions: extensions), format: .svg)
         let graph = LayoutGraphBuilder.buildClassDiagram(from: items, configuration: configuration)
@@ -247,7 +247,7 @@ struct SVGClassDiagramNameLookupTests {
     /// So do `package extension`, and a member nested deeper in it, which keeps its own level.
     @Test("a package extension sets its members' default, deeper members keep their own", arguments: [
         (ElementAccessibility.package, ElementAccessibility?.none, "Foo.X"),
-        (ElementAccessibility.public, ElementAccessibility.public, "Foo.X.Y")
+        (ElementAccessibility.public, ElementAccessibility.public, "Foo.X.Y"),
     ])
     func extensionDefaultReachesItsDirectMembers(
         modifier: ElementAccessibility, deeper: ElementAccessibility?, name: String
@@ -264,7 +264,7 @@ struct SVGClassDiagramNameLookupTests {
         let items = [
             declared(.struct, "Foo", "Core", access: .public),
             declared(.extension, "Foo", "Core", access: modifier, members: [member]),
-            declared(.class, "Sub", "App", access: .public, inheriting: [name])
+            declared(.class, "Sub", "App", access: .public, inheriting: [name]),
         ]
         let graph = LayoutGraphBuilder.buildClassDiagram(from: items, configuration: Configuration(format: .svg))
         #expect(graph.edgeEnds.contains("Sub -> \(name)"))
@@ -278,7 +278,7 @@ struct SVGClassDiagramNameLookupTests {
             "A.swift": "fileprivate struct Outer {}\nextension Outer { struct Inner {} }\n"
                 + "extension Outer.Inner { class X {} }",
             "B.swift": "struct Outer { struct Inner { class X {} } }",
-            "C.swift": "class Sub: Outer.Inner.X {}"
+            "C.swift": "class Sub: Outer.Inner.X {}",
         ])
         let visibleX = try #require(graph?.nodes.first {
             $0.label == "X" && $0.sourceLocation?.filePath.hasSuffix("/B.swift") == true
@@ -293,7 +293,7 @@ struct SVGClassDiagramNameLookupTests {
     @Test("an edge to a type outside the diagram ends on an extension of that same type", arguments: [
         ("fileprivate class Operation {}", "B.swift"),
         ("private class Operation {}", "B.swift"),
-        ("fileprivate class Operation {}", "C.swift")
+        ("fileprivate class Operation {}", "C.swift"),
     ])
     func outsideTypeEndsOnItsExtension(fileA: String, extensionFile: String) throws {
         var files = ["A.swift": fileA, "B.swift": "class MyOp: Operation {}"]

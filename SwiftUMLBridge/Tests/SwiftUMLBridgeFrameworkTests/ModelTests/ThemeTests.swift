@@ -59,7 +59,7 @@ struct ThemeTests {
             ("é😀xY", "é😀x-y"),
             ("\u{1F468}\u{200D}\u{1F469}\u{200D}\u{1F467}fooBar",
              "\u{1F468}\u{200D}\u{1F469}\u{200D}\u{1F467}foo-bar"),
-            ("😀😀ABc", "😀😀a-bc")
+            ("😀😀ABc", "😀😀a-bc"),
           ])
     func kebabCaseAfterWideCharacters(input: String, expected: String) {
         #expect(input.camelCaseToKebapCase() == expected)

@@ -15,7 +15,7 @@ struct DepsPackageSVGModuleTests {
         defer { try? FileManager.default.removeItem(at: root) }
         let files = [
             ("Sources/Core/Repo.swift", "public protocol Repo {}\npublic struct UserRepo: Repo { public init() {} }\n"),
-            ("Sources/App/main.swift", "import Core\nstruct AppRepo: Repo, Sendable {}\nprint(UserRepo())\n")
+            ("Sources/App/main.swift", "import Core\nstruct AppRepo: Repo, Sendable {}\nprint(UserRepo())\n"),
         ]
         for (path, source) in files {
             let url = root.appendingPathComponent(path)
@@ -27,7 +27,7 @@ struct DepsPackageSVGModuleTests {
             SPMTargetDescription(name: "Core", kind: .library, path: "Sources/Core",
                                  sources: ["Repo.swift"], dependencies: []),
             SPMTargetDescription(name: "App", kind: .executable, path: "Sources/App",
-                                 sources: ["main.swift"], dependencies: ["Core"])
+                                 sources: ["main.swift"], dependencies: ["Core"]),
         ])
         return DependencyGraphGenerator().generateScript(
             forPackage: description, packageRoot: root, mode: mode, with: Configuration(format: format))
@@ -105,7 +105,7 @@ struct DepsPackageSVGModuleTests {
     func cycleNodeKeepsWarning() throws {
         let model = DependencyGraphModel(edges: [
             DependencyEdge(from: "CA", to: "CB", kind: .conforms, fromModule: "Core", toModule: "Core"),
-            DependencyEdge(from: "CB", to: "CA", kind: .inherits, fromModule: "Core", toModule: "Core")
+            DependencyEdge(from: "CB", to: "CA", kind: .inherits, fromModule: "Core", toModule: "Core"),
         ])
         let graph = try #require(DepsScript(model: model, configuration: Configuration(format: .svg)).layoutGraph)
         #expect(graph.nodes.map(\.stereotype) == ["warning", "warning"])

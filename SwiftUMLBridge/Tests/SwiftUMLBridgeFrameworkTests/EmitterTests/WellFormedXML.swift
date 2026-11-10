@@ -22,6 +22,6 @@ enum WellFormedXML {
     static let forbiddenCharacterLabels = [
         "Old\u{01}Code", "Bell\u{07}", "Tab\u{0B}Vertical", "Form\u{0C}Feed", "\u{1B}[31mRed",
         "\u{00}", "Unit\u{1F}Separator", "Non\u{FFFE}character", "Non\u{FFFF}character",
-        "<\u{301}a> &\u{301} \"\u{07}\""
+        "<\u{301}a> &\u{301} \"\u{07}\"",
     ]
 }

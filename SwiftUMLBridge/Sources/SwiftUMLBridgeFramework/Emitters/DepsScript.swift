@@ -198,7 +198,7 @@ private extension DepsScript {
             "#direction: down",
             "#fontSize: 12",
             "#spacing: 60",
-            "#edges: rounded"
+            "#edges: rounded",
         ]
 
         let stereotypes = Self.nodeStereotypes(model: model)

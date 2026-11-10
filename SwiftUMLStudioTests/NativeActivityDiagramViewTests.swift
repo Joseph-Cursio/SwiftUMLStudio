@@ -75,7 +75,7 @@ private func richLayout() -> ActivityLayout {
         makeNode(id: 9, kind: .action, label: "process()", centerX: 200, centerY: 640),
         makeNode(id: 10, kind: .loopEnd, centerX: 200, centerY: 710, height: 40),
         makeNode(id: 11, kind: .merge, centerX: 200, centerY: 780, height: 40),
-        makeNode(id: 12, kind: .end, centerX: 200, centerY: 850, width: 24, height: 24)
+        makeNode(id: 12, kind: .end, centerX: 200, centerY: 850, width: 24, height: 24),
     ]
     let edges = [
         ActivityEdge(fromId: 0, toId: 1),
@@ -92,7 +92,7 @@ private func richLayout() -> ActivityLayout {
         // Back edge: target sits above the source, so the dashed detour runs.
         ActivityEdge(fromId: 10, toId: 8, label: "repeat"),
         ActivityEdge(fromId: 10, toId: 11),
-        ActivityEdge(fromId: 11, toId: 12)
+        ActivityEdge(fromId: 11, toId: 12),
     ]
 
     return ActivityLayout(
@@ -152,7 +152,7 @@ struct NativeActivityDiagramViewRenderTests {
             nodes: [makeNode(id: 0, kind: .action, label: "only", centerX: 100, centerY: 100)],
             edges: [
                 ActivityEdge(fromId: 0, toId: 99),
-                ActivityEdge(fromId: 99, toId: 0)
+                ActivityEdge(fromId: 99, toId: 0),
             ],
             title: "dangling",
             totalWidth: 300, totalHeight: 300
@@ -168,7 +168,7 @@ struct NativeActivityDiagramViewRenderTests {
         let layout = ActivityLayout(
             nodes: [
                 makeNode(id: 0, kind: .action, label: "left", centerX: 100, centerY: 200),
-                makeNode(id: 1, kind: .action, label: "right", centerX: 300, centerY: 200)
+                makeNode(id: 1, kind: .action, label: "right", centerX: 300, centerY: 200),
             ],
             edges: [ActivityEdge(fromId: 0, toId: 1, label: "same row")],
             title: "boundary",
@@ -185,11 +185,11 @@ struct NativeActivityDiagramViewRenderTests {
         let layout = ActivityLayout(
             nodes: [
                 makeNode(id: 0, kind: .action, label: "", centerX: 150, centerY: 80),
-                makeNode(id: 1, kind: .decision, label: "", centerX: 150, centerY: 200, height: 60)
+                makeNode(id: 1, kind: .decision, label: "", centerX: 150, centerY: 200, height: 60),
             ],
             edges: [
                 ActivityEdge(fromId: 0, toId: 1, label: ""),
-                ActivityEdge(fromId: 1, toId: 0, label: "")
+                ActivityEdge(fromId: 1, toId: 0, label: ""),
             ],
             title: "",
             totalWidth: 300, totalHeight: 300
@@ -205,7 +205,7 @@ struct NativeActivityDiagramViewRenderTests {
                 makeNode(
                     id: 0, kind: .action, label: "unknown()",
                     centerX: 150, centerY: 100, isUnresolved: true
-                )
+                ),
             ],
             edges: [],
             title: "unresolved",

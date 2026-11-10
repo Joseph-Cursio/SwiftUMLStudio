@@ -251,7 +251,7 @@ struct MermaidGenerationTests {
         )
         let items = [SyntaxStructure(kind: .class, name: "Foo", substructure: [
             SyntaxStructure(accessibility: .internal, kind: .varInstance, name: "hidden", typename: "Int"),
-            SyntaxStructure(accessibility: .public, kind: .varInstance, name: "visible", typename: "String")
+            SyntaxStructure(accessibility: .public, kind: .varInstance, name: "visible", typename: "String"),
         ])]
         let script = DiagramScript(items: items, configuration: config)
         #expect(script.text.contains("visible"))

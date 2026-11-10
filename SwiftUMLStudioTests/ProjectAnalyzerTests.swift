@@ -40,7 +40,7 @@ struct ProjectAnalyzerTests {
         let dir = try createTestProject(files: [
             "TypeA.swift": "class TypeA {}",
             "TypeB.swift": "struct TypeB {}",
-            "TypeC.swift": "enum TypeC { case one }"
+            "TypeC.swift": "enum TypeC { case one }",
         ])
         defer { try? FileManager.default.removeItem(atPath: dir) }
         let summary = ProjectAnalyzer.analyze(paths: [dir])
@@ -67,7 +67,7 @@ struct ProjectAnalyzerTests {
             struct AnotherStruct {}
             enum MyEnum { case val }
             protocol MyProtocol {}
-            """
+            """,
         ])
         defer { try? FileManager.default.removeItem(atPath: dir) }
         let summary = ProjectAnalyzer.analyze(paths: [dir])
@@ -85,7 +85,7 @@ struct ProjectAnalyzerTests {
             protocol Drawable { func draw() }
             class Shape: Drawable { func draw() {} }
             class Circle: Shape {}
-            """
+            """,
         ])
         defer { try? FileManager.default.removeItem(atPath: dir) }
         let summary = ProjectAnalyzer.analyze(paths: [dir])
@@ -100,7 +100,7 @@ struct ProjectAnalyzerTests {
             import Foundation
             import SwiftUI
             class ViewModel {}
-            """
+            """,
         ])
         defer { try? FileManager.default.removeItem(atPath: dir) }
         let summary = ProjectAnalyzer.analyze(paths: [dir])
@@ -116,7 +116,7 @@ struct ProjectAnalyzerTests {
                 func fetchUser() {}
                 func saveUser() {}
             }
-            """
+            """,
         ])
         defer { try? FileManager.default.removeItem(atPath: dir) }
         let summary = ProjectAnalyzer.analyze(paths: [dir])
@@ -132,7 +132,7 @@ struct ProjectAnalyzerTests {
             class ServiceA: Hub {}
             class ServiceB: Hub {}
             class ServiceC: Hub {}
-            """
+            """,
         ])
         defer { try? FileManager.default.removeItem(atPath: dir) }
         let summary = ProjectAnalyzer.analyze(paths: [dir])
@@ -176,7 +176,7 @@ struct ProjectAnalyzerTests {
                 SPMTargetDescription(
                     name: "DemoTests", kind: .test, path: "Tests/DemoTests",
                     sources: [], dependencies: ["App"]
-                )
+                ),
             ]
         )
 
@@ -208,7 +208,7 @@ struct ProjectAnalyzerTests {
                     name: "Networking", kind: .library, path: "Sources/Networking",
                     sources: ["HTTPClient.swift"],
                     dependencies: ["Core", "Logging"]
-                )
+                ),
             ]
         )
 

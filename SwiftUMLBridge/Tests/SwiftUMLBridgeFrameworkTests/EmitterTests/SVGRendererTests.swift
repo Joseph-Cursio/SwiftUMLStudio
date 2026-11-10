@@ -97,7 +97,7 @@ struct SVGRendererTests {
         var edge = LayoutEdge(sourceId: "aaa", targetId: "bbb", style: .inheritance)
         edge.points = [
             LayoutPoint(posX: 100, posY: 70),
-            LayoutPoint(posX: 100, posY: 130)
+            LayoutPoint(posX: 100, posY: 130),
         ]
 
         let graph = LayoutGraph(nodes: [node1, node2], edges: [edge])
@@ -132,7 +132,7 @@ struct SVGRendererTests {
         var edge = LayoutEdge(sourceId: "aaa", targetId: "bbb", style: .realization)
         edge.points = [
             LayoutPoint(posX: 50, posY: 50),
-            LayoutPoint(posX: 150, posY: 50)
+            LayoutPoint(posX: 150, posY: 50),
         ]
 
         var node1 = LayoutNode(id: "aaa", label: "A")
@@ -152,7 +152,7 @@ struct SVGRendererTests {
         var edge = LayoutEdge(sourceId: "aaa", targetId: "bbb", style: .dependency)
         edge.points = [
             LayoutPoint(posX: 50, posY: 50),
-            LayoutPoint(posX: 150, posY: 50)
+            LayoutPoint(posX: 150, posY: 50),
         ]
 
         var node1 = LayoutNode(id: "aaa", label: "A")
@@ -172,7 +172,7 @@ struct SVGRendererTests {
         var edge = LayoutEdge(sourceId: "aaa", targetId: "bbb", style: .composition)
         edge.points = [
             LayoutPoint(posX: 50, posY: 50),
-            LayoutPoint(posX: 150, posY: 50)
+            LayoutPoint(posX: 150, posY: 50),
         ]
 
         var node1 = LayoutNode(id: "aaa", label: "A")
@@ -191,7 +191,7 @@ struct SVGRendererTests {
         var edge = LayoutEdge(sourceId: "aaa", targetId: "bbb", style: .association)
         edge.points = [
             LayoutPoint(posX: 50, posY: 50),
-            LayoutPoint(posX: 150, posY: 50)
+            LayoutPoint(posX: 150, posY: 50),
         ]
 
         var node1 = LayoutNode(id: "aaa", label: "A")
@@ -216,7 +216,7 @@ struct SVGRendererTests {
         edge.points = [
             LayoutPoint(posX: 50, posY: 50),
             LayoutPoint(posX: 100, posY: 75),
-            LayoutPoint(posX: 150, posY: 100)
+            LayoutPoint(posX: 150, posY: 100),
         ]
 
         var node1 = LayoutNode(id: "aaa", label: "A")

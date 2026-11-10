@@ -153,7 +153,7 @@ struct MergedExtensionScopeTests {
           arguments: [
             ("typealias Day = Date\nextension Date { struct Box {} }", "Day.Box"),
             ("struct Outer { struct Inner {} }\ntypealias Crate = Outer\nextension Crate { typealias Alias = Inner }",
-             "Crate.Alias")
+             "Crate.Alias"),
           ])
     func projectTypeSpelledThroughAliasesMerges(declarations: String, extended: String) {
         let source = """

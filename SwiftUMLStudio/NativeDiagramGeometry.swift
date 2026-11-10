@@ -25,7 +25,7 @@ nonisolated enum NativeDiagramGeometry {
         "actor": SwiftUI.Color(red: 0.88, green: 0.40, blue: 0.40),
         "extension": SwiftUI.Color.gray,
         "macro": SwiftUI.Color(red: 0.80, green: 0.40, blue: 0.80),
-        "warning": SwiftUI.Color(red: 1.0, green: 0.8, blue: 0.8)
+        "warning": SwiftUI.Color(red: 1.0, green: 0.8, blue: 0.8),
     ]
 
     /// Returns the header color for a given stereotype, falling back to `class`

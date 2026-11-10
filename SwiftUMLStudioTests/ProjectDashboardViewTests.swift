@@ -301,7 +301,7 @@ struct ProjectDashboardViewTests {
             ModuleSummary(
                 name: "App", kind: .executable,
                 fileCount: 1, typeCount: 1, outgoingTargetDependencies: 1
-            )
+            ),
         ]
         let view = ProjectDashboardView(
             summary: makeSummary(moduleBreakdown: modules),

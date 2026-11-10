@@ -26,7 +26,7 @@ public enum PersistenceSchemaExtractor {
         "PersistableRecord",
         "MutablePersistableRecord",
         "EncodableRecord",
-        "TableRecord"
+        "TableRecord",
     ]
 
     static let grdbAssociationFunctions: Set<String> = [

@@ -24,7 +24,7 @@ struct UngatheredMemberTests {
             open class Bar: Base {}
             """),
         StartedFallbackTests.barWithV(in: "Aaa", member: "zOnly"), StartedFallbackTests.aliasOfBar,
-        File(module: "ModC", source: "import ModA\n\nfinal class C: Foo.V {}\n")
+        File(module: "ModC", source: "import ModA\n\nfinal class C: Foo.V {}\n"),
     ]
     /// `inheritedMember` with ModC's own `Bar.V` in another file, which the alias does not name.
     private static let inheritedBesideOwnBar = inheritedMember + [
@@ -34,7 +34,7 @@ struct UngatheredMemberTests {
                     func cOnly() {}
                 }
             }
-            """)
+            """),
     ]
 
     /// `Foo.V` is the `V` ModB adds through `FooAlias`, beside Mod0's, which App never loads.
@@ -66,7 +66,7 @@ struct UngatheredMemberTests {
                 }
             }
             """),
-        File(module: "App", source: "import ModA\nimport ModB\n\nfinal class C: Foo.V {}\n")
+        File(module: "App", source: "import ModA\nimport ModB\n\nfinal class C: Foo.V {}\n"),
     ]
 
     /// Where Swift's member is one the lookup cannot gather, inherited (`Foo.V` is `Base.V`
@@ -80,7 +80,7 @@ struct UngatheredMemberTests {
     func endsOnNothingOutOfReach(reversed: Bool) throws {
         let fixtures = [
             (Self.inheritedMember, "zOnly"), (Self.inheritedBesideOwnBar, "cOnly"),
-            (Self.memberAddedThroughAlias, "cOnly")
+            (Self.memberAddedThroughAlias, "cOnly"),
         ]
         for (given, outOfReach) in fixtures {
             let ordered = reversed ? given.reversed() : given
@@ -121,7 +121,7 @@ struct UngatheredMemberTests {
                 }
                 """),
             ("ModC", "import ModA\n\ntypealias Foo = ModA.Bar\n"),
-            ("ModC", "import ModA\n\nfinal class C: Foo.V {}\n\nfinal class Impl: Bar.V {}\n")
+            ("ModC", "import ModA\n\nfinal class C: Foo.V {}\n\nfinal class Impl: Bar.V {}\n"),
         ]
         let hidden = ElementOptions(showNestedTypes: false)
         let graph = LayoutGraphBuilder.buildClassDiagram(

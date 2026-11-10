@@ -193,7 +193,7 @@ struct SugaredExtensionSupertypeScopeTests {
     /// whichever is declared first.
     @Test("a written Array.Base is the project Array's member", arguments: [
         "struct Array { class Base { var local = 0 } }\nextension [Int] { class Base { var sugar = 0 } }",
-        "extension [Int] { class Base { var sugar = 0 } }\nstruct Array { class Base { var local = 0 } }"
+        "extension [Int] { class Base { var sugar = 0 } }\nstruct Array { class Base { var local = 0 } }",
     ])
     func writtenPathMeansProjectArray(declarations: String) {
         let sub = "class Sub: Array.Base { func f() -> Int { local } }"
@@ -209,7 +209,7 @@ struct SugaredExtensionSupertypeScopeTests {
         "struct Array { class Base { var local = 0 } }\nextension [Int] { class Base { var sugar = 0 } }"
             + "\nenum Outer {}\nextension Outer { typealias Array = [Int] }",
         "extension [Int] { class Base { var sugar = 0 } }\nstruct Array { class Base { var local = 0 } }"
-            + "\nenum Outer { typealias Array = Swift.Array<Int> }"
+            + "\nenum Outer { typealias Array = Swift.Array<Int> }",
     ], [ExtensionVisualization.all, .merged, .none])
     func writtenPathThroughEnclosingAlias(declarations: String, mode: ExtensionVisualization) {
         let source = declarations + "\nextension Outer { class Sub: Array.Base { func f() -> Int { sugar } } }"

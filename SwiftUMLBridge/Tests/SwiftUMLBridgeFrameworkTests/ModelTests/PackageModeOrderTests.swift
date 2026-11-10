@@ -61,13 +61,13 @@ struct PackageModeOrderTests {
         return try TemporaryPackage([
             (name: "Core", files: types + [
                 (name: "Format.swift", source: "public enum Format: String { case plain }"),
-                (name: "StringCore.swift", source: "extension String { func core() {} }")
+                (name: "StringCore.swift", source: "extension String { func core() {} }"),
             ]),
             (name: "App", files: [
                 (name: "Format+CLI.swift", source: "extension Format: CustomStringConvertible {}"),
-                (name: "StringApp.swift", source: "extension String { func app() {} }")
+                (name: "StringApp.swift", source: "extension String { func app() {} }"),
             ]),
-            (name: "Zed", files: [(name: "Format+ID.swift", source: "extension Format: Identifiable {}")])
+            (name: "Zed", files: [(name: "Format+ID.swift", source: "extension Format: Identifiable {}")]),
         ])
     }
 
@@ -100,13 +100,13 @@ struct PackageModeOrderTests {
             SPMTargetDescription(name: "App", kind: .executable, path: "Sources/app",
                                  sources: ["Main.swift"], dependencies: ["Zed"]),
             SPMTargetDescription(name: "Core", kind: .library, path: "Sources/Aa",
-                                 sources: ["Core.swift"], dependencies: [])
+                                 sources: ["Core.swift"], dependencies: []),
         ])
         let root = URL(fileURLWithPath: "/pkg")
         let files = description.sourceFilesInPathOrder(packageRoot: root)
         #expect(files.map(\.path) == [
             "/pkg/Sources/Aa/Core.swift", "/pkg/Sources/Zed/A.swift", "/pkg/Sources/Zed/B.swift",
-            "/pkg/Sources/app/Main.swift"
+            "/pkg/Sources/app/Main.swift",
         ])
         #expect(files.map(\.module) == ["Core", "Zed", "Zed", "App"])
         #expect(files.map(\.path) == description.sourceFileToModuleMap(packageRoot: root).keys.sorted())
@@ -151,7 +151,7 @@ struct PackageModeOrderTests {
         let strings = text.split(separator: "\n").filter { $0.hasPrefix("class \"String\"") }
         #expect(strings == [
             "class \"String\" as String << (X, orchid) extension >> <<App>> { ",
-            "class \"String\" as String1 << (X, orchid) extension >> <<Core>> { "
+            "class \"String\" as String1 << (X, orchid) extension >> <<Core>> { ",
         ])
     }
 
@@ -160,13 +160,13 @@ struct PackageModeOrderTests {
     func pathOrderIsNotNameOrder(reversed: Bool) throws {
         let package = try TemporaryPackage([
             (name: "App", files: [(name: "StringApp.swift", source: "extension String { func app() {} }")]),
-            (name: "Core", files: [(name: "StringCore.swift", source: "extension String { func core() {} }")])
+            (name: "Core", files: [(name: "StringCore.swift", source: "extension String { func core() {} }")]),
         ], paths: ["App": "Sources/Zz", "Core": "Sources/Aa"])
         defer { package.remove() }
         let text = classDiagram(package.description(reversed: reversed), at: package.root)
         #expect(text.split(separator: "\n").filter { $0.hasPrefix("class \"String\"") } == [
             "class \"String\" as String << (X, orchid) extension >> <<Core>> { ",
-            "class \"String\" as String0 << (X, orchid) extension >> <<App>> { "
+            "class \"String\" as String0 << (X, orchid) extension >> <<App>> { ",
         ])
     }
 
@@ -217,7 +217,7 @@ struct PackageTypeModuleTests {
     func extensionsOnlyEdge(reversed: Bool) throws {
         let package = try TemporaryPackage([
             (name: "App", files: [(name: "Format+CLI.swift", source: "extension Format: CustomStringConvertible {}")]),
-            (name: "Core", files: [(name: "Format.swift", source: "public enum Format { case plain }")])
+            (name: "Core", files: [(name: "Format.swift", source: "public enum Format { case plain }")]),
         ])
         defer { package.remove() }
         let text = dependencyGraph(package, reversed: reversed)
@@ -230,7 +230,7 @@ struct PackageTypeModuleTests {
             (name: "App", files: [(name: "Ping.swift", source: "extension Service { func ping() {} }")]),
             (name: "Core", files: [(name: "Service.swift", source: "public protocol Service {}")]),
             (name: "Networking", files: [(name: "HTTPClient.swift", source: "struct HTTPClient: Service {}")]),
-            (name: "Zed", files: [(name: "Service+Sendable.swift", source: "extension Service: Sendable {}")])
+            (name: "Zed", files: [(name: "Service+Sendable.swift", source: "extension Service: Sendable {}")]),
         ])
         defer { package.remove() }
         let text = dependencyGraph(package, reversed: reversed)
@@ -253,7 +253,7 @@ struct PackageTypeModuleTests {
             (name: "App", files: [
                 (name: "Inner+Sendable.swift", source: "extension Outer.Inner: Sendable {}"),
                 (name: "MidInner+Sendable.swift", source: "extension Outer.Mid.Inner: Sendable {}"),
-                (name: "Outer+Deep.swift", source: "extension Outer { class Deep {} }")
+                (name: "Outer+Deep.swift", source: "extension Outer { class Deep {} }"),
             ]),
             (name: "Core", files: [
                 (name: "Outer.swift", source: "enum Outer { class Inner {}\n enum Mid { class Inner {} } }")
@@ -262,7 +262,7 @@ struct PackageTypeModuleTests {
                 class Sub: Outer.Inner {}
                 class Sub2: Outer.Deep {}
                 class Sub3: Outer.Mid.Inner {}
-                """)])
+                """)]),
         ])
         defer { package.remove() }
         let text = dependencyGraph(package, reversed: reversed)

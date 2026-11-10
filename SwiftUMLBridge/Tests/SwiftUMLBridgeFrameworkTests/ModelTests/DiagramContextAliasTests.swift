@@ -11,7 +11,7 @@ struct DiagramContextAliasTests {
         let aliases = [
             ctx.uniqName(item: SyntaxStructure(kind: .struct, name: "Foo0"), relationship: "inherits"),
             ctx.uniqName(item: SyntaxStructure(kind: .struct, name: "Foo"), relationship: "inherits"),
-            ctx.uniqName(item: SyntaxStructure(kind: .extension, name: "Foo"), relationship: "ext")
+            ctx.uniqName(item: SyntaxStructure(kind: .extension, name: "Foo"), relationship: "ext"),
         ]
         #expect(aliases == ["Foo0", "Foo", "Foo1"])
     }
@@ -22,7 +22,7 @@ struct DiagramContextAliasTests {
         let items = [
             SyntaxStructure(kind: .struct, name: "Foo"),
             SyntaxStructure(kind: .extension, name: "Foo"),
-            SyntaxStructure(kind: .extension, name: "Foo0")
+            SyntaxStructure(kind: .extension, name: "Foo0"),
         ]
         ctx.reserveIdentifiers(drawing: items)
         let aliases = items.map { ctx.uniqName(item: $0, relationship: $0.kind == .extension ? "ext" : "inherits") }
@@ -47,7 +47,7 @@ struct DiagramContextAliasTests {
         var aliases = [
             ctx.uniqName(item: SyntaxStructure(kind: .struct, name: "X1"), relationship: "inherits"),
             ctx.uniqName(item: SyntaxStructure(kind: .struct, name: "X"), relationship: "inherits"),
-            ctx.uniqName(item: SyntaxStructure(kind: .extension, name: "X1"), relationship: "ext")
+            ctx.uniqName(item: SyntaxStructure(kind: .extension, name: "X1"), relationship: "ext"),
         ]
         // The counter reaches 10 on the last repeat of X, which offers the X10 already issued.
         for _ in 0..<9 {

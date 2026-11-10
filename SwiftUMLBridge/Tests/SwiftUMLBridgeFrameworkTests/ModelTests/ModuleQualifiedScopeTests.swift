@@ -42,7 +42,7 @@ struct ModuleQualifiedScopeTests {
     @Test("a type in an imported module named like the qualifier keeps it a type", arguments: [
         "public enum Analytics {}\n\nextension Analytics {\n    public struct Event {}\n}",
         "open class Base {\n    public struct Event {}\n}\n\nopen class Analytics: Base {}",
-        "public enum Events {\n    public struct Event {}\n}\n\npublic typealias Analytics = Events"
+        "public enum Events {\n    public struct Event {}\n}\n\npublic typealias Analytics = Events",
     ])
     func importedTypeShadows(core: String) throws {
         let analytics = "public struct Event {\n    public init() {}\n}"

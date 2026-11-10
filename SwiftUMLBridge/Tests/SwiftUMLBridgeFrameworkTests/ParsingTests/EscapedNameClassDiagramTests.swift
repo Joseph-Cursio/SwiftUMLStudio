@@ -35,7 +35,7 @@ struct EscapedNameClassDiagramTests {
 
     static let witnesses = [
         extendedPlain, extendedTicked, extendedNested, boundArgument, supertypes, nestedInExtension, members,
-        generics, attribute
+        generics, attribute,
     ]
 
     private func lines(
@@ -153,7 +153,7 @@ struct EscapedNameClassDiagramTests {
         ("`Outer`.`Inner`.make()", "Outer.Inner"),
         ("`Plain`<Int>.make()", "Plain"),
         ("Plain.make()", "Plain"),
-        ("Outer.Inner.make()", "Outer.Inner")
+        ("Outer.Inner.make()", "Outer.Inner"),
     ])
     func typeReference(source: String, expected: String) throws {
         #expect(try receiver(source).typeReferenceName == expected)

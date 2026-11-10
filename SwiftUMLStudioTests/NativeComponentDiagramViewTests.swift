@@ -138,7 +138,7 @@ struct NativeComponentEdgePointTests {
         arguments: [
             (300.0, 0.0), (-300.0, 0.0), (0.0, 300.0), (0.0, -300.0),
             (300.0, 300.0), (-300.0, 300.0), (300.0, -300.0), (-300.0, -300.0),
-            (10.0, 400.0), (400.0, 10.0)
+            (10.0, 400.0), (400.0, 10.0),
         ]
     )
     func landsOnBorder(targetX: Double, targetY: Double) {
@@ -228,7 +228,7 @@ struct NativeComponentRenderTests {
                     name: "Networking", kind: .library,
                     interfaces: ["Client", "Session", "Retry"],
                     centerX: 150, centerY: 260, width: 160, height: 110
-                )
+                ),
             ],
             dependencies: [ComponentDependency(from: "App", to: "Networking")],
             totalWidth: 400,
@@ -261,7 +261,7 @@ struct NativeComponentRenderTests {
             ],
             dependencies: [
                 ComponentDependency(from: "App", to: "DoesNotExist"),
-                ComponentDependency(from: "AlsoMissing", to: "App")
+                ComponentDependency(from: "AlsoMissing", to: "App"),
             ],
             totalWidth: 200,
             totalHeight: 200
@@ -277,7 +277,7 @@ struct NativeComponentRenderTests {
                 makeComponent(
                     name: "Bare", kind: .other, interfaces: [],
                     centerX: 100, centerY: 100, width: 140, height: 40
-                )
+                ),
             ],
             dependencies: [],
             totalWidth: 240,

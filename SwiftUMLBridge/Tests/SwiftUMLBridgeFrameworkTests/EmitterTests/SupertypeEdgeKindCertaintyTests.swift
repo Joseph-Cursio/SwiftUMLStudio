@@ -177,7 +177,7 @@ struct SupertypeEdgeKindCertaintyTests {
         let files = (0..<Self.libraries).flatMap { index in [
             File(module: nil, path: "Lib\(index)/Outer.swift",
                  source: "struct Outer {}\nextension Outer { protocol Q {} }"),
-            File(module: nil, path: "Lib\(index)/Alias.swift", source: "typealias P = Outer.Q")
+            File(module: nil, path: "Lib\(index)/Alias.swift", source: "typealias P = Outer.Q"),
         ] } + [File(module: nil, path: "Lib0/Writer.swift", source: "struct Writer: P {}")]
         let items = try parsed(files)
         var text: [String] = []
@@ -213,7 +213,7 @@ struct SupertypeEdgeKindCertaintyTests {
         let files = (0..<600).flatMap { index in [
             File(module: nil, path: "Dir\(index)/Alias.swift", source: "typealias A0 = NS.A1"),
             File(module: nil, path: "Dir\(index)/NS.swift", source: "struct NS {\n\(members)\n}"),
-            File(module: nil, path: "Dir\(index)/Proto.swift", source: "protocol Proto {}")
+            File(module: nil, path: "Dir\(index)/Proto.swift", source: "protocol Proto {}"),
         ] } + [File(module: nil, path: "Dir0/Writer.swift", source: "struct Writer: A0 {}")]
         let items = try parsed(files)
         var text: [String] = []

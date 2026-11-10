@@ -257,7 +257,7 @@ struct SuggestionEngineTests {
                     hostType: "Light", enumType: "Phase",
                     states: [], transitions: [],
                     confidence: .high, notes: []
-                )
+                ),
             ],
             moduleBreakdown: [makeModule("App", kind: .executable), makeModule("Core")]
         )

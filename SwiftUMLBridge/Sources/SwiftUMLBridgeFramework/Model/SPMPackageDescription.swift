@@ -140,7 +140,7 @@ public enum SPMPackageReader {
         process.arguments = [
             "swift", "package",
             "--scratch-path", scratch.path,
-            "describe", "--type", "json"
+            "describe", "--type", "json",
         ]
         // Absolute: the setter drops each `..` of a relative URL that climbs above its base, so
         // `../Pkg` ran in `<cwd>/Pkg` and `..` in the cwd itself, where SwiftPM's upward search

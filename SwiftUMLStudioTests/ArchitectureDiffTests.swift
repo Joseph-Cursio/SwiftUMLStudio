@@ -14,7 +14,7 @@ private func makeTestSummary(
     moduleImports: [String] = ["Foundation", "UIKit"],
     topConnectedTypes: [(name: String, connectionCount: Int)] = [
         (name: "ViewModel", connectionCount: 4),
-        (name: "Service", connectionCount: 3)
+        (name: "Service", connectionCount: 3),
     ],
     cycleWarnings: [String] = [],
     entryPoints: [String] = ["App.main"],

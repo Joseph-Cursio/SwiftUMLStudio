@@ -112,7 +112,7 @@ struct LayoutGraphBuilderTests {
         let items = [
             SyntaxStructure(kind: .class, name: "ClassA"),
             SyntaxStructure(kind: .struct, name: "StructB"),
-            SyntaxStructure(kind: .protocol, name: "ProtoC")
+            SyntaxStructure(kind: .protocol, name: "ProtoC"),
         ]
         let graph = LayoutGraphBuilder.buildClassDiagram(
             from: items, configuration: .default
@@ -178,7 +178,7 @@ struct LayoutGraphBuilderTests {
                 inheritedTypes: [SyntaxStructure(name: "Base"), SyntaxStructure(name: "Shape")],
                 kind: .class, name: "Circle"
             ),
-            SyntaxStructure(inheritedTypes: [SyntaxStructure(name: "Shape")], kind: .extension, name: "Base")
+            SyntaxStructure(inheritedTypes: [SyntaxStructure(name: "Shape")], kind: .extension, name: "Base"),
         ]
         let excluded = Relationship(exclude: ["Shape"])
         let relationships = viaRealize

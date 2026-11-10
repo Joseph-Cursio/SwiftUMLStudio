@@ -31,7 +31,7 @@ struct NestedSquareBracketTests {
             ("tuple literal", "let x = " + chain("[(", "1", ")]", depth: depth)),
             ("tuple type", "let x: " + chain("[(Int, ", "Int", ")]", depth: depth)),
             ("generic type", "let x: " + chain("[Array<", "Int", ">]", depth: depth)),
-            ("tuple literal after a value", "let x = " + chain("[(1, ", "1", ")]", depth: depth))
+            ("tuple literal after a value", "let x = " + chain("[(1, ", "1", ")]", depth: depth)),
         ].map { ($0.0, file($0.1)) }
     }
 
@@ -202,7 +202,7 @@ struct NestedSquareBracketTests {
                 ("state", { _ = StateMachineGenerator().findCandidates(for: paths) }),
                 ("er", { _ = ERDiagramGenerator().generateScript(for: paths) }),
                 ("deps modules", { _ = DependencyGraphGenerator().generateScript(for: paths, mode: .modules) }),
-                ("deps types", { _ = DependencyGraphGenerator().generateScript(for: paths, mode: .types) })
+                ("deps types", { _ = DependencyGraphGenerator().generateScript(for: paths, mode: .types) }),
             ]
             for (name, generate) in generators {
                 _ = SourceReadNotices.drain()

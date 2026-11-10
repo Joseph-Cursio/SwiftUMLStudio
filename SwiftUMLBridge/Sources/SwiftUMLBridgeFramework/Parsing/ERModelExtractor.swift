@@ -328,7 +328,7 @@ final class ERModelExtractor: SyntaxVisitor {
         RelationshipWrapper(open: "[", close: "]", cardinality: .zeroOrMany),
         RelationshipWrapper(open: "Array<", close: ">", cardinality: .zeroOrMany),
         RelationshipWrapper(open: "Set<", close: ">", cardinality: .zeroOrMany),
-        RelationshipWrapper(open: "Optional<", close: ">", cardinality: .zeroOrOne)
+        RelationshipWrapper(open: "Optional<", close: ">", cardinality: .zeroOrOne),
     ]
 
     private struct RelationshipWrapper {

@@ -152,7 +152,7 @@ struct ClassDiagramEdgeSourceTests {
         "struct Foo: P {}\nextension Foo: Q { struct Inner: P {} }\nprotocol P {}\nprotocol Q {}",
         "enum E: P {}\nextension E: Q {}\nprotocol P {}\nprotocol Q {}",
         "actor A {}\nextension A: P, Q {}\nprotocol P {}\nprotocol Q {}",
-        "struct Foo0 {}\nstruct Foo {}\nextension Foo: P {}\nprotocol P {}"
+        "struct Foo0 {}\nstruct Foo {}\nextension Foo: P {}\nprotocol P {}",
     ]
 
     /// SVG lists its nodes in the order the text formats declare them, so the n-th SVG id and the

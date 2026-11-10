@@ -32,7 +32,7 @@ struct DependencyGraphGeneratorPackageTests {
         let package = makePackage(targets: [
             target("App", kind: .executable, dependencies: ["Networking", "Storage"]),
             target("Networking", dependencies: ["Storage"]),
-            target("Storage")
+            target("Storage"),
         ])
 
         let script = generator.generateScript(
@@ -50,7 +50,7 @@ struct DependencyGraphGeneratorPackageTests {
     func modulesModeStereotypesNodes() {
         let package = makePackage(targets: [
             target("App", kind: .executable, dependencies: ["Core"]),
-            target("Core", kind: .library)
+            target("Core", kind: .library),
         ])
 
         let script = generator.generateScript(
@@ -68,7 +68,7 @@ struct DependencyGraphGeneratorPackageTests {
         let package = makePackage(targets: [
             target("App", kind: .executable, dependencies: ["Core"]),
             target("Core"),
-            target("AppTests", kind: .test, dependencies: ["App"])
+            target("AppTests", kind: .test, dependencies: ["App"]),
         ])
 
         let script = generator.generateScript(
@@ -125,7 +125,7 @@ struct DependencyGraphGeneratorPackageTests {
             SPMTargetDescription(
                 name: "Networking", kind: .library, path: "Sources/Networking",
                 sources: ["HTTPClient.swift"], dependencies: ["Core"]
-            )
+            ),
         ])
 
         let script = generator.generateScript(
@@ -153,7 +153,7 @@ struct DependencyGraphGeneratorPackageTests {
             """,
             "Analytics/Exports.swift": "@_exported import Core\n",
             "Analytics/Base.swift": "open class Base { public init() {} }\n",
-            "App/Sub.swift": "import Analytics\nclass Sub: Analytics.Base {}\n"
+            "App/Sub.swift": "import Analytics\nclass Sub: Analytics.Base {}\n",
         ]
         for (path, source) in sources {
             let url = temp.appendingPathComponent("Sources/\(path)")
@@ -165,7 +165,7 @@ struct DependencyGraphGeneratorPackageTests {
         let package = makePackage(targets: [
             target("Core", sources: ["Core.swift"]),
             target("Analytics", dependencies: ["Core"], sources: ["Exports.swift", "Base.swift"]),
-            target("App", dependencies: ["Analytics"], sources: ["Sub.swift"])
+            target("App", dependencies: ["Analytics"], sources: ["Sub.swift"]),
         ])
 
         let script = generator.generateScript(forPackage: package, packageRoot: temp, mode: .types)

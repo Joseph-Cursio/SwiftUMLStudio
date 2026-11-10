@@ -217,7 +217,7 @@ private enum Witnesses {
             var `author`: Author?
             init() {}
         }
-        """
+        """,
     ]
 
     static let stateMachines = [
@@ -276,7 +276,7 @@ private enum Witnesses {
 
             func finish() { state = .`done` }
         }
-        """
+        """,
     ]
 
     static let persistence = [
@@ -302,6 +302,6 @@ private enum Witnesses {
             static let id = Expression<`Int64`>("id")
             static let name = `Expression`<String>("name")
         }
-        """
+        """,
     ]
 }

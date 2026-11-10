@@ -70,7 +70,7 @@ struct ExtensionEdgeTargetTests {
             edge("APublic.BPublic", "APublic.BPublic0", format),
             edge("APublic.BPublic", "APublic.BPublic1", format),
             edge("APublic.BPublic.CPublic", "APublic.BPublic.CPublic2", format),
-            edge("APublic.BPublic.CInternal", "APublic.BPublic.CInternal3", format)
+            edge("APublic.BPublic.CInternal", "APublic.BPublic.CInternal3", format),
         ])
     }
 
@@ -83,7 +83,7 @@ struct ExtensionEdgeTargetTests {
         let items = [
             declared(.struct, "Foo", in: "A.swift", module: "ModA", access: .public),
             declared(.struct, "Foo", in: "B.swift", module: "ModB", access: .public),
-            declared(.extension, "Foo", in: "C.swift", module: "ModB")
+            declared(.extension, "Foo", in: "C.swift", module: "ModB"),
         ]
         #expect(extEdges(of: items, format) == [edge("Foo0", "Foo1", format)])
     }
@@ -94,7 +94,7 @@ struct ExtensionEdgeTargetTests {
     func hiddenType(format: DiagramFormat) {
         let types = [
             declared(.struct, "Foo", in: "A.swift"),
-            declared(.struct, "Foo", in: "B.swift", access: .fileprivate)
+            declared(.struct, "Foo", in: "B.swift", access: .fileprivate),
         ]
         let sameFile = types + [declared(.extension, "Foo", in: "B.swift")]
         #expect(extEdges(of: sameFile, format).isEmpty)
