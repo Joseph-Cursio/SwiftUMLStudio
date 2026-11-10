@@ -58,6 +58,7 @@ extension SwiftUMLBridgeCLI {
         var depth: Int = 3
 
         @Option(help: "Reserved: accepted and ignored")
+        // swiftlint:disable:next unused_declaration - declared so `--sdk` parses; it is ignored
         var sdk: String?
 
         @OptionGroup var common: CommonDiagramOptions

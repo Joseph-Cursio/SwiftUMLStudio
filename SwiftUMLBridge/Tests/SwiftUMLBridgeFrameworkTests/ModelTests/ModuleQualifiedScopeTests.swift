@@ -104,7 +104,6 @@ struct ModuleQualifiedScopeTests {
 
     // MARK: - Hidden types
 
-    private static let internalOnly = ElementOptions(havingAccessLevel: [.internal])
     private static let internalMerged = ElementOptions(havingAccessLevel: [.internal], showExtensions: .merged)
 
     /// ModA's public `P` is hidden. Its extensions merge into ModA's `extension P`, and both

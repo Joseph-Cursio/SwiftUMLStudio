@@ -5,13 +5,20 @@ import Testing
 struct SequenceMermaidTests {
 
     private func makeEdges() -> [CallEdge] {
-        // swiftlint:disable line_length
         [
-            CallEdge(callerType: "Foo", callerMethod: "run", calleeType: "Bar", calleeMethod: "process", isAsync: false, isUnresolved: false),
-            CallEdge(callerType: "Foo", callerMethod: "run", calleeType: "Bar", calleeMethod: "finish", isAsync: true, isUnresolved: false),
-            CallEdge(callerType: "Foo", callerMethod: "run", calleeType: nil, calleeMethod: "unknownClosure", isAsync: false, isUnresolved: true),
+            CallEdge(
+                callerType: "Foo", callerMethod: "run",
+                calleeType: "Bar", calleeMethod: "process", isAsync: false, isUnresolved: false
+            ),
+            CallEdge(
+                callerType: "Foo", callerMethod: "run",
+                calleeType: "Bar", calleeMethod: "finish", isAsync: true, isUnresolved: false
+            ),
+            CallEdge(
+                callerType: "Foo", callerMethod: "run",
+                calleeType: nil, calleeMethod: "unknownClosure", isAsync: false, isUnresolved: true
+            ),
         ]
-        // swiftlint:enable line_length
     }
 
     private func makeScript(edges: [CallEdge] = []) -> SequenceScript {

@@ -16,8 +16,12 @@ extension SwiftUMLBridgeCLI {
             helpNames: [.short, .long]
         )
 
-        // swiftlint:disable:next line_length
-        @Option(help: "Path to custom configuration file (otherwise searches for '.swiftumlbridge.yml' in current directory)")
+        @Option(
+            help: """
+                Path to custom configuration file \
+                (otherwise searches for '.swiftumlbridge.yml' in current directory)
+                """
+        )
         var config: String?
 
         @Option(help: "Paths to source files to exclude. Takes precedence over arguments.")

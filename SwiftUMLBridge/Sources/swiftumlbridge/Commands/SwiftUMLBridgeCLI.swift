@@ -18,7 +18,7 @@ struct SwiftUMLBridgeCLI: AsyncParsableCommand {
 
     /// Runs the subcommand as `AsyncParsableCommand.main()` does, then says on stderr what the
     /// parsers were not given as written, whether the subcommand succeeded or not (#148).
-    static func main() async {
+    static func main() async { // swiftlint:disable:this unused_declaration - @main's entry point
         do {
             var command = try parseAsRoot()
             if var asyncCommand = command as? AsyncParsableCommand {

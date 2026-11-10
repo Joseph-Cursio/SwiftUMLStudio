@@ -175,15 +175,7 @@ extension LayoutGraphBuilder {
         /// this name however each spells the type. `readingModules: false` reads no module
         /// qualifier, for the text formats' supertype edges, which end on a name and so cannot
         /// tell ModA's `Foo` from another `Foo` (`TypeAliasResolver`).
-        func resolvedName(of name: String, from scope: Scope, readingModules: Bool = true, depth: Int = 0) -> String {
-            resolvedName(
-                of: QualifiedName(name: name, root: .asWritten), from: scope, readingModules: readingModules,
-                depth: depth
-            )
-        }
-
-        /// `resolvedName(of:from:readingModules:depth:)` for a name whose root is known
-        /// (`qualifiedName(ofWritten:from:)`).
+        /// The root of `name` is already worked out (`qualifiedName(ofWritten:from:)`).
         func resolvedName(
             of name: QualifiedName, from scope: Scope, readingModules: Bool = true, depth: Int = 0
         ) -> String {
