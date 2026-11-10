@@ -4,10 +4,12 @@ import Foundation
 public enum ExtensionVisualization: String, Codable, Sendable {
     case all
     case merged
-    case none
+    /// Written `none` in a config file. Not named `none` in Swift, where `.none` beside an
+    /// `ExtensionVisualization?` means nil, the default, which draws every extension.
+    case hidden = "none"
 
     static func from(_ showExtensions: Bool) -> ExtensionVisualization {
-        showExtensions ? .all : .none
+        showExtensions ? .all : .hidden
     }
 
     public static var `default`: ExtensionVisualization { .all }

@@ -9,7 +9,7 @@ import Synchronization
 extension LayoutGraphBuilder {
     /// The type each declaration's enclosing extension extends, for each depth a lookup asks at
     /// (`TypeLookup.enclosingExtensionType(of:depth:)`). The lookup must stay `Sendable`, for
-    /// `TypeAliasResolver.none`, so this is a class behind a lock; the lookup starts a new one
+    /// `TypeAliasResolver.withoutProject`, so this is a class behind a lock; the lookup starts a new one
     /// whenever it records a declaration, so a copy of it never shares a stale entry.
     final class EnclosingTypes: Sendable {
         private let typeForDeclaration = Mutex<[ObjectIdentifier: [Int: Declared?]]>([:])

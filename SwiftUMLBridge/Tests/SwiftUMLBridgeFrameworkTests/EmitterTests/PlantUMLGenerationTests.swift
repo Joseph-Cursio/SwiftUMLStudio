@@ -110,7 +110,7 @@ struct PlantUMLGenerationTests {
     @Test("extensions hidden when showExtensions is none")
     func extensionsHiddenWhenNone() {
         let config = Configuration(
-            elements: ElementOptions(showExtensions: ExtensionVisualization.none)
+            elements: ElementOptions(showExtensions: ExtensionVisualization.hidden)
         )
         let source = "struct Foo {} \nextension Foo { func bar() {} }"
         let script = generator.generateScript(for: source, with: config)

@@ -62,7 +62,7 @@ extension SwiftUMLBridgeCLI {
 
             switch extensionVisualization {
             case .hideExtensions:
-                bridgeConfig.elements.showExtensions = ExtensionVisualization.none
+                bridgeConfig.elements.showExtensions = ExtensionVisualization.hidden
             case .mergeExtensions:
                 bridgeConfig.elements.showExtensions = .merged
             case .showExtensions:

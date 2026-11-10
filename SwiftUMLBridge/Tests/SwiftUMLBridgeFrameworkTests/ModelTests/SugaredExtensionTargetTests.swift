@@ -113,9 +113,9 @@ struct SugaredExtensionTargetTests {
     @Test("--hide-extensions gives a type nested in a sugared extension no edge to a project's type")
     func hiddenSugaredExtensionNestedType() {
         let source = "struct Array {}\nextension [Int] { struct Summary {} }"
-        #expect(graph(source, .none)?.edgeEnds == [])
-        #expect(ClassDiagramIds.lines(of: script(source, .plantuml, .none), containing: "+--") == [])
-        #expect(ClassDiagramIds.lines(of: script(source, .nomnoml, .none), containing: "+-") == [])
+        #expect(graph(source, .hidden)?.edgeEnds == [])
+        #expect(ClassDiagramIds.lines(of: script(source, .plantuml, .hidden), containing: "+--") == [])
+        #expect(ClassDiagramIds.lines(of: script(source, .nomnoml, .hidden), containing: "+-") == [])
     }
 
     // MARK: - Other spellings of the sugar
@@ -214,9 +214,9 @@ struct SugaredExtensionTargetTests {
             extension [Int] { struct Stats {} }
             extension [Int].Stats { struct Bucket {} }
             """
-        #expect(ClassDiagramIds.lines(of: script(source, .plantuml, .none), containing: "+--")
+        #expect(ClassDiagramIds.lines(of: script(source, .plantuml, .hidden), containing: "+--")
             .contains("Array.Stats +-- Array.Stats.Bucket"))
-        #expect(graph(source, .none)?.edgeEnds.contains("Array.Stats -> Array.Stats.Bucket") == true)
+        #expect(graph(source, .hidden)?.edgeEnds.contains("Array.Stats -> Array.Stats.Bucket") == true)
     }
 
     // MARK: - Access and stand-ins

@@ -61,8 +61,8 @@ struct ConfigurationTests {
         #expect(ExtensionVisualization.from(true) == .all)
     }
 
-    @Test("ExtensionVisualization.from(false) returns .none")
+    @Test("ExtensionVisualization.from(false) returns .hidden")
     func extensionVisualizationFromFalse() {
-        #expect(ExtensionVisualization.from(false) == .none)
+        #expect(ExtensionVisualization.from(false) == .hidden)
     }
 }

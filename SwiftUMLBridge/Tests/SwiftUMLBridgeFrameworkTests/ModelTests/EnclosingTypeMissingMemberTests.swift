@@ -41,7 +41,7 @@ struct EnclosingTypeMissingMemberTests {
     /// B's `Foo` has no `X`, so `W`, in an extension of it, means B's top-level `X`, not the alias
     /// `extension AF` adds to A's `Foo` in `W`'s own file.
     @Test("a writer inside an extension of a type with no such member takes the top-level type",
-          arguments: [ExtensionVisualization.all, .merged, .none], [false, true])
+          arguments: [ExtensionVisualization.all, .merged, .hidden], [false, true])
     func extensionMemberOfAnotherType(mode: ExtensionVisualization, reversed: Bool) throws {
         let files: [ModuleFixture.File] = [
             Self.otherModulesFoo,
@@ -60,7 +60,7 @@ struct EnclosingTypeMissingMemberTests {
     /// A member another `Foo`'s own body declares is no more B's `Foo`'s, though it is the only
     /// `Foo.X` there is.
     @Test("a writer inside an extension does not take a member of another same-named type's body",
-          arguments: [ExtensionVisualization.all, .merged, .none], [false, true])
+          arguments: [ExtensionVisualization.all, .merged, .hidden], [false, true])
     func bodyMemberOfAnotherType(mode: ExtensionVisualization, reversed: Bool) throws {
         let files: [ModuleFixture.File] = [
             ("A", """
@@ -76,7 +76,7 @@ struct EnclosingTypeMissingMemberTests {
 
     /// `W` in `struct Foo`'s own body, which has no `X`, with `extension AF` earlier in its file.
     @Test("a writer in a type's body with no such member takes the top-level type",
-          arguments: [ExtensionVisualization.all, .merged, .none], [false, true])
+          arguments: [ExtensionVisualization.all, .merged, .hidden], [false, true])
     func writerInBodyOfTypeWithoutMember(mode: ExtensionVisualization, reversed: Bool) throws {
         let files: [ModuleFixture.File] = [
             Self.otherModulesFoo,
@@ -95,7 +95,7 @@ struct EnclosingTypeMissingMemberTests {
     /// `W` nested in `Inner`, in the extension: neither `Foo.Inner` nor `Foo` has an `X`, so each of
     /// the names built on them gives way, the outer one too.
     @Test("a writer nested inside an extension takes the top-level type past each type around it",
-          arguments: [ExtensionVisualization.all, .merged, .none], [false, true])
+          arguments: [ExtensionVisualization.all, .merged, .hidden], [false, true])
     func nestedWriter(mode: ExtensionVisualization, reversed: Bool) throws {
         let files: [ModuleFixture.File] = [
             Self.otherModulesFoo,
@@ -115,7 +115,7 @@ struct EnclosingTypeMissingMemberTests {
     /// With no `X` in the diagram but another `Foo`'s, `W`'s is one it does not declare, as an
     /// imported module's would be: no edge to RE.
     @Test("a writer whose type lacks the name and sees no other draws no edge to another type's member",
-          arguments: [ExtensionVisualization.all, .merged, .none], [false, true])
+          arguments: [ExtensionVisualization.all, .merged, .hidden], [false, true])
     func noTypeFurtherOut(mode: ExtensionVisualization, reversed: Bool) throws {
         let files: [ModuleFixture.File] = [
             Self.otherModulesFoo,
@@ -136,7 +136,7 @@ struct EnclosingTypeMissingMemberTests {
     /// A member an extension in another module adds to the very `Foo` `W`'s extension extends is
     /// that type's, so it beats the top-level `X` beside `W`.
     @Test("a writer takes a member another module's extension adds to its own type",
-          arguments: [ExtensionVisualization.all, .merged, .none], [false, true])
+          arguments: [ExtensionVisualization.all, .merged, .hidden], [false, true])
     func ownTypesExtensionMember(mode: ExtensionVisualization, reversed: Bool) throws {
         let files: [ModuleFixture.File] = [
             ("A", "public struct Foo { public init() {} }"),
@@ -150,7 +150,7 @@ struct EnclosingTypeMissingMemberTests {
     /// `extension AF` extends A's `Foo`, through the alias, so `X` is A's member, beside B's own
     /// `Foo` and its top-level `X`.
     @Test("a writer in an extension spelled through a typealias takes the aliased type's member",
-          arguments: [ExtensionVisualization.all, .merged, .none], [false, true])
+          arguments: [ExtensionVisualization.all, .merged, .hidden], [false, true])
     func memberThroughAlias(mode: ExtensionVisualization, reversed: Bool) throws {
         let files: [ModuleFixture.File] = [
             ("A", """

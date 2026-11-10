@@ -40,7 +40,7 @@ struct ExtensionMemberRankTests {
 
     /// #230's `crate`, where `class ViaOuter` shares a file with one of the extensions.
     @Test("a writer takes the alias in its own file, in every format, however extensions are drawn",
-          arguments: [ExtensionVisualization.all, .merged, .none], [false, true])
+          arguments: [ExtensionVisualization.all, .merged, .hidden], [false, true])
     func ownFile(mode: ExtensionVisualization, reversed: Bool) throws {
         let writer: Fixture.File = (
             "/r/Sources/D/D.swift",
@@ -163,7 +163,7 @@ struct ExtensionMemberRankTests {
     /// `AF` is A's `Foo`, so the alias beside `W` is no member of `W`'s own `Foo`, B's. Ranked near
     /// the writer, it must not win for that.
     @Test("an alias added to another target's same-named type does not beat a member of the writer's own",
-          arguments: [ExtensionVisualization.all, .merged, .none], [false, true])
+          arguments: [ExtensionVisualization.all, .merged, .hidden], [false, true])
     func writersOwnType(mode: ExtensionVisualization, reversed: Bool) throws {
         let targets: [Fixture.File] = [
             ("/r/Sources/A/Foo.swift", "public struct Foo { public init() {} }\npublic typealias AF = Foo"),
@@ -179,7 +179,7 @@ struct ExtensionMemberRankTests {
     /// `Login` is nearer `W` than `Core`, and `W` cannot see it. A file that saw both `X`s would not
     /// compile, and every file can see a `public` member, so one that compiles means the body's.
     @Test("an extension's alias in a sibling directory does not beat a public member of the type's body",
-          arguments: ["Crate", "Foo"], [ExtensionVisualization.all, .merged, .none])
+          arguments: ["Crate", "Foo"], [ExtensionVisualization.all, .merged, .hidden])
     func bodyBeforeExtension(spelling: String, mode: ExtensionVisualization) throws {
         let files: [Fixture.File] = [
             ("/r/Sources/Core/Foo.swift", """
@@ -198,7 +198,7 @@ struct ExtensionMemberRankTests {
     /// An `internal` member of `Foo`'s body is out of sight in another target, so `W` compiles and
     /// means the extension's. Nothing but the extension's nearness tells them apart.
     @Test("an internal member of the type's body does not beat an extension beside the writer",
-          arguments: [ExtensionVisualization.all, .merged, .none])
+          arguments: [ExtensionVisualization.all, .merged, .hidden])
     func internalBodyMember(mode: ExtensionVisualization) throws {
         let files: [Fixture.File] = [
             ("/r/Sources/A/Foo.swift", "public struct Foo { typealias X = RA; public init() {} }\nclass RA {}"),
@@ -213,7 +213,7 @@ struct ExtensionMemberRankTests {
     /// `Foo` as `Zed`'s, where Swift reads `Lib`'s. So that a public member of `Zed`'s `Foo` looks
     /// like the body of the type `W` means, and only the extension's being beside `W` keeps it.
     @Test("a public member of an unrelated type read first does not beat an extension beside the writer",
-          arguments: [ExtensionVisualization.all, .none], [false, true])
+          arguments: [ExtensionVisualization.all, .hidden], [false, true])
     func unrelatedTypeReadFirst(mode: ExtensionVisualization, reversed: Bool) throws {
         let targets: [Fixture.File] = [
             ("/r/Sources/Zed/Foo.swift", "public struct Foo { public typealias X = RZed }\npublic class RZed {}"),

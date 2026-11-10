@@ -36,7 +36,7 @@ struct EnclosingTypeMemberRankTests {
     /// `X` is built on the `extension Foo` around `W`, B's `Foo`, so RB is meant: `AF` is A's `Foo`,
     /// and RE's alias, though in `W`'s own file, is no member of B's (#252).
     @Test("a writer inside an extension does not take an alias in its file added to another same-named type",
-          arguments: [ExtensionVisualization.all, .merged, .none], [false, true])
+          arguments: [ExtensionVisualization.all, .merged, .hidden], [false, true])
     func writerInsideOwnExtension(mode: ExtensionVisualization, reversed: Bool) throws {
         let files: [Fixture.File] = [
             Self.otherTargetsFoo,
@@ -53,7 +53,7 @@ struct EnclosingTypeMemberRankTests {
 
     /// The same, with the alias only near `W`, in another file of its directory (#252).
     @Test("a writer inside an extension does not take an alias near it added to another same-named type",
-          arguments: [ExtensionVisualization.all, .merged, .none], [false, true])
+          arguments: [ExtensionVisualization.all, .merged, .hidden], [false, true])
     func writerInsideExtensionNearAlias(mode: ExtensionVisualization, reversed: Bool) throws {
         let files: [Fixture.File] = [
             Self.otherTargetsFoo,
@@ -68,7 +68,7 @@ struct EnclosingTypeMemberRankTests {
     /// `W` in `struct Foo`'s own body, with `extension AF` earlier in its file: merged into A's
     /// `Foo`, that alias ranks in this file too, and first read, it came first (#252).
     @Test("a writer in a type's body does not take an alias merged into another same-named type",
-          arguments: [ExtensionVisualization.all, .merged, .none], [false, true])
+          arguments: [ExtensionVisualization.all, .merged, .hidden], [false, true])
     func writerInTypesBody(mode: ExtensionVisualization, reversed: Bool) throws {
         let files: [Fixture.File] = [
             Self.otherTargetsFoo,
@@ -89,7 +89,7 @@ struct EnclosingTypeMemberRankTests {
     /// A name built on the type around the writer takes a `public` member of that type's body before
     /// an extension's in another directory, as a dotted name as written does (`bodyBeforeExtension`).
     @Test("a writer inside an extension takes a public member of the type's body before a sibling's",
-          arguments: [ExtensionVisualization.all, .merged, .none])
+          arguments: [ExtensionVisualization.all, .merged, .hidden])
     func enclosingBodyBeforeExtension(mode: ExtensionVisualization) throws {
         let files: [Fixture.File] = [
             ("/r/Sources/Core/Foo.swift", """

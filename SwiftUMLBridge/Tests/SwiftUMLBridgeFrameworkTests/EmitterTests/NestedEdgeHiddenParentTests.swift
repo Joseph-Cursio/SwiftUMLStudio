@@ -49,7 +49,7 @@ struct NestedEdgeHiddenParentTests {
     @Test("a type nested in an undrawn extension still hangs off the extended type")
     func undrawnExtensionParentStillResolves() {
         let source = "struct Outer { struct Foo {} }\nextension Outer.Foo { struct Inner {} }"
-        for mode in [ExtensionVisualization.merged, .none] {
+        for mode in [ExtensionVisualization.merged, .hidden] {
             #expect(edges(of: source, elements: ElementOptions(showExtensions: mode))
                 == ["Outer +-- Outer.Foo", "Outer.Foo +-- Outer.Foo.Inner"], "\(mode)")
         }
@@ -60,7 +60,7 @@ struct NestedEdgeHiddenParentTests {
     @Test("a type nested in a merged extension of a hidden nested type hangs off its qualified name")
     func mergedExtensionOfHiddenNestedType() {
         let source = "struct A { fileprivate struct B {} }\nextension A.B { struct Inner {} }\nstruct B {}"
-        for mode in [ExtensionVisualization.merged, .none] {
+        for mode in [ExtensionVisualization.merged, .hidden] {
             let elements = ElementOptions(showExtensions: mode)
             #expect(edges(of: source, elements: elements) == ["A.B +-- A.B.Inner"], "\(mode)")
             #expect(edges(of: source, .nomnoml, elements: elements) == ["[A.B] +- [A.B.Inner]"], "\(mode)")

@@ -14,7 +14,7 @@ struct TypeAliasResolver {
     private let lookup: LayoutGraphBuilder.TypeLookup?
 
     /// A resolver that follows nothing, for sources read without their project.
-    static let none = TypeAliasResolver(lookup: nil)
+    static let withoutProject = TypeAliasResolver(lookup: nil)
 
     private init(lookup: LayoutGraphBuilder.TypeLookup?) {
         self.lookup = lookup

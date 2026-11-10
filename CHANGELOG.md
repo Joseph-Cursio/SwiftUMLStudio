@@ -22,10 +22,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed — Bridge (API, breaking)
 
-Three public names passed SwiftLint only because the Bridge's own config
-loosened `identifier_name`. They are renamed, and the Bridge now lints with
-the rule as SwiftLint ships it. Swift code that uses the old names must
-change; config files, the CLI, and the diagrams it writes do not.
+Four public names are renamed to satisfy SwiftLint rules. Three passed only
+because the Bridge's own config loosened `identifier_name`, and the Bridge now
+lints with that rule as SwiftLint ships it; one broke the opt-in
+`discouraged_none_name`. Swift code that uses the old names must change;
+config files, the CLI, and the diagrams it writes do not.
 
 - **`DependencyEdge.to` is `toNode`, and `ComponentDependency.to` is
   `toComponent`**, initializer labels included. Each keeps `from`, and names
@@ -37,6 +38,11 @@ change; config files, the CLI, and the diagrams it writes do not.
   which wrote `!theme __directive__(…)`, naming no theme. It now says
   the value goes after `!theme` as written, so a hosted theme is
   `theme: "hacker from https://example.com/themes"`.
+- **`ExtensionVisualization.none` is `ExtensionVisualization.hidden`.** Beside
+  an `ExtensionVisualization?`, such as `ElementOptions.showExtensions`, `.none`
+  reads as nil, the default, which draws every extension rather than hiding
+  them; a test had already had to write `.some(.none)`. The raw value stays
+  `"none"`, so `showExtensions: none` in a config file is unchanged.
 
 ### Changed — Bridge (test infrastructure)
 

@@ -152,7 +152,7 @@ struct SupertypeEdgeEndTests {
     @Test("an edge SVG finds no end for is still written by name where no drawn box has it", arguments: textFormats)
     func noEndWrittenByName(format: DiagramFormat) throws {
         let arrow = format == .nomnoml ? "--:>" : "<|.."
-        #expect(try supertypeEdges(from: "U", Self.noStandIn, format, .none) == ["P \(arrow)"])
+        #expect(try supertypeEdges(from: "U", Self.noStandIn, format, .hidden) == ["P \(arrow)"])
     }
 
     // MARK: - Repeats
