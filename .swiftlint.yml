@@ -7,6 +7,7 @@ excluded:
 opt_in_rules:
 - accessibility_trait_for_button
 - array_init
+- closure_end_indentation
 - closure_spacing
 - collection_alignment
 - comma_inheritance

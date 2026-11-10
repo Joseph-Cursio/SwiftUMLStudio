@@ -92,9 +92,11 @@ struct ExtensionMemberRankTests {
         }
         let every = writers("C") + writers("D")
         let files = crate(reversed ? every.reversed() : every, reversed: reversed)
-        let expected = Set((1...3).flatMap { index in [
-            "RealC <|-- Outer.W\(index)C : inherits", "RealD <|-- Outer.W\(index)D : inherits"
-        ] })
+        let expected = Set((1...3).flatMap { index in
+            [
+                "RealC <|-- Outer.W\(index)C : inherits", "RealD <|-- Outer.W\(index)D : inherits"
+            ]
+        })
         for elements in [ElementOptions(), Self.merged] {
             #expect(supertypeLines(in: try Fixture.lines(files, .plantuml, elements)) == expected)
         }

@@ -148,10 +148,12 @@ struct NearestDirectoryCostTests {
     @Test("many writers among many same-named types in many directories")
     func manyWritersAmongManyCandidates() throws {
         let root = "/Users/someone/Developer/a/rather/long/path/to/the/project/Sources"
-        let files: [Fixture.File] = (0..<400).flatMap { index in [
-            ("\(root)/Dir\(index)/Base.swift", "class Base {}"),
-            ("\(root)/Dir\(index)/Sub.swift", "class Sub\(index): Base {}")
-        ] }
+        let files: [Fixture.File] = (0..<400).flatMap { index in
+            [
+                ("\(root)/Dir\(index)/Base.swift", "class Base {}"),
+                ("\(root)/Dir\(index)/Sub.swift", "class Sub\(index): Base {}")
+            ]
+        }
         let items = try Fixture.parsed(files)
         var svg: [String] = []
         let svgTime = cpuSeconds {
@@ -174,11 +176,13 @@ struct NearestDirectoryCostTests {
     func manyChainsAcrossSiblingDirectories() throws {
         let members = (1..<8).map { "    typealias A\($0) = \($0 == 7 ? "Proto" : "NS.A\($0 + 1)")" }
             .joined(separator: "\n")
-        let files: [Fixture.File] = (0..<600).flatMap { index in [
-            ("/r/Dir\(index)/Alias/Alias.swift", "typealias A0 = NS.A1"),
-            ("/r/Dir\(index)/NS/NS.swift", "struct NS {\n\(members)\n}"),
-            ("/r/Dir\(index)/Proto/Proto.swift", "protocol Proto {}")
-        ] } + [("/r/Dir0/Writer/Writer.swift", "struct Writer: A0 {}")]
+        let files: [Fixture.File] = (0..<600).flatMap { index in
+            [
+                ("/r/Dir\(index)/Alias/Alias.swift", "typealias A0 = NS.A1"),
+                ("/r/Dir\(index)/NS/NS.swift", "struct NS {\n\(members)\n}"),
+                ("/r/Dir\(index)/Proto/Proto.swift", "protocol Proto {}")
+            ]
+        } + [("/r/Dir0/Writer/Writer.swift", "struct Writer: A0 {}")]
         let items = try Fixture.parsed(files)
         var text = ""
         let elapsed = cpuSeconds {
