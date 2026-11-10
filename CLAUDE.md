@@ -116,7 +116,7 @@ swiftumlbridge component   --package <Package.swift dir> [--include-test-targets
 
 ## Conventions
 
-- Follow `.swiftlint.yml` — fix violations rather than disabling rules. Identifier names should be 3+ chars (`database` not `db`, `identifier` not `id`).
+- Follow `.swiftlint.yml` — fix violations rather than disabling rules. Identifier names should be 3+ chars (`database` not `db`, `identifier` not `id`). It turns on 92 opt-in rules; run `swiftlint lint` from the repo root. Its `analyzer_rules` run only under `swiftlint analyze --compiler-log-path <log of a clean xcodebuild>`.
 - Compiler warnings are build errors, set in both `Package.swift` (`.treatAllWarnings(as: .error)`) and the Xcode project (`SWIFT_TREAT_WARNINGS_AS_ERRORS`). Fix the warning; don't turn the setting off or silence the warning to get a build through.
 - Make small, focused commits — one logical change per commit. Each commit should build cleanly and pass tests before the next.
 - Use the task list (`TaskCreate` / `TaskUpdate`) for multi-step work.

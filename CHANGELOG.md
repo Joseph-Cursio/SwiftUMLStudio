@@ -19,6 +19,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   on SwiftUMLBridge still builds when a newer compiler adds a warning.
   Notes from Xcode's App Intents metadata tool are not compiler warnings
   and do not count.
+- **SwiftLint runs 88 more opt-in rules: 92 in all, plus two analyzer
+  rules.** 61 already passed, such as `first_where`, `toggle_bool` and
+  `unhandled_throwing_task`. The other 27 each needed up to ten fixes in
+  the code, one commit per rule; none is disabled inline. Notable fixes:
+  `ExtensionVisualization.none` is now `.hidden` (see the breaking-API
+  entry), `LayoutGraphBuilder` is a caseless enum, two long SwiftUI bodies
+  are split into named parts, and the UI tests launch the app per test
+  instead of holding an implicitly unwrapped `app`. `capture_variable` and
+  `typesafe_array_init` run under `swiftlint analyze`. Three rules stay off,
+  each with a written reason: `async_without_await` (its remaining hits are
+  fixtures that are async on purpose), `prefixed_toplevel_constant`, and
+  `private_subject` (ViewInspector's `InspectionEmissary` needs a visible
+  subject).
 
 ### Changed — Bridge (API, breaking)
 
