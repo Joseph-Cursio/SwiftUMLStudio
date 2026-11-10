@@ -2,7 +2,7 @@ import Foundation
 @testable import SwiftUMLBridgeFramework
 import Testing
 
-// What `TypeLookup.typeWithSureKind` keeps among writerFiles (`LayoutGraphBuilder.SharedLookup`) must not
+// What `TypeLookup.typeWithSureKind` keeps among writers (`LayoutGraphBuilder.SharedLookup`) must not
 // carry one file's answer to a writer in another (#229). The memo's key holds no file, so each way a
 // file is known to bear on a name has a test here, in both orders, since the first writer read sets
 // the memo.
@@ -76,7 +76,7 @@ struct SharedLookupFileTests {
     // MARK: The fallback that reads a module qualifier
 
     /// Nothing is recorded under `ModA.Base`, so the candidates are empty and alike for both
-    /// writerFiles, and the answer comes from `Base`, the rest of the name, among what each can see.
+    /// writers, and the answer comes from `Base`, the rest of the name, among what each can see.
     @Test("a name read through its module means what the writer's own file declares", arguments: [false, true])
     func moduleQualifiedPrivateType(reversed: Bool) throws {
         let writerFiles: [(module: String?, source: String)] = [
@@ -254,10 +254,10 @@ struct SharedLookupFileTests {
     // MARK: Writers the guard leaves sharing
 
     /// Only reading a first component as a module goes by the writer's file, so where no module has
-    /// its name, a file that declares it shares, or each of its writerFiles looks through every rival.
+    /// its name, a file that declares it shares, or each of its writers looks through every rival.
     /// `Parent` declares no `P`: one it did would be the member `Outer.P` means, which no rival's
     /// answer is (#250).
-    @Test("writerFiles in a file declaring a first component no module is named after still share")
+    @Test("writers in a file declaring a first component no module is named after still share")
     func ownFirstComponentNamingNoModuleShares() throws {
         let files: [(module: String?, source: String)] = [
             (nil, "public enum Outer {\n    public typealias P = Q\n}\npublic protocol Q {}"),
@@ -280,9 +280,9 @@ struct SharedLookupFileTests {
         #expect(kinds.shared.count == 1)
     }
 
-    /// The guard goes by what a writer's own file holds, so writerFiles whose files hold none of the
+    /// The guard goes by what a writer's own file holds, so writers whose files hold none of the
     /// name's types still share one lookup: without that, the memo saves nothing.
-    @Test("writerFiles whose files declare nothing of the name still share", arguments: [nil, "App"] as [String?])
+    @Test("writers whose files declare nothing of the name still share", arguments: [nil, "App"] as [String?])
     func othersStillShare(module: String?) throws {
         let files: [(module: String?, source: String)] = [
             (module, "class Base {}"),
