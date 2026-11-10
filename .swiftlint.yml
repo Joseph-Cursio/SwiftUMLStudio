@@ -67,6 +67,7 @@ opt_in_rules:
 - unowned_variable_capture
 - untyped_error_in_catch
 - vertical_parameter_alignment_on_call
+- vertical_whitespace_closing_braces
 - weak_delegate
 - xct_specific_matcher
 - yoda_condition

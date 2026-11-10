@@ -359,5 +359,4 @@ struct DiagramViewModelMockTests {
         #expect(mockDeps.packageCallCount == 0)
         #expect(mockDeps.lastPaths == ["/tmp/Foo.swift"])
     }
-
 }

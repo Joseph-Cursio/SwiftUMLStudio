@@ -133,7 +133,6 @@ struct NearestDirectoryFormatTests {
             #expect(endIds.supertype(named: name, from: parent.scope).id == end)
         }
     }
-
 }
 
 @Suite("Ranking by directory reaches extensions, typealiases and hidden types")
@@ -372,5 +371,4 @@ struct NearestDirectoryNameTests {
         ]
         #expect(try lines(protocolFar, .plantuml).contains("Service0 <|-- Impl : inherits"))
     }
-
 }

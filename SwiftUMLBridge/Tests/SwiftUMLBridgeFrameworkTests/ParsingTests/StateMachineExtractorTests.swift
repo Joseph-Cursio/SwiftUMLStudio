@@ -91,7 +91,6 @@ struct StateMachineExtractorTests {
         #expect(models.count == 1)
         #expect(models.first?.transitions.count == 2)
     }
-
 }
 
 @Suite("StateMachineExtractor — edge cases")
