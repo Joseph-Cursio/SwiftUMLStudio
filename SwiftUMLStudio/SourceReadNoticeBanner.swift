@@ -17,10 +17,10 @@ struct SourceReadNoticeBanner: View {
         /// `nil` for a notice that does not start with a file, line and column.
         init?(notice: String) {
             guard let match = notice.prefixMatch(of: #/(?<file>.+):(?<line>\d+):(?<column>\d+): /#),
-                  let line = Int(match.line), let column = Int(match.column) else { return nil }
-            self.file = String(match.file)
-            self.line = line
-            self.column = column
+                  let lineNumber = Int(match.line), let columnNumber = Int(match.column) else { return nil }
+            file = String(match.file)
+            line = lineNumber
+            column = columnNumber
         }
 
         /// `Grid.swift, line 2, column 25`.
@@ -56,7 +56,7 @@ struct SourceReadNoticeBanner: View {
     /// diagram is generating, and when no notice names a place.
     static func places(for notices: [String], isGenerating: Bool) -> [Place]? {
         guard !isGenerating else { return nil }
-        let places = notices.compactMap(Place.init(notice:))
-        return places.isEmpty ? nil : places
+        let named = notices.compactMap(Place.init(notice:))
+        return named.isEmpty ? nil : named
     }
 }

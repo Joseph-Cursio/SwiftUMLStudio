@@ -17,7 +17,7 @@ final class MockSubscriptionProvider: SubscriptionProviding {
     private(set) var purchaseCallCount: Int = 0
     private(set) var restoreCallCount: Int = 0
 
-    func purchase(_ product: Product) {
+    func purchase(_: Product) {
         purchaseCallCount += 1
     }
 

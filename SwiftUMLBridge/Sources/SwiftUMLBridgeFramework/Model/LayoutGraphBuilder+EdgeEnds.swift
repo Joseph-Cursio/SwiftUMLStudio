@@ -195,11 +195,11 @@ extension LayoutGraphBuilder {
             // Sugar names the standard library's type, which no project type or alias shadows, or a
             // member path past it, kept as written (#126).
             guard !match.declared.isSugared else { return target }
-            let scope = match.declared.scope
+            let targetScope = match.declared.scope
             let targetName = qualifiedName(
-                ofWritten: target, from: scope, depth: depth + 1, readingModules: readingModules
+                ofWritten: target, from: targetScope, depth: depth + 1, readingModules: readingModules
             )
-            return resolvedName(of: targetName, from: scope, readingModules: readingModules, depth: depth + 1)
+            return resolvedName(of: targetName, from: targetScope, readingModules: readingModules, depth: depth + 1)
         }
 
         /// The name a type written as `name` in a declaration's inheritance clause is recorded

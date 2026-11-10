@@ -60,8 +60,8 @@ public struct FileCollector: Sendable {
         }
 
         var files: [URL] = []
-        for paths in sanitizedPaths.compactMap(\.self) {
-            files.append(contentsOf: getFiles(for: paths))
+        for path in sanitizedPaths.compactMap(\.self) {
+            files.append(contentsOf: getFiles(for: path))
         }
 
         return files

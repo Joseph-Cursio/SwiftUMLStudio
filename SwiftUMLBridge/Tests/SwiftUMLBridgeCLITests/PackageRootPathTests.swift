@@ -24,18 +24,22 @@ private struct Layout {
     /// Writes the layout into a fresh temporary directory, plus a symlink `lnk`
     /// to `Other/Deep` beside a second `Other/Pkg`, target `Gamma`.
     static func make() throws -> Self {
-        let root = URL(fileURLWithPath: NSTemporaryDirectory())
+        let directory = URL(fileURLWithPath: NSTemporaryDirectory())
             .appendingPathComponent("swiftumlbridge-package-root-\(UUID().uuidString)")
-        let layout = Self(root: root)
+        let layout = Self(root: directory)
         try writePackage(at: layout.package, name: "Pkg", target: "Core", type: "Engine")
-        try writePackage(at: root.appendingPathComponent("Outer"), name: "Outer", target: "Alpha", type: "AlphaType")
+        try writePackage(
+            at: directory.appendingPathComponent("Outer"), name: "Outer", target: "Alpha", type: "AlphaType"
+        )
         try writePackage(at: layout.inner, name: "Inner", target: "Beta", type: "BetaType")
         try writePackage(
-            at: root.appendingPathComponent("Other/Pkg"), name: "OtherPkg", target: "Gamma", type: "GammaType"
+            at: directory.appendingPathComponent("Other/Pkg"), name: "OtherPkg", target: "Gamma", type: "GammaType"
         )
-        let deep = root.appendingPathComponent("Other/Deep")
+        let deep = directory.appendingPathComponent("Other/Deep")
         try FileManager.default.createDirectory(at: deep, withIntermediateDirectories: true)
-        try FileManager.default.createSymbolicLink(at: root.appendingPathComponent("lnk"), withDestinationURL: deep)
+        try FileManager.default.createSymbolicLink(
+            at: directory.appendingPathComponent("lnk"), withDestinationURL: deep
+        )
         try FileManager.default.createDirectory(at: layout.run, withIntermediateDirectories: true)
         return layout
     }

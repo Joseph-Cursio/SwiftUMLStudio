@@ -23,31 +23,31 @@ class TypeStackVisitor: SyntaxVisitor {
         typeStack.append(node.name.canonicalName)
         return .visitChildren
     }
-    override func visitPost(_ node: ClassDeclSyntax) { typeStack.removeLast() }
+    override func visitPost(_: ClassDeclSyntax) { typeStack.removeLast() }
 
     override func visit(_ node: StructDeclSyntax) -> SyntaxVisitorContinueKind {
         typeStack.append(node.name.canonicalName)
         return .visitChildren
     }
-    override func visitPost(_ node: StructDeclSyntax) { typeStack.removeLast() }
+    override func visitPost(_: StructDeclSyntax) { typeStack.removeLast() }
 
     override func visit(_ node: EnumDeclSyntax) -> SyntaxVisitorContinueKind {
         typeStack.append(node.name.canonicalName)
         return .visitChildren
     }
-    override func visitPost(_ node: EnumDeclSyntax) { typeStack.removeLast() }
+    override func visitPost(_: EnumDeclSyntax) { typeStack.removeLast() }
 
     override func visit(_ node: ActorDeclSyntax) -> SyntaxVisitorContinueKind {
         typeStack.append(node.name.canonicalName)
         return .visitChildren
     }
-    override func visitPost(_ node: ActorDeclSyntax) { typeStack.removeLast() }
+    override func visitPost(_: ActorDeclSyntax) { typeStack.removeLast() }
 
     override func visit(_ node: ProtocolDeclSyntax) -> SyntaxVisitorContinueKind {
         typeStack.append(node.name.canonicalName)
         return .visitChildren
     }
-    override func visitPost(_ node: ProtocolDeclSyntax) { typeStack.removeLast() }
+    override func visitPost(_: ProtocolDeclSyntax) { typeStack.removeLast() }
 
     override func visit(_ node: ExtensionDeclSyntax) -> SyntaxVisitorContinueKind {
         // Named as `SyntaxStructureBuilder` names the extension, so a sequence participant finds
@@ -56,5 +56,5 @@ class TypeStackVisitor: SyntaxVisitor {
         typeStack.append(resolveTypeName(node.extendedType.extendedTypeName ?? node.extendedType.canonicalDescription))
         return .visitChildren
     }
-    override func visitPost(_ node: ExtensionDeclSyntax) { typeStack.removeLast() }
+    override func visitPost(_: ExtensionDeclSyntax) { typeStack.removeLast() }
 }

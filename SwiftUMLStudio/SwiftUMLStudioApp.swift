@@ -20,12 +20,12 @@ private final class AppDelegate: NSObject, NSApplicationDelegate {
 
     // Primary gate: returning false short-circuits _handleAEReopen entirely,
     // preventing showInitialWindows() → LazyView re-evaluation.
-    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+    func applicationShouldHandleReopen(_: NSApplication, hasVisibleWindows _: Bool) -> Bool {
         !isRunningTests
     }
 
     // Belt-and-suspenders: also suppress the open-untitled-file query.
-    func applicationShouldOpenUntitledFile(_ sender: NSApplication) -> Bool {
+    func applicationShouldOpenUntitledFile(_: NSApplication) -> Bool {
         !isRunningTests
     }
 }

@@ -32,38 +32,26 @@ public struct ElementOptions: Codable, Sendable {
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        if let havingAccessLevel = try container.decodeIfPresent([AccessLevel].self, forKey: .havingAccessLevel) {
-            self.havingAccessLevel = havingAccessLevel
-        }
-        if let showMembersWithAccessLevel = try container.decodeIfPresent(
+        havingAccessLevel = try container.decodeIfPresent(
+            [AccessLevel].self, forKey: .havingAccessLevel
+        ) ?? havingAccessLevel
+        showMembersWithAccessLevel = try container.decodeIfPresent(
             [AccessLevel].self, forKey: .showMembersWithAccessLevel
-        ) {
-            self.showMembersWithAccessLevel = showMembersWithAccessLevel
-        }
-        if let showNestedTypes = try container.decodeIfPresent(Bool.self, forKey: .showNestedTypes) {
-            self.showNestedTypes = showNestedTypes
-        }
-        if let showGenerics = try container.decodeIfPresent(Bool.self, forKey: .showGenerics) {
-            self.showGenerics = showGenerics
-        }
+        ) ?? showMembersWithAccessLevel
+        showNestedTypes = try container.decodeIfPresent(Bool.self, forKey: .showNestedTypes) ?? showNestedTypes
+        showGenerics = try container.decodeIfPresent(Bool.self, forKey: .showGenerics) ?? showGenerics
         if let visualization = try? container.decodeIfPresent(String.self, forKey: .showExtensions) {
             showExtensions = ExtensionVisualization(rawValue: visualization)
         } else if let showExtensionsBoolean = try? container.decodeIfPresent(Bool.self, forKey: .showExtensions) {
             showExtensions = ExtensionVisualization.from(showExtensionsBoolean)
         }
-        if let mergedExtensionMemberIndicator = try container.decodeIfPresent(
+        mergedExtensionMemberIndicator = try container.decodeIfPresent(
             String.self, forKey: .mergedExtensionMemberIndicator
-        ) {
-            self.mergedExtensionMemberIndicator = mergedExtensionMemberIndicator
-        }
-        if let showMemberAccessLevelAttribute = try container.decodeIfPresent(
+        ) ?? mergedExtensionMemberIndicator
+        showMemberAccessLevelAttribute = try container.decodeIfPresent(
             Bool.self, forKey: .showMemberAccessLevelAttribute
-        ) {
-            self.showMemberAccessLevelAttribute = showMemberAccessLevelAttribute
-        }
-        if let exclude = try container.decodeIfPresent([String].self, forKey: .exclude) {
-            self.exclude = exclude
-        }
+        ) ?? showMemberAccessLevelAttribute
+        exclude = try container.decodeIfPresent([String].self, forKey: .exclude) ?? exclude
     }
 
     public init(

@@ -26,7 +26,7 @@ final class CallGraphExtractor: TypeStackVisitor {
         methodStack.append(methodName)
         return .visitChildren
     }
-    override func visitPost(_ node: FunctionDeclSyntax) { methodStack.removeLast() }
+    override func visitPost(_: FunctionDeclSyntax) { methodStack.removeLast() }
 
     // MARK: - Function calls
 

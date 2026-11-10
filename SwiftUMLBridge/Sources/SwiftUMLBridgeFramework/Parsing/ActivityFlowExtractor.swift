@@ -74,7 +74,7 @@ final class ActivityEntryFunctionFinder: SyntaxVisitor {
         typeStack.append(node.name.canonicalName)
         return .visitChildren
     }
-    override func visitPost(_ node: ClassDeclSyntax) {
+    override func visitPost(_: ClassDeclSyntax) {
         if !typeStack.isEmpty { typeStack.removeLast() }
     }
 
@@ -82,7 +82,7 @@ final class ActivityEntryFunctionFinder: SyntaxVisitor {
         typeStack.append(node.name.canonicalName)
         return .visitChildren
     }
-    override func visitPost(_ node: StructDeclSyntax) {
+    override func visitPost(_: StructDeclSyntax) {
         if !typeStack.isEmpty { typeStack.removeLast() }
     }
 
@@ -90,7 +90,7 @@ final class ActivityEntryFunctionFinder: SyntaxVisitor {
         typeStack.append(node.name.canonicalName)
         return .visitChildren
     }
-    override func visitPost(_ node: EnumDeclSyntax) {
+    override func visitPost(_: EnumDeclSyntax) {
         if !typeStack.isEmpty { typeStack.removeLast() }
     }
 
@@ -98,7 +98,7 @@ final class ActivityEntryFunctionFinder: SyntaxVisitor {
         typeStack.append(node.name.canonicalName)
         return .visitChildren
     }
-    override func visitPost(_ node: ActorDeclSyntax) {
+    override func visitPost(_: ActorDeclSyntax) {
         if !typeStack.isEmpty { typeStack.removeLast() }
     }
 
@@ -106,7 +106,7 @@ final class ActivityEntryFunctionFinder: SyntaxVisitor {
         typeStack.append(node.name.canonicalName)
         return .visitChildren
     }
-    override func visitPost(_ node: ProtocolDeclSyntax) {
+    override func visitPost(_: ProtocolDeclSyntax) {
         if !typeStack.isEmpty { typeStack.removeLast() }
     }
 
@@ -115,7 +115,7 @@ final class ActivityEntryFunctionFinder: SyntaxVisitor {
         typeStack.append(resolveTypeName(node.extendedType.extendedTypeName ?? node.extendedType.canonicalDescription))
         return .visitChildren
     }
-    override func visitPost(_ node: ExtensionDeclSyntax) {
+    override func visitPost(_: ExtensionDeclSyntax) {
         if !typeStack.isEmpty { typeStack.removeLast() }
     }
 

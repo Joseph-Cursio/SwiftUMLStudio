@@ -125,10 +125,10 @@ class DiagramContext {
     /// know. Named `conforms to`, it takes the realization arrow and that label and style;
     /// otherwise the arrow of `item`'s own kind. A context that never resolved its ends
     /// (`reserveIdentifiers(drawing:among:)`) names an edge as the name's first box drawn so far.
-    /// `scope` is where `parent`'s name is written, `item`'s own scope by default: a merged
+    /// `writtenIn` is where `parent`'s name is written, `item`'s own scope by default: a merged
     /// extension's scope for a supertype it carried.
-    func addLinking(item: SyntaxStructure, parent: SyntaxStructure, from scope: DeclarationScope? = nil) {
-        let scope = scope ?? DeclarationScope(of: item)
+    func addLinking(item: SyntaxStructure, parent: SyntaxStructure, from writtenIn: DeclarationScope? = nil) {
+        let scope = writtenIn ?? DeclarationScope(of: item)
         guard let linkTo = linkTarget(for: parent, from: scope) else { return }
         guard let fullName = item.fullName else { return }
         let (end, isProtocol) = supertypeEnd(for: parent, from: scope)
@@ -261,16 +261,16 @@ class DiagramContext {
     /// parent's edge end are found among them (`DrawnEdgeEnds`). A hidden element's name that
     /// nothing in the diagram uses must not shift an alias.
     func reserveIdentifiers(drawing items: [SyntaxStructure], among prepared: [SyntaxStructure]? = nil) {
-        let edgeEnds = DrawnEdgeEnds(drawing: Set(items), among: prepared ?? items)
-        self.edgeEnds = edgeEnds
+        let drawnEnds = DrawnEdgeEnds(drawing: Set(items), among: prepared ?? items)
+        edgeEnds = drawnEnds
         aliases = TypeAliasResolver(flattened: prepared ?? items)
         if drawsNestedTypeConnections {
             hiddenParentEnds = HiddenParentEnd.ends(
-                of: items, through: edgeEnds, declaringIdentifier: declaresIdentifier(of:)
+                of: items, through: drawnEnds, declaringIdentifier: declaresIdentifier(of:)
             )
         }
         for item in items where item.kind == .extension {
-            extendedTypes[ObjectIdentifier(item)] = edgeEnds.extendedType(of: item)
+            extendedTypes[ObjectIdentifier(item)] = drawnEnds.extendedType(of: item)
         }
         for item in items {
             if declaresIdentifier(of: item), let fullName = item.fullName {
@@ -279,7 +279,7 @@ class DiagramContext {
             // An edge that ends on a drawn element writes that element's alias, which `uniqName` takes.
             takenIdentifiers.formUnion(item.linkParents().compactMap { parent in
                 let name = parent.supertype.name?.removeAngleBracketsWithContent()
-                let end = name.flatMap { edgeEnds.element(at: .named($0, from: parent.scope)) }
+                let end = name.flatMap { drawnEnds.element(at: .named($0, from: parent.scope)) }
                 return end == nil ? linkTarget(for: parent.supertype, from: parent.scope) : nil
             })
             if case .undeclared(let parentName)? = hiddenParentEnds[ObjectIdentifier(item)] {

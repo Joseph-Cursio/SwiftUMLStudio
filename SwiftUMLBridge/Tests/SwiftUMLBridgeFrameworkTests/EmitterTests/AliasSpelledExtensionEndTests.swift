@@ -200,9 +200,9 @@ struct AliasSpelledExtensionEndTests {
     func memberAliasOfAliasSpelledExtension(format: DiagramFormat, mode: ExtensionVisualization) {
         let box = format == .svg ? "~ viaAlias()" : "Crate.Desc"
         #expect(supertypeEdgeEnds(from: "T", Self.memberOfAliasSpelled, format, mode) == [box])
-        let bothSpelled = Self.memberOfAliasSpelled + "\nextension CustomStringConvertible { func direct() {} }"
+        let bothSpelledSource = Self.memberOfAliasSpelled + "\nextension CustomStringConvertible { func direct() {} }"
         let merged = format == .svg ? "~ viaAlias()~ direct()" : "Crate.Desc"
-        #expect(supertypeEdgeEnds(from: "T", bothSpelled, format, .merged) == [merged])
+        #expect(supertypeEdgeEnds(from: "T", bothSpelledSource, format, .merged) == [merged])
     }
 
     @Test("so is one declared in an extension of a nested type spelled through an alias", arguments: formats)

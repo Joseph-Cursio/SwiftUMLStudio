@@ -124,19 +124,19 @@ extension LayoutGraphBuilder.TypeLookup {
             return candidates.filter { isInExtensionOfOutsideType($0, depth: depth) }
 
         case .asWritten:
-            var candidates = seenWhenQualifierIsModule(candidates, named: name.name, from: scope, depth: depth)
-            guard name.name.contains(".") else { return seenAtFileScope(candidates, named: name.name, from: scope) }
+            var narrowed = seenWhenQualifierIsModule(candidates, named: name.name, from: scope, depth: depth)
+            guard name.name.contains(".") else { return seenAtFileScope(narrowed, named: name.name, from: scope) }
             if let start = name.start {
-                if let members = members(of: start, among: candidates, from: scope, depth: depth) { return members }
-                candidates = fallbackCandidates(candidates, for: name, from: scope, depth: depth)
+                if let members = members(of: start, among: narrowed, from: scope, depth: depth) { return members }
+                narrowed = fallbackCandidates(narrowed, for: name, from: scope, depth: depth)
             }
-            guard candidates.count > 1, candidates.contains(where: { $0.extended != nil }) else {
-                return candidates
+            guard narrowed.count > 1, narrowed.contains(where: { $0.extended != nil }) else {
+                return narrowed
             }
-            let isOutside = candidates.map { isInExtensionOfOutsideType($0, depth: depth) }
-            guard isOutside.contains(true), isOutside.contains(false) else { return candidates }
+            let isOutside = narrowed.map { isInExtensionOfOutsideType($0, depth: depth) }
+            guard isOutside.contains(true), isOutside.contains(false) else { return narrowed }
             let startsOutside = firstComponentType(of: name.name, from: scope, depth: depth) == nil
-            return zip(candidates, isOutside).filter { $0.1 == startsOutside }.map(\.0)
+            return zip(narrowed, isOutside).filter { $0.1 == startsOutside }.map(\.0)
         }
     }
 }

@@ -18,13 +18,13 @@ struct CommandScrollWrapper<Content: View>: NSViewRepresentable {
         self.onCommandScroll = onCommandScroll
     }
 
-    func makeNSView(context: Context) -> CommandScrollHostingView<Content> {
+    func makeNSView(context _: Context) -> CommandScrollHostingView<Content> {
         let view = CommandScrollHostingView(rootView: content)
         view.onCommandScroll = onCommandScroll
         return view
     }
 
-    func updateNSView(_ nsView: CommandScrollHostingView<Content>, context: Context) {
+    func updateNSView(_ nsView: CommandScrollHostingView<Content>, context _: Context) {
         nsView.rootView = content
         nsView.onCommandScroll = onCommandScroll
     }
@@ -49,7 +49,7 @@ final class CommandScrollHostingView<Content: View>: NSHostingView<Content> {
     }
 
     @available(*, unavailable)
-    @MainActor dynamic required init?(coder aDecoder: NSCoder) {
+    @MainActor dynamic required init?(coder _: NSCoder) {
         fatalError("init(coder:) is not supported")
     }
 }

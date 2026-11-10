@@ -286,7 +286,7 @@ final class SyntaxStructureBuilder: SyntaxVisitor {
         return .skipChildren
     }
 
-    override func visit(_ node: DeinitializerDeclSyntax) -> SyntaxVisitorContinueKind {
+    override func visit(_: DeinitializerDeclSyntax) -> SyntaxVisitorContinueKind {
         guard !typeStack.isEmpty else { return .skipChildren }
         appendMember(SyntaxStructure(kind: .functionDestructor, name: "deinit"))
         return .skipChildren

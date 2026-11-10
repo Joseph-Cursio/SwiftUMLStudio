@@ -25,27 +25,27 @@ public final class BridgeLogger: Sendable {
         sink.withLock { $0 }?("\(level): \(message)")
     }
 
-    public func error(_ message: String, _ file: String = #file, _ function: String = #function, _ line: Int = #line) {
+    public func error(_ message: String, _: String = #file, _: String = #function, _: Int = #line) {
         logger.error("\(message, privacy: .public)")
         echo("error", message)
     }
 
     public func warning(
         _ message: String,
-        _ file: String = #file,
-        _ function: String = #function,
-        _ line: Int = #line
+        _: String = #file,
+        _: String = #function,
+        _: Int = #line
     ) {
         logger.warning("\(message, privacy: .public)")
         echo("warning", message)
     }
 
-    public func info(_ message: String, _ file: String = #file, _ function: String = #function, _ line: Int = #line) {
+    public func info(_ message: String, _: String = #file, _: String = #function, _: Int = #line) {
         logger.info("\(message, privacy: .public)")
         echo("info", message)
     }
 
-    public func debug(_ message: String, _ file: String = #file, _ function: String = #function, _ line: Int = #line) {
+    public func debug(_ message: String, _: String = #file, _: String = #function, _: Int = #line) {
         logger.debug("\(message, privacy: .public)")
         echo("debug", message)
     }

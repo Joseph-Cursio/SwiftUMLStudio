@@ -129,9 +129,9 @@ final class SwiftUMLStudioUITests: XCTestCase {
     func testLaunchPerformance() throws {
         // This measures how long it takes to launch your application.
         measure(metrics: [XCTApplicationLaunchMetric()]) {
-            let app = XCUIApplication()
-            app.launchArguments += UITestLaunchArguments.plantUMLConsentUndecided
-            app.launch()
+            let launched = XCUIApplication()
+            launched.launchArguments += UITestLaunchArguments.plantUMLConsentUndecided
+            launched.launch()
         }
     }
 }

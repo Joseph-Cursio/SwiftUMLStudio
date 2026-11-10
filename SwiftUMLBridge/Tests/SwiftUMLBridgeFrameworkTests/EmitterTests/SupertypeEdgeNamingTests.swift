@@ -23,10 +23,14 @@ struct SupertypeEdgeNamingTests {
             ("A.swift", "fileprivate protocol Base {}\nfileprivate struct Conformer: Base {}"),
             ("B.swift", "fileprivate class Base { var isClass = 0 }\nfileprivate class Sub: Base {}"),
         ]
-        let (inherits, realizes) = format == .nomnoml ? ("-:>", "--:>") : ("<|--", "<|..")
-        #expect(try supertypeEdges(from: "Sub", files, format, access: Self.everyAccessLevel) == ["Base0 \(inherits)"])
+        let (inheritsArrow, realizesArrow) = format == .nomnoml ? ("-:>", "--:>") : ("<|--", "<|..")
         #expect(
-            try supertypeEdges(from: "Conformer", files, format, access: Self.everyAccessLevel) == ["Base \(realizes)"]
+            try supertypeEdges(from: "Sub", files, format, access: Self.everyAccessLevel)
+                == ["Base0 \(inheritsArrow)"]
+        )
+        #expect(
+            try supertypeEdges(from: "Conformer", files, format, access: Self.everyAccessLevel)
+                == ["Base \(realizesArrow)"]
         )
     }
 

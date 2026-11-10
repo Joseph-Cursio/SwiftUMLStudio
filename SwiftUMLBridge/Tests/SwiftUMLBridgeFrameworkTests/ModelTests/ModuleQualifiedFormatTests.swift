@@ -42,9 +42,9 @@ struct ModuleQualifiedFormatTests {
     @Test("realize.exclude matches a protocol or typealias named through its module, in every format",
           arguments: ["Q", "QAlias"])
     func realizeExclude(pattern: String) throws {
-        let modA = Self.modA + "\npublic protocol Q {}\npublic typealias QAlias = Q\n"
+        let moduleASource = Self.modA + "\npublic protocol Q {}\npublic typealias QAlias = Q\n"
         let modB = "import ModA\n\nextension ModA.Foo: ModA.Q {}\n\nstruct S: ModA.QAlias {}\n"
-        let files: [(module: String?, source: String)] = [("ModA", modA), ("ModB", modB)]
+        let files: [(module: String?, source: String)] = [("ModA", moduleASource), ("ModB", modB)]
         let excluded = RelationshipOptions(realize: Relationship(label: "conforms to", exclude: [pattern]))
         let edge = pattern == "Q" ? "Q <|.. ModA.Foo : conforms to" : "Q <|.. S : conforms to"
         #expect(try lines(files, Configuration(format: .plantuml), containing: "<|..").contains(edge))
@@ -62,7 +62,7 @@ struct ModuleQualifiedFormatTests {
     /// edge on the box of the type Swift means, ModA's `Foo.Base`, as SVG does.
     @Test("a supertype inside a qualified extension ends on the extended type's member in every format")
     func supertypeInQualifiedExtension() throws {
-        let modA = """
+        let moduleASource = """
             public struct Foo {
                 public init() {}
                 open class Base {
@@ -71,7 +71,7 @@ struct ModuleQualifiedFormatTests {
             }
             """
         let modB = "import ModA\n\nextension ModA.Foo {\n    class Child: Base {}\n}\n"
-        let files: [(module: String?, source: String)] = [("ModA", modA), ("ModB", modB)]
+        let files: [(module: String?, source: String)] = [("ModA", moduleASource), ("ModB", modB)]
         let edges = try lines(files, Configuration(format: .plantuml), containing: "<|--")
         #expect(edges == ["Foo.Base <|-- ModA.Foo.Child : inherits"])
         let nomnoml = try lines(files, Configuration(format: .nomnoml), containing: "-:>")
@@ -83,7 +83,7 @@ struct ModuleQualifiedFormatTests {
     /// `Foo`'s members first, so the text formats end the edge on ModA's `Foo.Base`, as SVG does.
     @Test("a member of a qualified extension is found before a box of its short name")
     func memberBeforeShortName() throws {
-        let modA = """
+        let moduleASource = """
             public struct Foo {
                 public init() {}
                 open class Base {
@@ -92,7 +92,7 @@ struct ModuleQualifiedFormatTests {
             }
             """
         let modB = "import ModA\n\nfinal class Base {}\n\nextension ModA.Foo {\n    class Child: Base {}\n}\n"
-        let files: [(module: String?, source: String)] = [("ModA", modA), ("ModB", modB)]
+        let files: [(module: String?, source: String)] = [("ModA", moduleASource), ("ModB", modB)]
         let edges = try lines(files, Configuration(format: .plantuml), containing: "<|--")
         #expect(edges == ["Foo.Base <|-- ModA.Foo.Child : inherits"])
         #expect(try graph(files, Configuration(format: .svg)).edgeEnds.contains("ModA.Foo.Child -> Foo.Base"))
@@ -138,9 +138,10 @@ struct ModuleQualifiedFormatTests {
         "extension ModA.Foo {\n    typealias V = ModA.Base\n}\n",
     ])
     func hiddenNestedTypeBeforeMemberAlias(spelling: String) throws {
-        let modA = "public struct Foo {\n    public init() {}\n}\n\nopen class Base {\n    public init() {}\n}\n"
+        let moduleASource = "public struct Foo {\n    public init() {}\n}\n\n"
+            + "open class Base {\n    public init() {}\n}\n"
         let modB = "import ModA\n\nstruct Foo {\n    class V {}\n}\n\n\(spelling)\nfinal class C11: Foo.V {}\n"
-        let files: [(module: String?, source: String)] = [("ModA", modA), ("ModB", modB)]
+        let files: [(module: String?, source: String)] = [("ModA", moduleASource), ("ModB", modB)]
         for mode in [ExtensionVisualization.all, .merged] {
             let elements = ElementOptions(showNestedTypes: false, showExtensions: mode)
             for format in [DiagramFormat.plantuml, .mermaid] {

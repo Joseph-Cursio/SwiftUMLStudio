@@ -41,7 +41,7 @@ final class MockClassGenerator: ClassDiagramGenerating, @unchecked Sendable {
     func generateScript(
         for paths: [String],
         with configuration: Configuration,
-        sdkPath: String?
+        sdkPath _: String?
     ) -> DiagramScript {
         generateCallCount += 1
         lastPaths = paths
@@ -155,7 +155,7 @@ final class MockDepsGenerator: DependencyGraphGenerating, @unchecked Sendable {
         packageRoot: URL,
         mode: DepsMode,
         with configuration: Configuration,
-        sdkPath: String?
+        sdkPath _: String?
     ) -> DepsScript {
         packageCallCount += 1
         lastDescription = description

@@ -228,7 +228,7 @@ enum LayoutGraphBuilder {
         }
     }
 
-    private static func edgeStyleForInheritance(parentName: String, itemKind: ElementKind) -> EdgeStyle {
+    private static func edgeStyleForInheritance(parentName _: String, itemKind: ElementKind) -> EdgeStyle {
         itemKind == .extension ? .dependency : .inheritance
     }
 

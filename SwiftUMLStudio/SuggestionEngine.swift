@@ -36,7 +36,7 @@ enum SuggestionAction: Sendable {
 }
 
 nonisolated enum SuggestionEngine {
-    static func generate(from summary: ProjectSummary, isProUnlocked: Bool) -> [DiagramSuggestion] {
+    static func generate(from summary: ProjectSummary, isProUnlocked _: Bool) -> [DiagramSuggestion] {
         var suggestions: [DiagramSuggestion] = []
         if let classSuggestion = classDiagramSuggestion(from: summary) {
             suggestions.append(classSuggestion)

@@ -83,8 +83,10 @@ struct SuppressedConformanceTests {
     /// A raw identifier keeps its backticks, so a protocol named `` `~Foo` `` is still a supertype.
     @Test("a protocol whose raw name starts with a tilde is still drawn")
     func rawIdentifier() {
-        let source = "protocol `~Foo` {}\nstruct S: `~Foo` {}"
-        let text = ClassDiagramGenerator().generateScript(for: source, with: Configuration(format: .plantuml)).text
+        let escapedSource = "protocol `~Foo` {}\nstruct S: `~Foo` {}"
+        let text = ClassDiagramGenerator()
+            .generateScript(for: escapedSource, with: Configuration(format: .plantuml))
+            .text
         #expect(text.split(separator: "\n").contains("`~Foo` <|.. S : conforms to"))
     }
 

@@ -134,14 +134,14 @@ extension LayoutGraphBuilder {
         /// module-first name is trusted as written, as it is anywhere else. An extension of a type
         /// the reference cannot see, a hidden `fileprivate` one, say, extends something else and
         /// never stands in.
-        private func fallback(named name: String, resolving resolved: @autoclosure () -> String?) -> String? {
+        private func fallback(named name: String, resolving resolve: @autoclosure () -> String?) -> String? {
             if let fallback = extensionEnds.ends(named: name, in: lookup).fallback { return fallback }
             let first = String(name.prefix { $0 != "." })
             guard lookup.namesTypealias(name) || first != name && lookup.namesTypealias(first)
                 || lookup.mayReadModule(name) else {
                 return extensionEnds.aliasSpelled(in: lookup).fallbacks[name]
             }
-            guard let resolved = resolved() else {
+            guard let resolved = resolve() else {
                 return lookup.namesTypealias(name) ? nil : extensionEnds.aliasSpelled(in: lookup).fallbacks[name]
             }
             if resolved != name, let fallback = extensionEnds.ends(named: resolved, in: lookup).fallback {

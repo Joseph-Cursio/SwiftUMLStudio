@@ -61,7 +61,7 @@ struct ModuleQualifiedLookupTests {
     /// qualifier finds `Foo`, and `Nested` is a member of that `Foo` wherever it was declared.
     @Test("a type another module nests in a module's type is reached through that module")
     func nestedByAnotherModule() throws {
-        let modA = "public struct Foo {\n    public init() {}\n}"
+        let moduleASource = "public struct Foo {\n    public init() {}\n}"
         let modB = """
             import ModA
 
@@ -81,7 +81,7 @@ struct ModuleQualifiedLookupTests {
                 func fromC() {}
             }
             """
-        let graph = try graph([("ModA", modA), ("ModB", modB), ("ModC", modC)])
+        let graph = try graph([("ModA", moduleASource), ("ModB", modB), ("ModC", modC)])
         #expect(graph.owner(of: "fromC") == "Foo.Nested")
     }
 
@@ -90,7 +90,7 @@ struct ModuleQualifiedLookupTests {
     /// `extension Foo.Nested` extends it.
     @Test("a type nested in a module-qualified extension is reached through its type's own name")
     func nestedInQualifiedExtension() throws {
-        let modA = "public struct Foo {\n    public init() {}\n}"
+        let moduleASource = "public struct Foo {\n    public init() {}\n}"
         let modB = """
             import ModA
 
@@ -108,7 +108,7 @@ struct ModuleQualifiedLookupTests {
                 func fromC() {}
             }
             """
-        let graph = try graph([("ModA", modA), ("ModB", modB), ("ModC", modC)])
+        let graph = try graph([("ModA", moduleASource), ("ModB", modB), ("ModC", modC)])
         #expect(graph.owner(of: "fromC") == "ModA.Foo.Nested")
     }
 
@@ -259,10 +259,10 @@ struct ModuleQualifiedLookupTests {
             == ["\(standIn) +-- Foo.Inner"])
 
         let mergedInternal = ElementOptions(havingAccessLevel: [.internal], showExtensions: .merged)
-        let merged = try graph(files, Configuration(elements: mergedInternal, format: .svg))
-        #expect(merged.owner(of: "fromA") == standIn)
-        #expect(merged.owner(of: "fromB") == standIn)
-        #expect(merged.edgeEnds == ["\(standIn) -> Foo.Inner"])
+        let mergedGraph = try graph(files, Configuration(elements: mergedInternal, format: .svg))
+        #expect(mergedGraph.owner(of: "fromA") == standIn)
+        #expect(mergedGraph.owner(of: "fromB") == standIn)
+        #expect(mergedGraph.edgeEnds == ["\(standIn) -> Foo.Inner"])
     }
 
     /// Only public declarations are drawn, so the internal `Real` is hidden and `extension Alias`

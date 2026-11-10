@@ -31,18 +31,18 @@ struct HistoryItemRow: View {
     ///   - mode: Raw `DiagramMode` value stored on the entity; `nil` falls back to `"Diagram"`.
     ///   - entryPoint: Entity's entry-point payload (sequence entry, deps mode, or state identifier).
     static func displayMode(mode: String?, entryPoint: String?) -> String {
-        let mode = mode ?? "Diagram"
+        let modeName = mode ?? "Diagram"
         // Dependency graph detail is always present when set.
-        if mode == DiagramMode.dependencyGraph.rawValue, let detail = entryPoint {
-            return "\(mode) (\(detail))"
+        if modeName == DiagramMode.dependencyGraph.rawValue, let detail = entryPoint {
+            return "\(modeName) (\(detail))"
         }
         // Sequence + state machine details are only shown when non-empty.
         let entryBearingModes: [String] = [
             DiagramMode.stateMachine.rawValue, DiagramMode.sequenceDiagram.rawValue
         ]
-        if entryBearingModes.contains(mode), let detail = entryPoint, !detail.isEmpty {
-            return "\(mode) (\(detail))"
+        if entryBearingModes.contains(modeName), let detail = entryPoint, !detail.isEmpty {
+            return "\(modeName) (\(detail))"
         }
-        return mode
+        return modeName
     }
 }

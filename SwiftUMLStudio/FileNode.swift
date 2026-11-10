@@ -29,14 +29,14 @@ struct FileNode: Identifiable, Hashable {
         var swiftURLs: [URL] = []
 
         for path in paths {
-            let url = URL(fileURLWithPath: path)
+            let fileURL = URL(fileURLWithPath: path)
             var isDir: ObjCBool = false
             guard fileManager.fileExists(atPath: path, isDirectory: &isDir) else { continue }
 
             if isDir.boolValue {
-                collectSwiftFiles(in: url, fileManager: fileManager, into: &swiftURLs)
-            } else if url.pathExtension == "swift" {
-                swiftURLs.append(url)
+                collectSwiftFiles(in: fileURL, fileManager: fileManager, into: &swiftURLs)
+            } else if fileURL.pathExtension == "swift" {
+                swiftURLs.append(fileURL)
             }
         }
 
@@ -68,8 +68,8 @@ struct FileNode: Identifiable, Hashable {
         guard let first = urls.first else { return URL(fileURLWithPath: "/") }
 
         var commonComponents = first.deletingLastPathComponent().pathComponents
-        for url in urls.dropFirst() {
-            let dirComponents = url.deletingLastPathComponent().pathComponents
+        for nextURL in urls.dropFirst() {
+            let dirComponents = nextURL.deletingLastPathComponent().pathComponents
             let minCount = min(commonComponents.count, dirComponents.count)
             let matchCount = zip(commonComponents.prefix(minCount), dirComponents.prefix(minCount))
                 .prefix(while: { $0 == $1 })
@@ -116,8 +116,8 @@ struct FileNode: Identifiable, Hashable {
         }
 
         var nodes: [Self] = []
-        for (name, groupEntries) in groups {
-            let dirURL = basePath.appendingPathComponent(name, isDirectory: true)
+        for (groupName, groupEntries) in groups {
+            let dirURL = basePath.appendingPathComponent(groupName, isDirectory: true)
 
             // Leaf files: entries where this is the last component
             let leaves = groupEntries.filter { $0.relativeComponents.count == depth + 1 }
@@ -137,14 +137,14 @@ struct FileNode: Identifiable, Hashable {
                     $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
                 }
                 nodes.append(Self(
-                    id: dirURL, name: name, url: dirURL,
+                    id: dirURL, name: groupName, url: dirURL,
                     isDirectory: true, children: allChildren
                 ))
             } else {
                 // All entries are leaf files
                 for entry in leaves {
                     nodes.append(Self(
-                        id: entry.url, name: name,
+                        id: entry.url, name: groupName,
                         url: entry.url, isDirectory: false, children: nil
                     ))
                 }
@@ -162,8 +162,8 @@ struct FileNode: Identifiable, Hashable {
     static func allLeafURLs(from nodes: [Self]) -> [URL] {
         var result: [URL] = []
         for node in nodes {
-            if let children = node.children {
-                result.append(contentsOf: allLeafURLs(from: children))
+            if let nodeChildren = node.children {
+                result.append(contentsOf: allLeafURLs(from: nodeChildren))
             } else {
                 result.append(node.url)
             }

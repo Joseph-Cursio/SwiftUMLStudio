@@ -131,7 +131,7 @@ final class StateMachineExtractor: TypeStackVisitor {
         funcStack.append(node.name.canonicalName)
         return .visitChildren
     }
-    override func visitPost(_ node: FunctionDeclSyntax) { funcStack.removeLast() }
+    override func visitPost(_: FunctionDeclSyntax) { funcStack.removeLast() }
 
     // MARK: - Switch tracking
 
@@ -143,7 +143,7 @@ final class StateMachineExtractor: TypeStackVisitor {
         ))
         return .visitChildren
     }
-    override func visitPost(_ node: SwitchExprSyntax) { switchStack.removeLast() }
+    override func visitPost(_: SwitchExprSyntax) { switchStack.removeLast() }
 
     override func visit(_ node: SwitchCaseSyntax) -> SyntaxVisitorContinueKind {
         guard !switchStack.isEmpty else { return .visitChildren }

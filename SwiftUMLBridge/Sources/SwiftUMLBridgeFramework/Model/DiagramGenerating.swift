@@ -118,7 +118,7 @@ public extension DependencyGraphGenerating {
         packageRoot: URL,
         mode: DepsMode,
         with configuration: Configuration,
-        sdkPath: String? = nil
+        sdkPath _: String? = nil
     ) -> DepsScript {
         let paths = description.sourceFileToModuleMap(packageRoot: packageRoot).keys.sorted()
         return generateScript(for: paths, mode: mode, with: configuration)

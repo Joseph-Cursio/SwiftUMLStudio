@@ -8,9 +8,9 @@ struct ContentView: View {
     /// Applied here, before the first render, so the format's `onChange` never sees the switch:
     /// from `.task` it ran a generation with nothing selected, which Explorer showed as a spinner.
     @State private var viewModel: DiagramViewModel = {
-        let viewModel = DiagramViewModel()
-        viewModel.applyLaunchFormatPreference(consent: .shared)
-        return viewModel
+        let model = DiagramViewModel()
+        model.applyLaunchFormatPreference(consent: .shared)
+        return model
     }()
     @State private var showPaywall = false
     @AppStorage("appMode") private var appMode: AppMode = .explorer

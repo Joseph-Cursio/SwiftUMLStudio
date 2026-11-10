@@ -27,9 +27,9 @@ struct FileCollectorGlobAnchorTests {
             for (directory, names) in [(project, ["MockA.swift", "Real.swift"]), (sibling, ["MockA.swift"])] {
                 let sub = directory.appendingPathComponent("Sub")
                 try manager.createDirectory(at: sub, withIntermediateDirectories: true)
-                for name in names {
-                    try Data("struct \(name.dropLast(6)) {}\n".utf8)
-                        .write(to: sub.appendingPathComponent(name))
+                for fileName in names {
+                    try Data("struct \(fileName.dropLast(6)) {}\n".utf8)
+                        .write(to: sub.appendingPathComponent(fileName))
                 }
             }
         }
