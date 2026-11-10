@@ -1,8 +1,14 @@
+# Rules come from the shared configuration; only this project's paths are here.
+# See ../SwiftLintConfig/README.md.
+parent_config: ../SwiftLintConfig/.swiftlint.yml
+
+included:
+  - SwiftUMLStudio
+  - SwiftUMLStudioTests
+  - SwiftUMLStudioUITests
+  - SwiftUMLBridge/Sources
+  - SwiftUMLBridge/Tests
+
 excluded:
-- SwiftUMLBridge/.build
-- SwiftUMLBridge/.build/checkouts
-opt_in_rules:
-- accessibility_trait_for_button
-- comma_inheritance
-- discouraged_assert
-- fallthrough
+  - SwiftUMLBridge/.build
+  - SwiftUMLBridge/Tests/SwiftUMLBridgeFrameworkTests/TestData
