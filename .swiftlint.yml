@@ -33,6 +33,7 @@ opt_in_rules:
 - ibinspectable_in_extension
 - joined_default_parameter
 - last_where
+- legacy_multiple
 - legacy_uigraphics_function
 - literal_expression_end_indentation
 - lower_acl_than_parent
