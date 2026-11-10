@@ -204,7 +204,7 @@ struct ClassDiagramGeneratorTests {
         // analyzeTypes relies on SourceKit which may not return results
         // in all environments, but it should never crash
         let types = generator.analyzeTypes(for: [projectMockURL.path])
-        #expect(types.count >= 0)
+        #expect(types.allSatisfy { !$0.name.isEmpty })
     }
 
     // MARK: - generate with empty content

@@ -135,7 +135,7 @@ extension SyntaxStructure {
     private func members(context: DiagramContext) -> String {
         var members = ""
 
-        guard let substructure, substructure.count > 0 else { return members }
+        guard let substructure, !substructure.isEmpty else { return members }
 
         for sub in substructure {
             if let msig = member(element: sub, context: context) {
@@ -239,7 +239,7 @@ extension SyntaxStructure {
             }
         }
         let genStatement = genParts.joined(separator: "\\n")
-        guard genStatement.count > 0 else { return nil }
+        guard !genStatement.isEmpty else { return nil }
         return "<\(genStatement)>"
     }
 }

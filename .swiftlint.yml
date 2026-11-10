@@ -18,6 +18,7 @@ opt_in_rules:
 - discarded_notification_center_observer
 - discouraged_assert
 - discouraged_object_literal
+- empty_count
 - empty_xctest_method
 - enum_case_associated_values_count
 - expiring_todo

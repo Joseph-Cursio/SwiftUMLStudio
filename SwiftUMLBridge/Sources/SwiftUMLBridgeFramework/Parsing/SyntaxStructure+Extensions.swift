@@ -83,7 +83,7 @@ extension Array where Element == SyntaxStructure {
         for structure in self where isNestedType(structure) {
             structure.parent = parent
             items.append(structure)
-            guard let substructure = structure.substructure, substructure.count > 0 else {
+            guard let substructure = structure.substructure, !substructure.isEmpty else {
                 continue
             }
             items.append(contentsOf: substructure.populateNestedTypes(parent: structure))

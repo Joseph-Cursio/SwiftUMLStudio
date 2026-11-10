@@ -36,9 +36,8 @@ struct FileCollectorTests {
     func getFilesForNonExistentDirectory() {
         let url = URL(fileURLWithPath: "/nonexistent/path/dir")
         let files = collector.getFiles(for: url)
-        // A non-directory URL is returned as-is (not filtered)
-        // or is empty if FileManager can't enumerate it
-        #expect(files.isEmpty || files.count >= 0)
+        // A URL that is not a directory is returned as it is, not filtered.
+        #expect(files == [url])
     }
 
     // MARK: - getFiles(for paths: [String], in directory: String)
