@@ -62,6 +62,7 @@ opt_in_rules:
 - return_value_from_void_function
 - self_binding
 - shorthand_argument
+- shorthand_optional_binding
 - sorted_first_last
 - static_operator
 - strong_iboutlet
