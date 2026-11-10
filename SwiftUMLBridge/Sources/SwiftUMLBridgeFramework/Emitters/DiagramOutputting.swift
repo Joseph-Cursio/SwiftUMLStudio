@@ -5,6 +5,7 @@ import Foundation
 public protocol DiagramOutputting: Sendable {
     var text: String { get }
     var format: DiagramFormat { get }
+
     func encodeText() -> String
 
     /// Positioned layout graph (available when format is `.svg`).

@@ -14,5 +14,6 @@ public protocol Persistable {
 /// A type that can validate its own state.
 protocol Validatable {
     var isValid: Bool { get }
+
     func validate() throws
 }
