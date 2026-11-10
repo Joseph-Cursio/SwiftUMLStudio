@@ -4,10 +4,6 @@ import Testing
 // Fixtures and readers shared by the class-diagram suites, each of which used to declare a
 // private copy (#209).
 
-/// One file of a fixture that spans several files: its name, which tells declarations apart as a
-/// path on disk does, and its source.
-typealias SourceFile = (name: String, source: String)
-
 /// A class diagram of `source` in `format`. An option left at its default is the one a run with
 /// no config file uses.
 func classDiagram(

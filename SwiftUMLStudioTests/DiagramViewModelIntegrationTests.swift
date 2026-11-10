@@ -1,0 +1,144 @@
+//  Integration tests for diagram generation and file browser features.
+
+import Foundation
+import SwiftData
+import SwiftUMLBridgeFramework
+@testable import SwiftUMLStudio
+import Testing
+
+// MARK: - DiagramViewModel Integration Tests
+
+@Suite("DiagramViewModel Integration") @MainActor
+struct DiagramViewModelIntegrationTests {
+
+    // MARK: Helpers
+
+    /// Writes `source` to a fresh temp directory and returns the directory URL.
+    private func makeFixtureDir(writing source: String) throws -> URL {
+        let dir = FileManager.default
+            .temporaryDirectory
+            .appending(path: "SwiftUMLStudioTests-\(UUID().uuidString)", directoryHint: .isDirectory)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        try source.write(to: dir.appending(path: "Fixture.swift"), atomically: true, encoding: .utf8)
+        return dir
+    }
+
+    /// Awaits the actual generation task rather than polling `isGenerating`
+    /// on a wall-clock timer. The poll-based variant raced under CI load —
+    /// 10s wasn't enough on macos-26 runners — and the run kept going long
+    /// after the recorded issue, masking which test actually failed.
+    @MainActor
+    private func waitForGeneration(_ viewModel: DiagramViewModel) async {
+        await viewModel.currentTask?.value
+    }
+
+    // MARK: Class Diagram
+    //
+    // ClassDiagramGenerator uses SyntaxStructure.create(from:), which loads sourcekitd via
+    // SourceKitten's Loader.load(path:). The Xcode app test runner does not set up the
+    // toolchain environment that sourcekitd requires, so these tests crash with an
+    // assertionFailure inside library_wrapper_SourceKit.swift.
+    //
+    // The SourceKit-based generation pipeline is covered by ClassDiagramGeneratorTests in
+    // the SwiftUMLBridgeFramework package test suite (run via `swift test`), where the
+    // toolchain environment is configured correctly.
+
+    // MARK: Sequence Diagram
+    //
+    // SequenceDiagramGenerator uses SwiftSyntax's pure Swift parser (CallGraphExtractor),
+    // NOT SourceKit. These tests run fine in the Xcode test host.
+
+    @Test("generateSequenceDiagram produces a script with the entry point in the title")
+    @MainActor
+    func generateSequenceDiagramPlantUML() async throws {
+        let dir = try makeFixtureDir(writing: """
+            class Orchestrator {
+                func run() {
+                    helper.process()
+                }
+                let helper = Helper()
+            }
+            class Helper {
+                func process() {}
+            }
+            """)
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let viewModel = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
+        viewModel.diagramMode = .sequenceDiagram
+        viewModel.diagramFormat = .plantuml
+        viewModel.entryPoint = "Orchestrator.run"
+        viewModel.selectedPaths = [dir.path()]
+
+        viewModel.generate()
+        #expect(viewModel.isGenerating == true)
+        await waitForGeneration(viewModel)
+
+        let script = try #require(viewModel.currentScript)
+        #expect(script.format == .plantuml)
+        #expect(script.text.contains("@startuml"))
+        #expect(script.text.contains("@enduml"))
+        #expect(script.text.contains("Orchestrator.run"))
+    }
+
+    @Test("generateSequenceDiagram produces a Mermaid script with the entry point")
+    @MainActor
+    func generateSequenceDiagramMermaid() async throws {
+        let dir = try makeFixtureDir(writing: """
+            class Orchestrator {
+                func run() {
+                    helper.process()
+                }
+                let helper = Helper()
+            }
+            class Helper {
+                func process() {}
+            }
+            """)
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let viewModel = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
+        viewModel.diagramMode = .sequenceDiagram
+        viewModel.diagramFormat = .mermaid
+        viewModel.entryPoint = "Orchestrator.run"
+        viewModel.selectedPaths = [dir.path()]
+
+        viewModel.generate()
+        await waitForGeneration(viewModel)
+
+        let script = try #require(viewModel.currentScript)
+        #expect(script.format == .mermaid)
+        #expect(script.text.contains("sequenceDiagram"))
+        #expect(script.text.contains("Orchestrator.run"))
+    }
+
+    // MARK: Dependency Graph
+    //
+    // DependencyGraphGenerator in .modules mode uses ImportExtractor (plain string parsing,
+    // no SourceKit). The .types mode DOES use SourceKit and hangs in the Xcode test host.
+
+    @Test("generateDependencyGraph (modules) produces a script containing imported module names")
+    @MainActor
+    func generateDependencyGraphModules() async throws {
+        let dir = try makeFixtureDir(writing: """
+            import Foundation
+            import Combine
+            struct MyModel {}
+            """)
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let viewModel = DiagramViewModel(persistenceController: PersistenceController(inMemory: true))
+        viewModel.diagramMode = .dependencyGraph
+        viewModel.diagramFormat = .plantuml
+        viewModel.depsMode = .modules
+        viewModel.selectedPaths = [dir.path()]
+
+        viewModel.generate()
+        await waitForGeneration(viewModel)
+
+        let script = try #require(viewModel.currentScript)
+        #expect(script.format == .plantuml)
+        #expect(script.text.contains("@startuml"))
+        #expect(script.text.contains("Foundation"))
+    }
+}

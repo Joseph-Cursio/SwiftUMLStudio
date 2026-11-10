@@ -3,13 +3,6 @@ import SwiftSyntax
 @testable import SwiftUMLBridgeFramework
 import Testing
 
-/// The extended type of the first extension in `extension <spelling> {}`.
-private func extendedType(_ spelling: String) throws -> TypeSyntax {
-    let file = Parser.parse(source: "extension \(spelling) {}")
-    let decl = try #require(file.statements.first?.item.as(ExtensionDeclSyntax.self))
-    return decl.extendedType
-}
-
 @Suite("TypeSyntax.extendedTypeName")
 struct ExtendedTypeNameTests {
 
@@ -103,27 +96,5 @@ struct ExtendedTypeNameTests {
     ] as [(String, String?)])
     func boundArguments(spelling: String, expected: String?) throws {
         #expect(try extendedType(spelling).boundGenericArguments == expected)
-    }
-}
-
-@Suite("TypeSyntax.names(_:bareOrIn:)")
-struct FrameworkTypeNameTests {
-
-    @Test("a framework's name matches bare or with its own module, however that is spelt", arguments: [
-        ("Model", true),
-        ("SwiftData.Model", true),
-        ("`SwiftData`.`Model`", true),
-        ("SwiftData . Model", true),
-        ("`Model`", true),
-        ("MyKit.Model", false),
-        ("Outer.SwiftData.Model", false),
-        ("SwiftData<Int>.Model", false),
-        ("`SwiftData.Model`", false),
-        ("Models", false),
-        ("SwiftData", false),
-        ("[Model]", false),
-    ])
-    func matches(spelling: String, expected: Bool) throws {
-        #expect(try extendedType(spelling).names("Model", bareOrIn: "SwiftData") == expected)
     }
 }

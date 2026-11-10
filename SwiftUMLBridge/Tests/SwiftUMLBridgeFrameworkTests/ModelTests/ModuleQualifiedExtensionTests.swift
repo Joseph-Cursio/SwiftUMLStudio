@@ -22,13 +22,6 @@ func moduleQualifiedItems(_ files: [(module: String?, source: String)]) throws -
     return SyntaxStructure.declarations(inPackageFiles: urls)
 }
 
-extension LayoutGraph {
-    /// The id of the node that lists `member`.
-    func owner(of member: String) -> String? {
-        nodes.first { $0.compartments.flatMap(\.items).contains { $0.contains(member) } }?.id
-    }
-}
-
 @Suite("Module-qualified extensions find the type they extend")
 struct ModuleQualifiedExtensionTests {
     private static let modA = """
@@ -312,5 +305,12 @@ struct ModuleQualifiedExtensionTests {
         let items = try items([("ModA", moduleASource), ("ModB", moduleBSource)])
         let svg = LayoutGraphBuilder.buildClassDiagram(from: items, configuration: Configuration(format: .svg))
         #expect(svg.edgeEnds.contains("ModA.Foo -> Q"))
+    }
+}
+
+extension LayoutGraph {
+    /// The id of the node that lists `member`.
+    func owner(of member: String) -> String? {
+        nodes.first { $0.compartments.flatMap(\.items).contains { $0.contains(member) } }?.id
     }
 }

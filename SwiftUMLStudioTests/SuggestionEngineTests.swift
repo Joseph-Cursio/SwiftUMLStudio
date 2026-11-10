@@ -1,0 +1,233 @@
+import Foundation
+import SwiftUMLBridgeFramework
+@testable import SwiftUMLStudio
+import Testing
+
+private func makeModule(_ name: String, kind: SPMTargetDescription.Kind = .library) -> ModuleSummary {
+    ModuleSummary(
+        name: name, kind: kind,
+        fileCount: 4, typeCount: 6, outgoingTargetDependencies: 1
+    )
+}
+
+// MARK: - SuggestionEngine Tests
+
+@MainActor
+struct SuggestionEngineTests {
+
+    @Test("always suggests class diagram when types exist")
+    func classDiagramSuggestion() {
+        let summary = makeSummary()
+        let suggestions = SuggestionEngine.generate(from: summary, isProUnlocked: false)
+        let classSug = suggestions.first { $0.requiresPro == false }
+        #expect(classSug != nil, "Expected a free class diagram suggestion")
+    }
+
+    @Test("suggests sequence diagrams for entry points as Pro")
+    func sequenceSuggestionIsPro() {
+        let summary = makeSummary(entryPoints: ["Foo.bar"])
+        let suggestions = SuggestionEngine.generate(from: summary, isProUnlocked: false)
+        let seqSug = suggestions.first { $0.title.contains("Trace") }
+        #expect(seqSug != nil, "Expected a sequence diagram suggestion")
+        #expect(seqSug?.requiresPro == true)
+    }
+
+    @Test("suggests dependency graph when relationships exist")
+    func dependencyGraphSuggestion() {
+        let summary = makeSummary(totalRelationships: 8)
+        let suggestions = SuggestionEngine.generate(from: summary, isProUnlocked: true)
+        let deps = suggestions.first { $0.title.contains("depend") }
+        #expect(deps != nil, "Expected a dependency graph suggestion")
+    }
+
+    @Test("no suggestions when no types")
+    func emptyProject() {
+        let summary = makeSummary(totalFiles: 0, totalTypes: 0, typeBreakdown: [:], totalRelationships: 0)
+        let suggestions = SuggestionEngine.generate(from: summary, isProUnlocked: true)
+        #expect(suggestions.isEmpty)
+    }
+
+    // MARK: - ER
+
+    @Test(
+        "suggests an ER diagram for each supported persistence stack",
+        arguments: ["SwiftData", "CoreData", "GRDB", "SQLite"]
+    )
+    func erSuggestionPerStack(framework: String) {
+        let summary = makeSummary(moduleImports: [framework])
+        let suggestions = SuggestionEngine.generate(from: summary, isProUnlocked: true)
+        let entry = suggestions.first { $0.title.contains("data is stored") }
+
+        #expect(entry != nil, "expected an ER suggestion for \(framework)")
+        #expect(entry?.requiresPro == true)
+        #expect(
+            entry?.description.contains(framework) == true,
+            "the card should name the stack it detected"
+        )
+    }
+
+    /// Without a persistence import an ER diagram would render nothing, so
+    /// offering the card would send the user to an empty canvas.
+    @Test("no ER suggestion when the project imports no persistence stack")
+    func noERSuggestionWithoutPersistence() {
+        let summary = makeSummary(moduleImports: ["Foundation", "Combine", "SwiftUI"])
+        let suggestions = SuggestionEngine.generate(from: summary, isProUnlocked: true)
+
+        #expect(suggestions.contains { $0.title.contains("data is stored") } == false)
+    }
+
+    @Test("only one ER suggestion when a project mixes two stacks")
+    func singleERSuggestionForMixedStacks() {
+        let summary = makeSummary(moduleImports: ["SwiftData", "GRDB"])
+        let suggestions = SuggestionEngine.generate(from: summary, isProUnlocked: true)
+
+        #expect(suggestions.filter { $0.title.contains("data is stored") }.count == 1)
+    }
+
+    // MARK: - Component
+
+    @Test("suggests a component diagram when a multi-target package is loaded")
+    func componentSuggestion() {
+        let summary = makeSummary(
+            moduleBreakdown: [makeModule("App", kind: .executable), makeModule("Core")]
+        )
+        let suggestions = SuggestionEngine.generate(from: summary, isProUnlocked: true)
+        let entry = suggestions.first { $0.title.contains("package fits together") }
+
+        #expect(entry != nil)
+        #expect(entry?.requiresPro == true)
+        #expect(entry?.description.contains("2 build targets") == true)
+    }
+
+    /// `moduleBreakdown` is empty for a loose folder, and a one-target package
+    /// draws a single box with no edges — neither is worth a card.
+    @Test(
+        "no component suggestion for a loose folder or a single-target package",
+        arguments: [0, 1]
+    )
+    func noComponentSuggestionBelowTwoTargets(targetCount: Int) {
+        let modules = (0..<targetCount).map { makeModule("Target\($0)") }
+        let summary = makeSummary(moduleBreakdown: modules)
+        let suggestions = SuggestionEngine.generate(from: summary, isProUnlocked: true)
+
+        #expect(suggestions.contains { $0.title.contains("package fits together") } == false)
+    }
+
+    // MARK: - Activity
+
+    @Test("suggests an activity diagram for the top entry point")
+    func activitySuggestion() {
+        let summary = makeSummary(entryPoints: ["Foo.bar"])
+        let suggestions = SuggestionEngine.generate(from: summary, isProUnlocked: true)
+        let entry = suggestions.first { $0.title.contains("Step through") }
+
+        #expect(entry != nil)
+        #expect(entry?.requiresPro == true)
+        #expect(entry?.title.contains("Foo.bar") == true)
+    }
+
+    /// Sequence offers three cards; activity offers one. Both are driven by the
+    /// same `entryPoints`, so matching sequence's count would double the card
+    /// load on the same handful of methods.
+    @Test("activity offers one card even when many entry points exist")
+    func activityIsCappedAtOne() {
+        let summary = makeSummary(entryPoints: ["A.one", "B.two", "C.three", "D.four"])
+        let suggestions = SuggestionEngine.generate(from: summary, isProUnlocked: true)
+
+        #expect(suggestions.filter { $0.title.contains("Step through") }.count == 1)
+        #expect(suggestions.filter { $0.title.contains("Trace") }.count == 3)
+    }
+
+    /// The two cards must not read as duplicates: sequence answers "which types
+    /// does this call", activity answers "what happens inside it".
+    @Test("the activity and sequence cards for one method are distinguishable")
+    func activityAndSequenceReadDifferently() {
+        let summary = makeSummary(entryPoints: ["Foo.bar"])
+        let suggestions = SuggestionEngine.generate(from: summary, isProUnlocked: true)
+        let activity = suggestions.first { $0.title.contains("Step through") }
+        let sequence = suggestions.first { $0.title.contains("Trace") }
+
+        #expect(activity?.title != sequence?.title)
+        #expect(activity?.description != sequence?.description)
+        #expect(activity?.icon != sequence?.icon)
+    }
+
+    @Test("no activity suggestion without entry points")
+    func noActivitySuggestionWithoutEntryPoints() {
+        let summary = makeSummary(entryPoints: [])
+        let suggestions = SuggestionEngine.generate(from: summary, isProUnlocked: true)
+
+        #expect(suggestions.contains { $0.title.contains("Step through") } == false)
+    }
+
+    // MARK: - Reachability
+
+    /// Explorer navigation is entirely suggestion-driven, so a diagram type with
+    /// no card is unreachable in that mode. All seven modes are now covered.
+    @Test("every diagram mode is reachable from some suggestion")
+    func everyModeIsReachable() {
+        let summary = makeSummary(
+            totalRelationships: 4,
+            moduleImports: ["SwiftData", "Alamofire"],
+            entryPoints: ["Foo.bar"],
+            stateMachines: [
+                StateMachineModel(
+                    hostType: "Light", enumType: "Phase",
+                    states: [], transitions: [],
+                    confidence: .high, notes: []
+                ),
+            ],
+            moduleBreakdown: [makeModule("App", kind: .executable), makeModule("Core")]
+        )
+        let actions = SuggestionEngine.generate(from: summary, isProUnlocked: true).map(\.action)
+
+        #expect(actions.contains { if case .classDiagram = $0 { true } else { false } })
+        #expect(actions.contains { if case .sequenceDiagram = $0 { true } else { false } })
+        #expect(actions.contains { if case .dependencyGraph = $0 { true } else { false } })
+        #expect(actions.contains { if case .stateMachine = $0 { true } else { false } })
+        #expect(actions.contains { if case .activityDiagram = $0 { true } else { false } })
+        #expect(actions.contains { if case .erDiagram = $0 { true } else { false } })
+        #expect(actions.contains { if case .componentDiagram = $0 { true } else { false } })
+    }
+
+    @Test("suggests state machine diagrams as Pro for each detected candidate")
+    func stateMachineSuggestionIsPro() {
+        let model = StateMachineModel(
+            hostType: "Loader", enumType: "State",
+            states: [StateMachineState(name: "idle", isInitial: true)],
+            transitions: [StateTransition(from: "idle", toState: "busy", trigger: "start")]
+        )
+        let summary = makeSummary(stateMachines: [model])
+        let suggestions = SuggestionEngine.generate(from: summary, isProUnlocked: false)
+        let stateSug = suggestions.first { $0.title.contains("Loader.State") }
+        #expect(stateSug != nil, "Expected a state machine suggestion")
+        #expect(stateSug?.requiresPro == true)
+        switch stateSug?.action {
+        case .stateMachine(let identifier): #expect(identifier == "Loader.State")
+        default: Issue.record("Expected a stateMachine action")
+        }
+    }
+
+    @Test("state machine suggestions are ordered by confidence (high first)")
+    func stateMachineSuggestionsOrderedByConfidence() {
+        let low = StateMachineModel(
+            hostType: "Lo", enumType: "L",
+            states: [], transitions: [], confidence: .low, notes: []
+        )
+        let high = StateMachineModel(
+            hostType: "Hi", enumType: "H",
+            states: [], transitions: [], confidence: .high, notes: []
+        )
+        let medium = StateMachineModel(
+            hostType: "Me", enumType: "M",
+            states: [], transitions: [], confidence: .medium, notes: []
+        )
+        let summary = makeSummary(stateMachines: [low, high, medium])
+        let suggestions = SuggestionEngine.generate(from: summary, isProUnlocked: true)
+        let stateSuggestions = suggestions.compactMap { suggestion -> String? in
+            if case .stateMachine(let identifier) = suggestion.action { return identifier }
+            return nil
+        }
+        #expect(stateSuggestions == ["Hi.H", "Me.M", "Lo.L"])
+    }
+}
