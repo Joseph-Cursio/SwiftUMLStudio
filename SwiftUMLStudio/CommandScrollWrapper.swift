@@ -1,6 +1,30 @@
 import AppKit
 import SwiftUI
 
+/// `NSHostingView` subclass that intercepts ⌘+scroll-wheel events and forwards
+/// the vertical delta to a callback. All other scroll events pass through to
+/// `super` so the SwiftUI content's gesture handlers see them normally.
+final class CommandScrollHostingView<Content: View>: NSHostingView<Content> {
+    var onCommandScroll: ((CGFloat) -> Void)?
+
+    override func scrollWheel(with event: NSEvent) {
+        if event.modifierFlags.contains(.command) {
+            onCommandScroll?(event.scrollingDeltaY)
+            return
+        }
+        super.scrollWheel(with: event)
+    }
+
+    required init(rootView: Content) {
+        super.init(rootView: rootView)
+    }
+
+    @available(*, unavailable)
+    @MainActor dynamic required init?(coder _: NSCoder) {
+        fatalError("init(coder:) is not supported")
+    }
+}
+
 /// Wraps a SwiftUI view in an `NSHostingView` subclass that intercepts
 /// ⌘+scroll-wheel events. Used by the native diagram canvases to support
 /// Cmd+scroll zoom alongside the existing pinch and keyboard shortcuts.
@@ -27,29 +51,5 @@ struct CommandScrollWrapper<Content: View>: NSViewRepresentable {
     func updateNSView(_ nsView: CommandScrollHostingView<Content>, context _: Context) {
         nsView.rootView = content
         nsView.onCommandScroll = onCommandScroll
-    }
-}
-
-/// `NSHostingView` subclass that intercepts ⌘+scroll-wheel events and forwards
-/// the vertical delta to a callback. All other scroll events pass through to
-/// `super` so the SwiftUI content's gesture handlers see them normally.
-final class CommandScrollHostingView<Content: View>: NSHostingView<Content> {
-    var onCommandScroll: ((CGFloat) -> Void)?
-
-    override func scrollWheel(with event: NSEvent) {
-        if event.modifierFlags.contains(.command) {
-            onCommandScroll?(event.scrollingDeltaY)
-            return
-        }
-        super.scrollWheel(with: event)
-    }
-
-    required init(rootView: Content) {
-        super.init(rootView: rootView)
-    }
-
-    @available(*, unavailable)
-    @MainActor dynamic required init?(coder _: NSCoder) {
-        fatalError("init(coder:) is not supported")
     }
 }

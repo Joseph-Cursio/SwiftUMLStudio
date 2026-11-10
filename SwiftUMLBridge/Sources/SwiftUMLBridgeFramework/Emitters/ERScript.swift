@@ -1,7 +1,7 @@
 import Foundation
 
 /// A rendered Entity-Relationship diagram.
-public struct ERScript: Sendable {
+public struct ERScript: Sendable, DiagramOutputting {
     public let text: String
     public let format: DiagramFormat
 
@@ -22,136 +22,9 @@ public struct ERScript: Sendable {
         self.text = text
         self.format = format
     }
-}
 
-// MARK: - PlantUML
+    // Internal rather than private so a test can call them directly.
 
-private extension ERScript {
-    static func buildPlantUMLText(model: ERModel) -> String {
-        var lines: [String] = ["@startuml"]
-
-        for entity in model.entities {
-            lines.append(contentsOf: plantUMLEntityLines(entity))
-            lines.append("")
-        }
-
-        for relationship in model.relationships {
-            let leftSymbol = Self.mermaidLeftSymbol(for: relationship.fromCardinality)
-            let rightSymbol = Self.mermaidRightSymbol(for: relationship.toCardinality)
-            let label = Self.sanitizeLabel(relationship.label)
-            lines.append(
-                "\(relationship.from) \(leftSymbol)--\(rightSymbol) \(relationship.toEntity) : \(label)"
-            )
-        }
-
-        lines.append("@enduml")
-        return lines.joined(separator: "\n")
-    }
-
-    static func plantUMLEntityLines(_ entity: EREntity) -> [String] {
-        var lines: [String] = ["entity \"\(entity.name)\" {"]
-        let primaries = entity.attributes.filter(\.isPrimaryKey)
-        let others = entity.attributes.filter { !$0.isPrimaryKey }
-
-        for attribute in primaries {
-            lines.append("  * \(plantUMLAttributeText(attribute))")
-        }
-        if !primaries.isEmpty, !others.isEmpty {
-            lines.append("  --")
-        }
-        for attribute in others {
-            lines.append("  \(plantUMLAttributeText(attribute))")
-        }
-        lines.append("}")
-        return lines
-    }
-
-    static func plantUMLAttributeText(_ attribute: ERAttribute) -> String {
-        var text = "\(attribute.name) : \(attribute.type)"
-        if attribute.isOptional {
-            text += "?"
-        }
-        var stereotypes: [String] = []
-        if attribute.isUnique, !attribute.isPrimaryKey {
-            stereotypes.append("UK")
-        }
-        if attribute.isTransient {
-            stereotypes.append("transient")
-        }
-        if !stereotypes.isEmpty {
-            text += " <<\(stereotypes.joined(separator: ", "))>>"
-        }
-        return text
-    }
-}
-
-// MARK: - Mermaid
-
-private extension ERScript {
-    static func buildMermaidText(model: ERModel) -> String {
-        var lines: [String] = ["erDiagram"]
-
-        for relationship in model.relationships {
-            let leftSymbol = mermaidLeftSymbol(for: relationship.fromCardinality)
-            let rightSymbol = mermaidRightSymbol(for: relationship.toCardinality)
-            let label = sanitizeLabel(relationship.label)
-            lines.append(
-                "    \(relationship.from) \(leftSymbol)--\(rightSymbol) \(relationship.toEntity) : \(label)"
-            )
-        }
-
-        for entity in model.entities {
-            lines.append("    \(entity.name) {")
-            for attribute in entity.attributes {
-                lines.append("        \(mermaidAttributeLine(attribute))")
-            }
-            lines.append("    }")
-        }
-
-        return lines.joined(separator: "\n")
-    }
-
-    /// Left-side crow's-foot symbol — describes how many of the *left* entity
-    /// relate to one of the right entity.
-    static func mermaidLeftSymbol(for cardinality: ERCardinality) -> String {
-        switch cardinality {
-        case .exactlyOne: return "||"
-        case .zeroOrOne: return "|o"
-        case .zeroOrMany: return "}o"
-        case .oneOrMany: return "}|"
-        }
-    }
-
-    /// Right-side crow's-foot symbol — describes how many of the *right* entity
-    /// relate to one of the left entity.
-    static func mermaidRightSymbol(for cardinality: ERCardinality) -> String {
-        switch cardinality {
-        case .exactlyOne: return "||"
-        case .zeroOrOne: return "o|"
-        case .zeroOrMany: return "o{"
-        case .oneOrMany: return "|{"
-        }
-    }
-
-    static func mermaidAttributeLine(_ attribute: ERAttribute) -> String {
-        let type = sanitizeType(attribute.type)
-        var line = "\(type) \(attribute.name)"
-        if attribute.isPrimaryKey {
-            line += " PK"
-        } else if attribute.isUnique {
-            line += " UK"
-        }
-        if attribute.isTransient {
-            line += " \"transient\""
-        }
-        return line
-    }
-}
-
-extension ERScript: DiagramOutputting {}
-
-// Internal rather than private so a test can call them directly.
-extension ERScript {
     /// Mermaid type tokens may not contain whitespace, brackets, or angle
     /// brackets. Collapse any such characters to underscores so the parser
     /// accepts the output.

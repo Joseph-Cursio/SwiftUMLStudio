@@ -1,7 +1,7 @@
 import Compression
 import Foundation
 
-struct DiagramText: RawRepresentable {
+struct DiagramText: RawRepresentable, CustomStringConvertible, CustomDebugStringConvertible {
     var rawValue: String
 
     /// The text in PlantUML's text encoding: its UTF-8 deflated, in PlantUML's base64 alphabet.
@@ -9,9 +9,11 @@ struct DiagramText: RawRepresentable {
         guard let compressedData = deflate(rawValue) else { return hexEncoded(rawValue) }
         return base64plantuml(compressedData)
     }
-}
 
-private extension DiagramText {
+    var description: String { encodedValue }
+
+    var debugDescription: String { "\(rawValue) encoded is \(encodedValue)" }
+
     /// Raw DEFLATE (RFC 1951) of every UTF-8 byte of `text`, or `nil` if the encoder fails.
     ///
     /// The streaming `OutputFilter` sizes the output itself. `compression_encode_buffer` was
@@ -20,7 +22,7 @@ private extension DiagramText {
     /// below its own length encoded to `""` (#57). The encoder is still `COMPRESSION_ZLIB`, so
     /// text the old call read whole and fit still deflates to the same bytes, as do
     /// `NSData.compressed(using: .zlib)`'s.
-    func deflate(_ text: String) -> Data? {
+    private func deflate(_ text: String) -> Data? {
         var compressed = Data()
         do {
             let filter = try OutputFilter(.compress, using: .zlib) { chunk in
@@ -35,9 +37,7 @@ private extension DiagramText {
         }
         return compressed
     }
-}
 
-internal extension DiagramText {
     /// PlantUML's uncompressed text encoding: `~h`, then each UTF-8 byte of `text` in hex.
     ///
     /// Far longer than the deflated form, so it is used only if the encoder fails — a URL
@@ -99,12 +99,4 @@ internal extension DiagramText {
 
         return String(decoding: encodedBytes, as: Unicode.UTF8.self)
     }
-}
-
-extension DiagramText: CustomStringConvertible {
-    var description: String { encodedValue }
-}
-
-extension DiagramText: CustomDebugStringConvertible {
-    var debugDescription: String { "\(rawValue) encoded is \(encodedValue)" }
 }

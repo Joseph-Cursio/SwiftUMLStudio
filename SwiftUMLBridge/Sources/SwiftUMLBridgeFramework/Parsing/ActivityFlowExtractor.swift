@@ -1,60 +1,6 @@
 import Foundation
 import SwiftSyntax
 
-/// Walks the body of a specific entry function and emits an `ActivityGraph`
-/// of control-flow nodes (actions, decisions, forks/joins, loops) and edges.
-///
-/// Supported Swift constructs:
-/// - `if`/`guard` → decision nodes with `"true"`/`"false"` branches
-/// - `switch` → decision with one branch per case
-/// - `for`/`while`/`repeat` → loop nodes with back-edges
-/// - `return`/`throw` → terminal edges to the end node
-/// - `do`/`catch` → decision branching into catch bodies
-/// - `async let` → fork/join pair (one branch per binding)
-/// - `withTaskGroup` / `withThrowingTaskGroup` + `group.addTask { … }` → fork/join
-///   with each task closure as a concurrent branch
-public enum ActivityFlowExtractor {
-    /// Extract an activity graph for the given entry point from the provided source.
-    /// Returns `nil` if the entry point is not found in the source.
-    public static func extract(
-        from source: String,
-        entryType: String,
-        entryMethod: String
-    ) -> ActivityGraph? {
-        extract(from: source, entryType: entryType, entryMethod: entryMethod, file: nil, aliases: .followingNothing)
-    }
-
-    /// `extract(from:entryType:entryMethod:)`, with a method in `extension Alias` found as the
-    /// aliased type's, by the project's `aliases` as `file` sees them (#125).
-    static func extract(
-        from source: String,
-        entryType: String,
-        entryMethod: String,
-        file: URL?,
-        aliases: TypeAliasResolver
-    ) -> ActivityGraph? {
-        ParsingStack.run {
-            let sourceFile = ParsingStack.parse(source, file: file)
-            let finder = ActivityEntryFunctionFinder(viewMode: .sourceAccurate)
-            finder.resolveTypeName = { aliases.resolve($0, in: file) }
-            finder.entryType = entryType
-            finder.entryMethod = entryMethod
-            finder.walk(sourceFile)
-            guard let body = finder.foundBody else { return nil }
-
-            // A single-use accumulator, not a dependency: `ActivityGraphBuilder` is a `struct` with
-            // `nodes`, `edges` and a node counter, `build` is `mutating`, and the value is read
-            // once and discarded. Two lines up, `ActivityEntryFunctionFinder` is the same shape and
-            // goes unreported only because "Finder" is not in the service-suffix list. There is no
-            // substitute a test would want: it would be handing in a different graph builder to
-            // check that this function builds a graph.
-            // swiftprojectlint:disable:next direct-instantiation
-            var builder = ActivityGraphBuilder()
-            return builder.build(body: body, entryType: entryType, entryMethod: entryMethod)
-        }
-    }
-}
-
 // MARK: - Entry Function Finder
 
 /// Locates the `CodeBlockSyntax` body of a function whose enclosing type matches
@@ -129,5 +75,59 @@ final class ActivityEntryFunctionFinder: SyntaxVisitor {
             foundBody = body
         }
         return .skipChildren
+    }
+}
+
+/// Walks the body of a specific entry function and emits an `ActivityGraph`
+/// of control-flow nodes (actions, decisions, forks/joins, loops) and edges.
+///
+/// Supported Swift constructs:
+/// - `if`/`guard` → decision nodes with `"true"`/`"false"` branches
+/// - `switch` → decision with one branch per case
+/// - `for`/`while`/`repeat` → loop nodes with back-edges
+/// - `return`/`throw` → terminal edges to the end node
+/// - `do`/`catch` → decision branching into catch bodies
+/// - `async let` → fork/join pair (one branch per binding)
+/// - `withTaskGroup` / `withThrowingTaskGroup` + `group.addTask { … }` → fork/join
+///   with each task closure as a concurrent branch
+public enum ActivityFlowExtractor {
+    /// Extract an activity graph for the given entry point from the provided source.
+    /// Returns `nil` if the entry point is not found in the source.
+    public static func extract(
+        from source: String,
+        entryType: String,
+        entryMethod: String
+    ) -> ActivityGraph? {
+        extract(from: source, entryType: entryType, entryMethod: entryMethod, file: nil, aliases: .followingNothing)
+    }
+
+    /// `extract(from:entryType:entryMethod:)`, with a method in `extension Alias` found as the
+    /// aliased type's, by the project's `aliases` as `file` sees them (#125).
+    static func extract(
+        from source: String,
+        entryType: String,
+        entryMethod: String,
+        file: URL?,
+        aliases: TypeAliasResolver
+    ) -> ActivityGraph? {
+        ParsingStack.run {
+            let sourceFile = ParsingStack.parse(source, file: file)
+            let finder = ActivityEntryFunctionFinder(viewMode: .sourceAccurate)
+            finder.resolveTypeName = { aliases.resolve($0, in: file) }
+            finder.entryType = entryType
+            finder.entryMethod = entryMethod
+            finder.walk(sourceFile)
+            guard let body = finder.foundBody else { return nil }
+
+            // A single-use accumulator, not a dependency: `ActivityGraphBuilder` is a `struct` with
+            // `nodes`, `edges` and a node counter, `build` is `mutating`, and the value is read
+            // once and discarded. Two lines up, `ActivityEntryFunctionFinder` is the same shape and
+            // goes unreported only because "Finder" is not in the service-suffix list. There is no
+            // substitute a test would want: it would be handing in a different graph builder to
+            // check that this function builds a graph.
+            // swiftprojectlint:disable:next direct-instantiation
+            var builder = ActivityGraphBuilder()
+            return builder.build(body: body, entryType: entryType, entryMethod: entryMethod)
+        }
     }
 }

@@ -2,6 +2,59 @@ import SwiftUI
 import SwiftUMLBridgeFramework
 import UniformTypeIdentifiers
 
+/// View-modifier wrapper for the three string-backed notice alerts (generation
+/// errors, package-load errors, snapshot restore notices). Extracted from
+/// `ContentView.body` so the modifier chain stays inside the SwiftUI
+/// type-checker's budget.
+private struct NoticeAlerts: ViewModifier {
+    @Bindable var viewModel: DiagramViewModel
+
+    func body(content: Content) -> some View {
+        content
+            .alert(
+                "Couldn't generate diagram",
+                isPresented: binding(\.errorMessage)
+            ) {
+                Button("OK", role: .cancel) { viewModel.errorMessage = nil }
+            } message: {
+                Text(viewModel.errorMessage ?? "")
+            }
+            .alert(
+                "Couldn't open Swift Package",
+                isPresented: binding(\.packageLoadError)
+            ) {
+                Button("OK", role: .cancel) { viewModel.packageLoadError = nil }
+            } message: {
+                Text(viewModel.packageLoadError ?? "")
+            }
+            .alert(
+                "Snapshot partially restored",
+                isPresented: binding(\.restoreNotice)
+            ) {
+                Button("OK", role: .cancel) { viewModel.restoreNotice = nil }
+            } message: {
+                Text(viewModel.restoreNotice ?? "")
+            }
+            .alert(
+                "Couldn't save",
+                isPresented: binding(\.saveError)
+            ) {
+                Button("OK", role: .cancel) { viewModel.saveError = nil }
+            } message: {
+                Text(viewModel.saveError ?? "")
+            }
+    }
+
+    private func binding(
+        _ keyPath: ReferenceWritableKeyPath<DiagramViewModel, String?>
+    ) -> Binding<Bool> {
+        Binding(
+            get: { viewModel[keyPath: keyPath] != nil },
+            set: { if !$0 { viewModel[keyPath: keyPath] = nil } }
+        )
+    }
+}
+
 struct ContentView: View {
     @Environment(SubscriptionManager.self) private var subscriptionManager
     /// Starts in Mermaid instead of a PlantUML default when the user declined planttext.com.
@@ -222,59 +275,6 @@ struct ContentView: View {
         }
     }
     #endif
-}
-
-/// View-modifier wrapper for the three string-backed notice alerts (generation
-/// errors, package-load errors, snapshot restore notices). Extracted from
-/// `ContentView.body` so the modifier chain stays inside the SwiftUI
-/// type-checker's budget.
-private struct NoticeAlerts: ViewModifier {
-    @Bindable var viewModel: DiagramViewModel
-
-    func body(content: Content) -> some View {
-        content
-            .alert(
-                "Couldn't generate diagram",
-                isPresented: binding(\.errorMessage)
-            ) {
-                Button("OK", role: .cancel) { viewModel.errorMessage = nil }
-            } message: {
-                Text(viewModel.errorMessage ?? "")
-            }
-            .alert(
-                "Couldn't open Swift Package",
-                isPresented: binding(\.packageLoadError)
-            ) {
-                Button("OK", role: .cancel) { viewModel.packageLoadError = nil }
-            } message: {
-                Text(viewModel.packageLoadError ?? "")
-            }
-            .alert(
-                "Snapshot partially restored",
-                isPresented: binding(\.restoreNotice)
-            ) {
-                Button("OK", role: .cancel) { viewModel.restoreNotice = nil }
-            } message: {
-                Text(viewModel.restoreNotice ?? "")
-            }
-            .alert(
-                "Couldn't save",
-                isPresented: binding(\.saveError)
-            ) {
-                Button("OK", role: .cancel) { viewModel.saveError = nil }
-            } message: {
-                Text(viewModel.saveError ?? "")
-            }
-    }
-
-    private func binding(
-        _ keyPath: ReferenceWritableKeyPath<DiagramViewModel, String?>
-    ) -> Binding<Bool> {
-        Binding(
-            get: { viewModel[keyPath: keyPath] != nil },
-            set: { if !$0 { viewModel[keyPath: keyPath] = nil } }
-        )
-    }
 }
 
 extension Notification.Name {

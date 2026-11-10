@@ -3,6 +3,14 @@ import Observation
 import SwiftData
 import SwiftUMLBridgeFramework
 
+/// A simple implementation of DiagramOutputting for restoring history items.
+///
+/// It keeps the protocol's `encodeText()`, the same PlantUML encoding the Bridge's scripts use.
+struct SimpleDiagramScript: DiagramOutputting {
+    let text: String
+    let format: DiagramFormat
+}
+
 @Observable @MainActor
 final class DiagramViewModel {
     var selectedPaths: [String] = []
@@ -226,12 +234,4 @@ final class DiagramViewModel {
         selectedPaths = paths
         selectedPathBookmarks = bookmarks
     }
-}
-
-/// A simple implementation of DiagramOutputting for restoring history items.
-///
-/// It keeps the protocol's `encodeText()`, the same PlantUML encoding the Bridge's scripts use.
-struct SimpleDiagramScript: DiagramOutputting {
-    let text: String
-    let format: DiagramFormat
 }

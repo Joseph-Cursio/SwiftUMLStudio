@@ -1,51 +1,5 @@
 import SwiftUI
 
-struct WorkspaceSidebar: View {
-    @Bindable var viewModel: DiagramViewModel
-    @State private var selectedTab: Tab = .files
-    let inspection = Inspection<Self>()
-
-    enum Tab: String, CaseIterable, Identifiable {
-        case files = "Files"
-        case history = "History"
-
-        var id: String { rawValue }
-    }
-
-    var body: some View {
-        VSplitView {
-            DiagramPickerSection(viewModel: viewModel)
-                .frame(minHeight: 120, idealHeight: 260)
-
-            VStack(spacing: 0) {
-                Picker("Sidebar", selection: $selectedTab) {
-                    ForEach(Tab.allCases) { tab in
-                        Text(tab.rawValue).tag(tab)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .padding(.horizontal, 8)
-                .padding(.vertical, 6)
-                .accessibilityIdentifier("sidebarTabPicker")
-
-                Divider()
-
-                switch selectedTab {
-                case .files:
-                    FileBrowserSidebar(viewModel: viewModel)
-
-                case .history:
-                    HistorySidebar(viewModel: viewModel)
-                }
-            }
-            .frame(minHeight: 120)
-        }
-        .navigationTitle("SwiftUML Studio")
-        .onReceive(inspection.notice) { inspection.visit(self, $0) }
-    }
-}
-
 private struct DiagramPickerSection: View {
     @Bindable var viewModel: DiagramViewModel
 
@@ -98,5 +52,51 @@ private struct DiagramPickerSection: View {
         case .erDiagram: return "tablecells"
         case .componentDiagram: return "shippingbox"
         }
+    }
+}
+
+struct WorkspaceSidebar: View {
+    @Bindable var viewModel: DiagramViewModel
+    @State private var selectedTab: Tab = .files
+    let inspection = Inspection<Self>()
+
+    enum Tab: String, CaseIterable, Identifiable {
+        case files = "Files"
+        case history = "History"
+
+        var id: String { rawValue }
+    }
+
+    var body: some View {
+        VSplitView {
+            DiagramPickerSection(viewModel: viewModel)
+                .frame(minHeight: 120, idealHeight: 260)
+
+            VStack(spacing: 0) {
+                Picker("Sidebar", selection: $selectedTab) {
+                    ForEach(Tab.allCases) { tab in
+                        Text(tab.rawValue).tag(tab)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .padding(.horizontal, 8)
+                .padding(.vertical, 6)
+                .accessibilityIdentifier("sidebarTabPicker")
+
+                Divider()
+
+                switch selectedTab {
+                case .files:
+                    FileBrowserSidebar(viewModel: viewModel)
+
+                case .history:
+                    HistorySidebar(viewModel: viewModel)
+                }
+            }
+            .frame(minHeight: 120)
+        }
+        .navigationTitle("SwiftUML Studio")
+        .onReceive(inspection.notice) { inspection.visit(self, $0) }
     }
 }

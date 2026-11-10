@@ -1,58 +1,6 @@
 import SwiftUI
 import SwiftUMLBridgeFramework
 
-// MARK: - Detail Pane
-
-struct DiagramDetailView: View {
-    @Bindable var viewModel: DiagramViewModel
-    @Environment(SubscriptionManager.self) private var subscriptionManager
-    @State private var selectedTab: DetailTab = .preview
-    @State private var showPaywall = false
-
-    enum DetailTab: String, CaseIterable {
-        case dashboard = "Dashboard"
-        case preview = "Preview"
-        case markup = "Markup"
-    }
-
-    var body: some View {
-        VStack(spacing: 0) {
-            DiagramInspectorStrip(viewModel: viewModel)
-
-            TabView(selection: $selectedTab) {
-                Tab("Dashboard", systemImage: "chart.bar", value: DetailTab.dashboard) {
-                    ProjectDashboardView(
-                        summary: viewModel.projectSummary,
-                        insights: viewModel.insights,
-                        suggestions: viewModel.suggestions,
-                        architectureDiff: viewModel.architectureDiff,
-                        isProUnlocked: subscriptionManager.isProUnlocked,
-                        onSuggestionTap: handleSuggestion
-                    )
-                }
-
-                Tab("Preview", systemImage: "eye", value: DetailTab.preview) {
-                    DiagramPreviewView(viewModel: viewModel)
-                }
-
-                Tab("Markup", systemImage: "chevron.left.forwardslash.chevron.right", value: DetailTab.markup) {
-                    MarkupView(viewModel: viewModel)
-                }
-            }
-            .accessibilityIdentifier("detailTabs")
-        }
-        .paywallSheet(isPresented: $showPaywall, subscriptionManager: subscriptionManager)
-    }
-
-    private func handleSuggestion(_ suggestion: DiagramSuggestion) {
-        if SuggestionHandler.handle(suggestion, viewModel: viewModel, subscriptionManager: subscriptionManager) {
-            showPaywall = true
-        } else {
-            selectedTab = .preview
-        }
-    }
-}
-
 struct DiagramPreviewView: View {
     let viewModel: DiagramViewModel
     /// Injected by tests, which must not read or change the developer's own decision.
@@ -314,47 +262,5 @@ struct DiagramPreviewView: View {
               model.confidence != .high
         else { return nil }
         return model
-    }
-}
-
-struct StateMachineConfidenceBanner: View {
-    let model: StateMachineModel
-
-    var body: some View {
-        HStack(alignment: .top, spacing: 10) {
-            Image(systemName: symbol)
-                .foregroundStyle(tint)
-                .font(.title3)
-                .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 4) {
-                Text(headline).font(.subheadline.bold())
-                ForEach(model.notes, id: \.self) { note in
-                    Text("• \(note)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-            Spacer(minLength: 0)
-        }
-        .padding(12)
-        .background(tint.opacity(0.1))
-        .overlay(Rectangle().frame(height: 1).foregroundStyle(tint.opacity(0.3)), alignment: .bottom)
-        .accessibilityIdentifier("stateMachineConfidenceBanner")
-    }
-
-    var symbol: String {
-        model.confidence == .medium ? "info.circle.fill" : "exclamationmark.triangle.fill"
-    }
-
-    var tint: SwiftUI.Color {
-        model.confidence == .medium ? .orange : .red
-    }
-
-    var headline: String {
-        switch model.confidence {
-        case .medium: return "Partially inferred state machine"
-        case .low: return "Low-confidence state machine"
-        case .high: return ""
-        }
     }
 }

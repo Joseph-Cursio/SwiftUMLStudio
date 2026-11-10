@@ -2,6 +2,46 @@ import SwiftUI
 import SwiftUMLBridgeFramework
 import WebKit
 
+/// Asks, in place of the preview, whether to send a PlantUML diagram to `planttext.com`.
+struct PlantUMLConsentCard: View {
+    /// The picked format cannot draw this diagram type, so the script fell back to PlantUML.
+    var isFallback: Bool
+    let onAllow: () -> Void
+    var onUseMermaid: (() -> Void)?
+
+    var body: some View {
+        ContentUnavailableView {
+            Label("Preview with planttext.com?", systemImage: "network")
+        } description: {
+            VStack(spacing: 8) {
+                Text(
+                    "PlantUML previews are drawn by planttext.com, a third-party service. "
+                    + "Showing this one sends its PlantUML source — the same text Export "
+                    + "saves — to that service over HTTPS. "
+                    + "Mermaid, Nomnoml and SVG previews are drawn on this Mac."
+                )
+                if isFallback {
+                    Text("The selected format can't draw this diagram, so it was generated as PlantUML.")
+                        .accessibilityIdentifier("plantUMLConsentFallbackNote")
+                }
+                Text("Exporting the source sends nothing. Studio remembers your choice; change it in Settings.")
+                    .font(.caption)
+            }
+        } actions: {
+            Button("Preview with planttext.com", action: onAllow)
+                .buttonStyle(.borderedProminent)
+                .accessibilityIdentifier("plantUMLConsentAllowButton")
+            if let onUseMermaid {
+                Button("Use Mermaid Instead", action: onUseMermaid)
+                    .accessibilityIdentifier("plantUMLConsentUseMermaidButton")
+            }
+        }
+        // Without `.contain` the card's identifier replaces its buttons' own.
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("plantUMLConsentCard")
+    }
+}
+
 /// The PlantUML preview, and the only place Studio contacts `planttext.com`.
 ///
 /// It loads the rendered diagram only once ``PlantUMLConsent`` is granted, and until then shows
@@ -60,45 +100,5 @@ struct PlantTextPreview: View {
         case .nothing:
             EmptyView()
         }
-    }
-}
-
-/// Asks, in place of the preview, whether to send a PlantUML diagram to `planttext.com`.
-struct PlantUMLConsentCard: View {
-    /// The picked format cannot draw this diagram type, so the script fell back to PlantUML.
-    var isFallback: Bool
-    let onAllow: () -> Void
-    var onUseMermaid: (() -> Void)?
-
-    var body: some View {
-        ContentUnavailableView {
-            Label("Preview with planttext.com?", systemImage: "network")
-        } description: {
-            VStack(spacing: 8) {
-                Text(
-                    "PlantUML previews are drawn by planttext.com, a third-party service. "
-                    + "Showing this one sends its PlantUML source — the same text Export "
-                    + "saves — to that service over HTTPS. "
-                    + "Mermaid, Nomnoml and SVG previews are drawn on this Mac."
-                )
-                if isFallback {
-                    Text("The selected format can't draw this diagram, so it was generated as PlantUML.")
-                        .accessibilityIdentifier("plantUMLConsentFallbackNote")
-                }
-                Text("Exporting the source sends nothing. Studio remembers your choice; change it in Settings.")
-                    .font(.caption)
-            }
-        } actions: {
-            Button("Preview with planttext.com", action: onAllow)
-                .buttonStyle(.borderedProminent)
-                .accessibilityIdentifier("plantUMLConsentAllowButton")
-            if let onUseMermaid {
-                Button("Use Mermaid Instead", action: onUseMermaid)
-                    .accessibilityIdentifier("plantUMLConsentUseMermaidButton")
-            }
-        }
-        // Without `.contain` the card's identifier replaces its buttons' own.
-        .accessibilityElement(children: .contain)
-        .accessibilityIdentifier("plantUMLConsentCard")
     }
 }

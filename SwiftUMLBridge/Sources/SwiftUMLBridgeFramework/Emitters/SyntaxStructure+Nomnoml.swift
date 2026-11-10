@@ -1,5 +1,10 @@
 import Foundation
 
+private enum NomnomlMemberCategory {
+    case property
+    case method
+}
+
 extension SyntaxStructure {
     /// Textual representation of this element in nomnoml syntax
     func nomnoml(context: DiagramContext) -> String? {
@@ -148,9 +153,4 @@ extension SyntaxStructure {
             return nil
         }
     }
-}
-
-private enum NomnomlMemberCategory {
-    case property
-    case method
 }

@@ -2,6 +2,12 @@ import ArgumentParser
 import Foundation
 import SwiftUMLBridgeFramework
 
+enum ExtensionVisualizationFlag: EnumerableFlag {
+    case hideExtensions
+    case mergeExtensions
+    case showExtensions
+}
+
 extension SwiftUMLBridgeCLI {
     struct ClassDiagramCommand: AsyncParsableCommand {
         static let configuration = CommandConfiguration(
@@ -108,10 +114,5 @@ extension SwiftUMLBridgeCLI {
 }
 
 extension ClassDiagramOutput: ExpressibleByArgument {}
-extension DiagramFormat: ExpressibleByArgument {}
 
-enum ExtensionVisualizationFlag: EnumerableFlag {
-    case hideExtensions
-    case mergeExtensions
-    case showExtensions
-}
+extension DiagramFormat: ExpressibleByArgument {}

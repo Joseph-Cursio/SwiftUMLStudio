@@ -1,5 +1,33 @@
 import SwiftUI
 
+/// The interaction modifiers shared by the selectable canvases, in the order they were applied
+/// inline: the named coordinate space first, so taps and hover read the unscaled canvas, then
+/// pan/zoom, tap-to-select, double-tap reset, hover, focus, the arrow keys and Escape.
+private struct SelectableCanvasInteraction<Canvas: SelectableDiagramCanvas>: ViewModifier {
+    let canvas: Canvas
+    let coordinateSpace: String
+    let arrows: [NativeDiagramGeometry.NavigationDirection]
+
+    func body(content: Content) -> some View {
+        content
+            .coordinateSpace(name: coordinateSpace)
+            .canvasPanZoom(viewport: canvas.viewport)
+            .gesture(
+                SpatialTapGesture(coordinateSpace: .named(coordinateSpace))
+                    .onEnded { canvas.select(at: $0.location) }
+            )
+            .onTapGesture(count: 2) { canvas.viewport.reset() }
+            .onContinuousHover(coordinateSpace: .named(coordinateSpace)) { canvas.updateHover($0) }
+            .focusable()
+            .focusEffectDisabled()
+            .onKeyPress(keys: Set(arrows.map(\.key))) { press in
+                guard let direction = arrows.first(where: { $0.key == press.key }) else { return .ignored }
+                return canvas.handleArrow(direction)
+            }
+            .onKeyPress(.escape) { canvas.clearSelection() }
+    }
+}
+
 /// A native canvas whose nodes can be selected by tap or arrow key and highlighted on hover:
 /// `NativeDiagramView` and `NativeSequenceDiagramView`. Each supplies only its geometry — which
 /// node sits at a point, and which comes next in a direction — and gets the handlers and the
@@ -58,34 +86,6 @@ extension SelectableDiagramCanvas {
             return .handled
         }
         return .ignored
-    }
-}
-
-/// The interaction modifiers shared by the selectable canvases, in the order they were applied
-/// inline: the named coordinate space first, so taps and hover read the unscaled canvas, then
-/// pan/zoom, tap-to-select, double-tap reset, hover, focus, the arrow keys and Escape.
-private struct SelectableCanvasInteraction<Canvas: SelectableDiagramCanvas>: ViewModifier {
-    let canvas: Canvas
-    let coordinateSpace: String
-    let arrows: [NativeDiagramGeometry.NavigationDirection]
-
-    func body(content: Content) -> some View {
-        content
-            .coordinateSpace(name: coordinateSpace)
-            .canvasPanZoom(viewport: canvas.viewport)
-            .gesture(
-                SpatialTapGesture(coordinateSpace: .named(coordinateSpace))
-                    .onEnded { canvas.select(at: $0.location) }
-            )
-            .onTapGesture(count: 2) { canvas.viewport.reset() }
-            .onContinuousHover(coordinateSpace: .named(coordinateSpace)) { canvas.updateHover($0) }
-            .focusable()
-            .focusEffectDisabled()
-            .onKeyPress(keys: Set(arrows.map(\.key))) { press in
-                guard let direction = arrows.first(where: { $0.key == press.key }) else { return .ignored }
-                return canvas.handleArrow(direction)
-            }
-            .onKeyPress(.escape) { canvas.clearSelection() }
     }
 }
 

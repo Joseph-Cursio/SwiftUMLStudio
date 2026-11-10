@@ -33,6 +33,14 @@ public struct Stereotypes: Codable, Sendable {
     public var `protocol`: Stereotype?
 }
 
+/// Spotted character with background color
+public struct Spot: Codable, Sendable {
+    /// The single character drawn inside the stereotype spot (e.g. `C` for class).
+    public var character: Character
+    /// The spot's background color.
+    public var color: Color
+}
+
 /// Spotted character with background color and optional name for a stereotype.
 ///
 /// PlantUML only. The spot — a single character and a colour — is PlantUML
@@ -70,14 +78,6 @@ public struct Stereotype: Codable, Sendable {
     public static let actor = Self(
         name: "actor", spot: Spot(character: "A", color: .cadetBlue)
     )
-}
-
-/// Spotted character with background color
-public struct Spot: Codable, Sendable {
-    /// The single character drawn inside the stereotype spot (e.g. `C` for class).
-    public var character: Character
-    /// The spot's background color.
-    public var color: Color
 }
 
 extension Character: @retroactive Codable {

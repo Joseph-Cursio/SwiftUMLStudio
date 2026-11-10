@@ -1,5 +1,26 @@
 import Foundation
 
+/// Relationship metadata on if/how to visualize them in a class diagram
+public struct Relationship: Codable, Sendable {
+    public init(label: String? = nil, style: RelationshipStyle? = nil, exclude: [String]? = nil) {
+        self.label = label
+        self.style = style
+        self.exclude = exclude
+    }
+
+    /// The text drawn on the edge, or `nil` for an unlabelled edge.
+    public var label: String?
+    /// The line and arrowhead style for the edge, or `nil` for the format default.
+    public var style: RelationshipStyle?
+    /// Glob patterns for names whose edges are hidden. For `inheritance` and `realize` they
+    /// match the supertype's name as written, generic arguments included but not attributes,
+    /// specifiers or parentheses (`Sendable` for `@unchecked Sendable`, `P` for `(P)`), and the
+    /// two lists are pooled
+    /// (`supertypeExcludePatterns`). For `dependency` they match the extended
+    /// type's name, and hide only the edge from an extension to that type.
+    public var exclude: [String]?
+}
+
 /// Options which relationships to show and how to style them in a class diagram
 public struct RelationshipOptions: Codable, Sendable {
     public init(
@@ -21,9 +42,7 @@ public struct RelationshipOptions: Codable, Sendable {
     /// The extension-to-base-type dependency edge. `nil` draws these edges with no style, and
     /// labelled `ext`; it does not hide them.
     public var dependency: Relationship? = Relationship(label: "ext")
-}
 
-extension RelationshipOptions {
     /// The patterns that hide an edge from a type to one of its supertypes: `inheritance` and
     /// `realize` excludes together. Which of the two an edge is drawn as depends on whether the
     /// sources declare the parent as a protocol: an undeclared one such as `Codable` is drawn as
@@ -32,25 +51,4 @@ extension RelationshipOptions {
     var supertypeExcludePatterns: [String] {
         (inheritance?.exclude ?? []) + (realize?.exclude ?? [])
     }
-}
-
-/// Relationship metadata on if/how to visualize them in a class diagram
-public struct Relationship: Codable, Sendable {
-    public init(label: String? = nil, style: RelationshipStyle? = nil, exclude: [String]? = nil) {
-        self.label = label
-        self.style = style
-        self.exclude = exclude
-    }
-
-    /// The text drawn on the edge, or `nil` for an unlabelled edge.
-    public var label: String?
-    /// The line and arrowhead style for the edge, or `nil` for the format default.
-    public var style: RelationshipStyle?
-    /// Glob patterns for names whose edges are hidden. For `inheritance` and `realize` they
-    /// match the supertype's name as written, generic arguments included but not attributes,
-    /// specifiers or parentheses (`Sendable` for `@unchecked Sendable`, `P` for `(P)`), and the
-    /// two lists are pooled
-    /// (`supertypeExcludePatterns`). For `dependency` they match the extended
-    /// type's name, and hide only the edge from an extension to that type.
-    public var exclude: [String]?
 }

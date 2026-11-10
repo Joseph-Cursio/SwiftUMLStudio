@@ -1,44 +1,6 @@
 import AppKit
 import SwiftUI
 
-/// Read-only Swift source viewer with optional line highlighting.
-/// Used by the developer-layout middle pane and by Phase 4's
-/// "Reveal in Source" diagram navigation.
-struct SourceEditorView: View {
-    let content: String
-    let hasSelection: Bool
-    var highlightedLine: Int?
-
-    var body: some View {
-        if hasSelection {
-            SourceTextView(content: content, highlightedLine: highlightedLine)
-        } else {
-            ContentUnavailableView(
-                "Select a file",
-                systemImage: "doc.text",
-                description: Text("Choose a Swift file from the browser to view its source.")
-            )
-        }
-    }
-
-    /// Compute the NSRange of `line` (1-based) inside `source`, excluding the
-    /// trailing newline. Returns `nil` if `line` is out of range.
-    /// Exposed for unit testing.
-    static func lineRange(line: Int, in source: String) -> NSRange? {
-        guard line >= 1 else { return nil }
-        let lines = source.components(separatedBy: "\n")
-        guard line <= lines.count else { return nil }
-
-        var location = 0
-        for index in 0..<(line - 1) {
-            let lineLength = lines[index].utf16.count
-            location += lineLength + 1
-        }
-        let targetLength = lines[line - 1].utf16.count
-        return NSRange(location: location, length: targetLength)
-    }
-}
-
 /// NSViewRepresentable wrapper around an NSTextView that scrolls to and
 /// highlights `highlightedLine` whenever it is non-nil.
 private struct SourceTextView: NSViewRepresentable {
@@ -81,5 +43,43 @@ private struct SourceTextView: NSViewRepresentable {
 
         storage.addAttribute(.backgroundColor, value: Self.highlightColor, range: range)
         textView.scrollRangeToVisible(range)
+    }
+}
+
+/// Read-only Swift source viewer with optional line highlighting.
+/// Used by the developer-layout middle pane and by Phase 4's
+/// "Reveal in Source" diagram navigation.
+struct SourceEditorView: View {
+    let content: String
+    let hasSelection: Bool
+    var highlightedLine: Int?
+
+    var body: some View {
+        if hasSelection {
+            SourceTextView(content: content, highlightedLine: highlightedLine)
+        } else {
+            ContentUnavailableView(
+                "Select a file",
+                systemImage: "doc.text",
+                description: Text("Choose a Swift file from the browser to view its source.")
+            )
+        }
+    }
+
+    /// Compute the NSRange of `line` (1-based) inside `source`, excluding the
+    /// trailing newline. Returns `nil` if `line` is out of range.
+    /// Exposed for unit testing.
+    static func lineRange(line: Int, in source: String) -> NSRange? {
+        guard line >= 1 else { return nil }
+        let lines = source.components(separatedBy: "\n")
+        guard line <= lines.count else { return nil }
+
+        var location = 0
+        for index in 0..<(line - 1) {
+            let lineLength = lines[index].utf16.count
+            location += lineLength + 1
+        }
+        let targetLength = lines[line - 1].utf16.count
+        return NSRange(location: location, length: targetLength)
     }
 }

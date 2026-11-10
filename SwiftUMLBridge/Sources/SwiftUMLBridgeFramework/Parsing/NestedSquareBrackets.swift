@@ -1,57 +1,5 @@
 import Foundation
 
-/// Keeps a chain of nested `[` from taking time that doubles with each one (#148).
-///
-/// Since swift-syntax 602, SwiftParser checks each `[` for InlineArray sugar (`[3 of Int]`) by
-/// reading the element after it as a type, then, with no `of`, reads the same element again as an
-/// array or dictionary type. Each read goes into any `[` inside that element, so each `[` nested
-/// in another's first element doubles the time: `[[…[1]…]]` 24 deep took 1.7 s a read in a
-/// release build, and 40 to 65 times that in a debug one. SourceKit's parser makes the same two
-/// reads. `maximumNestingLevel` does not bound it, as the lookahead never checks it.
-///
-/// So each parser is handed the source with every `[` nested more than `limit` deep in other `[`,
-/// and the `]` that closes it, written as a space. Every other byte is kept, so offsets, lines
-/// and columns are the same, and everything after the chain is still read. Real code nests `[` no
-/// more than about 7 deep.
-enum NestedSquareBrackets {
-    /// How many `[` may be open around a `[` before it is written as a space. Each costs one
-    /// doubling. A 10-deep chain of the costliest shape, `[(Int, [(Int, …)])]`, takes about a
-    /// millisecond a read in a release build and under half a second in a debug one; at 12 the
-    /// debug read took 1.6 s. Real code stays well inside it.
-    static let limit = 10
-
-    /// `source` as the parsers are given it: unchanged unless a `[` is nested more than `limit`
-    /// deep, and then with each such `[` and its `]` written as a space. Where that happens, a
-    /// notice naming `file`, when there is one, and the first such `[` is recorded in
-    /// `SourceReadNotices`.
-    static func readable(_ source: String, file: URL? = nil) -> String {
-        var bytes = Array(source.utf8)
-        guard bytes.lazy.filter({ $0 == UInt8(ascii: "[") }).count > limit else { return source }
-        var scanner = Scanner(bytes: bytes)
-        scanner.scan()
-        guard let first = scanner.blanked.first else { return source }
-        for offset in scanner.blanked {
-            bytes[offset] = UInt8(ascii: " ")
-        }
-        SourceReadNotices.record(notice(file: file, source: source, offset: first))
-        return String(bytes: bytes, encoding: .utf8) ?? source
-    }
-
-    /// The notice for a source whose first `[` past the limit is at UTF-8 `offset`.
-    private static func notice(file: URL?, source: String, offset: Int) -> String {
-        var line = 1
-        var lineStart = 0
-        for (position, byte) in source.utf8.prefix(offset).enumerated() where byte == UInt8(ascii: "\n") {
-            line += 1
-            lineStart = position + 1
-        }
-        // A column in UTF-8 bytes, as the compiler's diagnostics count it.
-        let place = (file.map { "\($0.path):" } ?? "") + "\(line):\(offset - lineStart + 1)"
-        return "\(place): a `[` nested more than \(limit) deep in other `[`. It and each such `[` after it "
-            + "in the file were read as spaces, with their `]`, as each one doubles the time a parse takes"
-    }
-}
-
 /// Finds the `[` nested more than `NestedSquareBrackets.limit` deep, and the `]` that close them.
 ///
 /// It keeps a stack of what is open: `(`, `[` and `{`, string literals, and the interpolations in
@@ -247,5 +195,57 @@ private struct Scanner {
         } else {
             index += 1
         }
+    }
+}
+
+/// Keeps a chain of nested `[` from taking time that doubles with each one (#148).
+///
+/// Since swift-syntax 602, SwiftParser checks each `[` for InlineArray sugar (`[3 of Int]`) by
+/// reading the element after it as a type, then, with no `of`, reads the same element again as an
+/// array or dictionary type. Each read goes into any `[` inside that element, so each `[` nested
+/// in another's first element doubles the time: `[[…[1]…]]` 24 deep took 1.7 s a read in a
+/// release build, and 40 to 65 times that in a debug one. SourceKit's parser makes the same two
+/// reads. `maximumNestingLevel` does not bound it, as the lookahead never checks it.
+///
+/// So each parser is handed the source with every `[` nested more than `limit` deep in other `[`,
+/// and the `]` that closes it, written as a space. Every other byte is kept, so offsets, lines
+/// and columns are the same, and everything after the chain is still read. Real code nests `[` no
+/// more than about 7 deep.
+enum NestedSquareBrackets {
+    /// How many `[` may be open around a `[` before it is written as a space. Each costs one
+    /// doubling. A 10-deep chain of the costliest shape, `[(Int, [(Int, …)])]`, takes about a
+    /// millisecond a read in a release build and under half a second in a debug one; at 12 the
+    /// debug read took 1.6 s. Real code stays well inside it.
+    static let limit = 10
+
+    /// `source` as the parsers are given it: unchanged unless a `[` is nested more than `limit`
+    /// deep, and then with each such `[` and its `]` written as a space. Where that happens, a
+    /// notice naming `file`, when there is one, and the first such `[` is recorded in
+    /// `SourceReadNotices`.
+    static func readable(_ source: String, file: URL? = nil) -> String {
+        var bytes = Array(source.utf8)
+        guard bytes.lazy.filter({ $0 == UInt8(ascii: "[") }).count > limit else { return source }
+        var scanner = Scanner(bytes: bytes)
+        scanner.scan()
+        guard let first = scanner.blanked.first else { return source }
+        for offset in scanner.blanked {
+            bytes[offset] = UInt8(ascii: " ")
+        }
+        SourceReadNotices.record(notice(file: file, source: source, offset: first))
+        return String(bytes: bytes, encoding: .utf8) ?? source
+    }
+
+    /// The notice for a source whose first `[` past the limit is at UTF-8 `offset`.
+    private static func notice(file: URL?, source: String, offset: Int) -> String {
+        var line = 1
+        var lineStart = 0
+        for (position, byte) in source.utf8.prefix(offset).enumerated() where byte == UInt8(ascii: "\n") {
+            line += 1
+            lineStart = position + 1
+        }
+        // A column in UTF-8 bytes, as the compiler's diagnostics count it.
+        let place = (file.map { "\($0.path):" } ?? "") + "\(line):\(offset - lineStart + 1)"
+        return "\(place): a `[` nested more than \(limit) deep in other `[`. It and each such `[` after it "
+            + "in the file were read as spaces, with their `]`, as each one doubles the time a parse takes"
     }
 }

@@ -1,43 +1,5 @@
 import Foundation
 
-// MARK: - Sequence Layout Model
-
-/// Positioned layout data for a sequence diagram, ready for native rendering.
-public struct SequenceLayout: Sendable {
-    /// The positioned participant columns, left to right.
-    public var participants: [SequenceParticipant]
-    /// The positioned message arrows, top to bottom.
-    public var messages: [SequenceMessage]
-    /// The diagram title drawn above the participants.
-    public var title: String
-    /// The total canvas width, in points.
-    public var totalWidth: Double
-    /// The total canvas height, in points.
-    public var totalHeight: Double
-    /// The Y coordinate where the participant lifelines begin.
-    public var lifelineStartY: Double
-    /// The Y coordinate where the participant lifelines end.
-    public var lifelineEndY: Double
-
-    public init(
-        participants: [SequenceParticipant] = [],
-        messages: [SequenceMessage] = [],
-        title: String = "",
-        totalWidth: Double = 0,
-        totalHeight: Double = 0,
-        lifelineStartY: Double = 0,
-        lifelineEndY: Double = 0
-    ) {
-        self.participants = participants
-        self.messages = messages
-        self.title = title
-        self.totalWidth = totalWidth
-        self.totalHeight = totalHeight
-        self.lifelineStartY = lifelineStartY
-        self.lifelineEndY = lifelineEndY
-    }
-}
-
 // MARK: - Sequence Participant
 
 /// A participant box in a sequence diagram with its positioned column.
@@ -121,5 +83,43 @@ public struct SequenceMessage: Identifiable, Sendable {
         self.isAsync = isAsync
         self.isUnresolved = isUnresolved
         self.noteText = noteText
+    }
+}
+
+// MARK: - Sequence Layout Model
+
+/// Positioned layout data for a sequence diagram, ready for native rendering.
+public struct SequenceLayout: Sendable {
+    /// The positioned participant columns, left to right.
+    public var participants: [SequenceParticipant]
+    /// The positioned message arrows, top to bottom.
+    public var messages: [SequenceMessage]
+    /// The diagram title drawn above the participants.
+    public var title: String
+    /// The total canvas width, in points.
+    public var totalWidth: Double
+    /// The total canvas height, in points.
+    public var totalHeight: Double
+    /// The Y coordinate where the participant lifelines begin.
+    public var lifelineStartY: Double
+    /// The Y coordinate where the participant lifelines end.
+    public var lifelineEndY: Double
+
+    public init(
+        participants: [SequenceParticipant] = [],
+        messages: [SequenceMessage] = [],
+        title: String = "",
+        totalWidth: Double = 0,
+        totalHeight: Double = 0,
+        lifelineStartY: Double = 0,
+        lifelineEndY: Double = 0
+    ) {
+        self.participants = participants
+        self.messages = messages
+        self.title = title
+        self.totalWidth = totalWidth
+        self.totalHeight = totalHeight
+        self.lifelineStartY = lifelineStartY
+        self.lifelineEndY = lifelineEndY
     }
 }

@@ -1,6 +1,24 @@
 import Foundation
 import Yams
 
+/// Why a configuration file could not be used: `ConfigurationProvider.loadConfiguration(at:)`.
+public struct ConfigurationLoadError: Error, CustomStringConvertible, Sendable {
+    /// The file's path.
+    public let path: String
+    /// What is wrong with it, naming the key and the value at fault where there is one.
+    public let reason: String
+    /// Whether nothing is at `path`.
+    public let isMissingFile: Bool
+
+    public init(path: String, reason: String, isMissingFile: Bool = false) {
+        self.path = path
+        self.reason = reason
+        self.isMissingFile = isMissingFile
+    }
+
+    public var description: String { "\(path): \(reason)" }
+}
+
 /// Load Configuration from file or defaults
 public struct ConfigurationProvider {
     /// A provider; it reads the configuration afresh on every call.
@@ -113,22 +131,4 @@ public struct ConfigurationProvider {
     var defaultConfig: Configuration {
         Configuration.default
     }
-}
-
-/// Why a configuration file could not be used: `ConfigurationProvider.loadConfiguration(at:)`.
-public struct ConfigurationLoadError: Error, CustomStringConvertible, Sendable {
-    /// The file's path.
-    public let path: String
-    /// What is wrong with it, naming the key and the value at fault where there is one.
-    public let reason: String
-    /// Whether nothing is at `path`.
-    public let isMissingFile: Bool
-
-    public init(path: String, reason: String, isMissingFile: Bool = false) {
-        self.path = path
-        self.reason = reason
-        self.isMissingFile = isMissingFile
-    }
-
-    public var description: String { "\(path): \(reason)" }
 }

@@ -1,7 +1,7 @@
 import Foundation
 
 /// Options which files shall be considered for class diagram generation
-public struct FileOptions: Codable, Sendable {
+public struct FileOptions: Codable, Sendable, CustomStringConvertible {
     public init(include: [String]? = [], exclude: [String]? = []) {
         self.include = include
         self.exclude = exclude
@@ -9,9 +9,7 @@ public struct FileOptions: Codable, Sendable {
 
     public var include: [String]? = []
     public var exclude: [String]? = []
-}
 
-extension FileOptions: CustomStringConvertible {
     public var description: String {
         let includeArray = include ?? []
         let excludeArray = exclude ?? []
