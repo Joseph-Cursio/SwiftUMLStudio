@@ -4,7 +4,7 @@ import Synchronization
 
 /// Singleton logger for SwiftUMLBridge using os.Logger
 public final class BridgeLogger: Sendable {
-    public static let shared: BridgeLogger = BridgeLogger()
+    public static let shared = BridgeLogger()
 
     private let logger = Logger(subsystem: "name.JosephCursio.SwiftUMLBridge", category: "SwiftUMLBridge")
 

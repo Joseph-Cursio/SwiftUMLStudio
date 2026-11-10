@@ -37,7 +37,8 @@ struct DiagramModeEntitlementTests {
     @Test("the entitlement is the same every time it is asked")
     func mappingIsDeterministic() {
         for mode in DiagramMode.allCases {
-            #expect(mode.requiredFeature == mode.requiredFeature)
+            let first = mode.requiredFeature
+            #expect(mode.requiredFeature == first)
         }
     }
 }

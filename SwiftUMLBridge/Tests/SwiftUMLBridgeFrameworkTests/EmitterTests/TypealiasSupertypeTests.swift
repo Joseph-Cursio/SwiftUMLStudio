@@ -10,8 +10,10 @@ import Testing
 struct TypealiasSupertypeTests {
     static let formats: [DiagramFormat] = [.plantuml, .mermaid, .nomnoml]
 
-    private func script(_ source: String, _ format: DiagramFormat, relationships: RelationshipOptions? = nil,
-                        extensions: ExtensionVisualization = .all) -> String {
+    private func script(
+        _ source: String, _ format: DiagramFormat, relationships: RelationshipOptions? = nil,
+        extensions: ExtensionVisualization = .all
+    ) -> String {
         var configuration = Configuration(elements: ElementOptions(showExtensions: extensions), format: format)
         if let relationships { configuration.relationships = relationships }
         return ClassDiagramGenerator().generateScript(for: source, with: configuration).text

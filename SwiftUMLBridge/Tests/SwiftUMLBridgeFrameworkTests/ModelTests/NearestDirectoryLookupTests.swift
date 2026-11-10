@@ -133,7 +133,6 @@ struct NearestDirectoryFormatTests {
             #expect(endIds.supertype(named: name, from: parent.scope).id == end)
         }
     }
-
 }
 
 @Suite("Ranking by directory reaches extensions, typealiases and hidden types")
@@ -265,7 +264,7 @@ struct NearestDirectoryNameTests {
                 """)
         ]
         let elements = ElementOptions(showExtensions: mode)
-        #expect(try edges(files, elements).filter { $0.hasPrefix("Shouty ") }.isEmpty)
+        #expect(try !edges(files, elements).contains { $0.hasPrefix("Shouty ") })
         #expect(try lines(files, .plantuml, elements).contains("FormatStyle <|-- Shouty : inherits"))
     }
 
@@ -372,5 +371,4 @@ struct NearestDirectoryNameTests {
         ]
         #expect(try lines(protocolFar, .plantuml).contains("Service0 <|-- Impl : inherits"))
     }
-
 }

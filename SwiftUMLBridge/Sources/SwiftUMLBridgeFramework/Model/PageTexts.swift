@@ -29,27 +29,27 @@ extension PageTexts {
             return nil
         }
         var text = ""
-        if let header = header {
+        if let header {
             text.appendAsNewLine("header")
             text.appendAsNewLine(header)
             text.appendAsNewLine("end header")
         }
-        if let title = title {
+        if let title {
             text.appendAsNewLine("title")
             text.appendAsNewLine(title)
             text.appendAsNewLine("end title")
         }
-        if let legend = legend {
+        if let legend {
             text.appendAsNewLine("legend")
             text.appendAsNewLine(legend)
             text.appendAsNewLine("end legend")
         }
-        if let caption = caption {
+        if let caption {
             text.appendAsNewLine("caption")
             text.appendAsNewLine(caption)
             text.appendAsNewLine("end caption")
         }
-        if let footer = footer {
+        if let footer {
             text.appendAsNewLine("footer")
             text.appendAsNewLine(footer)
             text.appendAsNewLine("end footer")

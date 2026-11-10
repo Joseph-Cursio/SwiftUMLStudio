@@ -9,7 +9,7 @@ import Testing
 struct SuppressedConformanceTests {
 
     static let formats: [DiagramFormat] = [.plantuml, .mermaid, .nomnoml, .svg]
-    static let modes: [ExtensionVisualization] = [.all, .merged, .none]
+    static let modes: [ExtensionVisualization] = [.all, .merged, .hidden]
 
     static let source = """
         protocol Resource: ~Copyable {}

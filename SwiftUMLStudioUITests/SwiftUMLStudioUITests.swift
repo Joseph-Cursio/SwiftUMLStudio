@@ -9,19 +9,16 @@ import XCTest
 
 final class SwiftUMLStudioUITests: XCTestCase {
 
-    private var app: XCUIApplication!
-
+    /// The app, launched as every test here needs it. Each test holds its own, so nothing is
+    /// stored between tests and none needs unwrapping.
     @MainActor
-    override func setUp() async throws {
+    private func launchApp() -> XCUIApplication {
         continueAfterFailure = false
-        app = XCUIApplication()
+        let app = XCUIApplication()
         app.launchArguments += ["-appMode", "Developer"]
         app.launchArguments += UITestLaunchArguments.plantUMLConsentUndecided
         app.launch()
-    }
-
-    override func tearDownWithError() throws {
-        app = nil
+        return app
     }
 
     // MARK: - Mode switching
@@ -30,6 +27,7 @@ final class SwiftUMLStudioUITests: XCTestCase {
     /// (entry-point TextField and depth Stepper) and the "Enter an entry point" right-pane branch.
     @MainActor
     func testSequenceDiagramModeShowsEntryPointControls() throws {
+        let app = launchApp()
         // Switch to Sequence Diagram mode (mode picker is a sidebar Outline on macOS)
         let modePicker = app.outlines["modePicker"]
         XCTAssertTrue(modePicker.waitForExistence(timeout: UITestTimeout.element), "Mode picker not found")
@@ -50,6 +48,7 @@ final class SwiftUMLStudioUITests: XCTestCase {
     /// default "Select Swift source files" placeholder instead.
     @MainActor
     func testSequenceDiagramEntryPointTypingUpdatesPlaceholder() throws {
+        let app = launchApp()
         app.outlines["modePicker"].staticTexts["Sequence Diagram"].click()
 
         let entryField = app.textFields["entryPointField"]
@@ -68,6 +67,7 @@ final class SwiftUMLStudioUITests: XCTestCase {
     /// picker in the inspector strip.
     @MainActor
     func testDependencyGraphModeShowsDepsModeControls() throws {
+        let app = launchApp()
         // Switch to Dependency Graph mode
         let modePicker = app.outlines["modePicker"]
         XCTAssertTrue(modePicker.waitForExistence(timeout: UITestTimeout.element), "Mode picker not found")
@@ -84,6 +84,7 @@ final class SwiftUMLStudioUITests: XCTestCase {
     /// leaving Sequence Diagram mode.
     @MainActor
     func testModeControlsAreExclusiveToTheirMode() throws {
+        let app = launchApp()
         let modePicker = app.outlines["modePicker"]
         XCTAssertTrue(modePicker.waitForExistence(timeout: UITestTimeout.element))
 
@@ -113,6 +114,7 @@ final class SwiftUMLStudioUITests: XCTestCase {
 
     @MainActor
     func testEntryPointMenuAppearsInSequenceMode() throws {
+        let app = launchApp()
         let modePicker = app.outlines["modePicker"]
         XCTAssertTrue(modePicker.waitForExistence(timeout: UITestTimeout.element), "Mode picker not found")
         modePicker.staticTexts["Sequence Diagram"].click()
@@ -127,7 +129,8 @@ final class SwiftUMLStudioUITests: XCTestCase {
 
     @MainActor
     func testLaunchPerformance() throws {
-        // This measures how long it takes to launch your application.
+        continueAfterFailure = false
+        // This measures how long it takes to launch your application, each launch its own.
         measure(metrics: [XCTApplicationLaunchMetric()]) {
             let app = XCUIApplication()
             app.launchArguments += UITestLaunchArguments.plantUMLConsentUndecided

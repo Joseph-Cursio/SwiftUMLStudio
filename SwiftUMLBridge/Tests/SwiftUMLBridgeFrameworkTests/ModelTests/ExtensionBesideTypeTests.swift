@@ -41,7 +41,7 @@ struct ExtensionBesideTypeTests {
     }
 
     @Test("an extension's public alias in the type's file beats one in a sibling directory",
-          arguments: ["Crate", "Foo"], [ExtensionVisualization.all, .merged, .none])
+          arguments: ["Crate", "Foo"], [ExtensionVisualization.all, .merged, .hidden])
     func inTypesFileBeatsSibling(spelling: String, mode: ExtensionVisualization) throws {
         let elements = ElementOptions(showExtensions: mode)
         for files in [Self.grouped(spelling: spelling), Self.grouped(spelling: spelling).reversed()] {
@@ -52,7 +52,7 @@ struct ExtensionBesideTypeTests {
 
     /// `X` inside `extension Foo` is first looked for as `Foo.X`, among the same candidates.
     @Test("a name written inside an extension takes the public alias in the type's file",
-          arguments: ["Crate", "Foo"], [ExtensionVisualization.all, .merged, .none])
+          arguments: ["Crate", "Foo"], [ExtensionVisualization.all, .merged, .hidden])
     func insideExtension(spelling: String, mode: ExtensionVisualization) throws {
         var files = Self.grouped(spelling: spelling)
         files[files.count - 1].source = "extension Foo { class W: X {} }"
@@ -179,7 +179,7 @@ struct ExtensionBesideTypeTests {
     /// file adds then looks like one of the type `W` means, and only the extension's being beside
     /// `W` keeps it, as for a member of the body (`ExtensionMemberRankTests.unrelatedTypeReadFirst`).
     @Test("an extension's public alias beside an unrelated type read first does not beat one beside the writer",
-          arguments: [ExtensionVisualization.all, .merged, .none], [false, true])
+          arguments: [ExtensionVisualization.all, .merged, .hidden], [false, true])
     func unrelatedTypeReadFirst(mode: ExtensionVisualization, reversed: Bool) throws {
         let targets: [Fixture.File] = [
             ("/r/Sources/Zed/Foo.swift", """

@@ -17,7 +17,7 @@ import SwiftUMLBridgeFramework
 struct SelectionPathSpellingTests {
 
     /// `50%20off` is a folder really named that: it must not be decoded into `50 off`.
-    private nonisolated static let folderNames = [
+    nonisolated private static let folderNames = [
         "Plain", "My Project", "caf\u{E9}", "C# Tools", "100% done", "50%20off"
     ]
 

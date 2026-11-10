@@ -19,13 +19,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   on SwiftUMLBridge still builds when a newer compiler adds a warning.
   Notes from Xcode's App Intents metadata tool are not compiler warnings
   and do not count.
+- **SwiftLint runs 88 more opt-in rules: 92 in all, plus two analyzer
+  rules.** 61 already passed, such as `first_where`, `toggle_bool` and
+  `unhandled_throwing_task`. The other 27 each needed up to ten fixes in
+  the code, one commit per rule; none is disabled inline. Notable fixes:
+  `ExtensionVisualization.none` is now `.hidden` (see the breaking-API
+  entry), `LayoutGraphBuilder` is a caseless enum, two long SwiftUI bodies
+  are split into named parts, and the UI tests launch the app per test
+  instead of holding an implicitly unwrapped `app`. `capture_variable` and
+  `typesafe_array_init` run under `swiftlint analyze`. Three rules stay off,
+  each with a written reason: `async_without_await` (its remaining hits are
+  fixtures that are async on purpose), `prefixed_toplevel_constant`, and
+  `private_subject` (ViewInspector's `InspectionEmissary` needs a visible
+  subject).
 
 ### Changed — Bridge (API, breaking)
 
-Three public names passed SwiftLint only because the Bridge's own config
-loosened `identifier_name`. They are renamed, and the Bridge now lints with
-the rule as SwiftLint ships it. Swift code that uses the old names must
-change; config files, the CLI, and the diagrams it writes do not.
+Four public names are renamed to satisfy SwiftLint rules. Three passed only
+because the Bridge's own config loosened `identifier_name`, and the Bridge now
+lints with that rule as SwiftLint ships it; one broke the opt-in
+`discouraged_none_name`. Swift code that uses the old names must change;
+config files, the CLI, and the diagrams it writes do not.
 
 - **`DependencyEdge.to` is `toNode`, and `ComponentDependency.to` is
   `toComponent`**, initializer labels included. Each keeps `from`, and names
@@ -37,6 +51,11 @@ change; config files, the CLI, and the diagrams it writes do not.
   which wrote `!theme __directive__(…)`, naming no theme. It now says
   the value goes after `!theme` as written, so a hosted theme is
   `theme: "hacker from https://example.com/themes"`.
+- **`ExtensionVisualization.none` is `ExtensionVisualization.hidden`.** Beside
+  an `ExtensionVisualization?`, such as `ElementOptions.showExtensions`, `.none`
+  reads as nil, the default, which draws every extension rather than hiding
+  them; a test had already had to write `.some(.none)`. The raw value stays
+  `"none"`, so `showExtensions: none` in a config file is unchanged.
 
 ### Changed — Bridge (test infrastructure)
 

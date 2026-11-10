@@ -128,7 +128,7 @@ struct InheritedMemberTests {
             struct W: Outer.P {}
             """
         let files: [(module: String?, source: String)] = [("Main", source)]
-        #expect(svgEdges(try moduleQualifiedItems(files)).filter { $0.hasPrefix("W -> ") }.isEmpty)
+        #expect(!svgEdges(try moduleQualifiedItems(files)).contains { $0.hasPrefix("W -> ") })
         #expect(supertypeLines(try moduleQualifiedItems(files)) == ["Outer.P <|-- W : inherits"])
     }
 
@@ -146,7 +146,7 @@ struct InheritedMemberTests {
             struct W: First.P {}
             """
         let files: [(module: String?, source: String)] = [("Main", source)]
-        #expect(svgEdges(try moduleQualifiedItems(files)).filter { $0.hasPrefix("W -> ") }.isEmpty)
+        #expect(!svgEdges(try moduleQualifiedItems(files)).contains { $0.hasPrefix("W -> ") })
     }
 
     // MARK: Shapes the review found

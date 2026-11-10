@@ -24,12 +24,12 @@ public enum Color: String, CaseIterable, Codable, Sendable {
     case whiteSmoke, yellow, yellowGreen
 }
 
-extension Color {
+public extension Color {
     /// Reads a colour name in any case: `DarkGray`, `darkgray` and `darkGray` are all `.darkGray`.
     /// PlantUML matches HTML colour names case-insensitively, the reference writes them in
     /// PascalCase, and SwiftPlantUML's cases were PascalCase (#138). No two cases are equal when
     /// case is ignored. A diagram writes the case name, however the file spelt it.
-    public init(from decoder: Decoder) throws {
+    init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
         let name = try container.decode(String.self)
         guard let color = Color.allCases.first(where: { $0.rawValue.caseInsensitiveCompare(name) == .orderedSame })

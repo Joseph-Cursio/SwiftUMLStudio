@@ -7,6 +7,6 @@ class DataService {
     }
 
     func processItems() async -> [String] {
-        return []
+        []
     }
 }

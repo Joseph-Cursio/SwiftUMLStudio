@@ -257,6 +257,6 @@ struct EntryThroughLaterDeclarationTests {
         })
         #expect(resolver.entryTypes(of: "Svc") == ["RealB", "RealA", "Svc"])
         #expect(resolver.entryTypes(of: "Plain") == ["Plain"])
-        #expect(TypeAliasResolver.none.entryTypes(of: "Svc") == ["Svc"])
+        #expect(TypeAliasResolver.withoutProject.entryTypes(of: "Svc") == ["Svc"])
     }
 }

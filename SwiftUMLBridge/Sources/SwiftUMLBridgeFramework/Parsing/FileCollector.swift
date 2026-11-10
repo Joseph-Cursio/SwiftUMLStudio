@@ -101,7 +101,7 @@ public struct FileCollector: Sendable {
     }
 }
 
-fileprivate extension FileOptions {
+private extension FileOptions {
     var someProvided: Bool {
         include?.isEmpty == false || exclude?.isEmpty == false
     }

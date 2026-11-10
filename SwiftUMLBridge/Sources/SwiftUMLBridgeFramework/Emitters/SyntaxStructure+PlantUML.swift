@@ -135,7 +135,7 @@ extension SyntaxStructure {
     private func members(context: DiagramContext) -> String {
         var members = ""
 
-        guard let substructure = substructure, substructure.count > 0 else { return members }
+        guard let substructure, !substructure.isEmpty else { return members }
 
         for sub in substructure {
             if let msig = member(element: sub, context: context) {
@@ -207,7 +207,7 @@ extension SyntaxStructure {
             guard generateElementsWithAccessLevel.contains(effectiveAccessibility) else { return true }
         }
 
-        if configuration.elements.showExtensions.safelyUnwrap == .none, kind == .extension {
+        if configuration.elements.showExtensions.safelyUnwrap == .hidden, kind == .extension {
             return true
         }
 
@@ -224,7 +224,7 @@ extension SyntaxStructure {
     /// `class D: Base<[Int]> {}`).
     func genericsStatement() -> String? {
         if let boundGenericArguments { return "<\(boundGenericArguments)>" }
-        guard let substructure = substructure else {
+        guard let substructure else {
             guard let parent = inheritedTypes?.first else { return nil }
             return parent.name?.getAngleBracketsWithContent()
         }
@@ -239,7 +239,7 @@ extension SyntaxStructure {
             }
         }
         let genStatement = genParts.joined(separator: "\\n")
-        guard genStatement.count > 0 else { return nil }
+        guard !genStatement.isEmpty else { return nil }
         return "<\(genStatement)>"
     }
 }

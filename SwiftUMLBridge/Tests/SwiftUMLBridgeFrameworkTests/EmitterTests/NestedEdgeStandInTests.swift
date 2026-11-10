@@ -57,8 +57,8 @@ struct NestedEdgeStandInTests {
     @Test("with the extension hidden, the hidden type is named by its qualified name again")
     func hiddenExtensionLeavesTheNameFree() {
         let items = [hiddenFoo(), fooExtension(in: "B.swift")]
-        #expect(edges(items, .plantuml, .none) == ["Foo +-- Foo.Inner"])
-        #expect(edges(items, .nomnoml, .none) == ["[Foo] +- [Foo.Inner]"])
+        #expect(edges(items, .plantuml, .hidden) == ["Foo +-- Foo.Inner"])
+        #expect(edges(items, .nomnoml, .hidden) == ["[Foo] +- [Foo.Inner]"])
     }
 
     @Test("an extension in the hidden type's own file stands in for it, as in SVG")
@@ -133,8 +133,8 @@ struct NestedEdgeStandInTests {
             declared(.extension, "Foo", in: "B.swift", module: "ModB",
                      members: [declared(.struct, "Inner", in: "B.swift", module: "ModB")])
         ]
-        #expect(edges(items, .plantuml, .none) == ["Foo0 +-- Foo.Inner"])
-        #expect(edges(items, .nomnoml, .none) == ["[Foo0] +- [Foo.Inner]"])
-        #expect(edges(items, .svg, .none) == ["Foo_1 -> Foo.Inner"])
+        #expect(edges(items, .plantuml, .hidden) == ["Foo0 +-- Foo.Inner"])
+        #expect(edges(items, .nomnoml, .hidden) == ["[Foo0] +- [Foo.Inner]"])
+        #expect(edges(items, .svg, .hidden) == ["Foo_1 -> Foo.Inner"])
     }
 }

@@ -83,7 +83,7 @@ extension Array where Element == SyntaxStructure {
         for structure in self where isNestedType(structure) {
             structure.parent = parent
             items.append(structure)
-            guard let substructure = structure.substructure, substructure.count > 0 else {
+            guard let substructure = structure.substructure, !substructure.isEmpty else {
                 continue
             }
             items.append(contentsOf: substructure.populateNestedTypes(parent: structure))
@@ -157,14 +157,6 @@ extension SyntaxStructure {
     var displayName: String? {
         guard let comps = name?.components(separatedBy: ".") else { return name }
         return comps.last
-    }
-}
-
-extension SyntaxStructure {
-    override var debugDescription: String {
-        // A structure SourceKit gave no kind or name still has to describe itself: a failing
-        // test or the debugger prints it, and a trap there hides the failure being looked at.
-        "\(kind?.rawValue.components(separatedBy: ".").last ?? "unknown") \(fullName ?? "<unnamed>")"
     }
 }
 

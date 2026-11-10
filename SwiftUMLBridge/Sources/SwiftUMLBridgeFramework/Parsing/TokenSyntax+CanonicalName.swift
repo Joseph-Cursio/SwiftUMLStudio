@@ -98,24 +98,27 @@ extension String {
         return TypeSyntax.parse(from: &parser).singleLineDescription
     }
 
-    /// Whether this name reads the same without backticks wherever it is written: not a raw
-    /// identifier or a keyword, nor `Type` or `Protocol`, which a type member must escape.
-    fileprivate var isUnescapable: Bool {
-        self != "Type" && self != "Protocol" && isValidSwiftIdentifier(for: .variableName)
-    }
-
-    /// Whether this is a keyword written bare after a `.`, as Swift allows there: `default` or
-    /// `import`, but not `self`, `Self` or `init`, which mean something else after a `.`.
-    fileprivate var isBareKeywordMember: Bool {
-        !isEmpty && !contains("`") && !isValidSwiftIdentifier(for: .variableName)
-            && isValidSwiftIdentifier(for: .memberAccess)
-    }
-
     /// This dotted name, typed in as `--entry`'s type or `--state`'s `Host.Enum`, with each
     /// component as Swift reads it: `` `Outer`.Inner `` is `Outer.Inner`.
     var canonicalDottedName: String {
         split(separator: ".", omittingEmptySubsequences: false).map { String($0).canonicalIdentifier }
             .joined(separator: ".")
+    }
+}
+
+// Private at file scope, so the TokenSyntax extension above reads these too.
+private extension String {
+    /// Whether this name reads the same without backticks wherever it is written: not a raw
+    /// identifier or a keyword, nor `Type` or `Protocol`, which a type member must escape.
+    var isUnescapable: Bool {
+        self != "Type" && self != "Protocol" && isValidSwiftIdentifier(for: .variableName)
+    }
+
+    /// Whether this is a keyword written bare after a `.`, as Swift allows there: `default` or
+    /// `import`, but not `self`, `Self` or `init`, which mean something else after a `.`.
+    var isBareKeywordMember: Bool {
+        !isEmpty && !contains("`") && !isValidSwiftIdentifier(for: .variableName)
+            && isValidSwiftIdentifier(for: .memberAccess)
     }
 }
 

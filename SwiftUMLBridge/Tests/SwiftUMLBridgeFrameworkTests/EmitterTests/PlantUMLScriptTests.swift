@@ -56,7 +56,7 @@ struct DiagramScriptTests {
     func defaultStylingEmptyWhenNoCommands() {
         let config = Configuration(hideShowCommands: [], skinparamCommands: [])
         let script = DiagramScript(items: [], configuration: config)
-        #expect(script.defaultStyling == "")
+        #expect(script.defaultStyling.isEmpty)
     }
 
     // MARK: - Nomnoml title and footer comments

@@ -187,7 +187,7 @@ struct MergedExtensionConformanceTests {
     func hiddenExtensions() {
         let source = "protocol P {}\nstruct Foo {}\nextension Foo: P {}"
         for format in Self.textFormats {
-            #expect(Self.edges(source, format, ExtensionVisualization.none).isEmpty, "\(format)")
+            #expect(Self.edges(source, format, ExtensionVisualization.hidden).isEmpty, "\(format)")
         }
     }
 }

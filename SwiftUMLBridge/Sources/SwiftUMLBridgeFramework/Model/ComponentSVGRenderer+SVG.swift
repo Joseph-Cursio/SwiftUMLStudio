@@ -199,5 +199,4 @@ extension ComponentSVGRenderer {
     static func format(_ value: Double) -> String {
         String(format: "%.1f", value)
     }
-
 }

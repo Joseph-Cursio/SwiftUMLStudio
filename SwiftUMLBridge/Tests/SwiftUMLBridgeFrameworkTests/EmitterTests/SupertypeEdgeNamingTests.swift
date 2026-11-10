@@ -80,8 +80,10 @@ struct SupertypeEdgeNamingTests {
 
     /// The edge from `child` to `parent` as each format writes it: PlantUML and Mermaid
     /// `parent arrow child : label`, Nomnoml `[child] arrow label [parent]`.
-    private func edgeLine(_ format: DiagramFormat, _ parent: String, _ arrow: (text: String, nomnoml: String),
-                          _ child: String, _ label: String) -> String {
+    private func edgeLine(
+        _ format: DiagramFormat, _ parent: String, _ arrow: (text: String, nomnoml: String),
+        _ child: String, _ label: String
+    ) -> String {
         format == .nomnoml
             ? "[\(child)] \(arrow.nomnoml) \(label) [\(parent)]" : "\(parent) \(arrow.text) \(child) : \(label)"
     }

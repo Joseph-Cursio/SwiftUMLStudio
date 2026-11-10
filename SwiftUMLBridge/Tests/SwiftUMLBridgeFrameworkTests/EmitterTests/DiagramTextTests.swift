@@ -17,7 +17,7 @@ struct DiagramTextTests {
         // Two input bytes → three encoded chars + one '=' padding
         let encodedBytes = Array(encoded.utf8)
         #expect(encodedBytes.last == 61) // '=' is ASCII 61
-        #expect(encodedBytes.count % 4 == 0)
+        #expect(encodedBytes.count.isMultiple(of: 4))
     }
 
     @Test("base64plantuml handles 3-byte-aligned input with no padding")
@@ -41,7 +41,7 @@ struct DiagramTextTests {
         // One input byte → two encoded chars + two '=' padding
         let encodedBytes = Array(encoded.utf8)
         #expect(encodedBytes.filter { $0 == 61 }.count == 2)
-        #expect(encodedBytes.count % 4 == 0)
+        #expect(encodedBytes.count.isMultiple(of: 4))
     }
 
     // MARK: - encodedValue round trip (#57)

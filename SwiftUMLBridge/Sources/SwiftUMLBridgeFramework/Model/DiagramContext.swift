@@ -59,7 +59,7 @@ class DiagramContext {
     /// The typealiases among the items the diagram was built from, found by
     /// `reserveIdentifiers(drawing:among:)`: a supertype written through one ends on the type it
     /// aliases (#125).
-    private var aliases = TypeAliasResolver.none
+    private var aliases = TypeAliasResolver.withoutProject
 
     private var linkTypeInheritance: String {
         (format == .nomnoml || format == .svg) ? "-:>" : "<|--"
@@ -372,8 +372,8 @@ class DiagramContext {
     /// it has no edge.
     private func hiddenParentName(of item: SyntaxStructure) -> String? {
         switch hiddenParentEnds[ObjectIdentifier(item)] {
-        case .element(let element)?: return uniqueNameForElement[element]
-        case .undeclared(let name)?: return name
+        case .element(let element): return uniqueNameForElement[element]
+        case .undeclared(let name): return name
         case nil: return nil
         }
     }

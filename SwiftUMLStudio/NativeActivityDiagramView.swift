@@ -199,5 +199,4 @@ struct NativeActivityDiagramView: View {
             context.draw(text, at: labelPoint, anchor: .leading)
         }
     }
-
 }

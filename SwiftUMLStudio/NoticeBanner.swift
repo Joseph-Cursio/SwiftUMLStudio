@@ -12,6 +12,7 @@ struct NoticeBanner<Content: View>: View {
             Image(systemName: systemImage)
                 .foregroundStyle(.orange)
                 .font(.title3)
+                .accessibilityHidden(true)
             content
             Spacer(minLength: 0)
         }

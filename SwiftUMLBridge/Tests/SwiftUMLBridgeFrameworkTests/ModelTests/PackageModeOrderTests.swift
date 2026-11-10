@@ -47,16 +47,11 @@ private struct TemporaryPackage {
     }
 }
 
-/// Package mode walked its files in the hash order of `sourceFileToModuleMap`, which Swift seeds
-/// per process and per dictionary, so the class diagram and dependency graph of the same package
-/// changed from run to run, and from call to call within one (#70). Files are now walked in path
-/// order.
-@Suite("Package mode walks its files in path order")
-struct PackageModeOrderTests {
-
+/// Shared by both suites below.
+private extension TemporaryPackage {
     /// `Core` declares `Format`, which `App` and `Zed` extend, and `App` and `Core` both extend
     /// `String`. Enough files that hash order was all but certain to differ across the ten calls.
-    fileprivate static func package() throws -> TemporaryPackage {
+    static func fixture() throws -> TemporaryPackage {
         let types = ["A", "B", "C", "D", "E", "F"].map { (name: "\($0).swift", source: "struct Type\($0) {}") }
         return try TemporaryPackage([
             (name: "Core", files: types + [
@@ -70,6 +65,14 @@ struct PackageModeOrderTests {
             (name: "Zed", files: [(name: "Format+ID.swift", source: "extension Format: Identifiable {}")])
         ])
     }
+}
+
+/// Package mode walked its files in the hash order of `sourceFileToModuleMap`, which Swift seeds
+/// per process and per dictionary, so the class diagram and dependency graph of the same package
+/// changed from run to run, and from call to call within one (#70). Files are now walked in path
+/// order.
+@Suite("Package mode walks its files in path order")
+struct PackageModeOrderTests {
 
     private func classDiagram(
         _ description: SPMPackageDescription, at root: URL, format: DiagramFormat = .plantuml,
@@ -114,9 +117,9 @@ struct PackageModeOrderTests {
 
     @Test("a class diagram is the same on every call, whatever order the description lists", arguments: [
         DiagramFormat.plantuml, .mermaid, .nomnoml, .svg
-    ], [ExtensionVisualization.all, .merged, .none])
+    ], [ExtensionVisualization.all, .merged, .hidden])
     func classDiagramIsRepeatable(format: DiagramFormat, extensions: ExtensionVisualization) throws {
-        let package = try Self.package()
+        let package = try TemporaryPackage.fixture()
         defer { package.remove() }
         let texts = Set([false, true].flatMap { reversed in
             (0..<5).map { _ in
@@ -131,7 +134,7 @@ struct PackageModeOrderTests {
         DiagramFormat.plantuml, .mermaid, .nomnoml, .svg
     ])
     func dependencyGraphIsRepeatable(format: DiagramFormat) throws {
-        let package = try Self.package()
+        let package = try TemporaryPackage.fixture()
         defer { package.remove() }
         let texts = Set([false, true].flatMap { reversed in
             (0..<5).map { _ in
@@ -145,7 +148,7 @@ struct PackageModeOrderTests {
     /// the module drawn on it, followed hash order too.
     @Test("the first extension in path order keeps the bare alias", arguments: [false, true])
     func firstInPathOrderKeepsTheName(reversed: Bool) throws {
-        let package = try Self.package()
+        let package = try TemporaryPackage.fixture()
         defer { package.remove() }
         let text = classDiagram(package.description(reversed: reversed), at: package.root)
         let strings = text.split(separator: "\n").filter { $0.hasPrefix("class \"String\"") }
@@ -174,7 +177,7 @@ struct PackageModeOrderTests {
     /// one, and that box's module and member order followed hash order too.
     @Test("merged extensions keep path order", arguments: [false, true])
     func mergedExtensionsKeepPathOrder(reversed: Bool) throws {
-        let package = try Self.package()
+        let package = try TemporaryPackage.fixture()
         defer { package.remove() }
         let text = classDiagram(package.description(reversed: reversed), at: package.root, extensions: .merged)
         let lines = text.split(separator: "\n").map { $0.trimmingCharacters(in: .whitespaces) }
@@ -204,7 +207,7 @@ struct PackageTypeModuleTests {
     /// in path order can stand in for the declaration.
     @Test("an extended type keeps the module that declares it", arguments: [false, true])
     func extendedType(reversed: Bool) throws {
-        let package = try PackageModeOrderTests.package()
+        let package = try TemporaryPackage.fixture()
         defer { package.remove() }
         #expect(dependencyGraph(package, reversed: reversed).contains("class \"Format\" as Format <<Core>>"))
         #expect(dependencyGraph(package, reversed: reversed, format: .mermaid)
@@ -240,7 +243,7 @@ struct PackageTypeModuleTests {
 
     @Test("a type no target declares takes the first module that extends it", arguments: [false, true])
     func undeclaredType(reversed: Bool) throws {
-        let package = try PackageModeOrderTests.package()
+        let package = try TemporaryPackage.fixture()
         defer { package.remove() }
         #expect(dependencyGraph(package, reversed: reversed).contains("class \"String\" as String <<App>>"))
     }

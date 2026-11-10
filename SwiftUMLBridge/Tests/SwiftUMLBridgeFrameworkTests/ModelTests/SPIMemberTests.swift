@@ -45,7 +45,7 @@ struct SPIMemberTests {
         let files = inBody
             ? Self.files(body: Self.bodyMember, writer: writer)
             : Self.files(extension: Self.extensionMember, writer: writer)
-        for mode in [ExtensionVisualization.all, .merged, .none] {
+        for mode in [ExtensionVisualization.all, .merged, .hidden] {
             let lines = try Fixture.lines(files, .plantuml, ElementOptions(showExtensions: mode))
             #expect(supertypeLines(in: lines) == ["RLogin <|-- W : inherits"], "\(mode)")
         }

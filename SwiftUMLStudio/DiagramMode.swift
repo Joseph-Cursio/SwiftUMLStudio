@@ -15,6 +15,7 @@ enum DiagramMode: String, CaseIterable, Identifiable {
     case activityDiagram = "Activity Diagram"
     case erDiagram = "ER Diagram"
     case componentDiagram = "Component Diagram"
+
     var id: String { rawValue }
 
     /// The entitlement this mode needs, or `nil` when it is free.
