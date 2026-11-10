@@ -156,7 +156,8 @@ struct TypealiasExtensionTests {
             """, file: "B.swift", module: "ModB")
         let merged = Configuration(elements: ElementOptions(showExtensions: .merged), format: .plantuml)
         let text = DiagramScript(items: modA + modB, configuration: merged).text
-        let importedBox = text.components(separatedBy: "class \"Inner\" as Inner ").dropFirst().first?
+        let importedBox = text.components(separatedBy: "class \"Inner\" as Inner ")
+            .dropFirst().first?
             .prefix { $0 != "}" } ?? ""
         #expect(!importedBox.contains("fromB"))
         let nestedBox = text.components(separatedBy: "as Outer.Inner ").dropFirst().first?.prefix { $0 != "}" } ?? ""

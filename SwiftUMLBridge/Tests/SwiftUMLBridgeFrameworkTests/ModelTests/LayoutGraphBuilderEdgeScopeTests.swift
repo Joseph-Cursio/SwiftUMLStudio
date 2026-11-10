@@ -55,8 +55,10 @@ struct LayoutGraphBuilderEdgeScopeTests {
         let items = [
             declared(.struct, "Name", in: "Tool/Name.swift", module: "Tool"),
             declared(.struct, "Name", in: "Core/Name.swift", module: "Core"),
-            declared(.extension, "Name", in: "Core/Name+Case.swift", module: "Core",
-                     nesting: [SyntaxStructure(kind: .enum, name: "Case")]),
+            declared(
+                .extension, "Name", in: "Core/Name+Case.swift", module: "Core",
+                nesting: [SyntaxStructure(kind: .enum, name: "Case")]
+            ),
         ]
         #expect(edges(for: items) == ["Name_1 -> Name.Case", "Name_2 -> Name_1"])
     }

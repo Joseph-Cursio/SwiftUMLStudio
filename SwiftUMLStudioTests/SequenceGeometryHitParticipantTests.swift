@@ -9,8 +9,12 @@ import Testing
 struct SequenceGeometryHitParticipantTests {
 
     private func makeParticipant(
-        name: String, centerX: Double, topY: Double = 20,
-        bottomTopY: Double = 400, width: Double = 120, height: Double = 36
+        name: String,
+        centerX: Double,
+        topY: Double = 20,
+        bottomTopY: Double = 400,
+        width: Double = 120,
+        height: Double = 36
     ) -> SequenceParticipant {
         SequenceParticipant(
             name: name, centerX: centerX, topY: topY,

@@ -151,7 +151,7 @@ struct SuggestionCardViewTests {
     @Test("renders title, description, and leading icon")
     func rendersContent() throws {
         let suggestion = makeSuggestion(title: "Class Diagram", description: "See your types")
-        let view = SuggestionCardView(suggestion: suggestion, onTap: { _ in })
+        let view = SuggestionCardView(suggestion: suggestion) { _ in }
         let strings = try view.inspect().findAll(ViewType.Text.self).map { try $0.string() }
         #expect(strings.contains("Class Diagram"))
         #expect(strings.contains("See your types"))
@@ -165,7 +165,7 @@ struct SuggestionCardViewTests {
     @Test("shows lock icon when Pro is required")
     func proLockVisible() throws {
         let suggestion = makeSuggestion(requiresPro: true)
-        let view = SuggestionCardView(suggestion: suggestion, onTap: { _ in })
+        let view = SuggestionCardView(suggestion: suggestion) { _ in }
         let images = try view.inspect().findAll(ViewType.Image.self)
         let names = images.compactMap { try? $0.actualImage().name() }
         #expect(names.contains("lock.fill"))
@@ -174,7 +174,7 @@ struct SuggestionCardViewTests {
     @Test("omits lock icon when free")
     func proLockHidden() throws {
         let suggestion = makeSuggestion(requiresPro: false)
-        let view = SuggestionCardView(suggestion: suggestion, onTap: { _ in })
+        let view = SuggestionCardView(suggestion: suggestion) { _ in }
         let images = try view.inspect().findAll(ViewType.Image.self)
         let names = images.compactMap { try? $0.actualImage().name() }
         #expect(names.contains("lock.fill") == false)
@@ -184,7 +184,7 @@ struct SuggestionCardViewTests {
     func tapFiresClosure() throws {
         let suggestion = makeSuggestion(title: "Tapped")
         var captured: DiagramSuggestion?
-        let view = SuggestionCardView(suggestion: suggestion, onTap: { captured = $0 })
+        let view = SuggestionCardView(suggestion: suggestion) { captured = $0 }
         try view.inspect().find(ViewType.Button.self).tap()
         #expect(captured?.title == "Tapped")
     }
@@ -200,9 +200,8 @@ struct ProjectDashboardViewTests {
     func nilSummaryShowsEmpty() throws {
         let view = ProjectDashboardView(
             summary: nil, insights: [], suggestions: [],
-            architectureDiff: nil, isProUnlocked: false,
-            onSuggestionTap: { _ in }
-        )
+            architectureDiff: nil, isProUnlocked: false
+        ) { _ in }
         // Keyed on view type, not on an accessibility identifier. An
         // identifier-based negative assertion passes vacuously while
         // ViewInspector 0.10.3 cannot read accessibility modifiers on macOS 27
@@ -220,9 +219,8 @@ struct ProjectDashboardViewTests {
     func populatedShowsContent() throws {
         let view = ProjectDashboardView(
             summary: makeSummary(), insights: [], suggestions: [],
-            architectureDiff: nil, isProUnlocked: false,
-            onSuggestionTap: { _ in }
-        )
+            architectureDiff: nil, isProUnlocked: false
+        ) { _ in }
         _ = try view.inspect().find(viewWithAccessibilityIdentifier: "dashboardContent")
     }
 
@@ -230,9 +228,8 @@ struct ProjectDashboardViewTests {
     func statsBarFiveCards() throws {
         let view = ProjectDashboardView(
             summary: makeSummary(), insights: [], suggestions: [],
-            architectureDiff: nil, isProUnlocked: false,
-            onSuggestionTap: { _ in }
-        )
+            architectureDiff: nil, isProUnlocked: false
+        ) { _ in }
         let cards = try view.inspect().findAll(StatCardView.self)
         #expect(cards.count == 5)
     }
@@ -241,10 +238,10 @@ struct ProjectDashboardViewTests {
     func insightsSectionHiddenWhenEmpty() throws {
         let view = ProjectDashboardView(
             summary: makeSummary(), insights: [], suggestions: [],
-            architectureDiff: nil, isProUnlocked: false,
-            onSuggestionTap: { _ in }
-        )
-        let insightsText = try view.inspect().findAll(ViewType.Text.self)
+            architectureDiff: nil, isProUnlocked: false
+        ) { _ in }
+        let insightsText = try view.inspect()
+            .findAll(ViewType.Text.self)
             .compactMap { try? $0.string() }
         #expect(insightsText.contains("Insights") == false)
     }
@@ -255,10 +252,10 @@ struct ProjectDashboardViewTests {
             summary: makeSummary(),
             insights: [makeInsight()],
             suggestions: [],
-            architectureDiff: nil, isProUnlocked: false,
-            onSuggestionTap: { _ in }
-        )
-        let strings = try view.inspect().findAll(ViewType.Text.self)
+            architectureDiff: nil, isProUnlocked: false
+        ) { _ in }
+        let strings = try view.inspect()
+            .findAll(ViewType.Text.self)
             .compactMap { try? $0.string() }
         #expect(strings.contains("Insights"))
     }
@@ -269,10 +266,10 @@ struct ProjectDashboardViewTests {
             summary: makeSummary(),
             insights: [],
             suggestions: [makeSuggestion()],
-            architectureDiff: nil, isProUnlocked: false,
-            onSuggestionTap: { _ in }
-        )
-        let strings = try view.inspect().findAll(ViewType.Text.self)
+            architectureDiff: nil, isProUnlocked: false
+        ) { _ in }
+        let strings = try view.inspect()
+            .findAll(ViewType.Text.self)
             .compactMap { try? $0.string() }
         #expect(strings.contains("Suggested Diagrams"))
     }
@@ -283,10 +280,10 @@ struct ProjectDashboardViewTests {
             summary: makeSummary(moduleBreakdown: []),
             insights: [],
             suggestions: [],
-            architectureDiff: nil, isProUnlocked: false,
-            onSuggestionTap: { _ in }
-        )
-        let strings = try view.inspect().findAll(ViewType.Text.self)
+            architectureDiff: nil, isProUnlocked: false
+        ) { _ in }
+        let strings = try view.inspect()
+            .findAll(ViewType.Text.self)
             .compactMap { try? $0.string() }
         #expect(strings.contains("Modules") == false)
     }
@@ -307,10 +304,10 @@ struct ProjectDashboardViewTests {
             summary: makeSummary(moduleBreakdown: modules),
             insights: [],
             suggestions: [],
-            architectureDiff: nil, isProUnlocked: false,
-            onSuggestionTap: { _ in }
-        )
-        let strings = try view.inspect().findAll(ViewType.Text.self)
+            architectureDiff: nil, isProUnlocked: false
+        ) { _ in }
+        let strings = try view.inspect()
+            .findAll(ViewType.Text.self)
             .compactMap { try? $0.string() }
         #expect(strings.contains("Modules"))
         #expect(strings.contains("Core"))

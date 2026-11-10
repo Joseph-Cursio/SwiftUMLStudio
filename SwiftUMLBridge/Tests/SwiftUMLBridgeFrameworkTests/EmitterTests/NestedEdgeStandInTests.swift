@@ -11,8 +11,12 @@ struct NestedEdgeStandInTests {
 
     /// A hand-built declaration in `file`, in `module`.
     private func declared(
-        _ kind: ElementKind, _ name: String, in file: String, module: String? = nil,
-        access: ElementAccessibility? = nil, members: [SyntaxStructure] = []
+        _ kind: ElementKind,
+        _ name: String,
+        in file: String,
+        module: String? = nil,
+        access: ElementAccessibility? = nil,
+        members: [SyntaxStructure] = []
     ) -> SyntaxStructure {
         let item = SyntaxStructure(
             accessibility: access, kind: kind, name: name, substructure: members.isEmpty ? nil : members
@@ -24,8 +28,10 @@ struct NestedEdgeStandInTests {
 
     /// `fileprivate struct Foo { struct Inner {} }` in A.swift; `fileprivate` is hidden by default.
     private func hiddenFoo() -> SyntaxStructure {
-        declared(.struct, "Foo", in: "A.swift", access: .fileprivate,
-                 members: [declared(.struct, "Inner", in: "A.swift")])
+        declared(
+            .struct, "Foo", in: "A.swift", access: .fileprivate,
+            members: [declared(.struct, "Inner", in: "A.swift")]
+        )
     }
 
     /// `extension Foo { func bar() {} }` in `file`.
@@ -83,12 +89,16 @@ struct NestedEdgeStandInTests {
     /// The stand-in is found by the hidden type's qualified name, `Outer.Foo`, not its short name.
     @Test("an extension stands in for a hidden nested type")
     func standInForHiddenNestedType() {
-        let hiddenNested = declared(.struct, "Foo", in: "A.swift", access: .fileprivate,
-                                    members: [declared(.struct, "Inner", in: "A.swift")])
+        let hiddenNested = declared(
+            .struct, "Foo", in: "A.swift", access: .fileprivate,
+            members: [declared(.struct, "Inner", in: "A.swift")]
+        )
         let items = [
             declared(.struct, "Outer", in: "A.swift", members: [hiddenNested]),
-            declared(.extension, "Outer.Foo", in: "A.swift",
-                     members: [SyntaxStructure(kind: .functionMethodInstance, name: "bar")]),
+            declared(
+                .extension, "Outer.Foo", in: "A.swift",
+                members: [SyntaxStructure(kind: .functionMethodInstance, name: "bar")]
+            ),
         ]
         #expect(edges(items, .plantuml) == ["Outer.Foo +-- Outer.Foo.Inner"])
         #expect(edges(items, .svg) == ["Outer.Foo -> Outer.Foo.Inner"])
@@ -130,8 +140,10 @@ struct NestedEdgeStandInTests {
         let items = [
             declared(.struct, "Foo", in: "A.swift", module: "ModA", access: .public),
             declared(.struct, "Foo", in: "B.swift", module: "ModB", access: .public),
-            declared(.extension, "Foo", in: "B.swift", module: "ModB",
-                     members: [declared(.struct, "Inner", in: "B.swift", module: "ModB")]),
+            declared(
+                .extension, "Foo", in: "B.swift", module: "ModB",
+                members: [declared(.struct, "Inner", in: "B.swift", module: "ModB")]
+            ),
         ]
         #expect(edges(items, .plantuml, .none) == ["Foo0 +-- Foo.Inner"])
         #expect(edges(items, .nomnoml, .none) == ["[Foo0] +- [Foo.Inner]"])

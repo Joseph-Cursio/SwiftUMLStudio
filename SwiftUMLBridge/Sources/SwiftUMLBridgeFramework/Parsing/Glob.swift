@@ -9,7 +9,7 @@ import Foundation
 //
 
 func pathContainsGlobSyntax(_ path: String) -> Bool {
-    "*?[{".contains(where: { path.contains($0) })
+    "*?[{".contains { path.contains($0) }
 }
 
 /// Glob type represents either an exact path or wildcard
@@ -40,7 +40,8 @@ internal enum Glob: CustomStringConvertible {
             return path
 
         case let .regex(regex):
-            var result = regex.pattern.dropFirst().dropLast()
+            var result = regex.pattern.dropFirst()
+                .dropLast()
                 .replacingOccurrences(of: "([^/]+)?", with: "*")
                 .replacingOccurrences(of: "(.+/)?", with: "**/")
                 .replacingOccurrences(of: ".+", with: "**")

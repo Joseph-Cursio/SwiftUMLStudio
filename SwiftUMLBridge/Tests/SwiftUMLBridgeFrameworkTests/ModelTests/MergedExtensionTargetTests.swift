@@ -13,8 +13,12 @@ struct MergedExtensionTargetTests {
     private static let merged = ElementOptions(showExtensions: .merged)
 
     private func declared(
-        _ kind: ElementKind, _ name: String, in file: String, module: String? = nil,
-        access: ElementAccessibility? = nil, members: [SyntaxStructure] = []
+        _ kind: ElementKind,
+        _ name: String,
+        in file: String,
+        module: String? = nil,
+        access: ElementAccessibility? = nil,
+        members: [SyntaxStructure] = []
     ) -> SyntaxStructure {
         let item = SyntaxStructure(
             accessibility: access, kind: kind, name: name, substructure: members.isEmpty ? nil : members

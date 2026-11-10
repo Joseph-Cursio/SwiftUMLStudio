@@ -24,7 +24,8 @@ struct DiagramExportMenuTests {
     private func itemTitles(_ viewModel: DiagramViewModel) async throws -> [String] {
         try await DiagramExportMenu(viewModel: viewModel, viewport: DiagramViewport()).inspectHosted { view in
             try view.find(ViewType.Menu.self)
-                .findAll(ViewType.Button.self).compactMap { try? $0.labelView().text().string() }
+                .findAll(ViewType.Button.self)
+                .compactMap { try? $0.labelView().text().string() }
         }
     }
 
@@ -74,8 +75,10 @@ struct DiagramExportMenuTests {
     func labelAndIdentifier() async throws {
         let menu = DiagramExportMenu(viewModel: makeViewModel(), viewport: DiagramViewport())
         try await menu.inspectHosted { view in
-            let label = try view.find(viewWithAccessibilityIdentifier: "diagramExportMenu").menu()
-                .labelView().label()
+            let label = try view.find(viewWithAccessibilityIdentifier: "diagramExportMenu")
+                .menu()
+                .labelView()
+                .label()
             #expect(try label.title().text().string() == "Export")
             #expect(try label.icon().image().actualImage().name() == "square.and.arrow.up")
         }

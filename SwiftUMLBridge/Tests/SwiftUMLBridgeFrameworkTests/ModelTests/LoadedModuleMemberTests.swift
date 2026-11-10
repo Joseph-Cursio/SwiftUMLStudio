@@ -88,8 +88,10 @@ struct LoadedModuleMemberTests {
             File(module: "ModC", source: "import ModA\n\nfinal class C: Foo.V {}\n"),
         ], member: "vOnly", hiddenLabel: "Foo.V"),
         Case(name: "a bare name never means a type nested in a module's namesake enum", files: [
-            File(module: "Other",
-                 source: "open class Base {\n    public init() {}\n    public func otherOnly() {}\n}\n"),
+            File(
+                module: "Other",
+                source: "open class Base {\n    public init() {}\n    public func otherOnly() {}\n}\n"
+            ),
             File(module: "App", source: "enum App {\n    class Base {\n        func appOnly() {}\n    }\n}\n"),
             File(module: "App", source: "import Other\n\nfinal class C: Base {}\n"),
         ], member: "otherOnly", hiddenLabel: nil),

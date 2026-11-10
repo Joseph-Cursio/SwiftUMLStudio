@@ -117,7 +117,10 @@ enum LayoutGraphBuilder {
     }
 
     private static func buildEdges(
-        from item: SyntaxStructure, nodeId: String, kind: ElementKind, relationships: RelationshipOptions,
+        from item: SyntaxStructure,
+        nodeId: String,
+        kind: ElementKind,
+        relationships: RelationshipOptions,
         aliases: TypeAliasResolver
     ) -> [PendingEdge] {
         var edges: [PendingEdge] = []
@@ -261,8 +264,10 @@ enum LayoutGraphBuilder {
     }
 
     private static func classifyMember(
-        _ element: SyntaxStructure, prefix: String,
-        properties: inout [String], methods: inout [String]
+        _ element: SyntaxStructure,
+        prefix: String,
+        properties: inout [String],
+        methods: inout [String]
     ) {
         guard let kind = element.kind, let memberName = element.name else { return }
         switch kind {

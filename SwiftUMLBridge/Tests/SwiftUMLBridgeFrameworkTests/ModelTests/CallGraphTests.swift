@@ -7,9 +7,12 @@ struct CallGraphTests {
     // MARK: - Helpers
 
     private func edge(
-        callerType: String, callerMethod: String,
-        calleeType: String?, calleeMethod: String,
-        isAsync: Bool = false, isUnresolved: Bool = false
+        callerType: String,
+        callerMethod: String,
+        calleeType: String?,
+        calleeMethod: String,
+        isAsync: Bool = false,
+        isUnresolved: Bool = false
     ) -> CallEdge {
         CallEdge(
             callerType: callerType,
@@ -157,9 +160,11 @@ struct CallGraphTests {
     @Test("unresolved edge appears in result but its callee is not expanded")
     func unresolvedEdgeIncludedNotExpanded() {
         let graph = CallGraph(edges: [
-            edge(callerType: "Foo", callerMethod: "run",
-                 calleeType: nil, calleeMethod: "unknown",
-                 isUnresolved: true),
+            edge(
+                callerType: "Foo", callerMethod: "run",
+                calleeType: nil, calleeMethod: "unknown",
+                isUnresolved: true
+            ),
             // Would be reachable if "unknown" were expanded — must NOT appear.
             edge(callerType: "Foo", callerMethod: "unknown", calleeType: "Bar", calleeMethod: "secret"),
         ])
@@ -173,9 +178,11 @@ struct CallGraphTests {
     func resolvedAndUnresolvedBothIncluded() {
         let graph = CallGraph(edges: [
             edge(callerType: "Foo", callerMethod: "run", calleeType: "Bar", calleeMethod: "process"),
-            edge(callerType: "Foo", callerMethod: "run",
-                 calleeType: nil, calleeMethod: "unknown",
-                 isUnresolved: true),
+            edge(
+                callerType: "Foo", callerMethod: "run",
+                calleeType: nil, calleeMethod: "unknown",
+                isUnresolved: true
+            ),
         ])
         let result = graph.traverse(from: "Foo", entryMethod: "run", maxDepth: 3)
         #expect(result.count == 2)
@@ -188,9 +195,11 @@ struct CallGraphTests {
     @Test("async flag is preserved on edges in the traversal result")
     func asyncFlagPreservedInResult() {
         let graph = CallGraph(edges: [
-            edge(callerType: "Foo", callerMethod: "run",
-                 calleeType: "Bar", calleeMethod: "load",
-                 isAsync: true),
+            edge(
+                callerType: "Foo", callerMethod: "run",
+                calleeType: "Bar", calleeMethod: "load",
+                isAsync: true
+            ),
         ])
         let result = graph.traverse(from: "Foo", entryMethod: "run", maxDepth: 3)
         #expect(result.first?.isAsync == true)

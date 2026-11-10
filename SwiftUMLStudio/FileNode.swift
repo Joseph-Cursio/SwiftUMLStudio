@@ -72,7 +72,7 @@ struct FileNode: Identifiable, Hashable {
             let dirComponents = nextURL.deletingLastPathComponent().pathComponents
             let minCount = min(commonComponents.count, dirComponents.count)
             let matchCount = zip(commonComponents.prefix(minCount), dirComponents.prefix(minCount))
-                .prefix(while: { $0 == $1 })
+                .prefix { $0 == $1 }
                 .count
             commonComponents = Array(commonComponents.prefix(matchCount))
         }
@@ -128,8 +128,10 @@ struct FileNode: Identifiable, Hashable {
                 // This is a directory
                 let childNodes = buildLevel(entries: deeper, depth: depth + 1, basePath: dirURL)
                 let leafNodes = leaves.map { entry in
-                    Self(id: entry.url, name: entry.url.lastPathComponent,
-                         url: entry.url, isDirectory: false, children: nil)
+                    Self(
+                        id: entry.url, name: entry.url.lastPathComponent,
+                        url: entry.url, isDirectory: false, children: nil
+                    )
                 }
                 // If the directory has only subdirectory children (no leaf files at this level),
                 // just add the child nodes. Otherwise combine.

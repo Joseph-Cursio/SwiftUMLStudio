@@ -44,15 +44,19 @@ struct MultilineReceiverTests {
     private func sequence(_ source: String, _ format: DiagramFormat) -> String {
         let edges = CallGraph(edges: CallGraphExtractor.extract(from: source).edges)
             .traverse(from: "Screen", entryMethod: "start", maxDepth: 3)
-        return SequenceScript(traversedEdges: edges, entryType: "Screen", entryMethod: "start",
-                              configuration: Configuration(format: format)).text
+        return SequenceScript(
+            traversedEdges: edges, entryType: "Screen", entryMethod: "start",
+            configuration: Configuration(format: format)
+        ).text
     }
 
     @Test("a receiver's line breaks are not part of it")
     func receiver() {
         let control = callees(Self.oneLine)
-        #expect(control == ["NotificationCenter.default post", "Screen init", "Store.shared load",
-                            "Store.shared save", "Text(\"Hello\").font(.title) padding", "Text font", "Screen Text"])
+        #expect(control == [
+            "NotificationCenter.default post", "Screen init", "Store.shared load",
+            "Store.shared save", "Text(\"Hello\").font(.title) padding", "Text font", "Screen Text",
+        ])
         #expect(callees(Self.split) == control)
     }
 
@@ -128,7 +132,9 @@ struct MultilineReceiverTests {
                         }
                     }
                 }
-                """).flatMap(\.transitions).compactMap(\.guardText)
+                """)
+                    .flatMap(\.transitions)
+                    .compactMap(\.guardText)
         }
         let control = guards("armed && ready")
         #expect(control == ["armed && ready"])

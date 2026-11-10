@@ -17,7 +17,10 @@ struct SugaredExtensionSupertypeScopeTests {
 
     /// The ids the supertype edges drawn from `child` end on, in drawing order.
     private func ends(
-        from child: String, _ source: String, _ format: DiagramFormat, _ mode: ExtensionVisualization = .all,
+        from child: String,
+        _ source: String,
+        _ format: DiagramFormat,
+        _ mode: ExtensionVisualization = .all,
         relationships: RelationshipOptions = RelationshipOptions()
     ) -> [String] {
         let drawn = classDiagram(source, format, mode, relationships: relationships)

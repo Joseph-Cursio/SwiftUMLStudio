@@ -58,8 +58,10 @@ public struct SequenceSVGRenderer: Sendable {
                 sourceLocation: typeLocations[name]
             )
         }
-        let messages = buildMessages(from: traversedEdges, participantX: participantX,
-                                     entryX: centerXs[0], startY: messagesStartY)
+        let messages = buildMessages(
+            from: traversedEdges, participantX: participantX,
+            entryX: centerXs[0], startY: messagesStartY
+        )
 
         return SequenceLayout(
             participants: participants, messages: messages,

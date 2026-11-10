@@ -85,7 +85,8 @@ struct DiagramTextTests {
     @Test("encodeText round-trips a generated class diagram with non-ASCII names")
     func generatedClassDiagramRoundTrips() {
         let script = ClassDiagramGenerator().generateScript(
-            for: "struct Café { let naïve: Int }", with: Configuration(format: .plantuml))
+            for: "struct Café { let naïve: Int }", with: Configuration(format: .plantuml)
+        )
         #expect(script.text.contains("naïve"))
         #expect(PlantUMLTextDecoding.decode(script.encodeText()) == script.text)
     }

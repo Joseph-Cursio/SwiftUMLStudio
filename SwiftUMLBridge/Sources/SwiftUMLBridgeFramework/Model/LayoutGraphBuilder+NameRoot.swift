@@ -109,8 +109,10 @@ extension LayoutGraphBuilder.TypeLookup {
     /// when that type has none, among those the file can reach
     /// (`fallbackCandidates(_:for:from:depth:)`).
     func fitting(
-        _ candidates: [LayoutGraphBuilder.Declared], for name: LayoutGraphBuilder.QualifiedName,
-        from scope: LayoutGraphBuilder.Scope, depth: Int
+        _ candidates: [LayoutGraphBuilder.Declared],
+        for name: LayoutGraphBuilder.QualifiedName,
+        from scope: LayoutGraphBuilder.Scope,
+        depth: Int
     ) -> [LayoutGraphBuilder.Declared] {
         switch name.root {
         case .projectType:

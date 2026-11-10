@@ -27,7 +27,9 @@ struct PackageModeOrderTests {
     }
 
     private func classDiagram(
-        _ description: SPMPackageDescription, at root: URL, format: DiagramFormat = .plantuml,
+        _ description: SPMPackageDescription,
+        at root: URL,
+        format: DiagramFormat = .plantuml,
         extensions: ExtensionVisualization = .all
     ) -> String {
         let configuration = Configuration(elements: ElementOptions(showExtensions: extensions), format: format)
@@ -48,14 +50,22 @@ struct PackageModeOrderTests {
     @Test("the files come in path order, without the test targets")
     func sourceFilesInPathOrder() {
         let description = SPMPackageDescription(name: "Demo", targets: [
-            SPMTargetDescription(name: "Zed", kind: .library, path: "Sources/Zed",
-                                 sources: ["B.swift", "A.swift"], dependencies: []),
-            SPMTargetDescription(name: "ZedTests", kind: .test, path: "Tests/ZedTests",
-                                 sources: ["ATests.swift"], dependencies: ["Zed"]),
-            SPMTargetDescription(name: "App", kind: .executable, path: "Sources/app",
-                                 sources: ["Main.swift"], dependencies: ["Zed"]),
-            SPMTargetDescription(name: "Core", kind: .library, path: "Sources/Aa",
-                                 sources: ["Core.swift"], dependencies: []),
+            SPMTargetDescription(
+                name: "Zed", kind: .library, path: "Sources/Zed",
+                sources: ["B.swift", "A.swift"], dependencies: []
+            ),
+            SPMTargetDescription(
+                name: "ZedTests", kind: .test, path: "Tests/ZedTests",
+                sources: ["ATests.swift"], dependencies: ["Zed"]
+            ),
+            SPMTargetDescription(
+                name: "App", kind: .executable, path: "Sources/app",
+                sources: ["Main.swift"], dependencies: ["Zed"]
+            ),
+            SPMTargetDescription(
+                name: "Core", kind: .library, path: "Sources/Aa",
+                sources: ["Core.swift"], dependencies: []
+            ),
         ])
         let root = URL(fileURLWithPath: "/pkg")
         let files = description.sourceFilesInPathOrder(packageRoot: root)
@@ -75,8 +85,10 @@ struct PackageModeOrderTests {
         defer { package.remove() }
         let texts = Set([false, true].flatMap { reversed in
             (0..<5).map { _ in
-                classDiagram(package.description(reversed: reversed), at: package.root, format: format,
-                             extensions: extensions)
+                classDiagram(
+                    package.description(reversed: reversed), at: package.root, format: format,
+                    extensions: extensions
+                )
             }
         })
         #expect(texts.count == 1)

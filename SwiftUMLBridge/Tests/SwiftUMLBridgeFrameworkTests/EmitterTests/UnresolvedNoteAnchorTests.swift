@@ -136,12 +136,18 @@ struct UnresolvedNoteAnchorTests {
     /// The repo's own Mermaid and PlantUML fixture: `Foo.run` calls `Bar.process()`, `Bar.finish()`
     /// and then an unresolved `unknownClosure`, which is Foo's call.
     private let fixture = [
-        CallEdge(callerType: "Foo", callerMethod: "run", calleeType: "Bar", calleeMethod: "process",
-                 isAsync: false, isUnresolved: false),
-        CallEdge(callerType: "Foo", callerMethod: "run", calleeType: "Bar", calleeMethod: "finish",
-                 isAsync: true, isUnresolved: false),
-        CallEdge(callerType: "Foo", callerMethod: "run", calleeType: nil, calleeMethod: "unknownClosure",
-                 isAsync: false, isUnresolved: true),
+        CallEdge(
+            callerType: "Foo", callerMethod: "run", calleeType: "Bar", calleeMethod: "process",
+            isAsync: false, isUnresolved: false
+        ),
+        CallEdge(
+            callerType: "Foo", callerMethod: "run", calleeType: "Bar", calleeMethod: "finish",
+            isAsync: true, isUnresolved: false
+        ),
+        CallEdge(
+            callerType: "Foo", callerMethod: "run", calleeType: nil, calleeMethod: "unknownClosure",
+            isAsync: false, isUnresolved: true
+        ),
     ]
 
     @Test("the emitter fixture's note sits beside Foo, which made the call")
@@ -159,10 +165,14 @@ struct UnresolvedNoteAnchorTests {
     @Test("a note whose caller is no participant sits beside the entry type")
     func unknownCallerFallsBack() throws {
         let edges = [
-            CallEdge(callerType: "Foo", callerMethod: "run", calleeType: "Bar", calleeMethod: "process",
-                     isAsync: false, isUnresolved: false),
-            CallEdge(callerType: "Ghost", callerMethod: "haunt", calleeType: nil, calleeMethod: "boo",
-                     isAsync: false, isUnresolved: true),
+            CallEdge(
+                callerType: "Foo", callerMethod: "run", calleeType: "Bar", calleeMethod: "process",
+                isAsync: false, isUnresolved: false
+            ),
+            CallEdge(
+                callerType: "Ghost", callerMethod: "haunt", calleeType: nil, calleeMethod: "boo",
+                isAsync: false, isUnresolved: true
+            ),
         ]
         #expect(noteLines(handBuilt(edges, .mermaid).text) == ["Note right of Foo: Unresolved: boo()"])
         #expect(noteLines(handBuilt(edges, .plantuml).text) == ["note right of Foo: Unresolved: boo()"])

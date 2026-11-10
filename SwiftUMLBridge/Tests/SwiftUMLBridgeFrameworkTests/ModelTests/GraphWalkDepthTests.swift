@@ -57,8 +57,10 @@ struct GraphWalkDepthTests {
     @Test("a deps script of a long ring is written in every text format",
           arguments: DiagramFormat.allCases.filter { $0 != .svg })
     func depsScript(format: DiagramFormat) {
-        let script = DepsScript(model: DependencyGraphModel(edges: Self.ring),
-                                configuration: Configuration(format: format))
+        let script = DepsScript(
+            model: DependencyGraphModel(edges: Self.ring),
+            configuration: Configuration(format: format)
+        )
         #expect(!script.text.isEmpty)
     }
 

@@ -196,10 +196,12 @@ struct NestedSquareBracketTests {
             let paths = [url.path]
             let generators: [(String, () -> Void)] = [
                 ("sequence", { _ = SequenceDiagramGenerator().generateScript(
-                    for: paths, entryType: "S", entryMethod: "x", with: .default)
+                    for: paths, entryType: "S", entryMethod: "x", with: .default
+                )
                 }),
                 ("activity", { _ = ActivityDiagramGenerator().generateScript(
-                    for: paths, entryType: "S", entryMethod: "x", with: .default)
+                    for: paths, entryType: "S", entryMethod: "x", with: .default
+                )
                 }),
                 ("state", { _ = StateMachineGenerator().findCandidates(for: paths) }),
                 ("er", { _ = ERDiagramGenerator().generateScript(for: paths) }),

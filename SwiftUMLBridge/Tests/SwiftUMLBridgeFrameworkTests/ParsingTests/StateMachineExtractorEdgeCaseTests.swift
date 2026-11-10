@@ -35,7 +35,7 @@ struct StateMachineExtractorEdgeCaseTests {
         #expect(models.count == 1)
         #expect(models.first?.confidence == .low)
         #expect(models.first?.transitions.allSatisfy { $0.from == "*" } == true)
-        #expect(models.first?.notes.contains(where: { $0.contains("No switch statement") }) == true)
+        #expect(models.first?.notes.contains { $0.contains("No switch statement") } == true)
     }
 
     @Test("switch on a different property yields low-confidence candidate")
@@ -55,7 +55,7 @@ struct StateMachineExtractorEdgeCaseTests {
         }
         """
         let models = StateMachineExtractor.extract(from: source)
-        let stateModel = models.first(where: { $0.enumType == "Light" })
+        let stateModel = models.first { $0.enumType == "Light" }
         #expect(stateModel != nil)
         #expect(stateModel?.confidence == .low)
         #expect(stateModel?.transitions.allSatisfy { $0.from == "*" } == true)
@@ -96,7 +96,7 @@ struct StateMachineExtractorEdgeCaseTests {
         """
         let models = StateMachineExtractor.extract(from: source)
         #expect(models.first?.confidence == .medium)
-        #expect(models.first?.notes.contains(where: { $0.contains("inferred") }) == true)
+        #expect(models.first?.notes.contains { $0.contains("inferred") } == true)
     }
 
     @Test("@Published wrapper with explicit type annotation is detected")
@@ -161,7 +161,7 @@ struct StateMachineExtractorEdgeCaseTests {
         """
         let models = StateMachineExtractor.extract(from: source)
         let transitions = models.first?.transitions ?? []
-        let guarded = transitions.first(where: { $0.guardText != nil })
+        let guarded = transitions.first { $0.guardText != nil }
         #expect(guarded != nil)
         #expect(guarded?.from == "idle")
         #expect(guarded?.toState == "retrying")

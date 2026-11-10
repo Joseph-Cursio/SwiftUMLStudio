@@ -15,7 +15,7 @@ struct CallGraphExtractorTests {
         }
         """
         let result = CallGraphExtractor.extract(from: source)
-        let edge = result.edges.first(where: { $0.callerMethod == "bar" && $0.calleeMethod == "baz" })
+        let edge = result.edges.first { $0.callerMethod == "bar" && $0.calleeMethod == "baz" }
         #expect(edge != nil)
         #expect(edge?.callerType == "Foo")
         #expect(edge?.calleeType == "Foo")
@@ -31,7 +31,7 @@ struct CallGraphExtractorTests {
         }
         """
         let result = CallGraphExtractor.extract(from: source)
-        let edge = result.edges.first(where: { $0.callerMethod == "bar" && $0.calleeMethod == "baz" })
+        let edge = result.edges.first { $0.callerMethod == "bar" && $0.calleeMethod == "baz" }
         #expect(edge != nil)
         #expect(edge?.callerType == "Foo")
         #expect(edge?.calleeType == "Foo")
@@ -46,7 +46,7 @@ struct CallGraphExtractorTests {
         }
         """
         let result = CallGraphExtractor.extract(from: source)
-        let edge = result.edges.first(where: { $0.calleeMethod == "doWork" })
+        let edge = result.edges.first { $0.calleeMethod == "doWork" }
         #expect(edge != nil)
         #expect(edge?.callerType == "Foo")
         #expect(edge?.calleeType == "Other")
@@ -61,7 +61,7 @@ struct CallGraphExtractorTests {
         }
         """
         let result = CallGraphExtractor.extract(from: source)
-        let edge = result.edges.first(where: { $0.calleeMethod == "doWork" })
+        let edge = result.edges.first { $0.calleeMethod == "doWork" }
         #expect(edge != nil)
         #expect(edge?.isUnresolved == true)
         #expect(edge?.calleeType == nil)
@@ -91,7 +91,7 @@ struct CallGraphExtractorTests {
         }
         """
         let result = CallGraphExtractor.extract(from: source)
-        let edge = result.edges.first(where: { $0.calleeMethod == "baz" })
+        let edge = result.edges.first { $0.calleeMethod == "baz" }
         #expect(edge != nil)
         #expect(edge?.isAsync == true)
         #expect(edge?.isUnresolved == false)
@@ -106,7 +106,7 @@ struct CallGraphExtractorTests {
         }
         """
         let result = CallGraphExtractor.extract(from: source)
-        let edge = result.edges.first(where: { $0.calleeMethod == "baz" })
+        let edge = result.edges.first { $0.calleeMethod == "baz" }
         #expect(edge != nil)
         #expect(edge?.isAsync == false)
     }
@@ -122,7 +122,7 @@ struct CallGraphExtractorTests {
         }
         """
         let result = CallGraphExtractor.extract(from: source)
-        let edge = result.edges.first(where: { $0.calleeMethod == "doThing" })
+        let edge = result.edges.first { $0.calleeMethod == "doThing" }
         #expect(edge?.callerType == "Inner")
     }
 
@@ -160,7 +160,7 @@ struct CallGraphExtractorTests {
         }
         """
         let result = CallGraphExtractor.extract(from: source)
-        let edge = result.edges.first(where: { $0.calleeMethod == "helper" })
+        let edge = result.edges.first { $0.calleeMethod == "helper" }
         #expect(edge != nil)
         #expect(edge?.callerType == "Foo")
         #expect(edge?.calleeType == "Foo")
@@ -175,7 +175,7 @@ struct CallGraphExtractorTests {
         }
         """
         let result = CallGraphExtractor.extract(from: source)
-        let edge = result.edges.first(where: { $0.callerType == "MyStruct" })
+        let edge = result.edges.first { $0.callerType == "MyStruct" }
         #expect(edge != nil)
     }
 
@@ -188,7 +188,7 @@ struct CallGraphExtractorTests {
         }
         """
         let result = CallGraphExtractor.extract(from: source)
-        let edge = result.edges.first(where: { $0.callerType == "MyActor" })
+        let edge = result.edges.first { $0.callerType == "MyActor" }
         #expect(edge != nil)
     }
 }

@@ -15,7 +15,8 @@ struct IfConfigERTests {
                 \(attributes)
                 var email: String = ""
             }
-            """).entities.flatMap(\.attributes)
+            """).entities
+            .flatMap(\.attributes)
             .map { "\($0.name) unique=\($0.isUnique) pk=\($0.isPrimaryKey) transient=\($0.isTransient)" }
     }
 
@@ -54,7 +55,9 @@ struct IfConfigERTests {
                 var phoneNote: String = ""
                 #endif
             }
-            """).entities.flatMap(\.attributes).map(\.name)
+            """).entities
+                .flatMap(\.attributes)
+                .map(\.name)
         #expect(attributes == ["name", "debugNote", "phoneNote"])
     }
 
@@ -68,7 +71,9 @@ struct IfConfigERTests {
                 var level: Int64 = 0
                 #endif
             }
-            """).entities.flatMap(\.attributes).map { "\($0.name): \($0.type)" }
+            """).entities
+                .flatMap(\.attributes)
+                .map { "\($0.name): \($0.type)" }
         #expect(attributes == ["level: Int"])
     }
 
@@ -139,7 +144,8 @@ struct IfConfigERTests {
             final class Item {
                 var title: String = ""
             }
-            """, ifConfig: ifConfig)).entities.map(\.name)
+            """, ifConfig: ifConfig)).entities
+                .map(\.name)
         #expect(entities == ["Item"])
     }
 
@@ -157,7 +163,9 @@ struct IfConfigERTests {
                 var debugScore: Int64
                 #endif
             }
-            """, ifConfig: ifConfig)).entities.flatMap(\.attributes).map { "\($0.name): \($0.type)" }
+            """, ifConfig: ifConfig)).entities
+                .flatMap(\.attributes)
+                .map { "\($0.name): \($0.type)" }
         #expect(columns == ["id: Int64", "name: String", "debugScore: Int"])
     }
 

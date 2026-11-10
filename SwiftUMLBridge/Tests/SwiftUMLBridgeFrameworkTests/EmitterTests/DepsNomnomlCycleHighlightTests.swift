@@ -19,7 +19,8 @@ struct DepsNomnomlCycleHighlightTests {
         try FileManager.default.createDirectory(at: targetDir, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: root) }
         try Self.source.write(
-            to: targetDir.appendingPathComponent("Shape.swift"), atomically: true, encoding: .utf8)
+            to: targetDir.appendingPathComponent("Shape.swift"), atomically: true, encoding: .utf8
+        )
 
         var config = Configuration.default
         config.format = .nomnoml
@@ -28,8 +29,10 @@ struct DepsNomnomlCycleHighlightTests {
                 .generateScript(for: [targetDir.path], mode: .types, with: config).text
         }
         let description = SPMPackageDescription(name: "Shapes", targets: [
-            SPMTargetDescription(name: "Geometry", kind: .library, path: "Sources/Geometry",
-                                 sources: ["Shape.swift"], dependencies: []),
+            SPMTargetDescription(
+                name: "Geometry", kind: .library, path: "Sources/Geometry",
+                sources: ["Shape.swift"], dependencies: []
+            ),
         ])
         return DependencyGraphGenerator().generateScript(
             forPackage: description, packageRoot: root, mode: .types, with: config

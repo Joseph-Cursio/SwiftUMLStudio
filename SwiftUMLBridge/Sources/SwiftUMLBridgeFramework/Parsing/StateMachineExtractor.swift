@@ -169,7 +169,7 @@ final class StateMachineExtractor: TypeStackVisitor {
             guard let propertyName = Self.propertyName(from: ExprSyntax(lhs)),
                   let rhsCase = Self.enumCaseFromMemberAccess(ExprSyntax(rhs)) else { continue }
 
-            let activeSwitch = switchStack.last(where: { $0.currentCaseName != nil })
+            let activeSwitch = switchStack.last { $0.currentCaseName != nil }
             let matches = activeSwitch?.subjectPropertyName == propertyName
             observedTransitions.append(ObservedTransition(
                 typeName: typeName,

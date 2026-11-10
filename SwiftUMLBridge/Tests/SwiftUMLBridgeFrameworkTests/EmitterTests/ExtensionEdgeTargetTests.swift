@@ -31,7 +31,10 @@ struct ExtensionEdgeTargetTests {
     }
 
     private func declared(
-        _ kind: ElementKind, _ name: String, in file: String, module: String? = nil,
+        _ kind: ElementKind,
+        _ name: String,
+        in file: String,
+        module: String? = nil,
         access: ElementAccessibility? = nil
     ) -> SyntaxStructure {
         let item = SyntaxStructure(accessibility: access, kind: kind, name: name)

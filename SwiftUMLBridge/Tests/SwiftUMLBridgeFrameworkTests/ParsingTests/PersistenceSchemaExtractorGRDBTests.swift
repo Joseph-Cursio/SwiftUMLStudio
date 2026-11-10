@@ -72,8 +72,8 @@ struct PersistenceSchemaExtractorGRDBTests {
     func grdbStaticAssociationsAreNotColumns() throws {
         let model = try extractFromFixture("GRDBPlayer.swift")
         let player = try #require(model.entities.first { $0.name == "Player" })
-        #expect(player.attributes.contains(where: { $0.name == "team" }) == false)
-        #expect(player.attributes.contains(where: { $0.name == "scores" }) == false)
+        #expect(player.attributes.contains { $0.name == "team" } == false)
+        #expect(player.attributes.contains { $0.name == "scores" } == false)
     }
 
     @Test("GRDBPlayerNoAssociations: a record with no associations still emits its entity")

@@ -47,7 +47,7 @@ struct ERPlantUMLTests {
         ])
         let script = makeScript(model: model)
         let nameLine = script.text.split(separator: "\n")
-            .first(where: { $0.contains("name : String") })
+            .first { $0.contains("name : String") }
         #expect(nameLine?.contains("*") == false)
     }
 
@@ -61,10 +61,10 @@ struct ERPlantUMLTests {
         ])
         let script = makeScript(model: model)
         let lines = script.text.split(separator: "\n").map(String.init)
-        let idIndex = try #require(lines.firstIndex(where: { $0.contains("* id") }))
-        let nameIndex = try #require(lines.firstIndex(where: { $0.contains("name : String") }))
+        let idIndex = try #require(lines.firstIndex { $0.contains("* id") })
+        let nameIndex = try #require(lines.firstIndex { $0.contains("name : String") })
         let separatorIndex = try #require(
-            lines.firstIndex(where: { $0.trimmingCharacters(in: .whitespaces) == "--" })
+            lines.firstIndex { $0.trimmingCharacters(in: .whitespaces) == "--" }
         )
         #expect(idIndex < separatorIndex)
         #expect(separatorIndex < nameIndex)
@@ -158,7 +158,7 @@ struct ERPlantUMLTests {
         let script = makeScript(model: model)
         let lines = script.text.split(separator: "\n").map(String.init)
         let lastClose = try #require(lines.lastIndex(of: "}"))
-        let edgeIndex = try #require(lines.firstIndex(where: { $0.contains("||--o{") }))
+        let edgeIndex = try #require(lines.firstIndex { $0.contains("||--o{") })
         #expect(lastClose < edgeIndex)
     }
 

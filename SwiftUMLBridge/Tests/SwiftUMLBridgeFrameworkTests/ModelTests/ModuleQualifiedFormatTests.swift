@@ -160,11 +160,15 @@ struct ModuleQualifiedFormatTests {
     /// ModB's `extension ModA.Foo` nests in `Foo`: hidden and merged into `Foo`, that class ranks
     /// in ModB, as it does drawn, wherever ModA writes the name.
     @Test("another module's hidden nested type does not shadow the type module's own alias", arguments: [
-        ["public struct Foo {\n    public init() {}\n}\n\nopen class Base {\n    public init() {}\n}\n",
-         "extension Foo {\n    public typealias V = Base\n}\n",
-         "final class UseA: Foo.V {}\n"],
-        ["public struct Foo {\n    public init() {}\n    public typealias V = Base\n}\n\n"
-            + "open class Base {\n    public init() {}\n}\n\nfinal class UseA: Foo.V {}\n"],
+        [
+            "public struct Foo {\n    public init() {}\n}\n\nopen class Base {\n    public init() {}\n}\n",
+            "extension Foo {\n    public typealias V = Base\n}\n",
+            "final class UseA: Foo.V {}\n",
+        ],
+        [
+            "public struct Foo {\n    public init() {}\n    public typealias V = Base\n}\n\n"
+               + "open class Base {\n    public init() {}\n}\n\nfinal class UseA: Foo.V {}\n",
+        ],
     ])
     func hiddenNestedTypeOfOtherModule(modA: [String]) throws {
         let modB = "import ModA\n\nextension ModA.Foo {\n    open class V {\n        public init() {}\n    }\n}\n"

@@ -74,10 +74,14 @@ extension ComponentSVGRenderer {
         let originX = component.centerX - component.width / 2
         let originY = component.centerY - component.height / 2
         var lines: [String] = [
-            boxRect(originX: originX, originY: originY,
-                    width: component.width, height: component.height, fill: "#f7f7f9"),
-            boxRect(originX: originX, originY: originY,
-                    width: component.width, height: headerHeight, fill: "#e6e8ef"),
+            boxRect(
+                originX: originX, originY: originY,
+                width: component.width, height: component.height, fill: "#f7f7f9"
+            ),
+            boxRect(
+                originX: originX, originY: originY,
+                width: component.width, height: headerHeight, fill: "#e6e8ef"
+            ),
         ]
         let stereotype = "«\(stereotypeLabel(for: component.kind))»"
         lines.append(textElement(

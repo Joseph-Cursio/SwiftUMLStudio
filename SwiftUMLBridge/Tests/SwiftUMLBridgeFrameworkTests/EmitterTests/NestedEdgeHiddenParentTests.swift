@@ -10,8 +10,10 @@ struct NestedEdgeHiddenParentTests {
         of source: String, _ format: DiagramFormat = .plantuml, elements: ElementOptions = ElementOptions()
     ) -> [String] {
         let marker = format == .plantuml ? "+--" : "+-"
-        return ClassDiagramIds.lines(of: ClassDiagramIds.script(for: source, format: format, elements: elements),
-                                     containing: marker)
+        return ClassDiagramIds.lines(
+            of: ClassDiagramIds.script(for: source, format: format, elements: elements),
+            containing: marker
+        )
     }
 
     // MARK: - Hidden Type Parents

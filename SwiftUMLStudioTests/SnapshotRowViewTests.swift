@@ -29,7 +29,8 @@ struct SnapshotRowViewTests {
         let view = SnapshotRowView(snapshot: makeSnapshot(
             typeCount: 12, relationshipCount: 7, moduleCount: 4
         ))
-        let strings = try view.inspect().findAll(ViewType.Text.self)
+        let strings = try view.inspect()
+            .findAll(ViewType.Text.self)
             .compactMap { try? $0.string() }
         #expect(strings.contains("12 types"))
         #expect(strings.contains("7 rels"))
@@ -39,7 +40,8 @@ struct SnapshotRowViewTests {
     @Test("nil timestamp falls back to \"Unknown\"")
     func unknownTimestamp() throws {
         let view = SnapshotRowView(snapshot: makeSnapshot(timestamp: nil))
-        let strings = try view.inspect().findAll(ViewType.Text.self)
+        let strings = try view.inspect()
+            .findAll(ViewType.Text.self)
             .compactMap { try? $0.string() }
         #expect(strings.contains("Unknown"))
     }

@@ -10,7 +10,8 @@ struct SettingsViewTests {
 
     private func consentToggle(_ consent: PlantUMLConsent) throws -> InspectableView<ViewType.Toggle> {
         try SettingsView(consent: consent).inspect()
-            .find(viewWithAccessibilityIdentifier: "plantUMLConsentToggle").toggle()
+            .find(viewWithAccessibilityIdentifier: "plantUMLConsentToggle")
+            .toggle()
     }
 
     @Test("the PlantUML toggle is on only for a grant", arguments: PlantUMLConsent.Decision.allCases)

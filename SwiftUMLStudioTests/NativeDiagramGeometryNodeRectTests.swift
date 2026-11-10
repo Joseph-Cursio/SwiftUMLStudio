@@ -9,8 +9,10 @@ import Testing
 struct NativeDiagramGeometryNodeRectTests {
 
     private func makeNode(
-        posX: Double = 100, posY: Double = 200,
-        width: Double = 80, height: Double = 60
+        posX: Double = 100,
+        posY: Double = 200,
+        width: Double = 80,
+        height: Double = 60
     ) -> LayoutNode {
         var node = LayoutNode(id: "n", label: "", stereotype: nil, compartments: [])
         node.posX = posX

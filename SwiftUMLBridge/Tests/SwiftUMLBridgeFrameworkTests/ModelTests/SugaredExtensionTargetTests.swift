@@ -35,7 +35,8 @@ struct SugaredExtensionTargetTests {
     /// Member lines `--merge-extensions` marks as merged into a type (`<&bolt>`).
     private func mergedMembers(_ source: String) -> [String] {
         script(source, .plantuml, .merged).split(separator: "\n")
-            .map { $0.trimmingCharacters(in: .whitespaces) }.filter { $0.hasSuffix("<&bolt>") }
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { $0.hasSuffix("<&bolt>") }
     }
 
     private func mergedIds(_ source: String) -> [String] {

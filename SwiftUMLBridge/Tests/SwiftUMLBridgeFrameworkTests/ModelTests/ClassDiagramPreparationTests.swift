@@ -68,28 +68,42 @@ struct ClassDiagramPreparationTests {
     /// Each case's SVG graph must equal one preparation of freshly parsed items, and pin that result.
     static let mergedCases: [MergedCase] = [
         // Two extensions and no type: the first extension receives the second, with no suffix.
-        MergedCase("extension Foo { func bar() {} }\nextension Foo { func baz() {} }",
-                   ids: ["Foo"], members: [["~ bar()", "~ baz()"]]),
+        MergedCase(
+            "extension Foo { func bar() {} }\nextension Foo { func baz() {} }",
+            ids: ["Foo"], members: [["~ bar()", "~ baz()"]]
+        ),
         // An extension of a nested type merges through the parent links nesting sets.
-        MergedCase("struct Foo { struct Inner {} }\nextension Foo.Inner { func bar() {} }",
-                   ids: ["Foo", "Foo.Inner"], members: [[], ["~ bar()"]], edges: ["Foo -> Foo.Inner"]),
+        MergedCase(
+            "struct Foo { struct Inner {} }\nextension Foo.Inner { func bar() {} }",
+            ids: ["Foo", "Foo.Inner"], members: [[], ["~ bar()"]], edges: ["Foo -> Foo.Inner"]
+        ),
         // A type nested in an extension of an extension-only type hangs off the first extension.
-        MergedCase("extension Foo { func a() {} }\nextension Foo { struct Inner {} }",
-                   ids: ["Foo.Inner", "Foo"], members: [[], ["~ a()"]], edges: ["Foo -> Foo.Inner"]),
+        MergedCase(
+            "extension Foo { func a() {} }\nextension Foo { struct Inner {} }",
+            ids: ["Foo.Inner", "Foo"], members: [[], ["~ a()"]], edges: ["Foo -> Foo.Inner"]
+        ),
         // A protocol receives its extension like any other type.
-        MergedCase("protocol P { func a() }\nextension P { func b() {} }",
-                   ids: ["P"], members: [["~ a()", "~ b()"]]),
+        MergedCase(
+            "protocol P { func a() }\nextension P { func b() {} }",
+            ids: ["P"], members: [["~ a()", "~ b()"]]
+        ),
         // An enum keeps its cases ahead of the merged members.
-        MergedCase("enum Dir { case north }\nextension Dir { func flip() {} }",
-                   ids: ["Dir"], members: [["north", "~ flip()"]]),
+        MergedCase(
+            "enum Dir { case north }\nextension Dir { func flip() {} }",
+            ids: ["Dir"], members: [["north", "~ flip()"]]
+        ),
         // A type nested in an extension, then extended itself.
-        MergedCase("struct Foo {}\nextension Foo { struct Inner {} }\nextension Foo.Inner { func x() {} }",
-                   ids: ["Foo", "Foo.Inner"], members: [[], ["~ x()"]], edges: ["Foo -> Foo.Inner"]),
+        MergedCase(
+            "struct Foo {}\nextension Foo { struct Inner {} }\nextension Foo.Inner { func x() {} }",
+            ids: ["Foo", "Foo.Inner"], members: [[], ["~ x()"]], edges: ["Foo -> Foo.Inner"]
+        ),
         // Deep nesting: every child keeps pointing at its own parent.
-        MergedCase("struct A { struct B { struct C {} } }\n"
-                   + "extension A.B { func m() {} }\nextension A.B.C { func n() {} }",
-                   ids: ["A", "A.B", "A.B.C"], members: [[], ["~ m()"], ["~ n()"]],
-                   edges: ["A -> A.B", "A.B -> A.B.C"]),
+        MergedCase(
+            "struct A { struct B { struct C {} } }\n"
+            + "extension A.B { func m() {} }\nextension A.B.C { func n() {} }",
+            ids: ["A", "A.B", "A.B.C"], members: [[], ["~ m()"], ["~ n()"]],
+            edges: ["A -> A.B", "A.B -> A.B.C"]
+        ),
     ]
 
     @Test("the SVG path matches one preparation", arguments: Self.mergedCases)

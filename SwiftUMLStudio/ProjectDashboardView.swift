@@ -52,7 +52,7 @@ struct TypeBreakdownGrid: View {
             Text("Type Breakdown")
                 .font(.headline)
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 100))], spacing: 8) {
-                ForEach(summary.typeBreakdown.sorted(by: { $0.value > $1.value }), id: \.key) { kind, count in
+                ForEach(summary.typeBreakdown.sorted { $0.value > $1.value }, id: \.key) { kind, count in
                     HStack {
                         Text(kind)
                             .font(.caption)

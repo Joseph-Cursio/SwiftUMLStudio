@@ -72,8 +72,12 @@ struct ComponentSVGRendererLayoutTests {
             components: [Component(name: "Lib", kind: .library, providedInterfaces: ["Foo"])]
         )
         let longInterface = ComponentModel(
-            components: [Component(name: "Lib", kind: .library,
-                                   providedInterfaces: ["AVeryLongPublicInterfaceName"])]
+            components: [
+                Component(
+                    name: "Lib", kind: .library,
+                    providedInterfaces: ["AVeryLongPublicInterfaceName"]
+                ),
+            ]
         )
         let shortWidth = ComponentSVGRenderer.computeLayout(shortInterface).components[0].width
         let longWidth = ComponentSVGRenderer.computeLayout(longInterface).components[0].width

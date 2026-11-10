@@ -149,7 +149,8 @@ struct DeepNestingTests {
             ClassDiagramGenerator().generateScript(
                 for: "struct S {\n    let x = \(Self.nestedCalls(depth))\n}\nstruct After {}\n",
                 with: Configuration(format: .plantuml)
-            ).text.contains("as After ")
+            ).text
+                .contains("as After ")
         }
         #expect(readsAfter(255))
         #expect(!readsAfter(256))

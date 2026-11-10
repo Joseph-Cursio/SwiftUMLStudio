@@ -93,7 +93,7 @@ struct ArchitectureDiffView: View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Type Breakdown Changes")
                 .font(.subheadline.bold())
-            ForEach(diff.typeBreakdownDeltas.sorted(by: { abs($0.value) > abs($1.value) }), id: \.key) { kind, delta in
+            ForEach(diff.typeBreakdownDeltas.sorted { abs($0.value) > abs($1.value) }, id: \.key) { kind, delta in
                 HStack {
                     Text(kind)
                         .font(.caption)

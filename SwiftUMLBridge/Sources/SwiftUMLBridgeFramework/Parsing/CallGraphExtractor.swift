@@ -75,7 +75,9 @@ final class CallGraphExtractor: TypeStackVisitor {
 
     private func resolveMemberAccess(
         _ memberAccess: MemberAccessExprSyntax,
-        callerType: String, callerMethod: String, isAsync: Bool
+        callerType: String,
+        callerMethod: String,
+        isAsync: Bool
     ) -> CallEdge {
         let methodName = memberAccess.declName.baseName.canonicalName
         guard let base = memberAccess.base else {

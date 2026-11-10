@@ -141,7 +141,9 @@ public struct DependencyGraphGenerator: DependencyGraphGenerating, Sendable {
     /// `item` writes it, so `struct S: Q` after `typealias Q = Proto` ends on `Proto` (#125).
     /// `nil` when the name as written, or the type it comes to, is excluded.
     private func supertypeName(
-        of parent: SyntaxStructure, in item: SyntaxStructure, aliases: TypeAliasResolver,
+        of parent: SyntaxStructure,
+        in item: SyntaxStructure,
+        aliases: TypeAliasResolver,
         configuration: Configuration
     ) -> String? {
         guard let written = parent.name, !shouldExclude(name: written, configuration: configuration) else {
@@ -278,6 +280,6 @@ public struct DependencyGraphGenerator: DependencyGraphGenerating, Sendable {
     func shouldExclude(name: String, configuration: Configuration) -> Bool {
         guard let excludePatterns = configuration.elements.exclude else { return false }
         // Names are read as Swift reads them (#123), so a pattern is too: `` `Base` `` is `Base`.
-        return excludePatterns.contains(where: { name.isMatching(searchPattern: $0.canonicalDottedName) })
+        return excludePatterns.contains { name.isMatching(searchPattern: $0.canonicalDottedName) }
     }
 }

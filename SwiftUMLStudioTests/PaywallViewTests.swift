@@ -25,7 +25,8 @@ struct PaywallViewTests {
     @Test("renders upgrade header and subtitle")
     func rendersHeader() throws {
         let strings = try makeView().inspect()
-            .findAll(ViewType.Text.self).map { try $0.string() }
+            .findAll(ViewType.Text.self)
+            .map { try $0.string() }
         #expect(strings.contains("Upgrade to Pro"))
         #expect(strings.contains("Unlock the full power of SwiftUML Studio"))
     }
@@ -33,7 +34,8 @@ struct PaywallViewTests {
     @Test("feature list renders all five PaywallFeature entries")
     func rendersFeatureList() throws {
         let strings = try makeView().inspect()
-            .findAll(ViewType.Text.self).map { try $0.string() }
+            .findAll(ViewType.Text.self)
+            .map { try $0.string() }
         for feature in PaywallFeature.all {
             #expect(strings.contains(feature.title))
             #expect(strings.contains(feature.description))
@@ -43,7 +45,8 @@ struct PaywallViewTests {
     @Test("shows \"Loading plans…\" when products list is empty")
     func emptyProductsShowsLoading() throws {
         let strings = try makeView().inspect()
-            .findAll(ViewType.Text.self).map { try $0.string() }
+            .findAll(ViewType.Text.self)
+            .map { try $0.string() }
         #expect(strings.contains("Loading plans…"))
     }
 
@@ -67,7 +70,8 @@ struct PaywallViewTests {
     @Test("error banner is hidden when purchaseError is nil")
     func errorBannerHidden() throws {
         let strings = try makeView().inspect()
-            .findAll(ViewType.Text.self).map { try $0.string() }
+            .findAll(ViewType.Text.self)
+            .map { try $0.string() }
         #expect(strings.contains("network failed") == false)
     }
 }

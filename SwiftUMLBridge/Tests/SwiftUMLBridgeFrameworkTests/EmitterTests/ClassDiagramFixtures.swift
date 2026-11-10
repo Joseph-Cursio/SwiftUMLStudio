@@ -7,9 +7,13 @@ import Testing
 /// A class diagram of `source` in `format`. An option left at its default is the one a run with
 /// no config file uses.
 func classDiagram(
-    _ source: String, _ format: DiagramFormat, _ extensions: ExtensionVisualization = .all,
-    nestedTypes: Bool = true, access: [AccessLevel] = ElementOptions.defaultAccessLevels,
-    exclude: [String]? = nil, relationships: RelationshipOptions = RelationshipOptions()
+    _ source: String,
+    _ format: DiagramFormat,
+    _ extensions: ExtensionVisualization = .all,
+    nestedTypes: Bool = true,
+    access: [AccessLevel] = ElementOptions.defaultAccessLevels,
+    exclude: [String]? = nil,
+    relationships: RelationshipOptions = RelationshipOptions()
 ) -> DiagramScript {
     let elements = ElementOptions(
         havingAccessLevel: access, showNestedTypes: nestedTypes, showExtensions: extensions, exclude: exclude
@@ -34,7 +38,9 @@ func parsedFiles(_ files: [SourceFile]) throws -> [SyntaxStructure] {
 
 /// A class diagram of `files`, read as `parsedFiles(_:)` reads them.
 func classDiagram(
-    _ files: [SourceFile], _ format: DiagramFormat, _ extensions: ExtensionVisualization = .all,
+    _ files: [SourceFile],
+    _ format: DiagramFormat,
+    _ extensions: ExtensionVisualization = .all,
     access: [AccessLevel] = ElementOptions.defaultAccessLevels
 ) throws -> DiagramScript {
     let elements = ElementOptions(havingAccessLevel: access, showExtensions: extensions)
@@ -45,8 +51,11 @@ func classDiagram(
 /// Each supertype edge drawn from `child` in a diagram of `files`, as `end arrow`: `P <|--`,
 /// `P <|..`, or Nomnoml's `P -:>` and `P --:>`.
 func supertypeEdges(
-    from child: String, _ files: [SourceFile], _ format: DiagramFormat,
-    _ extensions: ExtensionVisualization = .all, access: [AccessLevel] = ElementOptions.defaultAccessLevels
+    from child: String,
+    _ files: [SourceFile],
+    _ format: DiagramFormat,
+    _ extensions: ExtensionVisualization = .all,
+    access: [AccessLevel] = ElementOptions.defaultAccessLevels
 ) throws -> [String] {
     let text = try classDiagram(files, format, extensions, access: access).text
     return text.split(separator: "\n").compactMap { line -> String? in
@@ -66,7 +75,10 @@ func supertypeEdges(
 /// The id each supertype edge from `child` ends on in a diagram of `source`, and in SVG the
 /// members of that node, which tell the boxes apart.
 func supertypeEdgeEnds(
-    from child: String, _ source: String, _ format: DiagramFormat, _ extensions: ExtensionVisualization,
+    from child: String,
+    _ source: String,
+    _ format: DiagramFormat,
+    _ extensions: ExtensionVisualization,
     nestedTypes: Bool = true
 ) -> [String] {
     let drawn = classDiagram(source, format, extensions, nestedTypes: nestedTypes)

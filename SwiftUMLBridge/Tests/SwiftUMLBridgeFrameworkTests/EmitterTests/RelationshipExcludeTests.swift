@@ -43,7 +43,8 @@ struct RelationshipExcludeTests {
         let arrows = configuration.format == .nomnoml
             ? ["] -:> ", "] --:> ", "] --> "]
             : [" <|-- ", " <|.. ", " <.. "]
-        return script(source, configuration).split(separator: "\n").map(String.init)
+        return script(source, configuration).split(separator: "\n")
+            .map(String.init)
             .filter { line in arrows.contains { line.contains($0) } }
     }
 

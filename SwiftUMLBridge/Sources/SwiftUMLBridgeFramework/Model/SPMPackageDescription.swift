@@ -13,8 +13,11 @@ public struct SPMTargetDescription: Sendable, Equatable {
     public typealias Kind = ComponentKind
 
     public init(
-        name: String, kind: Kind, path: String,
-        sources: [String], dependencies: [String]
+        name: String,
+        kind: Kind,
+        path: String,
+        sources: [String],
+        dependencies: [String]
     ) {
         self.name = name
         self.kind = kind
@@ -162,7 +165,7 @@ public enum SPMPackageReader {
         if process.terminationStatus != 0 {
             throw ReadError.swiftToolFailed(
                 exitStatus: process.terminationStatus,
-                stderr: String(data: stderrData.withLock({ $0 }), encoding: .utf8) ?? ""
+                stderr: String(data: stderrData.withLock { $0 }, encoding: .utf8) ?? ""
             )
         }
         return try parse(stdout)

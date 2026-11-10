@@ -133,9 +133,9 @@ struct ActivityFlowExtractorTests {
         """)
         #expect(nodes(of: .decision, in: graph).count == 1)
         let endId = try #require(graph.nodes.first { $0.kind == .end }).id
-        let returnNode = graph.nodes.first(where: {
+        let returnNode = graph.nodes.first {
             $0.kind == .action && $0.label.contains("return")
-        })
+        }
         #expect(returnNode != nil)
         let terminalEdges = graph.edges.filter { $0.toId == endId }
         #expect(terminalEdges.count >= 1)
@@ -200,9 +200,9 @@ struct ActivityFlowExtractorTests {
             func run() throws { throw SomeError.bad }
         }
         """)
-        let throwAction = graph.nodes.first(where: {
+        let throwAction = graph.nodes.first {
             $0.kind == .action && $0.label.contains("throw")
-        })
+        }
         #expect(throwAction != nil)
     }
 }

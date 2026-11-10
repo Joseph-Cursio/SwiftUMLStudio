@@ -76,11 +76,13 @@ struct PackageTypeModuleTests {
             (name: "Core", files: [
                 (name: "Outer.swift", source: "enum Outer { class Inner {}\n enum Mid { class Inner {} } }")
             ]),
-            (name: "Zed", files: [(name: "Subclasses.swift", source: """
-                class Sub: Outer.Inner {}
-                class Sub2: Outer.Deep {}
-                class Sub3: Outer.Mid.Inner {}
-                """)]),
+            (name: "Zed", files: [
+                (name: "Subclasses.swift", source: """
+                    class Sub: Outer.Inner {}
+                    class Sub2: Outer.Deep {}
+                    class Sub3: Outer.Mid.Inner {}
+                    """),
+            ]),
         ])
         defer { package.remove() }
         let text = dependencyGraph(package, reversed: reversed)

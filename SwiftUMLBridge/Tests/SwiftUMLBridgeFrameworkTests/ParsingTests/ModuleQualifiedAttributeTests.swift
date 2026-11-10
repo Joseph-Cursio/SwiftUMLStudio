@@ -10,7 +10,8 @@ import Testing
 struct ModuleQualifiedAttributeTests {
     private func source(_ text: String, qualified: Bool) -> String {
         qualified ? text : text.replacingOccurrences(
-            of: #"\b(SwiftData|Observation|GRDB|SQLite)\."#, with: "", options: .regularExpression)
+            of: #"\b(SwiftData|Observation|GRDB|SQLite)\."#, with: "", options: .regularExpression
+        )
     }
 
     @Test("@SwiftData.Model marks an entity", arguments: [true, false])
@@ -53,7 +54,8 @@ struct ModuleQualifiedAttributeTests {
                 var id: Int64
                 var name: String
             }
-            """, qualified: qualified)).entities.map(\.name)
+            """, qualified: qualified)).entities
+                .map(\.name)
         #expect(entities == ["Player"])
     }
 
@@ -82,7 +84,8 @@ struct ModuleQualifiedAttributeTests {
             \(attribute) final class Owner {
                 var name: String = ""
             }
-            """).entities.map(\.name)
+            """).entities
+                .map(\.name)
         #expect(entities == ["Owner"])
     }
 
@@ -110,7 +113,8 @@ struct ModuleQualifiedAttributeTests {
             struct Player: Codable, GRDB.FetchableRecord & GRDB.PersistableRecord {
                 var id: Int64
             }
-            """).entities.map(\.name)
+            """).entities
+                .map(\.name)
         #expect(entities == ["Player"])
     }
 
@@ -126,7 +130,9 @@ struct ModuleQualifiedAttributeTests {
                 @SwiftData.Attribute(.unique) var code: String = ""
                 @SwiftData.Transient var cache: String = ""
             }
-            """).entities.flatMap(\.attributes).map { "\($0.name) unique=\($0.isUnique) transient=\($0.isTransient)" }
+            """).entities
+                .flatMap(\.attributes)
+                .map { "\($0.name) unique=\($0.isUnique) transient=\($0.isTransient)" }
         #expect(flags == ["code unique=false transient=false", "cache unique=false transient=false"])
     }
 
@@ -140,7 +146,8 @@ struct ModuleQualifiedAttributeTests {
             """
         let entities = ERModelExtractor.extract(from: text).entities.map(\.name)
         let edges = ClassDiagramGenerator().generateScript(for: text, with: Configuration(format: .plantuml)).text
-            .split(separator: "\n").filter { $0.contains("<|--") }
+            .split(separator: "\n")
+            .filter { $0.contains("<|--") }
         #expect(entities.isEmpty)
         #expect(edges.isEmpty)
     }
@@ -151,7 +158,8 @@ struct ModuleQualifiedAttributeTests {
             struct Player: MyKit.FetchableRecord, Outer.GRDB.PersistableRecord {
                 var id: Int64
             }
-            """).entities.map(\.name)
+            """).entities
+                .map(\.name)
         #expect(entities.isEmpty)
     }
 

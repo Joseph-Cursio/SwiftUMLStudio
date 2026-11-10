@@ -15,7 +15,9 @@ struct SupertypeEdgeEndTests {
     /// The members of the SVG node each supertype edge from `child` ends on, which tells the
     /// boxes that share a name apart.
     private func svgEndMembers(
-        from child: String, _ files: [(name: String, source: String)], _ mode: ExtensionVisualization = .all,
+        from child: String,
+        _ files: [(name: String, source: String)],
+        _ mode: ExtensionVisualization = .all,
         access: [AccessLevel] = ElementOptions.defaultAccessLevels
     ) throws -> [[String]] {
         let graph = try classDiagram(files, .svg, mode, access: access).layoutGraph
@@ -46,12 +48,14 @@ struct SupertypeEdgeEndTests {
     @Test("an edge to a hidden protocol ends on its stand-in, not a sugared extension of the same name",
           arguments: textFormats, [ExtensionVisualization.all, .merged])
     func endsOnStandInNotSugaredExtension(format: DiagramFormat, mode: ExtensionVisualization) throws {
-        let files = [("A.swift", """
-            protocol Optional {}
-            extension Int? { func sugared() {} }
-            extension Optional { func bare() {} }
-            public struct U: Optional {}
-            """)]
+        let files = [
+            ("A.swift", """
+                protocol Optional {}
+                extension Int? { func sugared() {} }
+                extension Optional { func bare() {} }
+                public struct U: Optional {}
+                """),
+        ]
         let arrow = format == .nomnoml ? "--:>" : "<|.."
         #expect(try supertypeEdges(from: "U", files, format, mode, access: [.public, .open]) == ["Optional0 \(arrow)"])
         #expect(try svgEndMembers(from: "U", files, mode, access: [.public, .open]) == [["~ bare()"]])
@@ -84,21 +88,25 @@ struct SupertypeEdgeEndTests {
     func endsOnTheArrayBaseTheNameMeans(format: DiagramFormat) throws {
         let arrow = format == .nomnoml ? "-:>" : "<|--"
         // In the extension, `Base` is its own: the second `Array.Base`.
-        let inExtension = [("A.swift", """
-            struct Array { class Base { var local = 0 } }
-            extension [Int] {
-                class Base { var sugar = 0 }
-                class Sub: Base {}
-            }
-            """)]
+        let inExtension = [
+            ("A.swift", """
+                struct Array { class Base { var local = 0 } }
+                extension [Int] {
+                    class Base { var sugar = 0 }
+                    class Sub: Base {}
+                }
+                """),
+        ]
         #expect(try supertypeEdges(from: "Array.Sub", inExtension, format) == ["Array.Base0 \(arrow)"])
         #expect(try svgEndMembers(from: "Array.Sub", inExtension) == [["~ sugar"]])
         // Written `Array.Base`, it is the project's, declared second.
-        let written = [("A.swift", """
-            extension [Int] { class Base { var sugar = 0 } }
-            struct Array { class Base { var local = 0 } }
-            class Sub: Array.Base {}
-            """)]
+        let written = [
+            ("A.swift", """
+                extension [Int] { class Base { var sugar = 0 } }
+                struct Array { class Base { var local = 0 } }
+                class Sub: Array.Base {}
+                """),
+        ]
         #expect(try supertypeEdges(from: "Sub", written, format) == ["Array.Base0 \(arrow)"])
         #expect(try svgEndMembers(from: "Sub", written) == [["~ local"]])
     }
@@ -118,11 +126,13 @@ struct SupertypeEdgeEndTests {
         #expect(try supertypeEdges(from: "U", Self.noStandIn, format, mode).isEmpty)
         #expect(try svgEndMembers(from: "U", Self.noStandIn, mode).isEmpty)
         // Swift's `Optional` here only shares the hidden protocol's name.
-        let sugared = [("A.swift", """
-            protocol Optional {}
-            extension Int? { func sugared() {} }
-            public struct U: Optional {}
-            """)]
+        let sugared = [
+            ("A.swift", """
+                protocol Optional {}
+                extension Int? { func sugared() {} }
+                public struct U: Optional {}
+                """),
+        ]
         #expect(try supertypeEdges(from: "U", sugared, format, mode, access: [.public, .open]).isEmpty)
         // A `private` protocol in another file is drawn; B's own is hidden, and has no stand-in.
         let otherFile = [
@@ -176,16 +186,18 @@ struct SupertypeEdgeEndTests {
     /// Both `#if` clauses conform `Foo` to `P`, one through an alias, so its box draws one edge.
     @Test("a merged conformance repeated through a typealias is drawn once", arguments: textFormats)
     func mergedConformanceRepeatedThroughAlias(format: DiagramFormat) throws {
-        let files = [("A.swift", """
-            protocol P {}
-            typealias Q = P
-            struct Foo {}
-            #if DEBUG
-            extension Foo: P {}
-            #else
-            extension Foo: Q {}
-            #endif
-            """)]
+        let files = [
+            ("A.swift", """
+                protocol P {}
+                typealias Q = P
+                struct Foo {}
+                #if DEBUG
+                extension Foo: P {}
+                #else
+                extension Foo: Q {}
+                #endif
+                """),
+        ]
         let realizes = format == .nomnoml ? "--:>" : "<|.."
         #expect(try supertypeEdges(from: "Foo", files, format, .merged) == ["P \(realizes)"])
     }

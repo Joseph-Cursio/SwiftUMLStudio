@@ -57,8 +57,8 @@ struct PlantTextPreviewTests {
         let consent = PlantUMLConsentTestSupport.makeConsent()
         var switched = false
         let view = PlantTextPreview(
-            script: plantUML, requestedFormat: .plantuml, consent: consent, onUseMermaid: { switched = true }
-        )
+            script: plantUML, requestedFormat: .plantuml, consent: consent
+        ) { switched = true }
 
         let card = try view.inspect().find(PlantUMLConsentCard.self).actualView()
         let useMermaid = try #require(card.onUseMermaid)

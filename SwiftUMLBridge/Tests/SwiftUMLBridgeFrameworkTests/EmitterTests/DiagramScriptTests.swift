@@ -21,7 +21,7 @@ struct DiagramScriptTests {
     @Test("script contains @enduml as last line")
     func endumlIsLastLine() {
         let script = DiagramScript(items: [], configuration: .default)
-        let lastLine = script.text.components(separatedBy: "\n").last(where: { !$0.isEmpty })
+        let lastLine = script.text.components(separatedBy: "\n").last { !$0.isEmpty }
         #expect(lastLine == "@enduml")
     }
 

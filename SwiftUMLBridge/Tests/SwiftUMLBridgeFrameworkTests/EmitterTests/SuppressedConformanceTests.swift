@@ -41,7 +41,8 @@ struct SuppressedConformanceTests {
         var found: [String] = []
         for format in Self.formats {
             for mode in Self.modes {
-                found += Self.script(format, mode).split(separator: "\n")
+                found += Self.script(format, mode)
+                    .split(separator: "\n")
                     .filter { $0.contains("~Copyable") || $0.contains("~Escapable") }
                     .filter { !$0.contains("Value: ~Copyable") }
                     .map { "\(format) \(mode): \($0.trimmingCharacters(in: .whitespaces))" }

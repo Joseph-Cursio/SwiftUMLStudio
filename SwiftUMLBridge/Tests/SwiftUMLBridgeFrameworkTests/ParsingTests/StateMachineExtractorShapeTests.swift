@@ -67,7 +67,7 @@ struct StateMachineExtractorShapeTests {
         }
         """
         let models = StateMachineExtractor.extract(from: source)
-        let stateModel = models.first(where: { $0.identifier == "TrafficLight.Light" })
+        let stateModel = models.first { $0.identifier == "TrafficLight.Light" }
         #expect(stateModel != nil)
         #expect(stateModel?.transitions.count == 2)
         #expect(stateModel?.transitions.allSatisfy { $0.trigger == "toggle" } == true)

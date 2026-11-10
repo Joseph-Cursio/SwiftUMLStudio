@@ -10,8 +10,12 @@ import Testing
 struct TypealiasSupertypeTests {
     static let formats: [DiagramFormat] = [.plantuml, .mermaid, .nomnoml]
 
-    private func script(_ source: String, _ format: DiagramFormat, relationships: RelationshipOptions? = nil,
-                        extensions: ExtensionVisualization = .all) -> String {
+    private func script(
+        _ source: String,
+        _ format: DiagramFormat,
+        relationships: RelationshipOptions? = nil,
+        extensions: ExtensionVisualization = .all
+    ) -> String {
         var configuration = Configuration(elements: ElementOptions(showExtensions: extensions), format: format)
         if let relationships { configuration.relationships = relationships }
         return ClassDiagramGenerator().generateScript(for: source, with: configuration).text
@@ -143,10 +147,14 @@ struct TypealiasSupertypeTests {
         ])
         defer { try? FileManager.default.removeItem(at: root) }
         let package = SPMPackageDescription(name: "Pkg", targets: [
-            SPMTargetDescription(name: "Core", kind: .library, path: "Sources/Core",
-                                 sources: ["Proto.swift"], dependencies: []),
-            SPMTargetDescription(name: "Networking", kind: .library, path: "Sources/Networking",
-                                 sources: ["Client.swift"], dependencies: ["Core"]),
+            SPMTargetDescription(
+                name: "Core", kind: .library, path: "Sources/Core",
+                sources: ["Proto.swift"], dependencies: []
+            ),
+            SPMTargetDescription(
+                name: "Networking", kind: .library, path: "Sources/Networking",
+                sources: ["Client.swift"], dependencies: ["Core"]
+            ),
         ])
         let text = DependencyGraphGenerator().generateScript(
             forPackage: package, packageRoot: root, mode: .types, with: Configuration(format: .plantuml)

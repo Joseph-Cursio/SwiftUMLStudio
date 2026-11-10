@@ -12,8 +12,12 @@ struct MergedExtensionVisibilityTests {
 
     /// A hand-built declaration in `file`, in `module`.
     private func declared(
-        _ kind: ElementKind, _ name: String, in file: String, module: String,
-        access: ElementAccessibility? = nil, members: [SyntaxStructure] = []
+        _ kind: ElementKind,
+        _ name: String,
+        in file: String,
+        module: String,
+        access: ElementAccessibility? = nil,
+        members: [SyntaxStructure] = []
     ) -> SyntaxStructure {
         let item = SyntaxStructure(
             accessibility: access, kind: kind, name: name, substructure: members.isEmpty ? nil : members
@@ -77,7 +81,7 @@ struct MergedExtensionVisibilityTests {
         #expect(ClassDiagramIds.lines(of: script, containing: "bar").count == 1)
         #expect(ClassDiagramIds.lines(of: script, containing: "+--") == ["Foo0 +-- Foo.Inner"])
         let foo0 = script.components(separatedBy: "as Foo0").last ?? ""
-        #expect(foo0.prefix(while: { $0 != "}" }).contains("bar"), "\(script)")
+        #expect(foo0.prefix { $0 != "}" }.contains("bar"), "\(script)")
     }
 
     /// With no type visible, the extension extends a type outside the diagram, as the SVG

@@ -36,7 +36,7 @@ struct StatePlantUMLTests {
     @Test("ends with @enduml")
     func endsWithEnduml() {
         let script = makeScript(model: makeModel())
-        let lastLine = script.text.components(separatedBy: "\n").last(where: { !$0.isEmpty })
+        let lastLine = script.text.components(separatedBy: "\n").last { !$0.isEmpty }
         #expect(lastLine == "@enduml")
     }
 

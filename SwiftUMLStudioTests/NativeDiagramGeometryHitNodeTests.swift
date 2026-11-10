@@ -9,8 +9,11 @@ import Testing
 struct NativeDiagramGeometryHitNodeTests {
 
     private func makeNode(
-        id: String, posX: Double, posY: Double,
-        width: Double = 80, height: Double = 60
+        id: String,
+        posX: Double,
+        posY: Double,
+        width: Double = 80,
+        height: Double = 60
     ) -> LayoutNode {
         var node = LayoutNode(id: id, label: id)
         node.posX = posX

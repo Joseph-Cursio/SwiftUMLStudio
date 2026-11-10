@@ -128,9 +128,11 @@ struct ERMermaidTests {
     @Test("nomnoml format reuses the Mermaid emitter and reports mermaid")
     func nomnomlFormatFallsBackToMermaid() {
         let model = ERModel(
-            entities: [EREntity(name: "Note", attributes: [
-                ERAttribute(name: "title", type: "String")
-            ])]
+            entities: [
+                EREntity(name: "Note", attributes: [
+                    ERAttribute(name: "title", type: "String")
+                ]),
+            ]
         )
         let script = makeScript(model: model, format: .nomnoml)
         #expect(script.format == .mermaid)

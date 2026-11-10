@@ -75,8 +75,11 @@ struct ModuleQualifiedNamespaceTests {
          "Event", "Event <.. Analytics.Event0 : ext"),
     ])
     func reexportedNamespaceShadows(
-        analyticsImports: String, others: [(module: String?, source: String)], appImports: String,
-        owner: String, extEdge: String
+        analyticsImports: String,
+        others: [(module: String?, source: String)],
+        appImports: String,
+        owner: String,
+        extEdge: String
     ) throws {
         let analytics = analyticsImports + "public struct Event {\n    public init() {}\n}"
         let core = "public enum Analytics {\n    public struct Event {}\n}\npublic struct Thing {}"

@@ -12,7 +12,8 @@ struct ERStoredPropertyTests {
             @Model final class Country {
                 \(attributes) var \(name): String = ""
             }
-            """).entities.flatMap(\.attributes)
+            """).entities
+            .flatMap(\.attributes)
             .map { "\($0.name) unique=\($0.isUnique) pk=\($0.isPrimaryKey) transient=\($0.isTransient)" }
     }
 
@@ -53,7 +54,9 @@ struct ERStoredPropertyTests {
             @Model final class Owner {
                 @Transient var make: () -> Int = { 1 }
             }
-            """).entities.flatMap(\.attributes).map { "\($0.name) transient=\($0.isTransient)" }
+            """).entities
+                .flatMap(\.attributes)
+                .map { "\($0.name) transient=\($0.isTransient)" }
         #expect(listed == ["make transient=true"])
     }
 
@@ -117,7 +120,8 @@ struct ERStoredPropertyTests {
             @Model final class Book {
                 var writer: Author?
             }
-            """).relationships.map { "\($0.from).\($0.label) -> \($0.toEntity)" }
+            """).relationships
+                .map { "\($0.from).\($0.label) -> \($0.toEntity)" }
         #expect(relationships == expected)
     }
 }

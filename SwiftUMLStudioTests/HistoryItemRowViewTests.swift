@@ -28,7 +28,8 @@ struct HistoryItemRowViewTests {
     @Test("shows the entity name as the headline")
     func rendersName() throws {
         let view = HistoryItemRow(item: makeEntity(name: "MyProject"))
-        let strings = try view.inspect().findAll(ViewType.Text.self)
+        let strings = try view.inspect()
+            .findAll(ViewType.Text.self)
             .compactMap { try? $0.string() }
         #expect(strings.contains("MyProject"))
     }
@@ -36,7 +37,8 @@ struct HistoryItemRowViewTests {
     @Test("nil name falls back to \"Untitled Diagram\"")
     func nilNameFallback() throws {
         let view = HistoryItemRow(item: makeEntity(name: nil))
-        let strings = try view.inspect().findAll(ViewType.Text.self)
+        let strings = try view.inspect()
+            .findAll(ViewType.Text.self)
             .compactMap { try? $0.string() }
         #expect(strings.contains("Untitled Diagram"))
     }
@@ -47,7 +49,8 @@ struct HistoryItemRowViewTests {
             mode: DiagramMode.sequenceDiagram.rawValue,
             entryPoint: "Foo.bar"
         ))
-        let strings = try view.inspect().findAll(ViewType.Text.self)
+        let strings = try view.inspect()
+            .findAll(ViewType.Text.self)
             .compactMap { try? $0.string() }
         #expect(strings.contains("Sequence Diagram (Foo.bar)"))
     }
@@ -55,7 +58,8 @@ struct HistoryItemRowViewTests {
     @Test("renders the bullet separator text")
     func bulletSeparator() throws {
         let view = HistoryItemRow(item: makeEntity())
-        let strings = try view.inspect().findAll(ViewType.Text.self)
+        let strings = try view.inspect()
+            .findAll(ViewType.Text.self)
             .compactMap { try? $0.string() }
         #expect(strings.contains("•"))
     }

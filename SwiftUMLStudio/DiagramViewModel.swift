@@ -64,7 +64,7 @@ final class DiagramViewModel {
 
     /// The full model backing the currently-selected state machine, if any.
     var currentStateMachineModel: StateMachineModel? {
-        availableStateMachines.first(where: { $0.identifier == stateIdentifier })
+        availableStateMachines.first { $0.identifier == stateIdentifier }
     }
 
     var fileTree: [FileNode] = []

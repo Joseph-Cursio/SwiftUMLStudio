@@ -6,7 +6,9 @@ import SwiftUMLBridgeFramework
 import Testing
 
 private func makeMessage(
-    fromX: Double = 100, toX: Double = 200, posY: Double = 50,
+    fromX: Double = 100,
+    toX: Double = 200,
+    posY: Double = 50,
     isAsync: Bool = false
 ) -> SequenceMessage {
     SequenceMessage(

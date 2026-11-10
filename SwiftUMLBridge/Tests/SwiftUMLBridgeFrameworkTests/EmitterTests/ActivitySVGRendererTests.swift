@@ -57,8 +57,8 @@ struct ActivitySVGRendererTests {
     @Test("positioned nodes preserve kind")
     func positionedNodesPreserveKind() {
         let layout = ActivitySVGRenderer.computeLayout(from: straightLineGraph())
-        #expect(layout.nodes.first(where: { $0.id == 0 })?.kind == .start)
-        #expect(layout.nodes.first(where: { $0.id == 3 })?.kind == .end)
+        #expect(layout.nodes.first { $0.id == 0 }?.kind == .start)
+        #expect(layout.nodes.first { $0.id == 3 }?.kind == .end)
     }
 
     @Test("back-edges at lower row do not increase target row")

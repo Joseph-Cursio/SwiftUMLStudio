@@ -38,10 +38,14 @@ struct MemberReferenceNameTests {
     @Test("traverse follows a bare keyword callee, and an entry typed bare, into the escaped method")
     func traverseNormalisesMethod() {
         let edges = [
-            CallEdge(callerType: "Keyed", callerMethod: "start", calleeType: "Keyed", calleeMethod: "default",
-                     isAsync: false, isUnresolved: false),
-            CallEdge(callerType: "Keyed", callerMethod: "`default`", calleeType: "Keyed", calleeMethod: "helper",
-                     isAsync: false, isUnresolved: false),
+            CallEdge(
+                callerType: "Keyed", callerMethod: "start", calleeType: "Keyed", calleeMethod: "default",
+                isAsync: false, isUnresolved: false
+            ),
+            CallEdge(
+                callerType: "Keyed", callerMethod: "`default`", calleeType: "Keyed", calleeMethod: "helper",
+                isAsync: false, isUnresolved: false
+            ),
         ]
         let graph = CallGraph(edges: edges)
         #expect(graph.traverse(from: "Keyed", entryMethod: "start", maxDepth: 3).map(\.calleeMethod)

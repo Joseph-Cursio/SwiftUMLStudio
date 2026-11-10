@@ -60,7 +60,7 @@ struct CoreDataModelExtractorTests {
         #expect(Set(model.entities.map(\.name)) == ["Loan", "Member"])
         let loan = try #require(model.entities.first { $0.name == "Loan" })
         // returnedDate is V2-only — its presence proves V2 was the active pick.
-        #expect(loan.attributes.contains(where: { $0.name == "returnedDate" }))
+        #expect(loan.attributes.contains { $0.name == "returnedDate" })
     }
 
     @Test("resolveActiveContentsURL prefers .xccurrentversion target")

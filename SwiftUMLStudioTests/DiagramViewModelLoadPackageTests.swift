@@ -48,7 +48,7 @@ struct DiagramViewModelLoadPackageTests {
         #expect(viewModel.packageDescription?.name == "Demo")
         #expect(viewModel.packageLoadError == nil)
         // selectedPaths is replaced with the package's source files
-        #expect(viewModel.selectedPaths.contains(where: { $0.hasSuffix("Sources/Demo/Foo.swift") }))
+        #expect(viewModel.selectedPaths.contains { $0.hasSuffix("Sources/Demo/Foo.swift") })
     }
 
     @Test("loadPackage on a missing directory sets packageLoadError")

@@ -131,7 +131,7 @@ extension Array where Element == SyntaxStructure {
 
     /// order: protocols first, then non-extensions (i.e protocols, structs, classes, enums, actors). Extensions last.
     func orderedByProtocolsFirstExtensionsLast() -> [SyntaxStructure] {
-        sorted(by: { $0.kind ?? .struct < $1.kind ?? .struct })
+        sorted { $0.kind ?? .struct < $1.kind ?? .struct }
     }
 
     /// merges extensions with their parent types
@@ -160,7 +160,7 @@ extension Array where Element == SyntaxStructure {
             guard let parent = targets.target(of: structure), structure != parent else {
                 continue
             }
-            processedItems.removeAll(where: { $0 == structure })
+            processedItems.removeAll { $0 == structure }
             structure.mergedInto = parent
             parent.mergedExtensions.append(structure)
             // Before the members guard: `extension Foo: P {}` has no members, and is the commonest form.

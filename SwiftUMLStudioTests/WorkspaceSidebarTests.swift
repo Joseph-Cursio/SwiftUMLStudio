@@ -48,8 +48,10 @@ struct WorkspaceSidebarTests {
     @Test("tab picker offers Files and History")
     func tabPickerOptions() async throws {
         let labels = try await makeView().inspectHosted { view in
-            try view.find(viewWithAccessibilityIdentifier: "sidebarTabPicker").picker()
-                .findAll(ViewType.Text.self).compactMap { try? $0.string() }
+            try view.find(viewWithAccessibilityIdentifier: "sidebarTabPicker")
+                .picker()
+                .findAll(ViewType.Text.self)
+                .compactMap { try? $0.string() }
         }
         // The trailing "Sidebar" is the picker's own (hidden) label.
         #expect(labels == WorkspaceSidebar.Tab.allCases.map(\.rawValue) + ["Sidebar"])

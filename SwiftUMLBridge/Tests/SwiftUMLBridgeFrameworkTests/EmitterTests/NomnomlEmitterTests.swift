@@ -108,26 +108,30 @@ struct NomnomlEmitterTests {
     @Test("pipe characters in names are escaped to slashes")
     func pipeEscaped() {
         // Pipes are nomnoml section separators; they should be escaped in member text
-        let items = [SyntaxStructure(
-            kind: .class,
-            name: "Converter",
-            substructure: [
-                SyntaxStructure(kind: .varInstance, name: "op|tion", typename: "String")
-            ]
-        )]
+        let items = [
+            SyntaxStructure(
+                kind: .class,
+                name: "Converter",
+                substructure: [
+                    SyntaxStructure(kind: .varInstance, name: "op|tion", typename: "String")
+                ]
+            ),
+        ]
         let script = DiagramScript(items: items, configuration: nomnomlConfig)
         #expect(script.text.contains("op/tion"))
     }
 
     @Test("semicolons in names are escaped to commas")
     func semicolonEscaped() {
-        let items = [SyntaxStructure(
-            kind: .class,
-            name: "Parser",
-            substructure: [
-                SyntaxStructure(kind: .varInstance, name: "sep;val", typename: "String")
-            ]
-        )]
+        let items = [
+            SyntaxStructure(
+                kind: .class,
+                name: "Parser",
+                substructure: [
+                    SyntaxStructure(kind: .varInstance, name: "sep;val", typename: "String")
+                ]
+            ),
+        ]
         let script = DiagramScript(items: items, configuration: nomnomlConfig)
         #expect(script.text.contains("sep,val"))
     }
@@ -203,9 +207,11 @@ struct NomnomlEmitterTests {
 
     @Test("instance variable without typename shows only name in nomnoml output")
     func instanceVarWithoutTypename() {
-        let items = [SyntaxStructure(kind: .class, name: "Box", substructure: [
-            SyntaxStructure(accessibility: .internal, kind: .varInstance, name: "value")
-        ])]
+        let items = [
+            SyntaxStructure(kind: .class, name: "Box", substructure: [
+                SyntaxStructure(accessibility: .internal, kind: .varInstance, name: "value")
+            ]),
+        ]
         let script = DiagramScript(items: items, configuration: nomnomlConfig)
         #expect(script.text.contains("value"))
         #expect(script.text.contains("value:") == false)
@@ -213,9 +219,11 @@ struct NomnomlEmitterTests {
 
     @Test("static variable without typename shows 'static name' in nomnoml output")
     func staticVarWithoutTypename() {
-        let items = [SyntaxStructure(kind: .class, name: "Config", substructure: [
-            SyntaxStructure(accessibility: .internal, kind: .varStatic, name: "shared")
-        ])]
+        let items = [
+            SyntaxStructure(kind: .class, name: "Config", substructure: [
+                SyntaxStructure(accessibility: .internal, kind: .varStatic, name: "shared")
+            ]),
+        ]
         let script = DiagramScript(items: items, configuration: nomnomlConfig)
         #expect(script.text.contains("static shared"))
     }
@@ -228,10 +236,12 @@ struct NomnomlEmitterTests {
             elements: ElementOptions(showMembersWithAccessLevel: [.public]),
             format: .nomnoml
         )
-        let items = [SyntaxStructure(kind: .class, name: "Foo", substructure: [
-            SyntaxStructure(accessibility: .internal, kind: .varInstance, name: "hidden", typename: "Int"),
-            SyntaxStructure(accessibility: .public, kind: .varInstance, name: "visible", typename: "String"),
-        ])]
+        let items = [
+            SyntaxStructure(kind: .class, name: "Foo", substructure: [
+                SyntaxStructure(accessibility: .internal, kind: .varInstance, name: "hidden", typename: "Int"),
+                SyntaxStructure(accessibility: .public, kind: .varInstance, name: "visible", typename: "String"),
+            ]),
+        ]
         let script = DiagramScript(items: items, configuration: config)
         #expect(script.text.contains("visible"))
         #expect(script.text.contains("hidden") == false)

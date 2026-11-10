@@ -27,7 +27,8 @@ struct ERAttributeArgumentTests {
             @Model final class Item {
                 \(attribute) var code: String = ""
             }
-            """).entities.flatMap(\.attributes)
+            """).entities
+                .flatMap(\.attributes)
         #expect(attributes.map(\.isUnique) == [isUnique])
     }
 

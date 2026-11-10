@@ -151,7 +151,8 @@ struct IfConfigStateMachineTests {
                     }
                 }
             }
-            """, ifConfig: ifConfig)).map(\.identifier)
+            """, ifConfig: ifConfig))
+                .map(\.identifier)
         #expect(machines.isEmpty)
     }
 }

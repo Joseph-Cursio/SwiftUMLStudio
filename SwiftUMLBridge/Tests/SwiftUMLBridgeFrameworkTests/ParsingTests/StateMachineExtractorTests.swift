@@ -49,7 +49,7 @@ struct StateMachineExtractorTests {
         }
         """
         let models = StateMachineExtractor.extract(from: source)
-        let idle = models.first?.states.first(where: { $0.name == "idle" })
+        let idle = models.first?.states.first { $0.name == "idle" }
         #expect(idle?.isInitial == true)
     }
 
@@ -69,7 +69,7 @@ struct StateMachineExtractorTests {
         }
         """
         let models = StateMachineExtractor.extract(from: source)
-        let done = models.first?.states.first(where: { $0.name == "done" })
+        let done = models.first?.states.first { $0.name == "done" }
         #expect(done?.isFinal == true)
     }
 

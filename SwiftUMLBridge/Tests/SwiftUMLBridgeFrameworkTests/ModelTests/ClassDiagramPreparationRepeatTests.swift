@@ -25,7 +25,10 @@ struct ClassDiagramPreparationRepeatTests {
     }
 
     private func declared(
-        _ kind: ElementKind, _ name: String, in file: String, module: String? = nil,
+        _ kind: ElementKind,
+        _ name: String,
+        in file: String,
+        module: String? = nil,
         members: [SyntaxStructure] = []
     ) -> SyntaxStructure {
         let item = SyntaxStructure(kind: kind, name: name, substructure: members.isEmpty ? nil : members)

@@ -95,8 +95,10 @@ extension LayoutGraphBuilder.TypeLookup {
     /// through, hides it, and the name is fitted as without a start
     /// (`fallbackCandidates(_:for:from:depth:)`).
     func members(
-        of start: LayoutGraphBuilder.NameStart, among candidates: [LayoutGraphBuilder.Declared],
-        from scope: LayoutGraphBuilder.Scope, depth: Int
+        of start: LayoutGraphBuilder.NameStart,
+        among candidates: [LayoutGraphBuilder.Declared],
+        from scope: LayoutGraphBuilder.Scope,
+        depth: Int
     ) -> [LayoutGraphBuilder.Declared]? {
         let members = loaded(candidates.filter { starts($0, at: start, depth: depth) }, from: scope, depth: depth)
         guard !members.isEmpty || start == .outsideType else { return nil }
@@ -109,8 +111,10 @@ extension LayoutGraphBuilder.TypeLookup {
     /// gathered under the start's other spellings (`spellings(of:)`) are its members or nothing,
     /// so after `typealias Foo = ModA.Bar`, `Foo.V` never falls to another target's `Bar.V`.
     func fallbackCandidates(
-        _ candidates: [LayoutGraphBuilder.Declared], for name: LayoutGraphBuilder.QualifiedName,
-        from scope: LayoutGraphBuilder.Scope, depth: Int
+        _ candidates: [LayoutGraphBuilder.Declared],
+        for name: LayoutGraphBuilder.QualifiedName,
+        from scope: LayoutGraphBuilder.Scope,
+        depth: Int
     ) -> [LayoutGraphBuilder.Declared] {
         let written = Set(((typesForName[name.name] ?? []) + (unlistedMembers[name.name] ?? [])).map(\.declaration))
         let seen = candidates.filter { candidate in

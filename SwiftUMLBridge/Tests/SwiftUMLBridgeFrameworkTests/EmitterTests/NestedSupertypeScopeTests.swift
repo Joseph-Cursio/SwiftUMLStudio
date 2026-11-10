@@ -30,7 +30,10 @@ struct NestedSupertypeScopeTests {
 
     /// The ids the supertype edges drawn from `child` end on, in drawing order.
     private func ends(
-        from child: String, _ source: String, _ format: DiagramFormat, _ mode: ExtensionVisualization,
+        from child: String,
+        _ source: String,
+        _ format: DiagramFormat,
+        _ mode: ExtensionVisualization,
         relationships: RelationshipOptions = RelationshipOptions()
     ) -> [String] {
         let drawn = classDiagram(source, format, mode, relationships: relationships)
@@ -59,7 +62,9 @@ struct NestedSupertypeScopeTests {
     /// Each format and extension mode, as `"<format> <mode>: <ends>"`, whose supertype edges
     /// from `child` do not end on exactly `expected`.
     private func misses(
-        _ source: String, from child: String, expected: [String],
+        _ source: String,
+        from child: String,
+        expected: [String],
         relationships: RelationshipOptions = RelationshipOptions()
     ) -> [String] {
         Self.formats.flatMap { format in

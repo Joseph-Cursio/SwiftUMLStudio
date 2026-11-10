@@ -30,7 +30,8 @@ struct MermaidGenericHeaderTests {
         let elements = ElementOptions(showGenerics: generics, showExtensions: mode)
         let configuration = Configuration(elements: elements, format: .mermaid)
         return ClassDiagramGenerator().generateScript(for: source, with: configuration).text
-            .split(separator: "\n").map { $0.trimmingCharacters(in: .whitespaces) }
+            .split(separator: "\n")
+            .map { $0.trimmingCharacters(in: .whitespaces) }
     }
 
     /// A `<<` line that Mermaid would not read as one annotation with a plain name.

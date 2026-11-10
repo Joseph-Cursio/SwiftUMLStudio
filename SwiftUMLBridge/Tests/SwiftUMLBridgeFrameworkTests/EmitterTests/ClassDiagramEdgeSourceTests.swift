@@ -9,7 +9,9 @@ import Testing
 struct ClassDiagramEdgeSourceTests {
 
     private func lines(
-        _ source: String, _ format: DiagramFormat, containing marker: String,
+        _ source: String,
+        _ format: DiagramFormat,
+        containing marker: String,
         extensions: ExtensionVisualization = .all
     ) -> [String] {
         let configuration = Configuration(elements: ElementOptions(showExtensions: extensions), format: format)
@@ -72,8 +74,10 @@ struct ClassDiagramEdgeSourceTests {
     func extensionEdgesShareItsBox() {
         let source = "struct Foo {}\nextension Foo: P { struct Inner {} }\nprotocol P {}"
         #expect(lines(source, .plantuml, containing: "Foo0")
-            == ["class \"Foo\" as Foo0 << (X, orchid) extension >> {  ", "P <|.. Foo0 : conforms to",
-                "Foo0 +-- Foo.Inner", "Foo <.. Foo0 : ext"])
+            == [
+                "class \"Foo\" as Foo0 << (X, orchid) extension >> {  ", "P <|.. Foo0 : conforms to",
+                "Foo0 +-- Foo.Inner", "Foo <.. Foo0 : ext",
+            ])
     }
 
     @Test("a first declaration's edges keep its name", arguments: [DiagramFormat.mermaid, .plantuml])

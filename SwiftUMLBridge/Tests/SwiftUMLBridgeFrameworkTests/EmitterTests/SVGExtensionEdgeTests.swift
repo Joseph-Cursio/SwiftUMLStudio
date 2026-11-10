@@ -7,7 +7,8 @@ import Testing
 struct SVGExtensionEdgeTests {
 
     private func svgEdges(
-        _ source: String, _ extensions: ExtensionVisualization = .all,
+        _ source: String,
+        _ extensions: ExtensionVisualization = .all,
         relationships: RelationshipOptions = RelationshipOptions()
     ) -> [String] {
         let graph = classDiagram(source, .svg, extensions, relationships: relationships).layoutGraph

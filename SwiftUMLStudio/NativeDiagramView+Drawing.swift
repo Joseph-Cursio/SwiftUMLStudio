@@ -16,14 +16,18 @@ extension NativeDiagramView {
         let rounded = Path(roundedRect: rect, cornerRadius: Self.cornerRadius * 2)
 
         context.fill(rounded, with: .color(color.opacity(0.12)))
-        context.stroke(rounded, with: .color(color),
-                       style: StrokeStyle(lineWidth: 1.5, dash: [6, 3]))
+        context.stroke(
+            rounded, with: .color(color),
+            style: StrokeStyle(lineWidth: 1.5, dash: [6, 3])
+        )
 
         let label = Text(cluster.label)
             .font(.system(size: 12, weight: .bold))
             .foregroundStyle(color)
-        context.draw(label, at: CGPoint(x: rect.minX + Self.padding, y: rect.minY + 10),
-                     anchor: .leading)
+        context.draw(
+            label, at: CGPoint(x: rect.minX + Self.padding, y: rect.minY + 10),
+            anchor: .leading
+        )
     }
 
     // MARK: - Node Drawing
@@ -36,24 +40,34 @@ extension NativeDiagramView {
         let rect = NativeDiagramGeometry.nodeRect(for: node)
         let headerRect = NativeDiagramGeometry.headerRect(for: node)
 
-        drawNodeBox(rect: rect, headerRect: headerRect, color: color,
-                    hasCompartments: !node.compartments.isEmpty, in: &context)
+        drawNodeBox(
+            rect: rect, headerRect: headerRect, color: color,
+            hasCompartments: !node.compartments.isEmpty, in: &context
+        )
         // The per-node stripe is a fallback module cue — when the layout engine
         // produced cluster boxes, the grouping is already conveyed by those.
         if let module = node.module, graph.clusters.isEmpty {
             drawModuleStripe(rect: rect, module: module, in: &context)
         }
         if isSelected {
-            context.stroke(Path(roundedRect: rect.insetBy(dx: -2, dy: -2),
-                                cornerRadius: Self.cornerRadius + 2),
-                           with: .color(Self.selectedStrokeColor), lineWidth: 3)
+            context.stroke(
+                Path(
+                    roundedRect: rect.insetBy(dx: -2, dy: -2),
+                    cornerRadius: Self.cornerRadius + 2
+                ),
+                with: .color(Self.selectedStrokeColor), lineWidth: 3
+            )
         } else if isHovered {
-            context.stroke(Path(roundedRect: rect, cornerRadius: Self.cornerRadius),
-                           with: .color(Self.strokeColor), lineWidth: 2.5)
+            context.stroke(
+                Path(roundedRect: rect, cornerRadius: Self.cornerRadius),
+                with: .color(Self.strokeColor), lineWidth: 2.5
+            )
         }
         drawNodeLabels(node: node, topY: rect.minY, stereotype: stereotype, in: &context)
-        drawNodeCompartments(node: node, leftX: rect.minX,
-                             startY: rect.minY + headerRect.height, in: &context)
+        drawNodeCompartments(
+            node: node, leftX: rect.minX,
+            startY: rect.minY + headerRect.height, in: &context
+        )
     }
 
     /// Thin colored stripe along the bottom edge of the node box, with the
@@ -79,8 +93,11 @@ extension NativeDiagramView {
     }
 
     private func drawNodeBox(
-        rect: CGRect, headerRect: CGRect, color: SwiftUI.Color,
-        hasCompartments: Bool, in context: inout GraphicsContext
+        rect: CGRect,
+        headerRect: CGRect,
+        color: SwiftUI.Color,
+        hasCompartments: Bool,
+        in context: inout GraphicsContext
     ) {
         let rounded = Path(roundedRect: rect, cornerRadius: Self.cornerRadius)
         context.fill(rounded, with: .color(Self.bodyFill))
@@ -97,7 +114,9 @@ extension NativeDiagramView {
     }
 
     private func drawNodeLabels(
-        node: LayoutNode, topY: Double, stereotype: String,
+        node: LayoutNode,
+        topY: Double,
+        stereotype: String,
         in context: inout GraphicsContext
     ) {
         let stereoText = Text("\u{00AB}\(stereotype)\u{00BB}")
@@ -112,7 +131,9 @@ extension NativeDiagramView {
     }
 
     private func drawNodeCompartments(
-        node: LayoutNode, leftX: Double, startY: Double,
+        node: LayoutNode,
+        leftX: Double,
+        startY: Double,
         in context: inout GraphicsContext
     ) {
         var currentY = startY
@@ -120,8 +141,10 @@ extension NativeDiagramView {
             var separatorPath = Path()
             separatorPath.move(to: CGPoint(x: leftX, y: currentY))
             separatorPath.addLine(to: CGPoint(x: leftX + node.width, y: currentY))
-            context.stroke(separatorPath, with: .color(Self.strokeColor.opacity(0.4)),
-                           lineWidth: 0.5)
+            context.stroke(
+                separatorPath, with: .color(Self.strokeColor.opacity(0.4)),
+                lineWidth: 0.5
+            )
 
             currentY += Self.padding
             for item in compartment.items {
@@ -129,9 +152,11 @@ extension NativeDiagramView {
                 let itemText = Text(item)
                     .font(.system(size: 12, design: .monospaced))
                     .foregroundStyle(Self.bodyTextColor)
-                context.draw(itemText,
-                             at: CGPoint(x: leftX + Self.padding, y: currentY - 4),
-                             anchor: .bottomLeading)
+                context.draw(
+                    itemText,
+                    at: CGPoint(x: leftX + Self.padding, y: currentY - 4),
+                    anchor: .bottomLeading
+                )
             }
             currentY += Self.padding
         }

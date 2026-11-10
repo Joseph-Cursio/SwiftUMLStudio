@@ -124,8 +124,12 @@ struct MergedExtensionConformanceSVGTests {
 
     /// A hand-built declaration in `file`, in `module`.
     private static func declared(
-        _ kind: ElementKind, _ name: String, in file: String, module: String,
-        access: ElementAccessibility? = nil, inheriting parents: [String] = []
+        _ kind: ElementKind,
+        _ name: String,
+        in file: String,
+        module: String,
+        access: ElementAccessibility? = nil,
+        inheriting parents: [String] = []
     ) -> SyntaxStructure {
         let item = SyntaxStructure(
             accessibility: access, inheritedTypes: parents.map { SyntaxStructure(name: $0) }, kind: kind, name: name

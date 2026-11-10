@@ -33,8 +33,12 @@ struct SVGClassDiagramNameLookupTests {
 
     /// A hand-built declaration in `<module>.swift`, in `module`.
     private func declared(
-        _ kind: ElementKind, _ name: String, _ module: String, access: ElementAccessibility? = nil,
-        inheriting parents: [String] = [], members: [SyntaxStructure]? = nil
+        _ kind: ElementKind,
+        _ name: String,
+        _ module: String,
+        access: ElementAccessibility? = nil,
+        inheriting parents: [String] = [],
+        members: [SyntaxStructure]? = nil
     ) -> SyntaxStructure {
         let runMethod = SyntaxStructure(kind: .functionMethodInstance, name: "run")
         let item = SyntaxStructure(

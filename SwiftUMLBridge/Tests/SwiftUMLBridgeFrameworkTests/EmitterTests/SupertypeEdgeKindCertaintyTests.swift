@@ -44,8 +44,13 @@ struct SupertypeEdgeKindCertaintyTests {
 
     /// The edge from `child` to `parent` as each format writes it: PlantUML and Mermaid
     /// `parent arrow child : label`, Nomnoml `[child] arrow label [parent]`.
-    private func edgeLine(_ format: DiagramFormat, _ parent: String, _ arrow: (text: String, nomnoml: String),
-                          _ child: String, _ label: String) -> String {
+    private func edgeLine(
+        _ format: DiagramFormat,
+        _ parent: String,
+        _ arrow: (text: String, nomnoml: String),
+        _ child: String,
+        _ label: String
+    ) -> String {
         format == .nomnoml
             ? "[\(child)] \(arrow.nomnoml) \(label) [\(parent)]" : "\(parent) \(arrow.text) \(child) : \(label)"
     }
@@ -65,8 +70,10 @@ struct SupertypeEdgeKindCertaintyTests {
     @Test("an edge to a name two other modules hide as different kinds is not named after a guess",
           arguments: textFormats)
     func ambiguousKindAcrossModules(format: DiagramFormat) throws {
-        let impl = File(module: nil, path: "App/Impl.swift",
-                        source: "import Beta\nfinal class Impl: Service { func use() { onlyBeta() } }")
+        let impl = File(
+            module: nil, path: "App/Impl.swift",
+            source: "import Beta\nfinal class Impl: Service { func use() { onlyBeta() } }"
+        )
         let items = try parsed(Self.withoutPackage([Self.alphaProtocol, Self.betaClass]) + [impl])
         #expect(lines(items, format, excluding: ["Service"])
             .contains(edgeLine(format, "Service", Self.inherits, "Impl", "inherits")))
@@ -100,8 +107,10 @@ struct SupertypeEdgeKindCertaintyTests {
     @Test("an edge to the protocol the writer imports, beside another module's class, conforms",
           arguments: textFormats)
     func importedProtocolBesideClass(format: DiagramFormat) throws {
-        let impl = File(module: "App", path: "App/Impl.swift",
-                        source: "import Alpha\nfinal class Impl: Service { func onlyAlpha() {} }")
+        let impl = File(
+            module: "App", path: "App/Impl.swift",
+            source: "import Alpha\nfinal class Impl: Service { func onlyAlpha() {} }"
+        )
         let items = try parsed([Self.alphaProtocol, Self.betaClass, impl])
         #expect(lines(items, format, excluding: ["Service"])
             .contains(edgeLine(format, "Service", Self.realizes, "Impl", "conforms to")))
@@ -112,10 +121,14 @@ struct SupertypeEdgeKindCertaintyTests {
     @Test("an edge to the imported module's alias of an outside type ends on that type",
           arguments: textFormats)
     func importedAliasOfOutsideType(format: DiagramFormat) throws {
-        let betaAlias = File(module: "Beta", path: "Beta/Service.swift",
-                             source: "import Foundation\npublic typealias Service = NSObject")
-        let impl = File(module: "App", path: "App/Impl.swift",
-                        source: "import Beta\nimport Foundation\nfinal class Impl: Service {}")
+        let betaAlias = File(
+            module: "Beta", path: "Beta/Service.swift",
+            source: "import Foundation\npublic typealias Service = NSObject"
+        )
+        let impl = File(
+            module: "App", path: "App/Impl.swift",
+            source: "import Beta\nimport Foundation\nfinal class Impl: Service {}"
+        )
         let items = try parsed([Self.alphaProtocol, betaAlias, impl])
         #expect(lines(items, format, excluding: ["Service"])
             .contains(edgeLine(format, "NSObject", Self.inherits, "Impl", "inherits")))
@@ -129,8 +142,10 @@ struct SupertypeEdgeKindCertaintyTests {
     @Test("an edge that ends on a drawn protocol is a conformance though the name was a guess",
           arguments: textFormats)
     func guessEndingOnDrawnProtocol(format: DiagramFormat) throws {
-        let impl = File(module: nil, path: "App/Impl.swift",
-                        source: "import Alpha\nfinal class Impl: Service { func onlyAlpha() {} }")
+        let impl = File(
+            module: nil, path: "App/Impl.swift",
+            source: "import Alpha\nfinal class Impl: Service { func onlyAlpha() {} }"
+        )
         let files = Self.withoutPackage([Self.alphaProtocol, Self.betaClass])
         #expect(lines(try parsed(files + [impl]), format)
             .contains(edgeLine(format, "Service", Self.realizes, "Impl", "conforms to")))
@@ -146,9 +161,11 @@ struct SupertypeEdgeKindCertaintyTests {
     static func aliasedProtocols(cyclicLast: Bool = false) -> [File] {
         let modules = (0..<libraries).map { index in
             let isCyclic = cyclicLast && index == libraries - 1
-            return File(module: "Lib\(index)", path: "Lib\(index)/Base.swift",
-                        source: isCyclic ? "public typealias Base = Base"
-                            : "public protocol Model {}\npublic typealias Base = Model")
+            return File(
+                module: "Lib\(index)", path: "Lib\(index)/Base.swift",
+                source: isCyclic ? "public typealias Base = Base"
+                    : "public protocol Model {}\npublic typealias Base = Model"
+            )
         }
         let imports = cyclicLast ? "import Lib0\nimport Lib\(libraries - 1)\n" : "import Lib0\n"
         let writers = (0..<libraries).map { index in
@@ -175,8 +192,10 @@ struct SupertypeEdgeKindCertaintyTests {
     @Test("many aliases of protocols nested in extensions are checked once each")
     func manyAliasesOfNestedProtocols() throws {
         let files = (0..<Self.libraries).flatMap { index in [
-            File(module: nil, path: "Lib\(index)/Outer.swift",
-                 source: "struct Outer {}\nextension Outer { protocol Q {} }"),
+            File(
+                module: nil, path: "Lib\(index)/Outer.swift",
+                source: "struct Outer {}\nextension Outer { protocol Q {} }"
+            ),
             File(module: nil, path: "Lib\(index)/Alias.swift", source: "typealias P = Outer.Q"),
         ]
         } + [File(module: nil, path: "Lib0/Writer.swift", source: "struct Writer: P {}")]

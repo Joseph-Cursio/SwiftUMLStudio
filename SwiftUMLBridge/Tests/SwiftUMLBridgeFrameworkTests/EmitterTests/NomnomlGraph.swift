@@ -35,8 +35,11 @@ struct NomnomlGraph: Decodable {
 
     /// The repository's `SwiftUMLStudio/Resources`, five levels above this file.
     private static let resources = URL(filePath: #filePath)
-        .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
-        .deletingLastPathComponent().deletingLastPathComponent()
+        .deletingLastPathComponent()
+        .deletingLastPathComponent()
+        .deletingLastPathComponent()
+        .deletingLastPathComponent()
+        .deletingLastPathComponent()
         .appending(path: "SwiftUMLStudio/Resources")
 
     private static let read = """

@@ -12,6 +12,7 @@ extension LayoutGraph {
         nodes.filter { node in
             node.posX - node.width / 2 < 0 || node.posY - node.height / 2 < 0
                 || node.posX + node.width / 2 > width || node.posY + node.height / 2 > height
-        }.map(\.id)
+        }
+            .map(\.id)
     }
 }

@@ -47,11 +47,11 @@ struct ERModelExtractorTests {
         }
         """
         let model = ERModelExtractor.extract(from: source)
-        let book = try #require(model.entities.first(where: { $0.name == "Book" }))
+        let book = try #require(model.entities.first { $0.name == "Book" })
         #expect(book.attributes.count == 3)
-        #expect(book.attributes.contains(where: { $0.name == "title" && $0.type == "String" }))
-        #expect(book.attributes.contains(where: { $0.name == "pageCount" && $0.type == "Int" }))
-        #expect(book.attributes.contains(where: { $0.name == "publishedAt" && $0.type == "Date" }))
+        #expect(book.attributes.contains { $0.name == "title" && $0.type == "String" })
+        #expect(book.attributes.contains { $0.name == "pageCount" && $0.type == "Int" })
+        #expect(book.attributes.contains { $0.name == "publishedAt" && $0.type == "Date" })
     }
 
     @Test("marks optional attributes")
@@ -64,7 +64,7 @@ struct ERModelExtractorTests {
         """
         let model = ERModelExtractor.extract(from: source)
         let entity = try #require(model.entities.first)
-        let bio = try #require(entity.attributes.first(where: { $0.name == "bio" }))
+        let bio = try #require(entity.attributes.first { $0.name == "bio" })
         #expect(bio.isOptional)
         #expect(bio.type == "String")
     }
@@ -79,7 +79,7 @@ struct ERModelExtractorTests {
         """
         let model = ERModelExtractor.extract(from: source)
         let entity = try #require(model.entities.first)
-        let handle = try #require(entity.attributes.first(where: { $0.name == "handle" }))
+        let handle = try #require(entity.attributes.first { $0.name == "handle" })
         #expect(handle.isUnique)
         #expect(handle.isPrimaryKey)
     }
@@ -94,7 +94,7 @@ struct ERModelExtractorTests {
         """
         let model = ERModelExtractor.extract(from: source)
         let entity = try #require(model.entities.first)
-        let idAttribute = try #require(entity.attributes.first(where: { $0.name == "id" }))
+        let idAttribute = try #require(entity.attributes.first { $0.name == "id" })
         #expect(idAttribute.isPrimaryKey)
         #expect(idAttribute.isUnique == false)
     }
@@ -109,7 +109,7 @@ struct ERModelExtractorTests {
         """
         let model = ERModelExtractor.extract(from: source)
         let entity = try #require(model.entities.first)
-        let preview = try #require(entity.attributes.first(where: { $0.name == "preview" }))
+        let preview = try #require(entity.attributes.first { $0.name == "preview" })
         #expect(preview.isTransient)
     }
 
@@ -145,7 +145,7 @@ struct ERModelExtractorTests {
         }
         """
         let model = ERModelExtractor.extract(from: source)
-        let relationship = try #require(model.relationships.first(where: { $0.from == "Book" }))
+        let relationship = try #require(model.relationships.first { $0.from == "Book" })
         #expect(relationship.toCardinality == .zeroOrOne)
     }
 
@@ -159,7 +159,7 @@ struct ERModelExtractorTests {
         }
         """
         let model = ERModelExtractor.extract(from: source)
-        let relationship = try #require(model.relationships.first(where: { $0.from == "City" }))
+        let relationship = try #require(model.relationships.first { $0.from == "City" })
         #expect(relationship.toCardinality == .exactlyOne)
     }
 
@@ -243,7 +243,7 @@ struct ERModelExtractorTests {
         struct Metadata { var count: Int = 0 }
         """
         let model = ERModelExtractor.extract(from: source)
-        let thing = try #require(model.entities.first(where: { $0.name == "Thing" }))
+        let thing = try #require(model.entities.first { $0.name == "Thing" })
         #expect(thing.attributes.map(\.name).sorted() == ["metadata", "tag"])
         #expect(model.relationships.isEmpty)
     }

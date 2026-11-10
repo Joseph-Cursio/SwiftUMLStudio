@@ -106,8 +106,10 @@ extension LayoutGraphBuilder.TypeLookup {
     /// `struct Array { typealias Box = Base }` never means a `class Box` hidden in
     /// `extension [Int]`, and `nearest` is passed over when it is of the root the name does not mean.
     func unlistedMemberShadows(
-        _ nearest: LayoutGraphBuilder.Declared, named name: LayoutGraphBuilder.QualifiedName,
-        from scope: LayoutGraphBuilder.Scope, depth: Int
+        _ nearest: LayoutGraphBuilder.Declared,
+        named name: LayoutGraphBuilder.QualifiedName,
+        from scope: LayoutGraphBuilder.Scope,
+        depth: Int
     ) -> Bool {
         let unlisted = spellings(of: name).flatMap { unlistedMembers[$0] ?? [] }
         guard name.root != .outsideType, !unlisted.isEmpty else { return false }
@@ -197,8 +199,10 @@ extension LayoutGraphBuilder.TypeLookup {
             let origins = item.mergedMemberOrigins
             for member in item.substructure ?? [] where member.kind == .typealias {
                 guard let name = member.name else { continue }
-                record(mergedAlias(member, in: item, from: origins[ObjectIdentifier(member)]),
-                       named: "\(containerName).\(name)")
+                record(
+                    mergedAlias(member, in: item, from: origins[ObjectIdentifier(member)]),
+                    named: "\(containerName).\(name)"
+                )
             }
             recordMergedAliases(of: item, named: containerName)
             unlistedMembers.merge(unlistedMembers(of: item, named: containerName)) { $0 + $1 }

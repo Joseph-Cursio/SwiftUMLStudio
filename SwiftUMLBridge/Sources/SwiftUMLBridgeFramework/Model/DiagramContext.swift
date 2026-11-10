@@ -203,8 +203,10 @@ class DiagramContext {
     /// starts with `//` and reads one that starts with `#` as a directive before it parses the
     /// rest, so a line break becomes a space.
     private func nomnomlEdge(from start: String, _ arrow: String, to end: String, label: String? = nil) -> String {
-        let text = label?.split(whereSeparator: \.isNewline).joined(separator: " ")
-            .replacingOccurrences(of: "[", with: "(").replacingOccurrences(of: "]", with: ")")
+        let text = label?.split(whereSeparator: \.isNewline)
+            .joined(separator: " ")
+            .replacingOccurrences(of: "[", with: "(")
+            .replacingOccurrences(of: "]", with: ")")
         let labelText = text.flatMap { $0.isEmpty ? nil : " \($0)" } ?? ""
         return "[\(start.nomnomlIdentifier)] \(arrow)\(labelText) [\(end.nomnomlIdentifier)]"
     }

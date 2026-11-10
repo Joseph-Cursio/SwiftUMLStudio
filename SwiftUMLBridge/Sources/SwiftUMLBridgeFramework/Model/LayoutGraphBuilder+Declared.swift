@@ -42,7 +42,10 @@ extension LayoutGraphBuilder {
         /// a typealias is never flattened out of its type's members. `rankedAs` overrides
         /// `rankScope`.
         init(
-            _ item: SyntaxStructure, kind: ElementKind, nodeId: String?, in container: SyntaxStructure? = nil,
+            _ item: SyntaxStructure,
+            kind: ElementKind,
+            nodeId: String?,
+            in container: SyntaxStructure? = nil,
             rankedAs: Scope? = nil
         ) {
             self.nodeId = nodeId

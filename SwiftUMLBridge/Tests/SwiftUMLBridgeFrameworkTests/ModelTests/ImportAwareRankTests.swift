@@ -112,8 +112,10 @@ struct ImportAwareRankTests {
             writer("import ModB\n", "Base"),
         ], member: "bOnly", hiddenLabel: nil),
         Case(name: "a bare name a module the file does not import declares is the outside type", files: [
-            File(module: "ModA",
-                 source: "open class NSObject {\n    public init() {}\n    public func projectOnly() {}\n}\n"),
+            File(
+                module: "ModA",
+                source: "open class NSObject {\n    public init() {}\n    public func projectOnly() {}\n}\n"
+            ),
             writer("import Foundation\n", "NSObject"),
         ], member: nil, hiddenLabel: nil),
         Case(name: "the first component is the imported module's type", files: [

@@ -136,13 +136,13 @@ struct StateMachineGeneratorTests {
         let generator = StateMachineGenerator()
         let candidates = generator.findCandidates(for: [directory.path])
 
-        let merged = candidates.first(where: { $0.identifier == "TrafficLight.Light" })
+        let merged = candidates.first { $0.identifier == "TrafficLight.Light" }
         #expect(merged != nil)
         #expect(merged?.transitions.count == 2, "merged transitions should union across files")
-        #expect(merged?.transitions.contains(where: { $0.from == "red" && $0.toState == "green" }) == true)
-        #expect(merged?.transitions.contains(where: { $0.from == "green" && $0.toState == "red" }) == true)
+        #expect(merged?.transitions.contains { $0.from == "red" && $0.toState == "green" } == true)
+        #expect(merged?.transitions.contains { $0.from == "green" && $0.toState == "red" } == true)
 
-        let lowConfidence = candidates.first(where: { $0.identifier == "Bystander.Other" })
+        let lowConfidence = candidates.first { $0.identifier == "Bystander.Other" }
         #expect(lowConfidence?.confidence == .low)
     }
 }

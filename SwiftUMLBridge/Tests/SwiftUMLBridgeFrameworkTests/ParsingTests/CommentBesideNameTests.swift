@@ -146,8 +146,10 @@ struct CommentBesideNameTests {
         let edges = CallGraphExtractor.extract(from: source).edges
         let control = CallGraphExtractor.extract(from: uncommented(source)).edges
         #expect(control.map { "\($0.calleeType ?? "unresolved").\($0.calleeMethod)" }
-            == ["Store.shared.load", "Store.shared.load", "Screen.refresh", "Screen.refresh", "Screen.refresh",
-                "Screen.self"])
+            == [
+                "Store.shared.load", "Store.shared.load", "Screen.refresh", "Screen.refresh", "Screen.refresh",
+                "Screen.self",
+            ])
         #expect(edges == control)
     }
 

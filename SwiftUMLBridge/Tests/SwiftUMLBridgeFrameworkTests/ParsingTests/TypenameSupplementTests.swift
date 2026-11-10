@@ -40,7 +40,8 @@ struct TypenameSupplementTests {
     ])
     func keysAreNameOffsets(source: String) {
         let map = SyntaxStructure.buildTypenameMap(from: source, sdkPath: nil)
-        let names = Parser.parse(source: source).tokens(viewMode: .sourceAccurate)
+        let names = Parser.parse(source: source)
+            .tokens(viewMode: .sourceAccurate)
             .filter { $0.parent?.is(IdentifierPatternSyntax.self) == true && $0.text != "s" }
         #expect(names.count == 2)
         for name in names {

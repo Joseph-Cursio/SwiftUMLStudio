@@ -29,8 +29,12 @@ struct ComponentSVGRendererSVGTests {
     @Test("special characters in names are XML-escaped")
     func escapesSpecialCharacters() {
         let model = ComponentModel(
-            components: [Component(name: "A<B>C", kind: .library,
-                                   providedInterfaces: ["Foo&Bar"])]
+            components: [
+                Component(
+                    name: "A<B>C", kind: .library,
+                    providedInterfaces: ["Foo&Bar"]
+                ),
+            ]
         )
         let svg = ComponentSVGRenderer.render(model).svg
         #expect(svg.contains("A&lt;B&gt;C"))

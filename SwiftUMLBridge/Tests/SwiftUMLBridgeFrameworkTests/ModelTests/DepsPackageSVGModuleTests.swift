@@ -20,17 +20,23 @@ struct DepsPackageSVGModuleTests {
         for (path, source) in files {
             let url = root.appendingPathComponent(path)
             try FileManager.default.createDirectory(
-                at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+                at: url.deletingLastPathComponent(), withIntermediateDirectories: true
+            )
             try source.write(to: url, atomically: true, encoding: .utf8)
         }
         let description = SPMPackageDescription(name: "Demo", targets: [
-            SPMTargetDescription(name: "Core", kind: .library, path: "Sources/Core",
-                                 sources: ["Repo.swift"], dependencies: []),
-            SPMTargetDescription(name: "App", kind: .executable, path: "Sources/App",
-                                 sources: ["main.swift"], dependencies: ["Core"]),
+            SPMTargetDescription(
+                name: "Core", kind: .library, path: "Sources/Core",
+                sources: ["Repo.swift"], dependencies: []
+            ),
+            SPMTargetDescription(
+                name: "App", kind: .executable, path: "Sources/App",
+                sources: ["main.swift"], dependencies: ["Core"]
+            ),
         ])
         return DependencyGraphGenerator().generateScript(
-            forPackage: description, packageRoot: root, mode: mode, with: Configuration(format: format))
+            forPackage: description, packageRoot: root, mode: mode, with: Configuration(format: format)
+        )
     }
 
     /// What the text formats label each node with (see the tests below).

@@ -60,6 +60,6 @@ public struct ComponentLayout: Sendable {
     }
 
     public func component(named name: String) -> PositionedComponent? {
-        components.first(where: { $0.name == name })
+        components.first { $0.name == name }
     }
 }

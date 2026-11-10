@@ -16,7 +16,8 @@ enum HiddenParentEnd {
     /// parent, and a drawn element already declares the parent's qualified name, so naming it
     /// would hang the type off that unrelated element.
     static func ends(
-        of drawn: [SyntaxStructure], through edgeEnds: DrawnEdgeEnds,
+        of drawn: [SyntaxStructure],
+        through edgeEnds: DrawnEdgeEnds,
         declaringIdentifier declares: (SyntaxStructure) -> Bool
     ) -> [ObjectIdentifier: Self] {
         let drawnItems = Set(drawn)
