@@ -36,6 +36,7 @@ opt_in_rules:
 - flatmap_over_map_reduce
 - ibinspectable_in_extension
 - identical_operands
+- implicit_return
 - joined_default_parameter
 - last_where
 - legacy_multiple
