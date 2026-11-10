@@ -372,8 +372,8 @@ class DiagramContext {
     /// it has no edge.
     private func hiddenParentName(of item: SyntaxStructure) -> String? {
         switch hiddenParentEnds[ObjectIdentifier(item)] {
-        case .element(let element)?: return uniqueNameForElement[element]
-        case .undeclared(let name)?: return name
+        case .element(let element): return uniqueNameForElement[element]
+        case .undeclared(let name): return name
         case nil: return nil
         }
     }

@@ -52,11 +52,11 @@ extension LayoutGraphBuilder.TypeLookup {
         // A member a superclass declares is the one declaration the name means, as is the writer's
         // own candidate, the nearest.
         switch inheritedLookup(name, from: scope, depth: depth) {
-        case .member(let inherited)?:
+        case .member(let inherited):
             return .through(inherited) { resolved in
                 resolved.type?.kind == .protocol ? resolved : (resolved.type, true)
             }
-        case .hidden?:
+        case .hidden:
             return .answer((nil, true))
         case nil:
             break

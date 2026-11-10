@@ -53,9 +53,9 @@ extension LayoutGraphBuilder.TypeLookup {
             started(containerName, from: scope, depth: depth + 1), from: scope, depth: depth + 1,
             readingModules: readingModules
         ) {
-        case .hidden?:
+        case .hidden:
             return .hidden
-        case .member(let inherited)?:
+        case .member(let inherited):
             type = aliased(inherited, depth: depth + 1, readingModules: readingModules)
             isInherited = true
         case nil:

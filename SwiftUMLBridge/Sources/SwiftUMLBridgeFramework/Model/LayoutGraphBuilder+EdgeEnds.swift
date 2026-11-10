@@ -294,9 +294,9 @@ extension LayoutGraphBuilder {
         ) -> Match? {
             let name = started(written, from: scope, depth: depth)
             switch inheritedLookup(name, from: scope, depth: depth, readingModules: readingModules) {
-            case .member(let inherited)?:
+            case .member(let inherited):
                 return Match(declared: inherited, name: recordedName(of: inherited.declaration) ?? name.name)
-            case .hidden?:
+            case .hidden:
                 return nil
             case nil:
                 break
@@ -325,8 +325,8 @@ extension LayoutGraphBuilder {
         ) -> Declared? {
             let name = started(written, from: scope, depth: depth)
             switch inheritedLookup(name, from: scope, depth: depth, readingModules: readingModules) {
-            case .member(let inherited)?: return inherited
-            case .hidden?: return nil
+            case .member(let inherited): return inherited
+            case .hidden: return nil
             case nil: return ownNearest(name, from: scope, depth: depth)
             }
         }
