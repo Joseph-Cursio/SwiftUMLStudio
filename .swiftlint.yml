@@ -43,6 +43,7 @@ opt_in_rules:
 - period_spacing
 - prefer_asset_symbols
 - prefer_self_type_over_type_of_self
+- prefer_zero_over_explicit_init
 - private_action
 - private_swiftui_state
 - prohibited_interface_builder
