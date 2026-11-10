@@ -31,6 +31,7 @@ opt_in_rules:
 - fallthrough
 - fatal_error_message
 - file_header
+- file_name_no_space
 - final_test_case
 - first_where
 - flatmap_over_map_reduce

@@ -64,7 +64,7 @@ struct ClassDiagramGeneratorTests {
 
     @Test("generateScript from swift file contains parsed content")
     func generateScriptFromFile() {
-        let swiftFile = projectMockURL.appendingPathComponent("Level 0.swift")
+        let swiftFile = projectMockURL.appendingPathComponent("Level0.swift")
         let script = generator.generateScript(for: [swiftFile.path])
         #expect(script.text.hasPrefix("@startuml"))
     }
