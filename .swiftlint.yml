@@ -39,6 +39,7 @@ opt_in_rules:
 - ibinspectable_in_extension
 - identical_operands
 - implicit_return
+- implicitly_unwrapped_optional
 - joined_default_parameter
 - last_where
 - legacy_multiple
