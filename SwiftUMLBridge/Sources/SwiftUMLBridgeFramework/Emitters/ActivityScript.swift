@@ -71,15 +71,20 @@ private extension ActivityScript {
         switch node.kind {
         case .start, .end:
             return nil
+
         case .action:
             let prefix = node.isAsync ? "await " : ""
             return "state \"\(plantUMLEscape(prefix + node.label))\" as N\(node.id)"
+
         case .decision, .loopStart:
             return "state \"\(plantUMLEscape(node.label))\" as N\(node.id) <<choice>>"
+
         case .merge, .loopEnd:
             return "state \" \" as N\(node.id) <<choice>>"
+
         case .fork:
             return "state \" \" as N\(node.id) <<fork>>"
+
         case .join:
             return "state \" \" as N\(node.id) <<join>>"
         }
@@ -136,15 +141,20 @@ private extension ActivityScript {
         switch node.kind {
         case .start:
             return ["\(identifier)((\"start\"))"]
+
         case .end:
             return ["\(identifier)(((\"end\")))"]
+
         case .action:
             let prefix = node.isAsync ? mermaidEscape("await ") : ""
             return ["\(identifier)[\"\(prefix)\(label)\"]"]
+
         case .decision, .loopStart:
             return ["\(identifier){\"\(label)\"}"]
+
         case .merge, .loopEnd:
             return ["\(identifier){\" \"}"]
+
         case .fork, .join:
             return [
                 "\(identifier):::forkJoin",

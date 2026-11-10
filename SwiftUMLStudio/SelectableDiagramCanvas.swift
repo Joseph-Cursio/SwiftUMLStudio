@@ -34,6 +34,7 @@ extension SelectableDiagramCanvas {
         switch phase {
         case .active(let location):
             viewport.hoveredNodeId = nodeID(at: location)
+
         case .ended:
             viewport.hoveredNodeId = nil
         }

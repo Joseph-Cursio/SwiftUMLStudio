@@ -294,10 +294,13 @@ public enum PersistenceSchemaExtractor {
             switch functionName {
             case "belongsTo":
                 return (.zeroOrMany, .exactlyOne)
+
             case "hasMany", "hasManyThrough":
                 return (.exactlyOne, .zeroOrMany)
+
             case "hasOne":
                 return (.exactlyOne, .zeroOrOne)
+
             default:
                 return (.zeroOrMany, .zeroOrMany)
             }

@@ -196,15 +196,19 @@ public struct SVGRenderer: Sendable {
         case .inheritance:
             markerId = "arrow-inheritance"
             dashArray = ""
+
         case .realization:
             markerId = "arrow-realization"
             dashArray = " stroke-dasharray=\"6,3\""
+
         case .dependency:
             markerId = "arrow-dependency"
             dashArray = " stroke-dasharray=\"4,3\""
+
         case .association:
             markerId = ""
             dashArray = ""
+
         case .composition:
             markerId = "arrow-composition"
             dashArray = ""

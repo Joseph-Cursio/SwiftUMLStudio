@@ -30,6 +30,7 @@ public struct DependencyGraphGenerator: DependencyGraphGenerating, Sendable {
         switch mode {
         case .types:
             edges = extractTypeEdges(from: files, configuration: configuration)
+
         case .modules:
             edges = extractModuleEdges(from: files, configuration: configuration)
         }
@@ -48,6 +49,7 @@ public struct DependencyGraphGenerator: DependencyGraphGenerating, Sendable {
         switch mode {
         case .types:
             return extractTypeEdges(from: files, configuration: configuration)
+
         case .modules:
             return extractModuleEdges(from: files, configuration: configuration)
         }
@@ -81,6 +83,7 @@ public struct DependencyGraphGenerator: DependencyGraphGenerating, Sendable {
                     .filter { $0.kind != .test && !shouldExclude(name: $0.name, configuration: configuration) }
                     .map { ($0.name, $0.kind) }
             )
+
         case .types:
             edges = extractTypeEdges(
                 forPackage: description,

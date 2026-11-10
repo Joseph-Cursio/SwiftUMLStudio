@@ -61,8 +61,10 @@ struct ContentView: View {
         switch viewModel.diagramMode {
         case .sequenceDiagram, .activityDiagram:
             viewModel.refreshEntryPoints()
+
         case .stateMachine:
             viewModel.refreshStateMachines()
+
         default:
             break
         }
@@ -73,6 +75,7 @@ struct ContentView: View {
             switch appMode {
             case .explorer:
                 explorerLayout
+
             case .developer:
                 developerLayout
             }

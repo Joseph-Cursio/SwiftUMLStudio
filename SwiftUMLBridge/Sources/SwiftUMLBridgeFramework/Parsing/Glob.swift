@@ -27,6 +27,7 @@ internal enum Glob: CustomStringConvertible {
             // before it into one `Character`.
             let directory = globPath.hasSuffix("/") ? globPath : globPath + "/"
             return globPath == path || path.unicodeScalars.starts(with: directory.unicodeScalars)
+
         case let .regex(regex):
             let range = NSRange(location: 0, length: path.utf16.count)
             return regex.firstMatch(in: path, options: [], range: range) != nil
@@ -37,6 +38,7 @@ internal enum Glob: CustomStringConvertible {
         switch self {
         case let .path(path):
             return path
+
         case let .regex(regex):
             var result = regex.pattern.dropFirst().dropLast()
                 .replacingOccurrences(of: "([^/]+)?", with: "*")

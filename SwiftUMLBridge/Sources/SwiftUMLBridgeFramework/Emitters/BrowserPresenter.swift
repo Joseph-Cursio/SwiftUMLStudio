@@ -24,15 +24,20 @@ public struct BrowserPresenter: DiagramPresenting {
             switch format {
             case .png:
                 url = URL(string: "https://www.planttext.com/api/plantuml/png/\(encodedText)")!
+
             case .svg:
                 url = URL(string: "https://www.planttext.com/api/plantuml/svg/\(encodedText)")!
+
             default:
                 url = URL(string: "https://www.planttext.com/?text=\(encodedText)")!
             }
+
         case .mermaid:
             url = mermaidLiveURL(for: script.text)
+
         case .nomnoml:
             url = nomnomlLiveURL(for: script.text)
+
         case .svg:
             // SVG is self-contained; write to temp file and open
             let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("diagram.svg")

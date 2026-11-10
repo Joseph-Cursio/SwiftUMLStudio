@@ -19,12 +19,15 @@ public struct DepsScript: Sendable {
         case .plantuml:
             self.text = DepsScript.buildPlantUMLText(model: model, cycleNodes: cycleNodes)
             self.layoutGraph = nil
+
         case .mermaid:
             self.text = DepsScript.buildMermaidText(model: model, cycleNodes: cycleNodes)
             self.layoutGraph = nil
+
         case .nomnoml:
             self.text = DepsScript.buildNomnomlText(model: model, cycleNodes: cycleNodes)
             self.layoutGraph = nil
+
         case .svg:
             let result = DepsScript.buildSVGWithGraph(model: model)
             self.text = result.text
@@ -223,8 +226,10 @@ private extension DepsScript {
             switch edge.kind {
             case .inherits:
                 arrow = "-:>"
+
             case .conforms:
                 arrow = "--:>"
+
             case .imports:
                 arrow = "-->"
             }

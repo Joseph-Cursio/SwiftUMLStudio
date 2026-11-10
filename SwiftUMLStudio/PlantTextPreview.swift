@@ -44,6 +44,7 @@ struct PlantTextPreview: View {
         switch Self.content(for: script, isGranted: consent.isGranted) {
         case .render(let url):
             WebView(url: url)
+
         case .consentCard:
             PlantUMLConsentCard(
                 isFallback: requestedFormat.map { $0 != .plantuml } ?? false,
@@ -55,6 +56,7 @@ struct PlantTextPreview: View {
                     }
                 }
             )
+
         case .nothing:
             EmptyView()
         }

@@ -45,10 +45,13 @@ final class SubscriptionManager {
                 let transaction = try Self.checkVerified(verification)
                 await transaction.finish()
                 await checkEntitlement()
+
             case .userCancelled:
                 break
+
             case .pending:
                 break
+
             @unknown default:
                 break
             }
@@ -116,6 +119,7 @@ final class SubscriptionManager {
         switch result {
         case .verified(let payload):
             return payload
+
         case .unverified(_, let error):
             throw error
         }

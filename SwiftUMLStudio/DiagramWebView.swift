@@ -39,12 +39,16 @@ struct DiagramWebView: View {
                         onUseMermaid: onUseMermaid
                     )
                 }
+
             case .mermaid:
                 localWebView(html: MermaidHTMLBuilder.mermaidHTML(script?.text ?? "", dark: dark))
+
             case .nomnoml:
                 localWebView(html: NomnomlHTMLBuilder.nomnomlHTML(script?.text ?? "", dark: dark))
+
             case .svg:
                 localWebView(html: svgHTML(script?.text ?? "", dark: dark))
+
             case nil:
                 EmptyView()
             }

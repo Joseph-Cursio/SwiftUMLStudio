@@ -136,6 +136,7 @@ public enum CoreDataModelExtractor {
             switch toCardinality {
             case .zeroOrMany, .oneOrMany:
                 fromCardinality = .exactlyOne
+
             case .zeroOrOne, .exactlyOne:
                 fromCardinality = .zeroOrMany
             }

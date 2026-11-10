@@ -80,11 +80,13 @@ func supertypeEdgeEnds(
         return graph?.edges.filter { $0.sourceId == child && $0.style != .composition }.map { edge in
             (graph?.nodes.first { $0.id == edge.targetId }?.compartments.flatMap(\.items) ?? []).joined()
         } ?? []
+
     case .nomnoml:
         return drawn.text.split(separator: "\n").compactMap { line -> String? in
             guard line.hasPrefix("[\(child)] -"), let open = line.lastIndex(of: "[") else { return nil }
             return String(line[line.index(after: open)...].dropLast())
         }
+
     default:
         return drawn.text.split(separator: "\n").compactMap { line -> String? in
             let words = line.split(separator: " ")

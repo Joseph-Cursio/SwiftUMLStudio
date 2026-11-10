@@ -35,10 +35,13 @@ public struct DiagramScript: @unchecked Sendable {
         switch format {
         case .plantuml:
             text = buildPlantUMLText(configuration: configuration, definitions: definitions)
+
         case .mermaid:
             text = buildMermaidText(configuration: configuration, definitions: definitions)
+
         case .nomnoml:
             text = buildNomnomlText(configuration: configuration, definitions: definitions)
+
         case .svg:
             text = buildSVGText(items: items, configuration: configuration)
         }
@@ -139,10 +142,13 @@ public struct DiagramScript: @unchecked Sendable {
         switch format {
         case .plantuml:
             return item.plantuml(context: context) ?? nil
+
         case .mermaid:
             return item.mermaid(context: context) ?? nil
+
         case .nomnoml:
             return item.nomnoml(context: context) ?? nil
+
         case .svg:
             // SVG uses LayoutGraphBuilder directly; skip per-item text emission
             return nil

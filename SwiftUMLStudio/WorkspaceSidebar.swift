@@ -33,6 +33,7 @@ struct WorkspaceSidebar: View {
                 switch selectedTab {
                 case .files:
                     FileBrowserSidebar(viewModel: viewModel)
+
                 case .history:
                     HistorySidebar(viewModel: viewModel)
                 }

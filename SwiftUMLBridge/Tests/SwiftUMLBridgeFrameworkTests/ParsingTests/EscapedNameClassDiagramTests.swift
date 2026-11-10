@@ -53,9 +53,11 @@ struct EscapedNameClassDiagramTests {
         switch format {
         case .plantuml:
             return lines.filter { $0.hasPrefix("class \"") }.map { String($0.dropFirst(7).prefix { $0 != "\"" }) }
+
         case .mermaid:
             return lines.filter { $0.hasPrefix("class ") }.compactMap { $0.split(separator: "\"").dropFirst().first }
                 .map(String.init)
+
         case .nomnoml: return try NomnomlGraph(parsing: drawn.text).nodes.map(\.title)
         default: return drawn.layoutGraph?.nodes.map(\.label) ?? []
         }

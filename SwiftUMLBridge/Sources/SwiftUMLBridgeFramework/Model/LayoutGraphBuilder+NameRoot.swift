@@ -119,8 +119,10 @@ extension LayoutGraphBuilder.TypeLookup {
             let seen = name.isRecorded
                 ? candidates : seenWhenQualifierIsModule(candidates, named: name.name, from: scope, depth: depth)
             return seen.filter { !isInExtensionOfOutsideType($0, depth: depth) }
+
         case .outsideType:
             return candidates.filter { isInExtensionOfOutsideType($0, depth: depth) }
+
         case .asWritten:
             var candidates = seenWhenQualifierIsModule(candidates, named: name.name, from: scope, depth: depth)
             guard name.name.contains(".") else { return seenAtFileScope(candidates, named: name.name, from: scope) }

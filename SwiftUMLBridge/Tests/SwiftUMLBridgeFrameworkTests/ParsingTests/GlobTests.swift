@@ -106,6 +106,7 @@ struct GlobTests {
             switch glob {
             case .path:
                 #expect(Bool(true))
+
             case .regex:
                 break
             }

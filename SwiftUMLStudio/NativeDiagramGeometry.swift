@@ -137,6 +137,7 @@ nonisolated enum NativeDiagramGeometry {
         switch edgeStyle {
         case .realization, .dependency:
             return StrokeStyle(lineWidth: 1.2, dash: [6, 3])
+
         case .inheritance, .composition, .association:
             return StrokeStyle(lineWidth: 1.2)
         }

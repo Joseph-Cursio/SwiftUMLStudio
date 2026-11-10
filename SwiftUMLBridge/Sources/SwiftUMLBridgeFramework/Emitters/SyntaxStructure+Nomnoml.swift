@@ -79,6 +79,7 @@ extension SyntaxStructure {
             switch member.category {
             case .property:
                 properties.append(member.text)
+
             case .method:
                 methods.append(member.text)
             }
@@ -105,8 +106,10 @@ extension SyntaxStructure {
         switch accessibility {
         case .open, .public:
             return "+"
+
         case .internal, .package, .other:
             return "~"
+
         case .private, .fileprivate:
             return "-"
         }
@@ -122,20 +125,25 @@ extension SyntaxStructure {
         switch kind {
         case .functionMethodInstance:
             return ("\(prefix)\(safeName)()", .method)
+
         case .functionMethodStatic:
             return ("\(prefix)static \(safeName)()", .method)
+
         case .varInstance:
             if let typename = element.typename {
                 return ("\(prefix)\(safeName): \(typename.nomnomlEscaped)", .property)
             }
             return ("\(prefix)\(safeName)", .property)
+
         case .varStatic:
             if let typename = element.typename {
                 return ("\(prefix)static \(safeName): \(typename.nomnomlEscaped)", .property)
             }
             return ("\(prefix)static \(safeName)", .property)
+
         case .enumelement:
             return ("\(safeName)", .property)
+
         default:
             return nil
         }

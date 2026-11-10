@@ -57,10 +57,12 @@ nonisolated enum NativeSequenceGeometry {
             return layout.participants
                 .filter { $0.centerX > current.centerX }
                 .min { $0.centerX < $1.centerX }
+
         case .left:
             return layout.participants
                 .filter { $0.centerX < current.centerX }
                 .max { $0.centerX < $1.centerX }
+
         case .upward, .down:
             return nil
         }

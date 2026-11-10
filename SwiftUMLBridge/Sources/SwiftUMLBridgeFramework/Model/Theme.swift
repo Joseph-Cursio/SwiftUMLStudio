@@ -21,6 +21,7 @@ public enum Theme: Codable, Sendable {
         switch self {
         case let .__directive__(name):
             return "\(name)"
+
         default:
             return String(describing: self).camelCaseToKebapCase()
         }

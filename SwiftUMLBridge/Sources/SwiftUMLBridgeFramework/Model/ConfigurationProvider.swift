@@ -85,10 +85,12 @@ public struct ConfigurationProvider {
         case let .keyNotFound(key, context):
             let parent = keyPath(context.codingPath)
             return "missing key '\(key.stringValue)'" + (parent.isEmpty ? "" : " in \(parent)")
+
         case let .dataCorrupted(context), let .typeMismatch(_, context), let .valueNotFound(_, context):
             let path = keyPath(context.codingPath)
             let detail = context.underlyingError.map { "\($0)" } ?? context.debugDescription
             return path.isEmpty ? detail : "invalid value at \(path): \(detail)"
+
         @unknown default:
             return "\(error)"
         }

@@ -65,12 +65,14 @@ extension LayoutGraphBuilder {
             switch end {
             case .node(let nodeId):
                 return nodeId
+
             case .named(let written, let scope):
                 let name = lookup.qualifiedName(ofWritten: written, from: scope)
                 guard let type = lookup.type(name, from: scope) else {
                     return fallback(named: name.name, resolving: lookup.sureResolvedName(of: name, from: scope))
                 }
                 return node(for: type, named: name.name)
+
             case .declaration(let declaration, let name, let scope):
                 if let nodeId = idForDeclaration[declaration] { return nodeId }
                 if hiddenDeclarations.contains(declaration) { return standIn(for: declaration, named: name) }
@@ -79,6 +81,7 @@ extension LayoutGraphBuilder {
                     return fallback(named: name, resolving: lookup.sureResolvedName(of: written, from: scope))
                 }
                 return node(for: type, named: name)
+
             case .extended(let declaration, let name, let scope, let isSugared):
                 // With no type of that name visible there, the extension stands for itself.
                 guard let type = lookup.extendedType(named: name, from: scope, isSugared: isSugared) else {

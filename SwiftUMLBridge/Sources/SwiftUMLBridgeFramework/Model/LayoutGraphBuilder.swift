@@ -69,6 +69,7 @@ struct LayoutGraphBuilder {
             switch pending.role {
             case .other:
                 return edge
+
             case .extendedType:
                 // As `DrawnEdgeEnds.extendedType(of:)` and `DiagramContext.addExtensionEdge` keep
                 // the text formats' `ext` edge: a hidden type, or none, resolves to the extension
@@ -76,9 +77,11 @@ struct LayoutGraphBuilder {
                 guard let type = ends.itemForNodeId[edge.targetId], type.kind != .extension,
                       type.isExcluded(byPatterns: ends.dependencyExclude) == false else { return nil }
                 return edge
+
             case .supertype:
                 supertypeEnds.insert([edge.sourceId, edge.targetId])
                 return edge
+
             case .carriedSupertype:
                 return supertypeEnds.insert([edge.sourceId, edge.targetId]).inserted ? edge : nil
             }
@@ -265,14 +268,19 @@ struct LayoutGraphBuilder {
         switch kind {
         case .functionMethodInstance:
             methods.append("\(prefix)\(memberName)()")
+
         case .functionMethodStatic:
             methods.append("\(prefix)static \(memberName)()")
+
         case .varInstance:
             properties.append("\(prefix)\(memberName)\(element.typename.map { ": \($0)" } ?? "")")
+
         case .varStatic:
             properties.append("\(prefix)static \(memberName)\(element.typename.map { ": \($0)" } ?? "")")
+
         case .enumelement:
             properties.append(memberName)
+
         default:
             break
         }

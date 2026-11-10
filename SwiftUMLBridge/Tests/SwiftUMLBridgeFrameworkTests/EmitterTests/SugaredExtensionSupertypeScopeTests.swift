@@ -25,12 +25,14 @@ struct SugaredExtensionSupertypeScopeTests {
         case .svg:
             return drawn.layoutGraph?.edges
                 .filter { $0.sourceId == child && $0.style != .composition }.map(\.targetId) ?? []
+
         case .nomnoml:
             // `[child] -:> label [parent]`; a nesting edge starts at the parent.
             return drawn.text.split(separator: "\n").compactMap { line -> String? in
                 guard line.hasPrefix("[\(child)] -"), let open = line.lastIndex(of: "[") else { return nil }
                 return String(line[line.index(after: open)...].dropLast())
             }
+
         default:
             // `parent <|-- child : label`.
             return drawn.text.split(separator: "\n").compactMap { line -> String? in

@@ -34,6 +34,7 @@ struct UnresolvedNoteAnchorTests {
                     }
                 }
                 """
+
             case .depthTwo, .depthTwoControl, .nestedResolvedFirst:
                 // `Screen.start` calls `Store.load()`, then `Cache.warm()`. `Store.load` calls
                 // `handlers[0]()`, one level down, after `Logger.log()` in the last witness.
@@ -107,12 +108,16 @@ struct UnresolvedNoteAnchorTests {
         switch witness {
         case .depthOne:
             #expect(messages == ["Screen->>Store.shared: load()"])
+
         case .depthOneControl:
             #expect(messages.isEmpty)
+
         case .depthTwo:
             #expect(messages == ["Screen->>Store: load()", "Screen->>Cache: warm()"])
+
         case .depthTwoControl:
             #expect(messages == ["Screen->>Store: load()"])
+
         case .nestedResolvedFirst:
             #expect(messages == ["Screen->>Store: load()", "Screen->>Cache: warm()", "Store->>Logger: log()"])
         }

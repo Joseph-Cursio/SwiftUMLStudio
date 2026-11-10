@@ -117,8 +117,10 @@ final class ERModelExtractor: SyntaxVisitor {
         switch binding.accessorBlock?.accessors {
         case nil:
             return true
+
         case .getter:
             return false
+
         case .accessors(let accessors):
             return accessors.allSatisfy {
                 $0.accessorSpecifier.tokenKind == .keyword(.willSet)
@@ -283,6 +285,7 @@ final class ERModelExtractor: SyntaxVisitor {
         switch toCardinality {
         case .zeroOrMany, .oneOrMany:
             fromCardinality = .exactlyOne
+
         case .zeroOrOne, .exactlyOne:
             fromCardinality = .zeroOrMany
         }

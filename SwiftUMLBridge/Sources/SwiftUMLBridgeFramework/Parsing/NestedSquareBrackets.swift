@@ -113,15 +113,19 @@ private struct Scanner {
         switch current {
         case UInt8(ascii: "("):
             stack.append(.paren)
+
         case UInt8(ascii: "{"):
             stack.append(.brace)
+
         case UInt8(ascii: "["):
             let blank = openSquares >= NestedSquareBrackets.limit
             if blank { blanked.append(index) }
             stack.append(.square(blanked: blank))
             openSquares += 1
+
         case UInt8(ascii: ")"), UInt8(ascii: "}"), UInt8(ascii: "]"):
             close(current)
+
         default:
             break
         }
@@ -162,6 +166,7 @@ private struct Scanner {
             case (.paren, UInt8(ascii: ")")), (.interpolation, UInt8(ascii: ")")),
                  (.brace, UInt8(ascii: "}")), (.square, UInt8(ascii: "]")):
                 return true
+
             default:
                 return false
             }

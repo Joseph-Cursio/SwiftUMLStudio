@@ -178,8 +178,10 @@ nonisolated enum SuggestionEngine {
         switch model.confidence {
         case .high:
             return "\(model.states.count) states, \(model.transitions.count) transitions."
+
         case .medium:
             return "\(model.states.count) states — type inferred from initializer."
+
         case .low:
             return "\(model.transitions.count) transitions — sources unknown."
         }

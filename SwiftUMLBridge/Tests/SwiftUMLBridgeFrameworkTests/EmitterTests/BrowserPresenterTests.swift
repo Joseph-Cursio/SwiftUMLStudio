@@ -10,6 +10,7 @@ struct BrowserPresenterTests {
         switch presenter.format {
         case .default:
             #expect(Bool(true))
+
         default:
             Issue.record("Expected .default format")
         }
@@ -21,6 +22,7 @@ struct BrowserPresenterTests {
         switch presenter.format {
         case .png:
             #expect(Bool(true))
+
         default:
             Issue.record("Expected .png format")
         }
@@ -32,6 +34,7 @@ struct BrowserPresenterTests {
         switch presenter.format {
         case .svg:
             #expect(Bool(true))
+
         default:
             Issue.record("Expected .svg format")
         }

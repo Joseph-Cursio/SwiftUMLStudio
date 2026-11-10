@@ -61,10 +61,13 @@ extension SwiftUMLBridgeCLI {
             switch extensionVisualization {
             case .hideExtensions:
                 bridgeConfig.elements.showExtensions = ExtensionVisualization.none
+
             case .mergeExtensions:
                 bridgeConfig.elements.showExtensions = .merged
+
             case .showExtensions:
                 bridgeConfig.elements.showExtensions = .all
+
             case nil:
                 break
             }

@@ -27,6 +27,7 @@ extension AttributeListSyntax {
             switch element {
             case .attribute(let attribute):
                 return [attribute]
+
             case .ifConfigDecl(let ifConfig):
                 return ifConfig.clauses.flatMap { clause -> [AttributeSyntax] in
                     guard case .attributes(let attributes)? = clause.elements else { return [] }
@@ -56,6 +57,7 @@ extension AttributeListSyntax {
             switch element {
             case .attribute(let attribute):
                 if matches(attribute) { return (found + [attribute], true) }
+
             case .ifConfigDecl(let ifConfig):
                 // Only an `#else` makes the clauses cover every build.
                 var always = ifConfig.clauses.contains { $0.poundKeyword.tokenKind == .poundElse }

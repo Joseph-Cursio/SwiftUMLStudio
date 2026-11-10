@@ -148,8 +148,10 @@ final class DiagramViewModel {
         switch selectedPaths.count {
         case 0:
             return "No source selected"
+
         case 1:
             return URL(fileURLWithPath: selectedPaths[0]).lastPathComponent
+
         default:
             let first = URL(fileURLWithPath: selectedPaths[0]).lastPathComponent
             return "\(first) + \(selectedPaths.count - 1) more"
@@ -173,16 +175,22 @@ final class DiagramViewModel {
             switch self.diagramMode {
             case .classDiagram:
                 await self.generateClassDiagram()
+
             case .sequenceDiagram:
                 await self.generateSequenceDiagram()
+
             case .dependencyGraph:
                 await self.generateDependencyGraph()
+
             case .stateMachine:
                 await self.generateStateMachineDiagram()
+
             case .activityDiagram:
                 await self.generateActivityDiagram()
+
             case .erDiagram:
                 await self.generateERDiagram()
+
             case .componentDiagram:
                 await self.generateComponentDiagram()
             }

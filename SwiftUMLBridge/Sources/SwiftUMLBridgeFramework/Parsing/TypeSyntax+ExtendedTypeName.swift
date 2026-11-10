@@ -16,9 +16,11 @@ extension TypeSyntax {
         switch self.as(TypeSyntaxEnum.self) {
         case .identifierType(let identifier):
             return identifier.name.presence == .present ? identifier.name.canonicalName : nil
+
         case .memberType(let member):
             guard member.name.presence == .present, let base = member.baseType.extendedTypeName else { return nil }
             return base + "." + member.name.canonicalName
+
         case .arrayType: return "Array"
         case .dictionaryType: return "Dictionary"
         case .inlineArrayType: return "InlineArray"
@@ -38,6 +40,7 @@ extension TypeSyntax {
         switch self.as(TypeSyntaxEnum.self) {
         case .arrayType, .dictionaryType, .inlineArrayType, .optionalType, .implicitlyUnwrappedOptionalType:
             return true
+
         case .memberType(let member): return member.baseType.isSugared
         case .tupleType(let tuple): return tuple.parenthesizedType?.isSugared ?? false
         default: return false
@@ -104,10 +107,12 @@ extension TypeSyntax {
         switch self.as(TypeSyntaxEnum.self) {
         case .identifierType(let identifier):
             return identifier.name.canonicalName == name
+
         case .memberType(let member):
             guard member.name.canonicalName == name,
                   let base = member.baseType.as(IdentifierTypeSyntax.self) else { return false }
             return base.genericArgumentClause == nil && base.name.canonicalName == module
+
         default:
             return false
         }
@@ -144,25 +149,32 @@ extension ExprSyntax {
         case .declReferenceExpr(let reference):
             let name = reference.baseName.expressionName
             return name.first?.isUppercase == true ? name : nil
+
         case .memberAccessExpr(let member):
             let name = member.declName.baseName.canonicalName
             guard name.first?.isUppercase == true, let base = member.base?.typeReferenceName else { return nil }
             return base + "." + name
+
         case .genericSpecializationExpr(let specialized):
             return specialized.expression.typeReferenceName
+
         case .typeExpr(let type):
             return type.type.extendedTypeName
+
         case .optionalChainingExpr(let optional):
             return optional.expression.typeReferenceName == nil ? nil : "Optional"
+
         case .arrayExpr(let array):
             guard array.elements.count == 1, array.elements.first?.expression.typeReferenceName != nil else {
                 return nil
             }
             return "Array"
+
         case .dictionaryExpr(let dictionary):
             guard case .elements(let elements) = dictionary.content, elements.count == 1, let only = elements.first,
                   only.key.typeReferenceName != nil, only.value.typeReferenceName != nil else { return nil }
             return "Dictionary"
+
         default:
             return nil
         }

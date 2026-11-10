@@ -15,18 +15,24 @@ enum CLIError: Error, CustomStringConvertible {
         switch self {
         case .invalidEntry:
             return "Entry must be in the form 'TypeName.methodName'"
+
         case .stateCandidateNotFound(let identifier):
             return "No state machine candidate '\(identifier)' was found in the sources."
+
         case .erModelNotFound:
             return "No persisted models (SwiftData @Model, Core Data, GRDB, SQLite.swift) were found in the sources."
+
         case .componentModelNotFound:
             return "No components were extracted from the SPM package. "
                 + "Make sure `swift package describe` succeeds in the package directory."
+
         case .noSwiftFiles:
             return "No Swift files were found in the given paths, "
                 + "or the files.include / files.exclude (--exclude) filters left none."
+
         case .packageDirectoryNotFound(let path):
             return "--package \(path): no such directory"
+
         case let .invalidConfiguration(path, reason):
             return "--config \(path): \(reason)"
         }

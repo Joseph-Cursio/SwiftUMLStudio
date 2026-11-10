@@ -35,11 +35,13 @@ struct NestedProtocolTests {
         switch drawn.format {
         case .svg:
             return drawn.layoutGraph?.nodes.filter { $0.stereotype == "protocol" }.map(\.id) ?? []
+
         case .plantuml:
             // `class "Shape" as Outer.Shape << (P, goldenRod) protocol >> {`
             return lines.filter { $0.hasPrefix("class ") && $0.contains(" protocol >>") }.compactMap { line in
                 line.components(separatedBy: " as ").last?.split(separator: " ").first.map(String.init)
             }
+
         case .mermaid:
             // `class Outer.Shape["Shape"] {`, then `<<protocol>>` on the next line.
             return zip(lines, lines.dropFirst()).compactMap { header, next in
@@ -47,6 +49,7 @@ struct NestedProtocolTests {
                       let open = header.firstIndex(of: "[") else { return nil }
                 return String(header[header.index(header.startIndex, offsetBy: 6)..<open])
             }
+
         case .nomnoml:
             // `[<interface id=Outer.Shape> Shape]`
             let prefix = "[<interface id="
@@ -64,8 +67,10 @@ struct NestedProtocolTests {
             return drawn.layoutGraph?.edges.contains {
                 $0.sourceId == child && $0.targetId == protocolId && $0.style != .composition
             } ?? false
+
         case .nomnoml:
             return lines(drawn).contains("[\(child)] --:> conforms to [\(protocolId)]")
+
         default:
             return lines(drawn).contains("\(protocolId) <|.. \(child) : conforms to")
         }
@@ -78,8 +83,10 @@ struct NestedProtocolTests {
             return drawn.layoutGraph?.edges.contains {
                 $0.sourceId == parent && $0.targetId == child && $0.style == .composition
             } ?? false
+
         case .nomnoml:
             return lines(drawn).contains("[\(parent)] +- [\(child)]")
+
         default:
             return lines(drawn).contains("\(parent) +-- \(child)")
         }

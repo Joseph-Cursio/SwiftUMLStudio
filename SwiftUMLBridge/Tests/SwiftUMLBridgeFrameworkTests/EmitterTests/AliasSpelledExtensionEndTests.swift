@@ -81,12 +81,14 @@ struct AliasSpelledExtensionEndTests {
         case .svg:
             return drawn.layoutGraph?.edges.filter { $0.style == .composition }
                 .map { "\($0.sourceId) -> \($0.targetId)" } ?? []
+
         case .nomnoml:
             return drawn.text.split(separator: "\n").compactMap { line -> String? in
                 let parts = line.components(separatedBy: "] +- [")
                 guard parts.count == 2 else { return nil }
                 return "\(parts[0].dropFirst()) -> \(parts[1].dropLast())"
             }
+
         default:
             return drawn.text.split(separator: "\n").compactMap { line -> String? in
                 let parts = line.components(separatedBy: " +-- ")

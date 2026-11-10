@@ -262,13 +262,16 @@ extension NativeDiagramView {
             path.move(to: tip); path.addLine(to: points.left); path.addLine(to: points.right); path.closeSubpath()
             context.fill(path, with: .color(Self.bodyFill))
             context.stroke(path, with: .color(Self.strokeColor), lineWidth: 1)
+
         case .dependency:
             var path = Path()
             path.move(to: points.left); path.addLine(to: tip); path.addLine(to: points.right)
             context.stroke(path, with: .color(Self.strokeColor), lineWidth: 1.5)
+
         case .composition:
             let angle = atan2(tip.y - prev.y, tip.x - prev.x)
             drawDiamond(at: tip, angle: angle, in: &context)
+
         case .association:
             break
         }
