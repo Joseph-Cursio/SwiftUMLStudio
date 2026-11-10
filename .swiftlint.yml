@@ -24,6 +24,7 @@ opt_in_rules:
 - enum_case_associated_values_count
 - expiring_todo
 - explicit_init
+- extension_access_modifier
 - fallthrough
 - fatal_error_message
 - file_header
