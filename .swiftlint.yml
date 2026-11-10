@@ -12,6 +12,7 @@ opt_in_rules:
 - collection_alignment
 - comma_inheritance
 - contains_over_filter_count
+- contains_over_filter_is_empty
 - contains_over_first_not_nil
 - contains_over_range_nil_comparison
 - direct_return

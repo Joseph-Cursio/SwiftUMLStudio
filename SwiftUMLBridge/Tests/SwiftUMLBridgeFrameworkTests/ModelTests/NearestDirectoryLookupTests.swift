@@ -264,7 +264,7 @@ struct NearestDirectoryNameTests {
                 """)
         ]
         let elements = ElementOptions(showExtensions: mode)
-        #expect(try edges(files, elements).filter { $0.hasPrefix("Shouty ") }.isEmpty)
+        #expect(try !edges(files, elements).contains { $0.hasPrefix("Shouty ") })
         #expect(try lines(files, .plantuml, elements).contains("FormatStyle <|-- Shouty : inherits"))
     }
 
