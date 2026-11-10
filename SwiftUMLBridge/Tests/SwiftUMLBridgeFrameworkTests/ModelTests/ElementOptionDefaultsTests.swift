@@ -44,7 +44,7 @@ struct ElementOptionDefaultsTests {
         let nulled = try decoded("elements:\n  mergedExtensionMemberIndicator: null\n")
         #expect(nulled.elements.mergedExtensionMemberIndicator == "<&bolt>")
         let empty = try decoded("elements:\n  mergedExtensionMemberIndicator: \"\"\n")
-        #expect(empty.elements.mergedExtensionMemberIndicator == "")
+        #expect(empty.elements.mergedExtensionMemberIndicator?.isEmpty == true)
     }
 
     @Test("members are marked +, ~ and -, in every format")

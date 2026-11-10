@@ -25,6 +25,7 @@ opt_in_rules:
 - discouraged_none_name
 - discouraged_object_literal
 - empty_count
+- empty_string
 - empty_xctest_method
 - enum_case_associated_values_count
 - expiring_todo
