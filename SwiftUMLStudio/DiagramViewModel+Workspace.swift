@@ -210,9 +210,9 @@ extension DiagramViewModel {
             try SnapshotManager.saveSnapshot(
                 from: summary,
                 paths: selectedPaths,
+                modelContext: modelContext,
                 bookmarks: selectedPathBookmarks,
-                at: savedAt,
-                modelContext: modelContext
+                at: savedAt
             )
         } catch {
             saveError = "Couldn't save the snapshot: \(error.localizedDescription)"

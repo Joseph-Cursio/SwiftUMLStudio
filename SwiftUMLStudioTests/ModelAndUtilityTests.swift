@@ -159,7 +159,7 @@ struct FileNodeTests {
 
         let tree = FileNode.buildTree(from: [dir.path()])
         #expect(tree.count == 2) // Models/ directory + App.swift
-        let dirNode = tree.first { $0.isDirectory }
+        let dirNode = tree.first(where: \.isDirectory)
         #expect(dirNode?.name == "Models")
         #expect(dirNode?.children?.count == 1)
         #expect(dirNode?.children?[0].name == "Model.swift")

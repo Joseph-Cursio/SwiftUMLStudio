@@ -140,8 +140,8 @@ public enum ComponentSVGRenderer {
         adjacency: [String: [String]],
         cache: inout [String: Int]
     ) -> Int {
-        /// A target the walk is inside, the index of its next dependency, and the deepest
-        /// chain found below it so far.
+        // A target the walk is inside, the index of its next dependency, and the deepest
+        // chain found below it so far.
         struct Step {
             let name: String
             var nextDependency = 0
@@ -150,8 +150,8 @@ public enum ComponentSVGRenderer {
         var path: [Step] = []
         var onPath = Set<String>()
 
-        /// The depth of `name` when it is known without walking further; otherwise steps into it
-        /// and returns nil.
+        // The depth of `name` when it is known without walking further; otherwise steps into it
+        // and returns nil.
         func enter(_ name: String) -> Int? {
             if let cached = cache[name] { return cached }
             if onPath.contains(name) { return 0 }

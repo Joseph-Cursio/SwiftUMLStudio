@@ -129,7 +129,7 @@ struct FileNode: Identifiable, Hashable {
                 let childNodes = buildLevel(entries: deeper, depth: depth + 1, basePath: dirURL)
                 let leafNodes = leaves.map { entry in
                     Self(id: entry.url, name: entry.url.lastPathComponent,
-                             url: entry.url, isDirectory: false, children: nil)
+                         url: entry.url, isDirectory: false, children: nil)
                 }
                 // If the directory has only subdirectory children (no leaf files at this level),
                 // just add the child nodes. Otherwise combine.

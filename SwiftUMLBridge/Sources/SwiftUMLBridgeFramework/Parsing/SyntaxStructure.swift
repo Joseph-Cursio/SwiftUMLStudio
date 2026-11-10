@@ -190,7 +190,7 @@ internal class SyntaxStructure: NSObject, Codable, @unchecked Sendable {
         return clonedRoots
     }
 
-    internal func find(_ type: ElementKind = .struct, named searchName: String) -> SyntaxStructure? {
+    internal func find(_ type: ElementKind, named searchName: String) -> SyntaxStructure? {
         if name == searchName, kind == type {
             return self
         }
@@ -202,6 +202,12 @@ internal class SyntaxStructure: NSObject, Codable, @unchecked Sendable {
         }
         return nil
     }
+
+    override var debugDescription: String {
+        // A structure SourceKit gave no kind or name still has to describe itself: a failing
+        // test or the debugger prints it, and a trap there hides the failure being looked at.
+        "\(kind?.rawValue.components(separatedBy: ".").last ?? "unknown") \(fullName ?? "<unnamed>")"
+    }
 }
 
 protocol UnknownCaseRepresentable: RawRepresentable, CaseIterable where RawValue: Equatable {
@@ -209,7 +215,8 @@ protocol UnknownCaseRepresentable: RawRepresentable, CaseIterable where RawValue
 }
 
 extension UnknownCaseRepresentable {
-    public init(rawValue: RawValue) {
+    /// The case whose raw value is `rawValue`, or `unknownCase` when no case has it.
+    init(rawValue: RawValue) {
         let value = Self.allCases.first(where: { $0.rawValue == rawValue })
         self = value ?? Self.unknownCase
     }

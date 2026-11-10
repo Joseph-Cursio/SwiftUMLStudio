@@ -62,117 +62,132 @@ struct DiagramPreviewView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            if let model = lowConfidenceModel {
-                StateMachineConfidenceBanner(model: model)
-            }
-            if let reason = LayoutFallbackBanner.reason(
-                for: viewModel.currentScript, isGenerating: viewModel.isGenerating
-            ) {
-                LayoutFallbackBanner(reason: reason)
-            }
-            if let places = SourceReadNoticeBanner.places(
-                for: viewModel.sourceReadNotices, isGenerating: viewModel.isGenerating
-            ) {
-                SourceReadNoticeBanner(places: places)
-            }
+            banners
             ZStack(alignment: .topTrailing) {
-                Group {
-                    if viewModel.isGenerating {
-                        ProgressView("Generating…")
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    } else if let script = viewModel.currentScript {
-                        if script.format == .svg, let graph = script.layoutGraph {
-                            cmdScrollHost {
-                                NativeDiagramView(graph: graph, viewport: viewport)
-                            }
-                        } else if script.format == .svg, let seqLayout = script.sequenceLayout {
-                            cmdScrollHost {
-                                NativeSequenceDiagramView(layout: seqLayout, viewport: viewport)
-                            }
-                        } else if script.format == .svg, let activityLayout = script.activityLayout {
-                            cmdScrollHost {
-                                NativeActivityDiagramView(layout: activityLayout, viewport: viewport)
-                            }
-                        } else if script.format == .svg, let componentLayout = script.componentLayout {
-                            cmdScrollHost {
-                                NativeComponentDiagramView(layout: componentLayout, viewport: viewport)
-                            }
-                        } else {
-                            DiagramWebView(
-                                script: script,
-                                requestedFormat: viewModel.diagramFormat,
-                                consent: consent,
-                                onUseMermaid: useMermaid
-                            )
-                        }
-                    } else if viewModel.diagramMode == .sequenceDiagram
-                        || viewModel.diagramMode == .activityDiagram, viewModel.entryPoint.isEmpty {
-                        Text("Enter an entry point (e.g. MyType.myMethod) to generate a diagram.")
-                            .foregroundStyle(.secondary)
-                            .multilineTextAlignment(.center)
-                            .padding()
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            .accessibilityIdentifier("entryPointPrompt")
-                    } else if viewModel.diagramMode == .componentDiagram, viewModel.packageDescription == nil {
-                        #if APP_STORE_BUILD
-                        let componentPackagePromptText =
-                            "Component diagrams require an open Swift Package. "
-                            + "Package loading isn't available in the App Store build — "
-                            + "use the direct-download version for SPM support."
-                        #else
-                        let componentPackagePromptText =
-                            "Component diagrams require an open Swift Package. "
-                            + "Use Open Package… (⇧⌘O) to load a Package.swift directory."
-                        #endif
-                        Text(componentPackagePromptText)
-                            .foregroundStyle(.secondary)
-                            .multilineTextAlignment(.center)
-                            .padding()
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            .accessibilityIdentifier("componentPackagePrompt")
-                    } else {
-                        Text("Select Swift source files or a folder to generate a diagram.")
-                            .foregroundStyle(.secondary)
-                            .multilineTextAlignment(.center)
-                            .padding()
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            .accessibilityIdentifier("fileSelectionPrompt")
-                    }
-                }
-
-                if showsExportMenu || showsViewportControls {
-                    HStack(spacing: 8) {
-                        if showsExportMenu {
-                            DiagramExportMenu(viewModel: viewModel, viewport: viewport)
-                        }
-                        if showsViewportControls {
-                            DiagramViewportControls(viewport: viewport)
-                        }
-                    }
-                    .padding(12)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
-                }
-
-                if let revealable = revealableSelection {
-                    revealInSourceButton(for: revealable)
-                }
-
-                if let hovered = hoveredInfo {
-                    NodeInfoTooltip(
-                        label: hovered.label,
-                        stereotype: hovered.stereotype,
-                        sourceLocation: hovered.sourceLocation
-                    )
-                    .padding(12)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                    .allowsHitTesting(false)
-                }
+                diagramContent
+                overlays
             }
             .onChange(of: viewModel.currentScript?.text) { _, _ in
                 viewport.clearForNewDiagram()
             }
         }
         .onReceive(inspection.notice) { inspection.visit(self, $0) }
+    }
+
+    /// The banners above the diagram: low state-machine confidence, a layout fallback, and
+    /// source files that could not be read.
+    @ViewBuilder private var banners: some View {
+        if let model = lowConfidenceModel {
+            StateMachineConfidenceBanner(model: model)
+        }
+        if let reason = LayoutFallbackBanner.reason(
+            for: viewModel.currentScript, isGenerating: viewModel.isGenerating
+        ) {
+            LayoutFallbackBanner(reason: reason)
+        }
+        if let places = SourceReadNoticeBanner.places(
+            for: viewModel.sourceReadNotices, isGenerating: viewModel.isGenerating
+        ) {
+            SourceReadNoticeBanner(places: places)
+        }
+    }
+
+    /// The diagram itself, a progress indicator while one is generated, or a prompt saying what
+    /// is still needed to generate one.
+    @ViewBuilder private var diagramContent: some View {
+        if viewModel.isGenerating {
+            ProgressView("Generating…")
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else if let script = viewModel.currentScript {
+            if script.format == .svg, let graph = script.layoutGraph {
+                cmdScrollHost {
+                    NativeDiagramView(graph: graph, viewport: viewport)
+                }
+            } else if script.format == .svg, let seqLayout = script.sequenceLayout {
+                cmdScrollHost {
+                    NativeSequenceDiagramView(layout: seqLayout, viewport: viewport)
+                }
+            } else if script.format == .svg, let activityLayout = script.activityLayout {
+                cmdScrollHost {
+                    NativeActivityDiagramView(layout: activityLayout, viewport: viewport)
+                }
+            } else if script.format == .svg, let componentLayout = script.componentLayout {
+                cmdScrollHost {
+                    NativeComponentDiagramView(layout: componentLayout, viewport: viewport)
+                }
+            } else {
+                DiagramWebView(
+                    script: script,
+                    requestedFormat: viewModel.diagramFormat,
+                    consent: consent,
+                    onUseMermaid: useMermaid
+                )
+            }
+        } else if viewModel.diagramMode == .sequenceDiagram
+            || viewModel.diagramMode == .activityDiagram, viewModel.entryPoint.isEmpty {
+            Text("Enter an entry point (e.g. MyType.myMethod) to generate a diagram.")
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .padding()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .accessibilityIdentifier("entryPointPrompt")
+        } else if viewModel.diagramMode == .componentDiagram, viewModel.packageDescription == nil {
+            #if APP_STORE_BUILD
+            let componentPackagePromptText =
+                "Component diagrams require an open Swift Package. "
+                + "Package loading isn't available in the App Store build — "
+                + "use the direct-download version for SPM support."
+            #else
+            let componentPackagePromptText =
+                "Component diagrams require an open Swift Package. "
+                + "Use Open Package… (⇧⌘O) to load a Package.swift directory."
+            #endif
+            Text(componentPackagePromptText)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .padding()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .accessibilityIdentifier("componentPackagePrompt")
+        } else {
+            Text("Select Swift source files or a folder to generate a diagram.")
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .padding()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .accessibilityIdentifier("fileSelectionPrompt")
+        }
+    }
+
+    /// What floats over the diagram: the export and viewport controls, the reveal-in-source
+    /// button, and the hovered node's tooltip.
+    @ViewBuilder private var overlays: some View {
+        if showsExportMenu || showsViewportControls {
+            HStack(spacing: 8) {
+                if showsExportMenu {
+                    DiagramExportMenu(viewModel: viewModel, viewport: viewport)
+                }
+                if showsViewportControls {
+                    DiagramViewportControls(viewport: viewport)
+                }
+            }
+            .padding(12)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+        }
+
+        if let revealable = revealableSelection {
+            revealInSourceButton(for: revealable)
+        }
+
+        if let hovered = hoveredInfo {
+            NodeInfoTooltip(
+                label: hovered.label,
+                stereotype: hovered.stereotype,
+                sourceLocation: hovered.sourceLocation
+            )
+            .padding(12)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .allowsHitTesting(false)
+        }
     }
 
     /// The consent card's Mermaid switch, offered only when there is a source to regenerate from.
@@ -310,6 +325,7 @@ struct StateMachineConfidenceBanner: View {
             Image(systemName: symbol)
                 .foregroundStyle(tint)
                 .font(.title3)
+                .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 4) {
                 Text(headline).font(.subheadline.bold())
                 ForEach(model.notes, id: \.self) { note in

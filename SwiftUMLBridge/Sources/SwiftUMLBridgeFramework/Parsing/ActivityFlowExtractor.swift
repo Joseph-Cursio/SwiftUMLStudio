@@ -21,7 +21,7 @@ public enum ActivityFlowExtractor {
         entryType: String,
         entryMethod: String
     ) -> ActivityGraph? {
-        extract(from: source, entryType: entryType, entryMethod: entryMethod, file: nil, aliases: .none)
+        extract(from: source, entryType: entryType, entryMethod: entryMethod, file: nil, aliases: .followingNothing)
     }
 
     /// `extract(from:entryType:entryMethod:)`, with a method in `extension Alias` found as the
@@ -65,7 +65,7 @@ final class ActivityEntryFunctionFinder: SyntaxVisitor {
     var entryMethod: String = ""
     var foundBody: CodeBlockSyntax?
     /// As `TypeStackVisitor.resolveTypeName`: follows typealiases in an extension's name (#125).
-    var resolveTypeName: (String) -> String = { $0 }
+    var resolveTypeName: (String) -> String = \.self
     private var typeStack: [String] = []
 
     // MARK: Type declarations

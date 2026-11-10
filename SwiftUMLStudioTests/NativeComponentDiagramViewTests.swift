@@ -28,10 +28,10 @@ import Testing
 
 private func makeComponent(
     name: String,
-    kind: ComponentKind = .library,
-    interfaces: [String] = [],
     centerX: Double,
     centerY: Double,
+    kind: ComponentKind = .library,
+    interfaces: [String] = [],
     width: Double = 100,
     height: Double = 60
 ) -> PositionedComponent {
@@ -221,13 +221,13 @@ struct NativeComponentRenderTests {
         let layout = ComponentLayout(
             components: [
                 makeComponent(
-                    name: "App", kind: .executable, interfaces: ["main"],
-                    centerX: 150, centerY: 80, width: 160, height: 70
+                    name: "App", centerX: 150, centerY: 80,
+                    kind: .executable, interfaces: ["main"], width: 160, height: 70
                 ),
                 makeComponent(
-                    name: "Networking", kind: .library,
-                    interfaces: ["Client", "Session", "Retry"],
-                    centerX: 150, centerY: 260, width: 160, height: 110
+                    name: "Networking", centerX: 150,
+                    centerY: 260,
+                    kind: .library, interfaces: ["Client", "Session", "Retry"], width: 160, height: 110
                 ),
             ],
             dependencies: [ComponentDependency(from: "App", to: "Networking")],
@@ -275,8 +275,8 @@ struct NativeComponentRenderTests {
         let layout = ComponentLayout(
             components: [
                 makeComponent(
-                    name: "Bare", kind: .other, interfaces: [],
-                    centerX: 100, centerY: 100, width: 140, height: 40
+                    name: "Bare", centerX: 100, centerY: 100,
+                    kind: .other, interfaces: [], width: 140, height: 40
                 ),
             ],
             dependencies: [],

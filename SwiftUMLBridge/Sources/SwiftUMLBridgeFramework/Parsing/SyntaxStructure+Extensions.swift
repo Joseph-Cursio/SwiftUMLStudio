@@ -160,14 +160,6 @@ extension SyntaxStructure {
     }
 }
 
-extension SyntaxStructure {
-    override var debugDescription: String {
-        // A structure SourceKit gave no kind or name still has to describe itself: a failing
-        // test or the debugger prints it, and a trap there hides the failure being looked at.
-        "\(kind?.rawValue.components(separatedBy: ".").last ?? "unknown") \(fullName ?? "<unnamed>")"
-    }
-}
-
 extension ElementKind: Comparable {
     private var sortOrder: Int {
         switch self {

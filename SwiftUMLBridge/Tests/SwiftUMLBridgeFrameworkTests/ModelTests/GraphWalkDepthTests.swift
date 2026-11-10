@@ -88,6 +88,7 @@ struct GraphWalkParityTests {
     /// SplitMix64, so every run tries the same graphs.
     private struct SeededGenerator: RandomNumberGenerator {
         var state: UInt64
+
         mutating func next() -> UInt64 {
             state &+= 0x9E37_79B9_7F4A_7C15
             var value = state

@@ -48,6 +48,7 @@ final class CommandScrollHostingView<Content: View>: NSHostingView<Content> {
         super.init(rootView: rootView)
     }
 
+    @available(*, unavailable)
     @MainActor dynamic required init?(coder aDecoder: NSCoder) {
         fatalError("init(coder:) is not supported")
     }

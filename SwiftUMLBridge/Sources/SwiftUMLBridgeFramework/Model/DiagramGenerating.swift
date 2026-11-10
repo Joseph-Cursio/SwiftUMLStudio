@@ -32,6 +32,7 @@ public protocol ClassDiagramGenerating: Sendable {
 
 /// Default parameter for sdkPath so callers don't need to pass it.
 public extension ClassDiagramGenerating {
+    /// The class diagram of the Swift files at `paths`, without an SDK path for SourceKit.
     func generateScript(
         for paths: [String],
         with configuration: Configuration
@@ -39,10 +40,13 @@ public extension ClassDiagramGenerating {
         generateScript(for: paths, with: configuration, sdkPath: nil)
     }
 
+    /// The types declared in the Swift files at `paths`, without an SDK path for SourceKit.
     func analyzeTypes(for paths: [String]) -> [TypeInfo] {
         analyzeTypes(for: paths, sdkPath: nil)
     }
 
+    /// The class diagram of every source file in the package's targets, in path order, with no
+    /// module recorded on its types.
     func generateScript(
         forPackage description: SPMPackageDescription,
         packageRoot: URL,
@@ -102,10 +106,13 @@ public protocol DependencyGraphGenerating: Sendable {
 }
 
 public extension DependencyGraphGenerating {
+    /// The dependency edges of the Swift files at `paths` under the default configuration.
     func extractEdges(for paths: [String], mode: DepsMode) -> [DependencyEdge] {
         extractEdges(for: paths, mode: mode, with: .default)
     }
 
+    /// The dependency graph of every source file in the package's targets, in path order, with
+    /// no target recorded on its types; `sdkPath` is not used.
     func generateScript(
         forPackage description: SPMPackageDescription,
         packageRoot: URL,

@@ -125,7 +125,7 @@ final class CallGraphExtractor: TypeStackVisitor {
     /// `aliases` and the `file` the source was read from, a name written through a typealias is
     /// the aliased type's (#125).
     static func extract(
-        from source: String, file: URL? = nil, aliases: TypeAliasResolver = .none
+        from source: String, file: URL? = nil, aliases: TypeAliasResolver = .followingNothing
     ) -> ExtractionResult {
         ParsingStack.run {
             let sourceFile = ParsingStack.parse(source, file: file)

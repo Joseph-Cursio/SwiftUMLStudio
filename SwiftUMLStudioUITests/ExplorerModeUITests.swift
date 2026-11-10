@@ -2,19 +2,19 @@ import XCTest
 
 final class ExplorerModeUITests: XCTestCase {
 
-    private var app: XCUIApplication!
+    @MainActor private lazy var app = XCUIApplication()
 
     @MainActor
     override func setUp() async throws {
         continueAfterFailure = false
-        app = XCUIApplication()
         app.launchArguments += ["-appMode", "Explorer"]
         app.launchArguments += UITestLaunchArguments.plantUMLConsentUndecided
         app.launch()
     }
 
-    override func tearDownWithError() throws {
-        app = nil
+    @MainActor
+    override func tearDown() async throws {
+        app.terminate()
     }
 
     @MainActor

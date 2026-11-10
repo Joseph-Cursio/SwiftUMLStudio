@@ -32,7 +32,9 @@ struct NomnomlEdgeLabelTests {
         #expect(edges.map { [$0.type, $0.endLabel] } == [
             ["-:>", "inherits"], ["--:>", "conforms to"], ["-", "inherits"], ["+-", ""], ["-->", "ext"]
         ])
-        #expect(edges.allSatisfy { $0.startLabel.isEmpty })
+        let startLabels = edges.map(\.startLabel)
+        let everyStartLabelIsEmpty = startLabels.allSatisfy(\.isEmpty)
+        #expect(everyStartLabelIsEmpty, "\(startLabels)")
     }
 
     /// A `[` would end the label, and a line break would start a line nomnoml reads before the

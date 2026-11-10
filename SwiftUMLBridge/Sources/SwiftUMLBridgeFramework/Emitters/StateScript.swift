@@ -44,7 +44,7 @@ private extension StateScript {
         var lines: [String] = []
 
         let hasWildcardSource = model.transitions.contains { $0.from == "*" }
-        if !hasWildcardSource, let initial = model.states.first(where: { $0.isInitial }) {
+        if !hasWildcardSource, let initial = model.states.first(where: \.isInitial) {
             lines.append("[*] --> \(initial.name)")
         }
 

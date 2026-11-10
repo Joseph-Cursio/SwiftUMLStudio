@@ -10,64 +10,10 @@ struct ExplorerSidebar: View {
 
     var body: some View {
         List {
-            if viewModel.insights.isEmpty, viewModel.suggestions.isEmpty {
-                Section {
-                    ContentUnavailableView(
-                        "Open a project",
-                        systemImage: "folder",
-                        description: Text("Drop a folder to see insights and suggestions.")
-                    )
-                }
-            } else {
-                if viewModel.insights.isEmpty == false {
-                    Section("Insights") {
-                        ForEach(viewModel.insights) { insight in
-                            InsightRowView(insight: insight)
-                        }
-                    }
-                }
-
-                if viewModel.suggestions.isEmpty == false {
-                    Section("Suggested Diagrams") {
-                        ForEach(viewModel.suggestions) { suggestion in
-                            SuggestionCardView(
-                                suggestion: suggestion,
-                                onTap: handleSuggestion
-                            )
-                        }
-                    }
-                }
-            }
+            projectSections
 
             if subscriptionManager.isProUnlocked {
-                if !viewModel.snapshots.isEmpty {
-                    Section("Architecture Snapshots") {
-                        ForEach(viewModel.snapshots) { snapshot in
-                            SnapshotRowView(snapshot: snapshot)
-                                .contextMenu {
-                                    Button("Delete", role: .destructive) {
-                                        viewModel.deleteSnapshot(snapshot)
-                                    }
-                                }
-                        }
-                    }
-                }
-
-                Section("Review Reminders") {
-                    Toggle("Remind me to review", isOn: $reminderEnabled)
-                        .onChange(of: reminderEnabled) {
-                            if reminderEnabled {
-                                ReviewReminderManager.enableReminder()
-                            } else {
-                                ReviewReminderManager.disableReminder()
-                            }
-                        }
-                    if reminderEnabled {
-                        Text("You'll be reminded every 2 weeks if you haven't reviewed.")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
+                proSections
             }
 
             Section("History") {
@@ -77,6 +23,70 @@ struct ExplorerSidebar: View {
         .navigationTitle("SwiftUML Explorer")
         .paywallSheet(isPresented: $showPaywall, subscriptionManager: subscriptionManager)
         .onReceive(inspection.notice) { inspection.visit(self, $0) }
+    }
+
+    /// The insights and suggested diagrams for the open project, or a prompt to open one.
+    @ViewBuilder private var projectSections: some View {
+        if viewModel.insights.isEmpty, viewModel.suggestions.isEmpty {
+            Section {
+                ContentUnavailableView(
+                    "Open a project",
+                    systemImage: "folder",
+                    description: Text("Drop a folder to see insights and suggestions.")
+                )
+            }
+        } else {
+            if viewModel.insights.isEmpty == false {
+                Section("Insights") {
+                    ForEach(viewModel.insights) { insight in
+                        InsightRowView(insight: insight)
+                    }
+                }
+            }
+
+            if viewModel.suggestions.isEmpty == false {
+                Section("Suggested Diagrams") {
+                    ForEach(viewModel.suggestions) { suggestion in
+                        SuggestionCardView(
+                            suggestion: suggestion,
+                            onTap: handleSuggestion
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    /// The Pro-only sections: saved architecture snapshots and review reminders.
+    @ViewBuilder private var proSections: some View {
+        if !viewModel.snapshots.isEmpty {
+            Section("Architecture Snapshots") {
+                ForEach(viewModel.snapshots) { snapshot in
+                    SnapshotRowView(snapshot: snapshot)
+                        .contextMenu {
+                            Button("Delete", role: .destructive) {
+                                viewModel.deleteSnapshot(snapshot)
+                            }
+                        }
+                }
+            }
+        }
+
+        Section("Review Reminders") {
+            Toggle("Remind me to review", isOn: $reminderEnabled)
+                .onChange(of: reminderEnabled) {
+                    if reminderEnabled {
+                        ReviewReminderManager.enableReminder()
+                    } else {
+                        ReviewReminderManager.disableReminder()
+                    }
+                }
+            if reminderEnabled {
+                Text("You'll be reminded every 2 weeks if you haven't reviewed.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
     }
 
     private func handleSuggestion(_ suggestion: DiagramSuggestion) {

@@ -102,6 +102,7 @@ struct StatCardView: View {
             Image(systemName: icon)
                 .font(.title2)
                 .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
             Text("\(value)")
                 .font(.title.bold())
             Text(label)
@@ -221,6 +222,7 @@ struct InsightRowView: View {
                 .font(.title3)
                 .foregroundStyle(insightColor)
                 .frame(width: 24)
+                .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
                 Text(insight.title)
                     .font(.body.bold())
@@ -261,6 +263,7 @@ struct SuggestionCardView: View {
                     .font(.title2)
                     .foregroundStyle(.tint)
                     .frame(width: 28)
+                    .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 2) {
                     HStack {
                         Text(suggestion.title)
@@ -269,6 +272,7 @@ struct SuggestionCardView: View {
                             Image(systemName: "lock.fill")
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
+                                .accessibilityLabel("Requires Pro")
                         }
                     }
                     Text(suggestion.description)
@@ -278,6 +282,7 @@ struct SuggestionCardView: View {
                 Spacer()
                 Image(systemName: "chevron.right")
                     .foregroundStyle(.tertiary)
+                    .accessibilityHidden(true)
             }
             .padding(12)
             .frame(maxWidth: .infinity, alignment: .leading)

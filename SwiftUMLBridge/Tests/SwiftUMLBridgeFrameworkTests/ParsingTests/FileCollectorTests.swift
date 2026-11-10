@@ -7,12 +7,14 @@ struct FileCollectorTests {
 
     private let collector = FileCollector()
 
-    private var testDataURL: URL {
-        Bundle.module.resourceURL!.appendingPathComponent("TestData")
-    }
+    private let testDataURL: URL
 
     private var projectMockURL: URL {
         testDataURL.appendingPathComponent("ProjectMock")
+    }
+
+    init() throws {
+        testDataURL = try #require(Bundle.module.resourceURL).appendingPathComponent("TestData")
     }
 
     // MARK: - getFiles(for url: URL) - single URL

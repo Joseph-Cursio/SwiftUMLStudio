@@ -59,7 +59,7 @@ class DiagramContext {
     /// The typealiases among the items the diagram was built from, found by
     /// `reserveIdentifiers(drawing:among:)`: a supertype written through one ends on the type it
     /// aliases (#125).
-    private var aliases = TypeAliasResolver.none
+    private var aliases = TypeAliasResolver.followingNothing
 
     private var linkTypeInheritance: String {
         (format == .nomnoml || format == .svg) ? "-:>" : "<|--"

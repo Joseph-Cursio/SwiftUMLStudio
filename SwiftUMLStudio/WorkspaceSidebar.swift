@@ -8,6 +8,7 @@ struct WorkspaceSidebar: View {
     enum Tab: String, CaseIterable, Identifiable {
         case files = "Files"
         case history = "History"
+
         var id: String { rawValue }
     }
 

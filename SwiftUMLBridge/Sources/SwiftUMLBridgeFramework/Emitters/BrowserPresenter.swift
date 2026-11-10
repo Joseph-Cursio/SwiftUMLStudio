@@ -17,19 +17,19 @@ public struct BrowserPresenter: DiagramPresenting {
     }
 
     public func present(script: any DiagramOutputting) async {
-        let url: URL
+        let url: URL?
         switch script.format {
         case .plantuml:
             let encodedText = script.encodeText()
             switch format {
             case .png:
-                url = URL(string: "https://www.planttext.com/api/plantuml/png/\(encodedText)")!
+                url = URL(string: "https://www.planttext.com/api/plantuml/png/\(encodedText)")
 
             case .svg:
-                url = URL(string: "https://www.planttext.com/api/plantuml/svg/\(encodedText)")!
+                url = URL(string: "https://www.planttext.com/api/plantuml/svg/\(encodedText)")
 
             default:
-                url = URL(string: "https://www.planttext.com/?text=\(encodedText)")!
+                url = URL(string: "https://www.planttext.com/?text=\(encodedText)")
             }
 
         case .mermaid:
@@ -43,6 +43,10 @@ public struct BrowserPresenter: DiagramPresenting {
             let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("diagram.svg")
             try? script.text.write(to: tempURL, atomically: true, encoding: .utf8)
             url = tempURL
+        }
+        guard let url else {
+            BridgeLogger.shared.error("could not form a URL for the \(script.format) diagram")
+            return
         }
         _ = await MainActor.run { NSWorkspace.shared.open(url) }
     }

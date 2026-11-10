@@ -32,9 +32,9 @@ import Testing
 private func makeNode(
     id: Int,
     kind: ActivityNodeKind,
-    label: String = "",
     centerX: Double,
     centerY: Double,
+    label: String = "",
     width: Double = 120,
     height: Double = 44,
     isAsync: Bool = false,
@@ -64,15 +64,15 @@ private let allKinds: [ActivityNodeKind] = [
 private func richLayout() -> ActivityLayout {
     let nodes = [
         makeNode(id: 0, kind: .start, centerX: 200, centerY: 40, width: 24, height: 24),
-        makeNode(id: 1, kind: .action, label: "load()", centerX: 200, centerY: 120),
-        makeNode(id: 2, kind: .action, label: "await fetch()", centerX: 200, centerY: 200, isAsync: true),
-        makeNode(id: 3, kind: .decision, label: "cached?", centerX: 200, centerY: 290, height: 60),
+        makeNode(id: 1, kind: .action, centerX: 200, centerY: 120, label: "load()"),
+        makeNode(id: 2, kind: .action, centerX: 200, centerY: 200, label: "await fetch()", isAsync: true),
+        makeNode(id: 3, kind: .decision, centerX: 200, centerY: 290, label: "cached?", height: 60),
         makeNode(id: 4, kind: .fork, centerX: 200, centerY: 370, width: 140, height: 8),
         makeNode(id: 5, kind: .action, centerX: 120, centerY: 430),
-        makeNode(id: 6, kind: .action, label: "log()", centerX: 300, centerY: 430),
+        makeNode(id: 6, kind: .action, centerX: 300, centerY: 430, label: "log()"),
         makeNode(id: 7, kind: .join, centerX: 200, centerY: 490, width: 140, height: 8),
-        makeNode(id: 8, kind: .loopStart, label: "for item", centerX: 200, centerY: 560, height: 60),
-        makeNode(id: 9, kind: .action, label: "process()", centerX: 200, centerY: 640),
+        makeNode(id: 8, kind: .loopStart, centerX: 200, centerY: 560, label: "for item", height: 60),
+        makeNode(id: 9, kind: .action, centerX: 200, centerY: 640, label: "process()"),
         makeNode(id: 10, kind: .loopEnd, centerX: 200, centerY: 710, height: 40),
         makeNode(id: 11, kind: .merge, centerX: 200, centerY: 780, height: 40),
         makeNode(id: 12, kind: .end, centerX: 200, centerY: 850, width: 24, height: 24),
@@ -135,7 +135,7 @@ struct NativeActivityDiagramViewRenderTests {
     @Test("every node kind renders on its own", arguments: allKinds)
     func everyKindRenders(kind: ActivityNodeKind) {
         let layout = ActivityLayout(
-            nodes: [makeNode(id: 0, kind: kind, label: "step", centerX: 150, centerY: 100)],
+            nodes: [makeNode(id: 0, kind: kind, centerX: 150, centerY: 100, label: "step")],
             edges: [],
             title: "single \(kind.rawValue)",
             totalWidth: 300, totalHeight: 200
@@ -149,7 +149,7 @@ struct NativeActivityDiagramViewRenderTests {
     @Test("a dangling edge is skipped, not fatal")
     func skipsDanglingEdge() {
         let layout = ActivityLayout(
-            nodes: [makeNode(id: 0, kind: .action, label: "only", centerX: 100, centerY: 100)],
+            nodes: [makeNode(id: 0, kind: .action, centerX: 100, centerY: 100, label: "only")],
             edges: [
                 ActivityEdge(fromId: 0, toId: 99),
                 ActivityEdge(fromId: 99, toId: 0),
@@ -167,8 +167,8 @@ struct NativeActivityDiagramViewRenderTests {
     func rendersEqualHeightEdgeAsBackEdge() {
         let layout = ActivityLayout(
             nodes: [
-                makeNode(id: 0, kind: .action, label: "left", centerX: 100, centerY: 200),
-                makeNode(id: 1, kind: .action, label: "right", centerX: 300, centerY: 200),
+                makeNode(id: 0, kind: .action, centerX: 100, centerY: 200, label: "left"),
+                makeNode(id: 1, kind: .action, centerX: 300, centerY: 200, label: "right"),
             ],
             edges: [ActivityEdge(fromId: 0, toId: 1, label: "same row")],
             title: "boundary",
@@ -184,8 +184,8 @@ struct NativeActivityDiagramViewRenderTests {
     func rendersEmptyLabels() {
         let layout = ActivityLayout(
             nodes: [
-                makeNode(id: 0, kind: .action, label: "", centerX: 150, centerY: 80),
-                makeNode(id: 1, kind: .decision, label: "", centerX: 150, centerY: 200, height: 60),
+                makeNode(id: 0, kind: .action, centerX: 150, centerY: 80, label: ""),
+                makeNode(id: 1, kind: .decision, centerX: 150, centerY: 200, label: "", height: 60),
             ],
             edges: [
                 ActivityEdge(fromId: 0, toId: 1, label: ""),
@@ -203,8 +203,8 @@ struct NativeActivityDiagramViewRenderTests {
         let layout = ActivityLayout(
             nodes: [
                 makeNode(
-                    id: 0, kind: .action, label: "unknown()",
-                    centerX: 150, centerY: 100, isUnresolved: true
+                    id: 0, kind: .action, centerX: 150,
+                    centerY: 100, label: "unknown()", isUnresolved: true
                 ),
             ],
             edges: [],
@@ -241,8 +241,8 @@ struct PositionedActivityNodeBoundingRectTests {
     @Test("converts center-based coordinates to a top-left-origin rect")
     func convertsFromCenterCoordinates() {
         let node = makeNode(
-            id: 0, kind: .action, label: "step",
-            centerX: 100, centerY: 200, width: 80, height: 40
+            id: 0, kind: .action, centerX: 100,
+            centerY: 200, label: "step", width: 80, height: 40
         )
 
         let rect = node.boundingRect

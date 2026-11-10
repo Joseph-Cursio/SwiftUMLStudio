@@ -28,9 +28,9 @@ enum SnapshotManager {
     static func saveSnapshot(
         from summary: ProjectSummary,
         paths: [String],
+        modelContext: ModelContext,
         bookmarks: [Data?] = [],
-        at savedAt: Date = Date(),
-        modelContext: ModelContext
+        at savedAt: Date = Date()
     ) throws {
         // `identifier` is not passed: `ProjectSnapshot.init` already defaults it to a fresh UUID,
         // so the argument that used to be here minted a second one and threw the first away.

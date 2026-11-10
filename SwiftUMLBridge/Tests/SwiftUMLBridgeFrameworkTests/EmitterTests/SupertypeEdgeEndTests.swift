@@ -128,7 +128,8 @@ struct SupertypeEdgeEndTests {
         let otherFile = [
             ("A.swift", "private protocol Drawable { func draw() }\n"
                 + "private struct Circle: Drawable { func draw() {} }"),
-            ("B.swift", "fileprivate protocol Drawable { func render() }\nstruct Square: Drawable { func render() {} }"),
+            ("B.swift", "fileprivate protocol Drawable { func render() }\n"
+                + "struct Square: Drawable { func render() {} }"),
         ]
         let realizes = format == .nomnoml ? "--:>" : "<|.."
         #expect(try supertypeEdges(from: "Square", otherFile, format, mode).isEmpty)

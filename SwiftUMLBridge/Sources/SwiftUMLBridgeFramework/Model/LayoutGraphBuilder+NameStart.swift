@@ -152,14 +152,15 @@ extension LayoutGraphBuilder.TypeLookup {
             candidate.scope.module.map { sees(name, in: $0, from: scope) } ?? true
         }
         guard seen.count > 1 else { return seen }
-        // Whether a scoped import names an imported candidate; `nil` for one of the file's own
-        // module or of no known module, which ranks as before.
-        func isScoped(_ candidate: LayoutGraphBuilder.Declared) -> Bool? {
-            guard let module = candidate.scope.module, module != scope.module else { return nil }
-            return seesAlone(name, in: module, from: scope)
+        // Whether a scoped import names an imported candidate. A candidate of the file's own
+        // module or of no known module is neither, and ranks as before.
+        enum ScopedImport { case names, doesNotName, ownOrUnknownModule }
+        func scopedImport(of candidate: LayoutGraphBuilder.Declared) -> ScopedImport {
+            guard let module = candidate.scope.module, module != scope.module else { return .ownOrUnknownModule }
+            return seesAlone(name, in: module, from: scope) ? .names : .doesNotName
         }
-        guard seen.contains(where: { isScoped($0) == true }) else { return seen }
-        return seen.filter { isScoped($0) != false }
+        guard seen.contains(where: { scopedImport(of: $0) == .names }) else { return seen }
+        return seen.filter { scopedImport(of: $0) != .doesNotName }
     }
 
     /// `members` of the type a dotted name starts at without those an extension in a module

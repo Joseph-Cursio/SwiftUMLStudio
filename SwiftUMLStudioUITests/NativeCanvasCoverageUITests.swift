@@ -9,7 +9,7 @@ import XCTest
 /// the Mermaid/PlantUML/Nomnoml *web* preview paths.
 final class NativeCanvasCoverageUITests: XCTestCase {
 
-    private var app: XCUIApplication!
+    @MainActor private lazy var app = XCUIApplication()
 
     /// Path to the SampleProject fixture, derived from the source tree at compile time.
     private var fixturePath: String {
@@ -23,7 +23,6 @@ final class NativeCanvasCoverageUITests: XCTestCase {
     @MainActor
     override func setUp() async throws {
         continueAfterFailure = false
-        app = XCUIApplication()
         app.launchArguments += [
             "-appMode", "Developer",
             "-testFixturePath", fixturePath,
@@ -32,8 +31,9 @@ final class NativeCanvasCoverageUITests: XCTestCase {
         app.launch()
     }
 
-    override func tearDownWithError() throws {
-        app = nil
+    @MainActor
+    override func tearDown() async throws {
+        app.terminate()
     }
 
     // MARK: - Helpers

@@ -17,7 +17,7 @@ class TypeStackVisitor: SyntaxVisitor {
     /// The type a name written in this file means, for the names an extension and a call's
     /// receiver are written with: `TypeAliasResolver.resolve(_:in:)` follows typealiases (#125).
     /// The name itself by default.
-    var resolveTypeName: (String) -> String = { $0 }
+    var resolveTypeName: (String) -> String = \.self
 
     override func visit(_ node: ClassDeclSyntax) -> SyntaxVisitorContinueKind {
         typeStack.append(node.name.canonicalName)

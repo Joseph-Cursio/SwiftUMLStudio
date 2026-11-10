@@ -83,13 +83,13 @@ extension ComponentSVGRenderer {
         lines.append(textElement(
             originX: component.centerX,
             originY: originY + 12,
-            style: TextStyle(anchor: "middle", fontSize: 10, fontStyle: "italic", fill: "#555"),
+            style: TextStyle(anchor: "middle", fontSize: 10, fill: "#555", fontStyle: "italic"),
             text: stereotype
         ))
         lines.append(textElement(
             originX: component.centerX,
             originY: originY + 24,
-            style: TextStyle(anchor: "middle", fontSize: 12, fontWeight: "600", fill: "#222"),
+            style: TextStyle(anchor: "middle", fontSize: 12, fill: "#222", fontWeight: "600"),
             text: component.name
         ))
         var interfaceY = originY + headerHeight + boxPadding
@@ -126,9 +126,9 @@ extension ComponentSVGRenderer {
         init(
             anchor: String,
             fontSize: Int,
+            fill: String,
             fontStyle: String? = nil,
-            fontWeight: String? = nil,
-            fill: String
+            fontWeight: String? = nil
         ) {
             self.anchor = anchor
             self.fontSize = fontSize

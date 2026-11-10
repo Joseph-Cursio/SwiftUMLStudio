@@ -160,7 +160,7 @@ struct SnapshotManagerTests {
         let results = try modelContext.fetch(descriptor)
         #expect(results.count == 1)
 
-        let snapshot = results.first!
+        let snapshot = try #require(results.first)
         #expect(snapshot.typeCount == 5)
         #expect(snapshot.relationshipCount == 8)
         #expect(snapshot.moduleCount == 2)
@@ -202,8 +202,8 @@ struct SnapshotManagerTests {
         try SnapshotManager.saveSnapshot(from: summary, paths: ["/other/path"], modelContext: modelContext)
 
         let latest = SnapshotManager.latestSnapshot(for: targetPaths, modelContext: modelContext)
-        #expect(latest != nil)
-        #expect(Set(latest!.decodedProjectPaths) == Set(targetPaths))
+        let found = try #require(latest)
+        #expect(Set(found.decodedProjectPaths) == Set(targetPaths))
     }
 
     /// The half of `latestSnapshot`'s name that was not covered.
@@ -225,14 +225,14 @@ struct SnapshotManagerTests {
         try SnapshotManager.saveSnapshot(
             from: newer,
             paths: targetPaths,
-            at: Date(timeIntervalSince1970: 2_000),
-            modelContext: modelContext
+            modelContext: modelContext,
+            at: Date(timeIntervalSince1970: 2_000)
         )
         try SnapshotManager.saveSnapshot(
             from: older,
             paths: targetPaths,
-            at: Date(timeIntervalSince1970: 1_000),
-            modelContext: modelContext
+            modelContext: modelContext,
+            at: Date(timeIntervalSince1970: 1_000)
         )
 
         let latest = SnapshotManager.latestSnapshot(for: targetPaths, modelContext: modelContext)
@@ -292,8 +292,8 @@ struct SnapshotManagerTests {
         try SnapshotManager.saveSnapshot(
             from: summary,
             paths: ["/one", "/two"],
-            bookmarks: bookmarks,
-            modelContext: modelContext
+            modelContext: modelContext,
+            bookmarks: bookmarks
         )
 
         let snapshot = try #require(
@@ -336,7 +336,8 @@ struct SnapshotManagerTests {
         let snapshots = SnapshotManager.fetchSnapshots(modelContext: modelContext)
         #expect(snapshots.count == 1)
 
-        try SnapshotManager.deleteSnapshot(snapshots.first!, modelContext: modelContext)
+        let snapshot = try #require(snapshots.first)
+        try SnapshotManager.deleteSnapshot(snapshot, modelContext: modelContext)
 
         let remaining = SnapshotManager.fetchSnapshots(modelContext: modelContext)
         #expect(remaining.isEmpty)

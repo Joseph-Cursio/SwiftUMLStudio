@@ -66,7 +66,7 @@ internal extension SyntaxStructure {
         }
         let parsed = build(from: source, sdkPath: sdkPath, fileURL: fileOnDisk, module: module)
         let elapsed = (ContinuousClock.now - methodStart).seconds
-        let sdkLabel = (sdkPath != nil && !sdkPath!.isEmpty) ? "parsing with SDK" : ""
+        let sdkLabel = sdkPath?.isEmpty == false ? "parsing with SDK" : ""
         BridgeLogger.shared.debug("read \(fileOnDisk) \(sdkLabel) in \(elapsed)")
         return parsed
     }

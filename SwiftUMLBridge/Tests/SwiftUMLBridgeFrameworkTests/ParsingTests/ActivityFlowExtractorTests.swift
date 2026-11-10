@@ -46,12 +46,12 @@ struct ActivityFlowExtractorTests {
     }
 
     @Test("empty function body yields start → end with no actions")
-    func emptyBodyYieldsStartEnd() {
+    func emptyBodyYieldsStartEnd() throws {
         let graph = extract("class Foo { func run() {} }")
         #expect(nodes(of: .start, in: graph).count == 1)
         #expect(nodes(of: .end, in: graph).count == 1)
         #expect(nodes(of: .action, in: graph).isEmpty)
-        let start = graph.startNode!
+        let start = try #require(graph.startNode)
         let startEdges = graph.outgoingEdges(from: start.id)
         #expect(startEdges.count == 1)
     }
@@ -122,7 +122,7 @@ struct ActivityFlowExtractorTests {
     }
 
     @Test("guard emits decision whose false branch reaches end")
-    func guardFalseBranchReachesEnd() {
+    func guardFalseBranchReachesEnd() throws {
         let graph = extract("""
         class Foo {
             func run() {
@@ -132,7 +132,7 @@ struct ActivityFlowExtractorTests {
         }
         """)
         #expect(nodes(of: .decision, in: graph).count == 1)
-        let endId = graph.nodes.first(where: { $0.kind == .end })!.id
+        let endId = try #require(graph.nodes.first { $0.kind == .end }).id
         let returnNode = graph.nodes.first(where: {
             $0.kind == .action && $0.label.contains("return")
         })
@@ -182,13 +182,13 @@ struct ActivityFlowExtractorTests {
     // MARK: - Return / throw
 
     @Test("return emits a terminal action going to end")
-    func returnRoutesToEnd() {
+    func returnRoutesToEnd() throws {
         let graph = extract("""
         class Foo {
             func run() -> Int { return 42 }
         }
         """)
-        let endId = graph.nodes.first(where: { $0.kind == .end })!.id
+        let endId = try #require(graph.nodes.first { $0.kind == .end }).id
         let returnEdges = graph.edges.filter { $0.toId == endId }
         #expect(returnEdges.isEmpty == false)
     }

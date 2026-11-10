@@ -68,7 +68,7 @@ struct ThemeTests {
     @Test("preferred list is non-empty and contains known themes")
     func preferredListNonEmpty() {
         #expect(Theme.preferred.isEmpty == false)
-        let rawValues = Theme.preferred.map { $0.rawValue }
+        let rawValues = Theme.preferred.map(\.rawValue)
         #expect(rawValues.contains("amiga"))
         #expect(rawValues.contains("carbon-gray"))
     }

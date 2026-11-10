@@ -19,8 +19,8 @@ extension LayoutGraphBuilder.TypeLookup {
     /// a name many same-named aliases share looked each alias's target up for every edge, and
     /// every alias of a chain the next one's.
     func typeWithSureKind(
-        _ written: LayoutGraphBuilder.QualifiedName, from scope: LayoutGraphBuilder.Scope, depth: Int = 0,
-        kinds: LayoutGraphBuilder.AliasKinds
+        _ written: LayoutGraphBuilder.QualifiedName, from scope: LayoutGraphBuilder.Scope,
+        kinds: LayoutGraphBuilder.AliasKinds, depth: Int = 0
     ) -> (type: LayoutGraphBuilder.Declared?, kindIsSure: Bool) {
         let name = started(written, from: scope, depth: depth)
         // The writer's own candidate is the nearest, and surely the one it means.
@@ -95,7 +95,7 @@ extension LayoutGraphBuilder.TypeLookup {
         guard depth < 8 else { return (nil, false) }
         if let known = kinds[declared.declaration, depth] { return known }
         let targetName = qualifiedName(ofWritten: target, from: declared.scope, depth: depth + 1)
-        let (type, isSure) = typeWithSureKind(targetName, from: declared.scope, depth: depth + 1, kinds: kinds)
+        let (type, isSure) = typeWithSureKind(targetName, from: declared.scope, kinds: kinds, depth: depth + 1)
         kinds[declared.declaration, depth] = (type, isSure)
         return (type, isSure)
     }

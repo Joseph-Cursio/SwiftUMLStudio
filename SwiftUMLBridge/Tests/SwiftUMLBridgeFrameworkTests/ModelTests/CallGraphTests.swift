@@ -179,8 +179,8 @@ struct CallGraphTests {
         ])
         let result = graph.traverse(from: "Foo", entryMethod: "run", maxDepth: 3)
         #expect(result.count == 2)
-        #expect(result.contains(where: { $0.isUnresolved }))
-        #expect(result.contains(where: { !$0.isUnresolved }))
+        let unresolved = result.filter(\.isUnresolved)
+        #expect(unresolved.count == 1)
     }
 
     // MARK: - Async flag passthrough

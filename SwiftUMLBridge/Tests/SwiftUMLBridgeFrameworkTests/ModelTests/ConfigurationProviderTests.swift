@@ -7,8 +7,10 @@ struct ConfigurationProviderTests {
 
     private let provider = ConfigurationProvider()
 
-    private var projectMockURL: URL {
-        Bundle.module.resourceURL!
+    private let projectMockURL: URL
+
+    init() throws {
+        projectMockURL = try #require(Bundle.module.resourceURL)
             .appendingPathComponent("TestData")
             .appendingPathComponent("ProjectMock")
     }

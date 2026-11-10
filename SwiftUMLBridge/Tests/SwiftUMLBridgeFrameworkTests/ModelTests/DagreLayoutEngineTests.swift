@@ -75,7 +75,7 @@ struct DagreLayoutEngineTests {
     // MARK: - Node Sizing
 
     @Test("nodes with compartments are taller than empty nodes")
-    func nodesWithCompartmentsAreTaller() {
+    func nodesWithCompartmentsAreTaller() throws {
         let emptyNode = LayoutNode(id: "empty", label: "Empty")
         let richNode = LayoutNode(
             id: "rich", label: "Rich",
@@ -87,13 +87,13 @@ struct DagreLayoutEngineTests {
         let graph = LayoutGraph(nodes: [emptyNode, richNode])
         let result = DagreLayoutEngine.layout(graph)
 
-        let emptyResult = result.nodes.first { $0.id == "empty" }!
-        let richResult = result.nodes.first { $0.id == "rich" }!
+        let emptyResult = try #require(result.nodes.first { $0.id == "empty" })
+        let richResult = try #require(result.nodes.first { $0.id == "rich" })
         #expect(richResult.height > emptyResult.height)
     }
 
     @Test("nodes with long labels are wider")
-    func nodesWithLongLabelsAreWider() {
+    func nodesWithLongLabelsAreWider() throws {
         let shortNode = LayoutNode(id: "short", label: "AB")
         let longNode = LayoutNode(
             id: "long", label: "AVeryLongClassNameThatShouldBeWider"
@@ -101,8 +101,8 @@ struct DagreLayoutEngineTests {
         let graph = LayoutGraph(nodes: [shortNode, longNode])
         let result = DagreLayoutEngine.layout(graph)
 
-        let shortResult = result.nodes.first { $0.id == "short" }!
-        let longResult = result.nodes.first { $0.id == "long" }!
+        let shortResult = try #require(result.nodes.first { $0.id == "short" })
+        let longResult = try #require(result.nodes.first { $0.id == "long" })
         #expect(longResult.width > shortResult.width)
     }
 

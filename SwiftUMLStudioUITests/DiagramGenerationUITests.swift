@@ -3,7 +3,7 @@ import XCTest
 /// UI tests that load the SampleProject fixture and verify diagram generation end-to-end.
 final class DiagramGenerationUITests: XCTestCase {
 
-    private var app: XCUIApplication!
+    @MainActor private lazy var app = XCUIApplication()
 
     /// Path to the SampleProject fixture, derived from the source tree at compile time.
     private var fixturePath: String {
@@ -17,7 +17,6 @@ final class DiagramGenerationUITests: XCTestCase {
     @MainActor
     override func setUp() async throws {
         continueAfterFailure = false
-        app = XCUIApplication()
         app.launchArguments += [
             "-appMode", "Developer",
             "-testFixturePath", fixturePath,
@@ -26,8 +25,9 @@ final class DiagramGenerationUITests: XCTestCase {
         app.launch()
     }
 
-    override func tearDownWithError() throws {
-        app = nil
+    @MainActor
+    override func tearDown() async throws {
+        app.terminate()
     }
 
     // MARK: - Fixture Loading

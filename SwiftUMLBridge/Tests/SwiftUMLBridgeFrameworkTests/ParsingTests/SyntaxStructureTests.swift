@@ -137,38 +137,38 @@ struct SyntaxStructureTests {
 
     @Test("ElementAccessibility initializes from AccessLevel.open")
     func accessibilityFromOpen() {
-        let ea = ElementAccessibility(orig: .open)
-        #expect(ea == .open)
+        let accessibility = ElementAccessibility(orig: .open)
+        #expect(accessibility == .open)
     }
 
     @Test("ElementAccessibility initializes from AccessLevel.public")
     func accessibilityFromPublic() {
-        let ea = ElementAccessibility(orig: .public)
-        #expect(ea == .public)
+        let accessibility = ElementAccessibility(orig: .public)
+        #expect(accessibility == .public)
     }
 
     @Test("ElementAccessibility initializes from AccessLevel.package")
     func accessibilityFromPackage() {
-        let ea = ElementAccessibility(orig: .package)
-        #expect(ea == .package)
+        let accessibility = ElementAccessibility(orig: .package)
+        #expect(accessibility == .package)
     }
 
     @Test("ElementAccessibility initializes from AccessLevel.internal")
     func accessibilityFromInternal() {
-        let ea = ElementAccessibility(orig: .internal)
-        #expect(ea == .internal)
+        let accessibility = ElementAccessibility(orig: .internal)
+        #expect(accessibility == .internal)
     }
 
     @Test("ElementAccessibility initializes from AccessLevel.private")
     func accessibilityFromPrivate() {
-        let ea = ElementAccessibility(orig: .private)
-        #expect(ea == .private)
+        let accessibility = ElementAccessibility(orig: .private)
+        #expect(accessibility == .private)
     }
 
     @Test("ElementAccessibility initializes from AccessLevel.fileprivate")
     func accessibilityFromFileprivate() {
-        let ea = ElementAccessibility(orig: .fileprivate)
-        #expect(ea == .fileprivate)
+        let accessibility = ElementAccessibility(orig: .fileprivate)
+        #expect(accessibility == .fileprivate)
     }
 
     // MARK: - ElementKind sort ordering
@@ -258,7 +258,7 @@ struct SyntaxStructureTests {
 
     @Test("ElementAccessibility.other is the unknown case")
     func accessibilityUnknownCase() {
-        let ea = ElementAccessibility(rawValue: "source.lang.swift.accessibility.unknown")
-        #expect(ea == .other)
+        let accessibility = ElementAccessibility(rawValue: "source.lang.swift.accessibility.unknown")
+        #expect(accessibility == .other)
     }
 }

@@ -189,7 +189,7 @@ struct ContentView: View {
         panel.canChooseFiles = true
         panel.canChooseDirectories = true
         panel.allowsMultipleSelection = true
-        panel.allowedContentTypes = [.swiftSource, .coreDataModelBundle].compactMap { $0 }
+        panel.allowedContentTypes = [.swiftSource, .coreDataModelBundle].compactMap(\.self)
         panel.canSelectHiddenExtension = true
         panel.message = "Select Swift sources, directories, or a Core Data .xcdatamodeld bundle"
 

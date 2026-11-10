@@ -29,12 +29,12 @@ import Testing
 
 private func makeNode(
     id: String,
+    posX: Double,
+    posY: Double,
     label: String? = nil,
     stereotype: String? = nil,
     compartments: [NodeCompartment] = [],
     module: String? = nil,
-    posX: Double,
-    posY: Double,
     width: Double = 140,
     height: Double = 90
 ) -> LayoutNode {
@@ -73,16 +73,16 @@ private func richGraph() -> LayoutGraph {
     let nodes = [
         makeNode(
             id: "Client",
+            posX: 120,
+            posY: 100,
             stereotype: "class",
             compartments: [
                 NodeCompartment(title: "Properties", items: ["session: URLSession", "retries: Int"]),
                 NodeCompartment(title: "Methods", items: ["send()", "cancel()"]),
-            ],
-            module: "Networking",
-            posX: 120, posY: 100
+            ], module: "Networking"
         ),
-        makeNode(id: "Transport", stereotype: "protocol", module: "Networking", posX: 320, posY: 100),
-        makeNode(id: "Logger", module: "Core", posX: 120, posY: 300),
+        makeNode(id: "Transport", posX: 320, posY: 100, stereotype: "protocol", module: "Networking"),
+        makeNode(id: "Logger", posX: 120, posY: 300, module: "Core"),
         makeNode(id: "Bare", posX: 320, posY: 300),
     ]
     let edges = [

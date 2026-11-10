@@ -94,7 +94,8 @@ struct UnresolvedNoteAnchorTests {
     @Test("the SVG layout anchors the note on the caller's lifeline", arguments: Witness.allCases)
     func svg(witness: Witness) throws {
         let layout = try #require(script(witness, .svg).sequenceLayout)
-        let note = try #require(layout.messages.first { $0.isUnresolved })
+        let unresolved = layout.messages.first(where: \.isUnresolved)
+        let note = try #require(unresolved)
         let anchor = layout.participants.first { $0.centerX == note.fromX }?.name
         #expect(anchor == witness.caller)
         #expect(note.toX == note.fromX + 60)
@@ -148,7 +149,8 @@ struct UnresolvedNoteAnchorTests {
         #expect(noteLines(handBuilt(fixture, .mermaid).text) == ["Note right of Foo: Unresolved: unknownClosure()"])
         #expect(noteLines(handBuilt(fixture, .plantuml).text) == ["note right of Foo: Unresolved: unknownClosure()"])
         let layout = try #require(handBuilt(fixture, .svg).sequenceLayout)
-        let note = try #require(layout.messages.first { $0.isUnresolved })
+        let unresolved = layout.messages.first(where: \.isUnresolved)
+        let note = try #require(unresolved)
         #expect(layout.participants.first { $0.centerX == note.fromX }?.name == "Foo")
     }
 
@@ -165,7 +167,8 @@ struct UnresolvedNoteAnchorTests {
         #expect(noteLines(handBuilt(edges, .mermaid).text) == ["Note right of Foo: Unresolved: boo()"])
         #expect(noteLines(handBuilt(edges, .plantuml).text) == ["note right of Foo: Unresolved: boo()"])
         let layout = try #require(handBuilt(edges, .svg).sequenceLayout)
-        let note = try #require(layout.messages.first { $0.isUnresolved })
+        let unresolved = layout.messages.first(where: \.isUnresolved)
+        let note = try #require(unresolved)
         #expect(layout.participants.first { $0.centerX == note.fromX }?.name == "Foo")
     }
 }

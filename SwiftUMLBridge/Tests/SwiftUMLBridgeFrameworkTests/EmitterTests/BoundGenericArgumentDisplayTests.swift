@@ -66,7 +66,10 @@ struct BoundGenericArgumentDisplayTests {
             "extension [String: Int] {}", "as Dictionary<String, Int> ",
             "[\"Dictionary&lt;String, Int&gt;\"]", "[<extension id=Dictionary> Dictionary <String, Int>]"
         ),
-        ("extension [[Int]] {}", "as Array<[Int]> ", "[\"Array&lt;[Int]&gt;\"]", "[<extension id=Array> Array <(Int)>]"),
+        (
+            "extension [[Int]] {}", "as Array<[Int]> ",
+            "[\"Array&lt;[Int]&gt;\"]", "[<extension id=Array> Array <(Int)>]"
+        ),
     ])
     func sugar(source: String, plantUML: String, mermaid: String, nomnoml: String) {
         #expect(ClassDiagramIds.script(for: source, format: .plantuml).contains(plantUML))

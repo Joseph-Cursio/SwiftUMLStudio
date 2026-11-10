@@ -5,8 +5,9 @@ public struct SVGRenderer: Sendable {
 
     // MARK: - Colors
 
+    private static let classHeaderFill = "#4A90D9"
     private static let headerFill: [String: String] = [
-        "class": "#4A90D9",
+        "class": classHeaderFill,
         "struct": "#7B68EE",
         "enum": "#E8A838",
         "protocol": "#50C878",
@@ -90,7 +91,7 @@ public struct SVGRenderer: Sendable {
         let leftX = node.posX - node.width / 2
         let topY = node.posY - node.height / 2
         let stereotype = node.stereotype ?? "class"
-        let fill = headerFill[stereotype] ?? headerFill["class"]!
+        let fill = headerFill[stereotype] ?? classHeaderFill
 
         // The label appears only in the <text> elements. It is not copied into an XML comment,
         // because a comment cannot contain `--` and no escaping makes it legal there (#56).

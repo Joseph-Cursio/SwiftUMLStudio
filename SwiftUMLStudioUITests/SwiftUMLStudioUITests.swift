@@ -9,19 +9,19 @@ import XCTest
 
 final class SwiftUMLStudioUITests: XCTestCase {
 
-    private var app: XCUIApplication!
+    @MainActor private lazy var app = XCUIApplication()
 
     @MainActor
     override func setUp() async throws {
         continueAfterFailure = false
-        app = XCUIApplication()
         app.launchArguments += ["-appMode", "Developer"]
         app.launchArguments += UITestLaunchArguments.plantUMLConsentUndecided
         app.launch()
     }
 
-    override func tearDownWithError() throws {
-        app = nil
+    @MainActor
+    override func tearDown() async throws {
+        app.terminate()
     }
 
     // MARK: - Mode switching

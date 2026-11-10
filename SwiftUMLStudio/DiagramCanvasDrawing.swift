@@ -31,9 +31,9 @@ enum DiagramDrawing {
     static func drawTitle(
         _ title: String,
         centerX: Double,
-        topY: Double = 18,
         color: SwiftUI.Color,
-        in context: inout GraphicsContext
+        in context: inout GraphicsContext,
+        topY: Double = 18
     ) {
         guard !title.isEmpty else { return }
         let text = Text(title)
@@ -46,9 +46,9 @@ enum DiagramDrawing {
     static func fillArrowhead(
         at tip: CGPoint,
         direction: CGPoint,
-        size: CGFloat = 8,
         color: SwiftUI.Color,
-        in context: inout GraphicsContext
+        in context: inout GraphicsContext,
+        size: CGFloat = 8
     ) {
         let length = max(hypot(direction.x, direction.y), 0.001)
         let unitX = direction.x / length

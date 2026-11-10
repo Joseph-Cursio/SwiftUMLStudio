@@ -79,13 +79,13 @@ private extension DepsScript {
         guard !stereotypes.isEmpty else { return [] }
         // Modules-mode + --package: emit one `component` line per target.
         if !model.targetKinds.isEmpty {
-            return stereotypes.keys.sorted().map { name in
-                "component \"\(name)\" as \(name) <<\(stereotypes[name]!)>>"
+            return stereotypes.sorted { $0.key < $1.key }.map { name, stereotype in
+                "component \"\(name)\" as \(name) <<\(stereotype)>>"
             }
         }
         // Types-mode + --package: emit one `class` line per known type.
-        return stereotypes.keys.sorted().map { name in
-            "class \"\(name)\" as \(name) <<\(stereotypes[name]!)>>"
+        return stereotypes.sorted { $0.key < $1.key }.map { name, stereotype in
+            "class \"\(name)\" as \(name) <<\(stereotype)>>"
         }
     }
 }

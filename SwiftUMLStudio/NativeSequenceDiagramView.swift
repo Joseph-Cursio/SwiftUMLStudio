@@ -32,8 +32,8 @@ struct NativeSequenceDiagramView: View, SelectableDiagramCanvas {
 
             Canvas { context, _ in
                 DiagramDrawing.drawTitle(
-                    layout.title, centerX: layout.totalWidth / 2, topY: 14,
-                    color: Self.bodyTextColor, in: &context
+                    layout.title, centerX: layout.totalWidth / 2, color: Self.bodyTextColor,
+                    in: &context, topY: 14
                 )
                 drawLifelines(in: &context)
                 drawParticipantBoxes(top: true, in: &context)

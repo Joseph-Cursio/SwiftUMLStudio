@@ -3,10 +3,13 @@ import Yams
 
 /// Load Configuration from file or defaults
 public struct ConfigurationProvider {
+    /// A provider; it reads the configuration afresh on every call.
     public init() {
         // Public because a struct's implicit initializer is internal; there is no state to set.
     }
 
+    /// The configuration in the YAML file at `path`, else in `.swiftumlbridge.yml` in the
+    /// current directory, else the default one.
     public func getConfiguration(for path: String?) -> Configuration {
         guard let configPath = path else {
             return readSwiftConfig()

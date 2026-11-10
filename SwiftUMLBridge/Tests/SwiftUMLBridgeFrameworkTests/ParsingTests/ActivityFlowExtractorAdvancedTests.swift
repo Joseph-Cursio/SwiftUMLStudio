@@ -17,7 +17,7 @@ struct ActivityFlowExtractorAdvancedTests {
     // MARK: - Loops
 
     @Test("for loop emits loopStart with back-edge")
-    func forLoopEmitsLoopStart() {
+    func forLoopEmitsLoopStart() throws {
         let graph = extract("""
         class Foo {
             func run() {
@@ -28,7 +28,7 @@ struct ActivityFlowExtractorAdvancedTests {
         }
         """)
         #expect(nodes(of: .loopStart, in: graph).count == 1)
-        let loopStart = nodes(of: .loopStart, in: graph).first!
+        let loopStart = try #require(nodes(of: .loopStart, in: graph).first)
         let backEdges = graph.edges.filter {
             $0.toId == loopStart.id && $0.fromId != loopStart.id
         }
@@ -114,7 +114,7 @@ struct ActivityFlowExtractorAdvancedTests {
     // MARK: - TaskGroup (concurrency)
 
     @Test("withTaskGroup + addTask emits fork/join with one branch per task")
-    func taskGroupEmitsForkJoin() {
+    func taskGroupEmitsForkJoin() throws {
         let graph = extract("""
         class Foo {
             func run() async {
@@ -128,7 +128,7 @@ struct ActivityFlowExtractorAdvancedTests {
         """)
         #expect(nodes(of: .fork, in: graph).count == 1)
         #expect(nodes(of: .join, in: graph).count == 1)
-        let fork = nodes(of: .fork, in: graph).first!
+        let fork = try #require(nodes(of: .fork, in: graph).first)
         let forkOut = graph.outgoingEdges(from: fork.id)
         #expect(forkOut.count >= 3)
     }
