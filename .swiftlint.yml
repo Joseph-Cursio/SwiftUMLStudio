@@ -80,6 +80,7 @@ opt_in_rules:
 - strong_iboutlet
 - test_case_accessibility
 - toggle_bool
+- unavailable_function
 - unhandled_throwing_task
 - unneeded_escaping
 - unneeded_parentheses_in_closure_argument
