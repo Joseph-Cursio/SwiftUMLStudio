@@ -22,7 +22,7 @@ final class SubscriptionManager {
 
     nonisolated static let proMonthlyID = "pro_monthly"
     nonisolated static let proAnnualID = "pro_annual"
-    private nonisolated static let productIDs: Set<String> = [proMonthlyID, proAnnualID]
+    nonisolated private static let productIDs: Set<String> = [proMonthlyID, proAnnualID]
 
     init() {
         let listener = listenForTransactions()
@@ -110,7 +110,7 @@ final class SubscriptionManager {
         }
     }
 
-    private nonisolated static func checkVerified<PayloadType>(
+    nonisolated private static func checkVerified<PayloadType>(
         _ result: VerificationResult<PayloadType>
     ) throws -> PayloadType {
         switch result {
