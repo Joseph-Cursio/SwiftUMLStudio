@@ -1,9 +1,5 @@
-import CoreGraphics
-import Foundation
-import SwiftUI
 @testable import SwiftUMLStudio
 import Testing
-import UniformTypeIdentifiers
 
 @Suite("DiagramExporter.sourceExtension")
 struct DiagramExporterSourceExtensionTests {

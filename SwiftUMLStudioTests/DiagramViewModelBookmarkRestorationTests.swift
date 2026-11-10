@@ -1,7 +1,6 @@
 //  Unit tests for DiagramViewModel history operations: save, load, delete, and edge cases.
 
 import Foundation
-import SwiftData
 import SwiftUMLBridgeFramework
 @testable import SwiftUMLStudio
 import Testing

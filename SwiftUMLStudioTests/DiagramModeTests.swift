@@ -1,6 +1,5 @@
 //  Tests for DiagramMode, FileNode, and MermaidHTMLBuilder.
 
-import Foundation
 @testable import SwiftUMLStudio
 import Testing
 

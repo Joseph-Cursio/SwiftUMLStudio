@@ -1,5 +1,4 @@
 import SwiftUI
-import SwiftUMLBridgeFramework
 
 struct ExplorerSidebar: View {
     @Bindable var viewModel: DiagramViewModel

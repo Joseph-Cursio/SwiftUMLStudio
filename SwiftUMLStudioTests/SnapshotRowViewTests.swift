@@ -1,5 +1,4 @@
 import Foundation
-import SwiftUI
 @testable import SwiftUMLStudio
 import Testing
 import ViewInspector

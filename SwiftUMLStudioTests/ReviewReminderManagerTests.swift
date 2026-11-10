@@ -5,7 +5,6 @@
 //  Unit tests for ReviewReminderManager scheduling and state logic.
 //
 
-import Foundation
 @testable import SwiftUMLStudio
 import Testing
 

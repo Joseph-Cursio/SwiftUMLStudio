@@ -1,4 +1,3 @@
-import Foundation
 @testable import SwiftUMLStudio
 
 /// Consent stores kept in memory.

@@ -1,7 +1,5 @@
-import Foundation
 import SwiftUMLBridgeFramework
 @testable import SwiftUMLStudio
-import Testing
 
 func makeSummary(
     totalFiles: Int = 3,

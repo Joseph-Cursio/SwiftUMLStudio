@@ -1,5 +1,4 @@
 import Foundation
-import JavaScriptCore
 @testable import SwiftUMLStudio
 import Testing
 

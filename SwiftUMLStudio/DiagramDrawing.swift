@@ -1,5 +1,4 @@
 import SwiftUI
-import SwiftUMLBridgeFramework
 
 /// Shared Canvas drawing primitives for the native diagram renderers.
 enum DiagramDrawing {

@@ -1,7 +1,6 @@
 //  ViewModel history operations and diagram generation pipeline integration tests.
 
 import Foundation
-import SwiftData
 import SwiftUMLBridgeFramework
 @testable import SwiftUMLStudio
 import Testing
@@ -12,17 +11,6 @@ import Testing
 struct DiagramGenerationPipelineTests {
 
     // MARK: Helpers
-
-    /// Returns the path to the TestData directory inside SwiftUMLBridge.
-    private var testDataDir: String {
-        // Resolve relative to the source repository root
-        let projectRoot = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent() // SwiftUMLStudioTests/
-            .deletingLastPathComponent() // SwiftUMLStudio/
-        return projectRoot
-            .appendingPathComponent("SwiftUMLBridge/Tests/SwiftUMLBridgeFrameworkTests/TestData")
-            .path
-    }
 
     /// Creates a temp directory with a single Swift fixture file and returns the directory path.
     private func makeFixtureDir(source: String) throws -> String {

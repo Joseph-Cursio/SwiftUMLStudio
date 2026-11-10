@@ -1,4 +1,4 @@
-import SwiftUI
+import CoreGraphics
 import SwiftUMLBridgeFramework
 
 /// A layout element positioned by its center point and size.

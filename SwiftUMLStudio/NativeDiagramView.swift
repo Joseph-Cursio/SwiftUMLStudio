@@ -24,7 +24,6 @@ struct NativeDiagramView: View, SelectableDiagramCanvas {
 
     // MARK: - Layout Constants (forwarded to NativeDiagramGeometry)
 
-    static let headerHeight = NativeDiagramGeometry.headerHeight
     static let lineHeight = NativeDiagramGeometry.lineHeight
     static let padding = NativeDiagramGeometry.padding
     static let cornerRadius = NativeDiagramGeometry.cornerRadius

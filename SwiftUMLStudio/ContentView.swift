@@ -1,5 +1,4 @@
 import SwiftUI
-import SwiftUMLBridgeFramework
 import UniformTypeIdentifiers
 
 /// View-modifier wrapper for the three string-backed notice alerts (generation

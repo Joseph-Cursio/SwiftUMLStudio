@@ -14,7 +14,6 @@
 //
 
 import Foundation
-import SwiftData
 @testable import SwiftUMLBridgeFramework
 @testable import SwiftUMLStudio
 import Testing

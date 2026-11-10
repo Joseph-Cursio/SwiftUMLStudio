@@ -7,7 +7,6 @@
 //  saved from does.
 //
 
-import Foundation
 @testable import SwiftUMLBridgeFramework
 @testable import SwiftUMLStudio
 import Testing

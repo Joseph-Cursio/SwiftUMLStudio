@@ -1,5 +1,4 @@
 import CoreGraphics
-import Foundation
 @testable import SwiftUMLStudio
 import Testing
 

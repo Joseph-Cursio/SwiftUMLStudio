@@ -1,5 +1,3 @@
-import Foundation
-
 enum ProFeature: String, CaseIterable {
     case sequenceDiagrams
     case dependencyGraphs

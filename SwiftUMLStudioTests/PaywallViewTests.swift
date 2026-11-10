@@ -1,6 +1,3 @@
-import Foundation
-import StoreKit
-import SwiftUI
 @testable import SwiftUMLStudio
 import Testing
 import ViewInspector

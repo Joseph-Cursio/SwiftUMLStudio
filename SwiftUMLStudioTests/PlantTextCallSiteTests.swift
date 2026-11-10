@@ -1,9 +1,5 @@
 import Foundation
-import SwiftUI
-import SwiftUMLBridgeFramework
-@testable import SwiftUMLStudio
 import Testing
-import ViewInspector
 
 /// Keeps planttext.com behind ``PlantTextPreview``: a second call site would skip the consent check.
 @Suite("planttext.com call site")

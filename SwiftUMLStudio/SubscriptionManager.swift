@@ -36,6 +36,7 @@ final class SubscriptionManager {
 
     // MARK: - Public
 
+    // swiftlint:disable:next unused_declaration - SubscriptionProviding witness, called through PaywallView's Manager
     func purchase(_ product: Product) async {
         purchaseError = nil
         do {
@@ -60,6 +61,7 @@ final class SubscriptionManager {
         }
     }
 
+    // swiftlint:disable:next unused_declaration - SubscriptionProviding witness, called through PaywallView's Manager
     func restorePurchases() async {
         try? await AppStore.sync()
         await checkEntitlement()

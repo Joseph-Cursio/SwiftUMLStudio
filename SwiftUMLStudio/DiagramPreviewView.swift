@@ -112,7 +112,7 @@ struct DiagramPreviewView: View {
         if showsExportMenu || showsViewportControls {
             HStack(spacing: 8) {
                 if showsExportMenu {
-                    DiagramExportMenu(viewModel: viewModel, viewport: viewport)
+                    DiagramExportMenu(viewModel: viewModel)
                 }
                 if showsViewportControls {
                     DiagramViewportControls(viewport: viewport)

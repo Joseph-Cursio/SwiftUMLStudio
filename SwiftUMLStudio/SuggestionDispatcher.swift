@@ -1,6 +1,3 @@
-import Foundation
-import SwiftUMLBridgeFramework
-
 /// Pure logic shared by every `handleSuggestion` dispatcher.
 ///
 /// Extracted from `DetailPaneViews`, `ExplorerSidebar`, and `ExplorerDetailView`

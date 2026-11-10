@@ -14,10 +14,7 @@
 //  the fixtures below are shaped to walk every branch of `drawNodes` and
 //  `drawEdges`.
 
-import AppKit
 import CoreGraphics
-import Foundation
-import SwiftUI
 import SwiftUMLBridgeFramework
 @testable import SwiftUMLStudio
 import Testing

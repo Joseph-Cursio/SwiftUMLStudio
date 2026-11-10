@@ -1,4 +1,3 @@
-import Foundation
 import SwiftData
 
 /// Manages the SwiftData model container for the app.

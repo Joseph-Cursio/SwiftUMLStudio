@@ -1,4 +1,3 @@
-import Foundation
 @testable import SwiftUMLStudio
 
 /// A ``KeyValueStore`` that never reaches `UserDefaults`, for tests of the app's preference stores.

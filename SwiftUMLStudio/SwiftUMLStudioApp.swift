@@ -32,6 +32,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate {
 
 @main
 struct SwiftUMLStudioApp: App {
+    // swiftlint:disable:next unused_declaration - the property wrapper installs the app delegate; nothing reads it
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @State private var subscriptionManager = SubscriptionManager()
 

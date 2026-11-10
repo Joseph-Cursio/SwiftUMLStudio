@@ -11,13 +11,7 @@
 //  directly, which is where the logic actually lives — the body is a thin
 //  Canvas wrapper over these.
 
-import AppKit
-import CoreGraphics
-import Foundation
-import SwiftUI
 @testable import SwiftUMLBridgeFramework
-@testable import SwiftUMLStudio
-import Testing
 
 // MARK: - Fixtures
 

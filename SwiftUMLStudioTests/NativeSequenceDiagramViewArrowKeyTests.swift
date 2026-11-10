@@ -10,9 +10,6 @@
 //  covered here is the drawing itself and the keyboard-selection logic, which a
 //  render pass never fires.
 
-import AppKit
-import CoreGraphics
-import Foundation
 import SwiftUI
 import SwiftUMLBridgeFramework
 @testable import SwiftUMLStudio

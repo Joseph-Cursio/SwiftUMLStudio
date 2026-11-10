@@ -1,7 +1,6 @@
 //  Integration tests for diagram generation and file browser features.
 
 import Foundation
-import SwiftData
 import SwiftUMLBridgeFramework
 @testable import SwiftUMLStudio
 import Testing

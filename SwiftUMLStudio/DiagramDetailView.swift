@@ -1,5 +1,4 @@
 import SwiftUI
-import SwiftUMLBridgeFramework
 
 // MARK: - Detail Pane
 

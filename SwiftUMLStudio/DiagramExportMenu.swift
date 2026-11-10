@@ -5,7 +5,6 @@ import SwiftUMLBridgeFramework
 /// PNG / SVG / source options based on what the current script supports.
 struct DiagramExportMenu: View {
     let viewModel: DiagramViewModel
-    let viewport: DiagramViewport
 
     @State private var lastError: String?
     let inspection = Inspection<Self>()

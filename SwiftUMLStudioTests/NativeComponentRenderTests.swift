@@ -12,8 +12,6 @@
 //  Canvas wrapper over these.
 
 import AppKit
-import CoreGraphics
-import Foundation
 import SwiftUI
 @testable import SwiftUMLBridgeFramework
 @testable import SwiftUMLStudio

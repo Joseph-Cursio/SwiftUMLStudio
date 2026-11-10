@@ -1,5 +1,3 @@
-import Foundation
-
 /// Launch arguments the UI tests pass to the app.
 enum UITestLaunchArguments {
     /// Pins the PlantUML consent to undecided for the run.

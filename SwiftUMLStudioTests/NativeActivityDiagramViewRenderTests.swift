@@ -16,7 +16,6 @@
 
 import AppKit
 import CoreGraphics
-import Foundation
 import SwiftUI
 import SwiftUMLBridgeFramework
 @testable import SwiftUMLStudio

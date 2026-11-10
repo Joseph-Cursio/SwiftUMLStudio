@@ -5,7 +5,6 @@
 //  An empty selection clears what was derived from the old one.
 //
 
-import Foundation
 @testable import SwiftUMLStudio
 import Testing
 
