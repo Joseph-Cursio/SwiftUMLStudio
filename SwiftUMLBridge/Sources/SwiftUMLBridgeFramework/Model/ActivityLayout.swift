@@ -1,5 +1,3 @@
-import Foundation
-
 // MARK: - Positioned Activity Node
 
 /// A positioned node in a laid-out activity diagram.

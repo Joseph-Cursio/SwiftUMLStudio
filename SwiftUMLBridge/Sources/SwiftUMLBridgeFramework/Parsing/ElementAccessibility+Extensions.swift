@@ -1,5 +1,3 @@
-import Foundation
-
 extension ElementAccessibility {
     var indicator: String? {
         switch self {

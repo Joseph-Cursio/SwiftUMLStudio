@@ -1,5 +1,3 @@
-import Foundation
-
 /// Maps well-known Swift macro attribute names to the protocol conformances they synthetically generate.
 ///
 /// Only macros whose synthesized conformances are part of the public Swift/Apple SDK contract are included.

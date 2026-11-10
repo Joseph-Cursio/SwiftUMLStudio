@@ -1,6 +1,5 @@
 import Foundation
 @testable import SwiftUMLBridgeFramework
-import Testing
 
 /// A package written to a temporary directory. Its description lists the targets, and each
 /// target's sources, in the order given, or in the reverse order. A target lives at

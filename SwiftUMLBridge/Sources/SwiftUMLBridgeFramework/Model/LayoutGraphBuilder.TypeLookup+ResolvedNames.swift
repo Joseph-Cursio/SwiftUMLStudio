@@ -1,5 +1,3 @@
-import Foundation
-
 // MARK: - Resolved Names
 
 // The names typealiases come to, for matching extensions of one type however each spells it,

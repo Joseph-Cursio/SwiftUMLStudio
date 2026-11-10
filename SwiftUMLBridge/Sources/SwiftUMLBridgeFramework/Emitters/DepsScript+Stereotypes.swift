@@ -1,5 +1,3 @@
-import Foundation
-
 // MARK: - Stereotype map (shared across emitters)
 
 extension DepsScript {

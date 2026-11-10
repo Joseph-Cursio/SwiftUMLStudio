@@ -1,5 +1,3 @@
-import Foundation
-
 // MARK: - Extension Ends
 
 /// Where `EdgeEndIds` ends an edge on a drawn extension, kept apart so the edge ends stay a

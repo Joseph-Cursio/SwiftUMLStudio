@@ -1,5 +1,3 @@
-import Foundation
-
 // MARK: - Pending Edges
 
 /// The edges `buildClassDiagram` collects before every node exists, and the node ids it hands

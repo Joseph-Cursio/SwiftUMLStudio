@@ -1,5 +1,3 @@
-import Foundation
-
 /// Stereotypes for entity types
 public struct Stereotypes: Codable, Sendable {
     public static var `default`: Self {

@@ -1,5 +1,3 @@
-import Foundation
-
 // MARK: - Name Starts
 
 /// Which type a dotted name as written starts at, read through the writer file's imports, kept

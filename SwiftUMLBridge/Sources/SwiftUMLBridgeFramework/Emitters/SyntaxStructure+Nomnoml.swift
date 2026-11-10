@@ -1,5 +1,3 @@
-import Foundation
-
 private enum NomnomlMemberCategory {
     case property
     case method

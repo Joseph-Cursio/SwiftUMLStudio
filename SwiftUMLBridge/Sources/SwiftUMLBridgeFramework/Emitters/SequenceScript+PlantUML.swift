@@ -1,5 +1,3 @@
-import Foundation
-
 // MARK: - PlantUML
 
 extension SequenceScript {

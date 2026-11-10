@@ -1,5 +1,3 @@
-import Foundation
-
 /// A rendered Component diagram. Supports PlantUML, Mermaid (flowchart
 /// fallback — Mermaid lacks a dedicated component dialect), and SVG. The SVG
 /// path additionally produces a `componentLayout` for Studio's native canvas.

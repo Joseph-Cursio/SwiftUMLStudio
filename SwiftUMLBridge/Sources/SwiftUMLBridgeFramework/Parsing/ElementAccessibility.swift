@@ -1,5 +1,3 @@
-import Foundation
-
 // Parallel List Drift pairs this with the app's `AccessLevel` enum, but this maps SourceKit's
 // own accessibility keys (raw values `source.lang.swift.accessibility.*`) — a distinct layer.
 // swiftprojectlint:disable:next parallel-list-drift

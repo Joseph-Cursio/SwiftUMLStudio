@@ -1,5 +1,3 @@
-import Foundation
-
 extension Duration {
     /// This duration as seconds, for the elapsed times the logger prints.
     ///

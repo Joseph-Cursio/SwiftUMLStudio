@@ -1,5 +1,3 @@
-import Foundation
-
 // MARK: - Module Qualifiers
 
 /// How `TypeLookup` reads a name's first component as a module (#124), kept apart so the lookup

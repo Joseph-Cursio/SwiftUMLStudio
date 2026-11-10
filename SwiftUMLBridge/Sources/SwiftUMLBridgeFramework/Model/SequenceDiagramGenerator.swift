@@ -1,5 +1,3 @@
-import Foundation
-
 /// Generates sequence diagram scripts from Swift source files.
 public struct SequenceDiagramGenerator: SequenceDiagramGenerating, Sendable {
     public init() {

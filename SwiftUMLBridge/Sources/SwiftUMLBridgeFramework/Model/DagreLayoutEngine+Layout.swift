@@ -1,4 +1,3 @@
-import Foundation
 import JavaScriptCore
 
 extension DagreLayoutEngine {

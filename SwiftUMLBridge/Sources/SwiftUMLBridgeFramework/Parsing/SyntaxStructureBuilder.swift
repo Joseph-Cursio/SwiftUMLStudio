@@ -1,5 +1,3 @@
-import Foundation
-import SwiftParser
 import SwiftSyntax
 
 /// Walks a parsed Swift source file and builds `SyntaxStructure` instances using

@@ -1,6 +1,5 @@
 import Foundation
 @testable import swiftumlbridge
-import SwiftUMLBridgeFramework
 import Testing
 
 // MARK: - Package root

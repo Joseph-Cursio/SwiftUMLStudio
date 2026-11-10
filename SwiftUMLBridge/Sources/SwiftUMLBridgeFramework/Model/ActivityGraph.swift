@@ -1,5 +1,3 @@
-import Foundation
-
 // MARK: - Activity Node Kind
 
 /// The kind of node in an activity diagram.

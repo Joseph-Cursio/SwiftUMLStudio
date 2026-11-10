@@ -1,5 +1,3 @@
-import Foundation
-
 /// Options which files shall be considered for class diagram generation
 public struct FileOptions: Codable, Sendable, CustomStringConvertible {
     public init(include: [String]? = [], exclude: [String]? = []) {

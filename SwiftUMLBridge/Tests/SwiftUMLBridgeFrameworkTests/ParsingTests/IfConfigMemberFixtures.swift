@@ -1,6 +1,3 @@
-@testable import SwiftUMLBridgeFramework
-import Testing
-
 // An `#if` block's clauses are read like the rest of the type, as the class diagram reads them
 // (#135). Most tests run their source as written (`ifConfig → true`) and with every `#if`
 // replaced by its first clause (`ifConfig → false`), which is the file the compiler sees when

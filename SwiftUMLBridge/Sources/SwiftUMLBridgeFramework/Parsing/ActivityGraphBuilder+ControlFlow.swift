@@ -1,4 +1,3 @@
-import Foundation
 import SwiftSyntax
 
 /// Control-flow walkers for `ActivityGraphBuilder`: if/guard/switch, `#if`, loops,

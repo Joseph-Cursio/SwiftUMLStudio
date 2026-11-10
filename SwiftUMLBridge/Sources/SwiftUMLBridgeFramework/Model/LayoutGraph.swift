@@ -1,5 +1,3 @@
-import Foundation
-
 // MARK: - Layout Cluster
 
 /// A module grouping box that encloses every `LayoutNode` sharing a `module`

@@ -1,5 +1,3 @@
-import Foundation
-
 // MARK: - Sure Kinds
 
 // Whether the kind of the type a name means is sure, kept apart so the type lookup stays a

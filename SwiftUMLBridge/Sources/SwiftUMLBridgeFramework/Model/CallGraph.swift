@@ -1,5 +1,3 @@
-import Foundation
-
 /// A graph of static call edges extracted from Swift source.
 public struct CallGraph: Sendable {
     /// All edges in the graph.

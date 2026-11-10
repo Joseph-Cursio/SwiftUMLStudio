@@ -1,6 +1,5 @@
 import Foundation
 @testable import swiftumlbridge
-import SwiftUMLBridgeFramework
 import Testing
 
 // End-to-end runs of each subcommand against the on-disk fixtures: parse real

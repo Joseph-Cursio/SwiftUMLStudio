@@ -1,5 +1,3 @@
-import Foundation
-
 protocol UnknownCaseRepresentable: RawRepresentable, CaseIterable where RawValue: Equatable {
     static var unknownCase: Self { get }
 }

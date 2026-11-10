@@ -1,5 +1,4 @@
 import ArgumentParser
-import Foundation
 import SwiftUMLBridgeFramework
 
 /// The `--format` / `--output` / `--config` triplet shared by every diagram

@@ -1,6 +1,4 @@
 import Foundation
-@testable import SwiftUMLBridgeFramework
-import Testing
 
 let sampleJSON = Data("""
 {

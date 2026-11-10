@@ -1,5 +1,3 @@
-import Foundation
-
 /// A rendered state machine diagram.
 public struct StateScript: Sendable, DiagramOutputting {
     /// The diagram text.

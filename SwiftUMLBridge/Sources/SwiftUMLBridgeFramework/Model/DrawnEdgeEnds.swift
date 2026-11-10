@@ -1,5 +1,3 @@
-import Foundation
-
 /// The drawn elements PlantUML, Mermaid and Nomnoml end an edge on, found as SVG finds them
 /// (`LayoutGraphBuilder.EdgeEndIds`), so the formats agree on which box an edge reaches: the
 /// type a name means where it is written, drawn or hidden, as Swift's access control allows.

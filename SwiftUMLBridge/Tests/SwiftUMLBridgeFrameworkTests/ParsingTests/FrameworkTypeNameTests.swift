@@ -1,5 +1,3 @@
-import SwiftParser
-import SwiftSyntax
 @testable import SwiftUMLBridgeFramework
 import Testing
 

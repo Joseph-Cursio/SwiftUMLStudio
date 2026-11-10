@@ -1,5 +1,3 @@
-import Foundation
-
 /// Tarjan's strongly connected components over `DependencyGraphModel`'s edges, with the nodes
 /// numbered in the order the edges first name them, and an explicit search path in place of
 /// recursion.

@@ -1,5 +1,3 @@
-import Foundation
-
 // MARK: - Sequence Diagram Generator Protocol
 
 /// Abstraction for sequence diagram generation, enabling mock injection in tests.

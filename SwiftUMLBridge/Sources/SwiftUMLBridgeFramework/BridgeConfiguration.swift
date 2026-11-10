@@ -1,4 +1,3 @@
-import Foundation
 import Synchronization
 
 /// Runtime toggles for the Bridge framework.

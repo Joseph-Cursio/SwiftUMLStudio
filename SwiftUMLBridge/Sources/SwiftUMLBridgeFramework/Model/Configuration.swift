@@ -1,5 +1,3 @@
-import Foundation
-
 // Parallel List Drift pairs this with `ElementAccessibility` (SourceKit-raw-valued visibility)
 // and the `defaultAccessLevels` subset; both are distinct/intentional, not one drifted list.
 // swiftprojectlint:disable:next parallel-list-drift

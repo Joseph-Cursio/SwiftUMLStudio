@@ -1,5 +1,3 @@
-import Foundation
-
 /// Builds a `LayoutGraph` from parsed `SyntaxStructure` items for class diagrams,
 /// or from a `DependencyGraphModel` for dependency graphs.
 enum LayoutGraphBuilder {

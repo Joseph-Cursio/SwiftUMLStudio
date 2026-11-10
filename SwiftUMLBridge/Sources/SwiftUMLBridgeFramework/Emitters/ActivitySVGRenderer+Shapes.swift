@@ -1,5 +1,3 @@
-import Foundation
-
 /// SVG shape and edge rendering helpers for `ActivitySVGRenderer`.
 extension ActivitySVGRenderer {
 

@@ -1,7 +1,4 @@
 import Foundation
-@testable import swiftumlbridge
-import SwiftUMLBridgeFramework
-import Synchronization
 import Testing
 
 /// The same, from the built executable in a real working directory, where `runCLI` reads stdout

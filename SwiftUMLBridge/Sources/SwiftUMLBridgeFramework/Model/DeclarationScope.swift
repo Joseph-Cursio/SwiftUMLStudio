@@ -1,5 +1,3 @@
-import Foundation
-
 /// Where a declaration lives, for picking among declarations that share a name.
 ///
 /// Class-diagram edges (`LayoutGraphBuilder`) and merged extensions (`mergeExtensions`) both use

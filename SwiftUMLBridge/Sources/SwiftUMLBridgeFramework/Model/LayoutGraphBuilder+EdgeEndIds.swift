@@ -1,5 +1,3 @@
-import Foundation
-
 // MARK: - Edge End Ids
 
 /// Where `buildClassDiagram` ends each edge, kept apart so the type lookup stays a readable size.

@@ -1,5 +1,3 @@
-import Foundation
-
 // MARK: - ER Diagram Generator Protocol
 
 /// Abstraction for Entity-Relationship diagram generation, enabling mock

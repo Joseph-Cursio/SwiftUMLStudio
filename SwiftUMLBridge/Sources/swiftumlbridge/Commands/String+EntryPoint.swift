@@ -1,7 +1,3 @@
-import ArgumentParser
-import Foundation
-import SwiftUMLBridgeFramework
-
 extension String {
     /// Parse a `Type.method` entry-point argument into its two halves,
     /// throwing `CLIError.invalidEntry` when it is not exactly one dotted pair.

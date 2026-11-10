@@ -1,5 +1,3 @@
-import Foundation
-
 /// Unified interface for presenting a diagram script
 public protocol DiagramPresenting: Sendable {
     /// Present script/diagram to user

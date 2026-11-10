@@ -1,5 +1,3 @@
-import Foundation
-
 // MARK: - SVG
 
 extension DepsScript {

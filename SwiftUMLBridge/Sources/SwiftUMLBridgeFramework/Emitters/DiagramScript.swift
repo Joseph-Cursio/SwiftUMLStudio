@@ -1,5 +1,3 @@
-import Foundation
-
 /// Swift type representing a diagram script (PlantUML or Mermaid)
 ///
 /// - Concurrency safety: `@unchecked` is load-bearing here, unlike on the

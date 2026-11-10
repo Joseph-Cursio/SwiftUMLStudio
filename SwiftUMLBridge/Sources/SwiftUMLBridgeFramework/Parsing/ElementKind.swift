@@ -1,5 +1,3 @@
-import Foundation
-
 // https://github.com/jpsim/SourceKitten/blob/master/Source/SourceKittenFramework/SwiftDeclarationKind.swift
 /// Analogous to SourceKittenFramework's `SwiftDeclarationKind`, extended with Swift 5.9+ kinds
 internal enum ElementKind: String, RawRepresentable, Codable, UnknownCaseRepresentable {

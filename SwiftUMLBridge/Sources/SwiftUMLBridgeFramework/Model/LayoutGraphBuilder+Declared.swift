@@ -1,5 +1,3 @@
-import Foundation
-
 // MARK: - Declarations
 
 /// What `TypeLookup` knows of each declaration it records, kept apart so the lookup stays a

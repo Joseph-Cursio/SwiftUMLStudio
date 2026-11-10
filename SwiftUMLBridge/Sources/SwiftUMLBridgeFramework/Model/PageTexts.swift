@@ -1,5 +1,3 @@
-import Foundation
-
 /// Descriptive texts you can add around your diagram
 public struct PageTexts: Codable, Sendable {
     internal init(

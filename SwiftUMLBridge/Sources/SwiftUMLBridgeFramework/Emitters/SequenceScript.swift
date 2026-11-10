@@ -1,5 +1,3 @@
-import Foundation
-
 /// A rendered sequence diagram in PlantUML or Mermaid format.
 public struct SequenceScript: Sendable, DiagramOutputting {
     /// The diagram text.

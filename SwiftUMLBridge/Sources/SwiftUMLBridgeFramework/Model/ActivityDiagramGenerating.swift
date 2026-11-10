@@ -1,5 +1,3 @@
-import Foundation
-
 // MARK: - Activity Diagram Generator Protocol
 
 /// Abstraction for activity (control-flow) diagram generation, enabling mock injection in tests.

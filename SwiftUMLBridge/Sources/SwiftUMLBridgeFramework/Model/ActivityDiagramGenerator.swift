@@ -1,5 +1,3 @@
-import Foundation
-
 /// Generates activity (control-flow) diagram scripts for a chosen entry function.
 public struct ActivityDiagramGenerator: ActivityDiagramGenerating, Sendable {
     public init() {

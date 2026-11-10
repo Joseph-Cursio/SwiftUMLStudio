@@ -1,5 +1,3 @@
-import Foundation
-
 /// Shared protocol for any diagram output (class diagram, sequence diagram, etc.).
 /// Used by the GUI layer (DiagramWebView) and presenter layer to avoid type coupling.
 public protocol DiagramOutputting: Sendable {

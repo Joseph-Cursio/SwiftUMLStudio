@@ -1,5 +1,3 @@
-import Foundation
-
 /// Options which and how elements shall be considered for class diagram generation
 public struct ElementOptions: Codable, Sendable {
     // Parallel List Drift pairs this against the full `AccessLevel` enum (it is missing

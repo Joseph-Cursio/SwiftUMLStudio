@@ -1,5 +1,3 @@
-import Foundation
-
 /// Public lightweight representation of a parsed Swift type for project analysis.
 /// Avoids exposing the internal SyntaxStructure model.
 public struct TypeInfo: Sendable {

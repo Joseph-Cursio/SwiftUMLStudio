@@ -1,5 +1,3 @@
-import Foundation
-
 // MARK: - Mermaid (flowchart fallback — Mermaid has no component dialect)
 
 extension ComponentScript {

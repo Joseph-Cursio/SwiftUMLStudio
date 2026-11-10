@@ -1,5 +1,3 @@
-import Foundation
-
 /// Format-agnostic scaffolding shared by the PlantUML, Mermaid, and Nomnoml
 /// class-diagram emitters. Each emitter supplies only its format-specific text
 /// building; the skip/generics/linking flow and the member-eligibility filter

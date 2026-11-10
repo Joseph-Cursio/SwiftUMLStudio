@@ -1,4 +1,4 @@
-import Foundation
+import CoreGraphics
 @testable import SwiftUMLBridgeFramework
 import Testing
 

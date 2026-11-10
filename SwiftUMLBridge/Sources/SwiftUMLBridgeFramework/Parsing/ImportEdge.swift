@@ -1,5 +1,3 @@
-import Foundation
-
 /// Represents a single import relationship between a source module and the module it imports.
 public struct ImportEdge: Sendable, Hashable {
     /// The parent directory name of the source file (used as module name heuristic).

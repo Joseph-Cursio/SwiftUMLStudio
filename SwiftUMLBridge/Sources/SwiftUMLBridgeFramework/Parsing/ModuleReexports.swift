@@ -1,5 +1,3 @@
-import Foundation
-
 /// The modules each module of a package re-exports with `@_exported import`, so a declaration's
 /// `imports` can name every module whose declarations its file sees, as `TypeLookup` reads them
 /// (#124). Swift lets an `@_exported import Core` in any file of Analytics show Core's types to

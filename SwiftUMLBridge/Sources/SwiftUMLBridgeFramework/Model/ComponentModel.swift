@@ -1,5 +1,3 @@
-import Foundation
-
 /// One SPM target rendered as a UML component box. `providedInterfaces`
 /// lists the public Swift type / protocol names declared inside the target —
 /// what callers can reach from outside.

@@ -1,5 +1,3 @@
-import Foundation
-
 /// A single state in a state machine (one enum case).
 public struct StateMachineState: Sendable, Hashable {
     public let name: String

@@ -1,5 +1,3 @@
-import ArgumentParser
-import Foundation
 import SwiftUMLBridgeFramework
 
 extension Optional where Wrapped == ClassDiagramOutput {

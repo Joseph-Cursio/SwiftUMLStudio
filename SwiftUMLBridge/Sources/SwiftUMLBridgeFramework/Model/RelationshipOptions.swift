@@ -1,5 +1,3 @@
-import Foundation
-
 /// Relationship metadata on if/how to visualize them in a class diagram
 public struct Relationship: Codable, Sendable {
     public init(label: String? = nil, style: RelationshipStyle? = nil, exclude: [String]? = nil) {

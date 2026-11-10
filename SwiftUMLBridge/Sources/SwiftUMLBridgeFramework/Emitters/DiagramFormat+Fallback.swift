@@ -1,5 +1,3 @@
-import Foundation
-
 /// A diagram's text in the format a script drew it in, with its SVG layout when that is SVG.
 struct DrawnDiagram<Layout> {
     let text: String

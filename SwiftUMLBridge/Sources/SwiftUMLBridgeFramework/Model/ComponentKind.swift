@@ -1,5 +1,3 @@
-import Foundation
-
 /// The kind of a build product / component: an executable, a library, a test target, or
 /// anything else.
 ///

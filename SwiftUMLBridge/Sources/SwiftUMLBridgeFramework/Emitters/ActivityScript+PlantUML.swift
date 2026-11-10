@@ -1,5 +1,3 @@
-import Foundation
-
 // MARK: - PlantUML (state-diagram flavor)
 
 extension ActivityScript {

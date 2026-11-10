@@ -1,6 +1,5 @@
 import SwiftParser
 import SwiftSyntax
-@testable import SwiftUMLBridgeFramework
 import Testing
 
 /// The extended type of the first extension in `extension <spelling> {}`.

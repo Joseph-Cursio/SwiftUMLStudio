@@ -1,5 +1,3 @@
-import Foundation
-
 // MARK: - Sequence Participant
 
 /// A participant box in a sequence diagram with its positioned column.

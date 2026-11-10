@@ -1,6 +1,4 @@
-import Foundation
 @testable import swiftumlbridge
-import SwiftUMLBridgeFramework
 import Testing
 
 // Argument parsing only — no command is `run()`, so nothing here parses Swift

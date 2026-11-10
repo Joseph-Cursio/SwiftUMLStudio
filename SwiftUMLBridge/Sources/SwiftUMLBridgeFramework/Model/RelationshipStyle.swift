@@ -1,5 +1,3 @@
-import Foundation
-
 /// Inline style for a relation (linking or arrow)
 public enum RelationshipInlineStyle: String, Codable, Sendable {
     case bold

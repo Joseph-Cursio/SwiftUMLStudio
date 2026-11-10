@@ -1,5 +1,3 @@
-import Foundation
-
 /// Where PlantUML and Nomnoml end the edge of a drawn nested type whose parent the class diagram
 /// does not draw. It is found as SVG finds it (`DrawnEdgeEnds`), so the formats agree on which box
 /// a hidden type's children hang off.

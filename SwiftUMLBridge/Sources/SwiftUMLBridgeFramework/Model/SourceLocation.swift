@@ -1,5 +1,3 @@
-import Foundation
-
 /// Where a declaration lives in the source tree.
 ///
 /// Attached to `LayoutNode` so the Studio app can navigate from a diagram

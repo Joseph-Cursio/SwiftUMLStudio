@@ -1,5 +1,3 @@
-import Foundation
-
 /// Options which and how extensions shall be considered for class diagram generation
 public enum ExtensionVisualization: String, Codable, Sendable {
     case all

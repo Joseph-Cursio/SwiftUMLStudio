@@ -1,5 +1,3 @@
-import Foundation
-
 // MARK: - Positioned Component
 
 /// A positioned `Component` in a laid-out component diagram, ready for native
