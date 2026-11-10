@@ -7,7 +7,7 @@ import Testing
 @Suite("Mermaid: a generic type keeps its annotation")
 struct MermaidGenericHeaderTests {
 
-    static let modes: [ExtensionVisualization] = [.all, .merged, .none]
+    static let modes: [ExtensionVisualization] = [.all, .merged, .hidden]
 
     static let source = """
         protocol Shape {}

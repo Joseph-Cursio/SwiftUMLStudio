@@ -2,7 +2,7 @@
 import Testing
 
 /// The SVG class diagram draws exactly the types the PlantUML, Mermaid and Nomnoml ones draw (#74).
-/// `LayoutGraphBuilder` kept every processable kind, so `showExtensions: .none`,
+/// `LayoutGraphBuilder` kept every processable kind, so `showExtensions: .hidden`,
 /// `elements.exclude` and `elements.havingAccessLevel`, which the default sets to leave out
 /// `fileprivate`, never hid anything in SVG.
 @Suite("SVG class diagram — element filters")
@@ -20,16 +20,16 @@ struct SVGClassDiagramFilterTests {
 
     // MARK: - The Issue's Cases
 
-    @Test("showExtensions .none draws no extension node")
+    @Test("showExtensions .hidden draws no extension node")
     func noneHidesExtensions() {
-        let hidden = ElementOptions(showExtensions: ExtensionVisualization.none)
+        let hidden = ElementOptions(showExtensions: ExtensionVisualization.hidden)
         #expect(svgNodes("struct Foo {}\nextension Foo {}", hidden) == ["Foo<<struct>>"])
     }
 
-    @Test("showExtensions .none also drops the hidden extension's conformance edge")
+    @Test("showExtensions .hidden also drops the hidden extension's conformance edge")
     func noneHidesExtensionEdges() {
         let source = "protocol P {}\nstruct Foo {}\nextension Foo: P { func bar() {} }"
-        let graph = svg(source, ElementOptions(showExtensions: ExtensionVisualization.none))
+        let graph = svg(source, ElementOptions(showExtensions: ExtensionVisualization.hidden))
         #expect(graph?.nodes.map(\.id) == ["P", "Foo"])
         #expect(graph?.edgeEnds.isEmpty == true)
     }
@@ -123,7 +123,7 @@ struct SVGClassDiagramFilterTests {
 
     static let parityOptions: [ElementOptions] = [
         ElementOptions(),
-        ElementOptions(showExtensions: ExtensionVisualization.none),
+        ElementOptions(showExtensions: ExtensionVisualization.hidden),
         ElementOptions(showExtensions: .merged),
         ElementOptions(exclude: ["Internal*", "Lid"]),
         ElementOptions(havingAccessLevel: [.open, .public]),

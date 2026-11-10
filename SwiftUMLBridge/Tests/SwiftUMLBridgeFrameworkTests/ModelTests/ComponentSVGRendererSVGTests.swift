@@ -12,7 +12,7 @@ struct ComponentSVGRendererSVGTests {
                 Component(name: "Networking", kind: .library, providedInterfaces: ["HttpClient"]),
                 Component(name: "App", kind: .executable),
             ],
-            dependencies: [ComponentDependency(from: "App", to: "Networking")]
+            dependencies: [ComponentDependency(from: "App", toComponent: "Networking")]
         )
         let svg = ComponentSVGRenderer.render(model).svg
         #expect(svg.contains("<svg"))

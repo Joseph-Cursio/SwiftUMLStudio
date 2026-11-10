@@ -28,9 +28,11 @@ extension LayoutGraphBuilder.TypeLookup {
               !shadows(qualifier, from: scope, depth: depth) else {
             return nil
         }
-        let candidates = declared.filter {
+        // Only a member the writer's module loads, so not `V` from an `extension Foo` in a module
+        // it never imports (#245).
+        let candidates = loaded(declared.filter {
             isVisible($0, from: scope, depth: depth) && owningModule(of: $0, depth: depth).map(named.contains) == true
-        }
+        }, from: scope, depth: depth)
         return scope.nearest(among: candidates, scope: \.rankScope).map { Match(declared: $0, name: rest) }
     }
 
@@ -102,22 +104,44 @@ extension LayoutGraphBuilder.TypeLookup {
     /// Whether a type or typealias named `qualifier`, visible from `scope`, keeps it from being
     /// read as a module, as Swift reads a type first: one in the file's own module, or in a module
     /// the file imports — so a namespace `enum Analytics` in a module the file does not import
-    /// leaves `Analytics.Event` to the module Analytics. With the imports unknown, any does.
+    /// leaves `Analytics.Event` to the module Analytics. With the imports unknown, any does. A
+    /// member of a type around `scope` comes first of all (`isEnclosingMember`).
     func shadows(_ qualifier: String, from scope: Scope, depth: Int) -> Bool {
-        declarations(named: qualifier).contains { declared in
+        if isEnclosingMember(qualifier, from: scope, depth: depth) { return true }
+        return declarations(named: qualifier).contains { declared in
             guard !declared.isExtension else { return false }
             if let module = declared.scope.module, !sees(qualifier, in: module, from: scope) { return false }
             return isVisible(declared, from: scope, depth: depth)
         }
     }
 
+    /// Whether `name`, written in `scope`, means a type only by reading a module on the way:
+    /// `ModA.Foo`, or `FA` after `typealias FA = ModA.Foo`.
+    func resolvesOnlyThroughModule(_ name: String, from scope: Scope) -> Bool {
+        type(named: name, from: scope, readingModules: false) == nil && type(named: name, from: scope) != nil
+    }
+
+    /// Whether `name`, written bare in `scope`, means a member of a type around it, as `ModA` does
+    /// in `enum E { typealias ModA = Other }`: then `ModA.Foo` there is `Other.Foo`, even in a
+    /// module named ModA (#246). The guard ends the loop of this,
+    /// `qualifiedName(ofWritten:from:depth:readingModules:)` and `started(_:from:depth:)` through a
+    /// name that means both a module and a type around it (#244).
+    func isEnclosingMember(_ name: String, from scope: Scope, depth: Int) -> Bool {
+        guard depth < 8 else { return false }
+        return qualifiedName(ofWritten: name, from: scope, depth: depth + 1, readingModules: false).name != name
+    }
+
     /// Whether `name`, written in `scope`, means a type only once its first component is read as
     /// a module: `ModA.Foo`, but not `Foo`, nor `Outer.Inner` for a nested type. A name that
-    /// cannot be read so (`mayReadModule`) is answered without a lookup.
-    func readsModule(_ name: String, from scope: Scope) -> Bool {
-        guard mayReadModule(name) else { return false }
-        return nearestMatch(named: name, from: scope, depth: 0, readingModules: false) == nil
-            && moduleMatch(named: name, from: scope, depth: 0) != nil
+    /// cannot be read so (`mayReadModule`) is answered without a lookup. `depth` is the lookup's own,
+    /// and the guard is what ends a loop through a name that means both a module and a type around
+    /// the writer (#244): reading the enclosing `M` takes what `M.V`'s first component means, and
+    /// that takes reading `M` again. Depth 8 itself still reads, unlike the guards that stop at
+    /// `depth < 8`, as the lookup of an alias's target from a step at depth 7 takes its name there.
+    func readsModule(_ name: String, from scope: Scope, depth: Int = 0) -> Bool {
+        guard depth <= 8, mayReadModule(name) else { return false }
+        return nearestMatch(named: name, from: scope, depth: depth, readingModules: false) == nil
+            && moduleMatch(named: name, from: scope, depth: depth) != nil
     }
 
     /// Whether `name`, written in `scope`, spells a typealias through its module, as
@@ -153,6 +177,11 @@ extension LayoutGraphBuilder.TypeLookup {
         }
         guard depth < 8, let type = enclosingExtensionType(of: declared, depth: depth) else { return nil }
         return owningType(of: type, depth: depth + 1)
+    }
+
+    /// The name `declaration` was recorded under.
+    func recordedName(of declaration: ObjectIdentifier) -> String? {
+        recordForDeclaration[declaration]?.name
     }
 
     /// The name the declaration `name` means is recorded under, before any typealias is

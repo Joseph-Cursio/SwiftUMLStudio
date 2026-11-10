@@ -51,7 +51,7 @@ public enum ComponentExtractor {
         var dependencies: [ComponentDependency] = []
         for target in visibleTargets {
             for dependencyName in target.dependencies where visibleNames.contains(dependencyName) {
-                dependencies.append(ComponentDependency(from: target.name, to: dependencyName))
+                dependencies.append(ComponentDependency(from: target.name, toComponent: dependencyName))
             }
         }
 

@@ -122,7 +122,7 @@ struct MermaidGenerationTests {
     @Test("extensions hidden when showExtensions is none in Mermaid")
     func extensionsHiddenWhenNone() {
         let config = Configuration(
-            elements: ElementOptions(showExtensions: ExtensionVisualization.none),
+            elements: ElementOptions(showExtensions: ExtensionVisualization.hidden),
             format: .mermaid
         )
         let source = "struct Foo {} \nextension Foo { func bar() {} }"

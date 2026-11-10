@@ -12,7 +12,7 @@ extension DepsScript {
 
         // Emit one edge per line
         for edge in model.edges {
-            lines.append("\(edge.from) --> \(edge.to) : \(edge.kind.rawValue)")
+            lines.append("\(edge.from) --> \(edge.toNode) : \(edge.kind.rawValue)")
         }
 
         // Annotate cycle nodes with a note block

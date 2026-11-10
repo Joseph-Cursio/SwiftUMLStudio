@@ -53,7 +53,7 @@ struct NativeComponentRenderTests {
                     kind: .library, interfaces: ["Client", "Session", "Retry"], width: 160, height: 110
                 ),
             ],
-            dependencies: [ComponentDependency(from: "App", to: "Networking")],
+            dependencies: [ComponentDependency(from: "App", toComponent: "Networking")],
             totalWidth: 400,
             totalHeight: 380
         )
@@ -83,8 +83,8 @@ struct NativeComponentRenderTests {
                 makeComponent(name: "App", centerX: 100, centerY: 100)
             ],
             dependencies: [
-                ComponentDependency(from: "App", to: "DoesNotExist"),
-                ComponentDependency(from: "AlsoMissing", to: "App"),
+                ComponentDependency(from: "App", toComponent: "DoesNotExist"),
+                ComponentDependency(from: "AlsoMissing", toComponent: "App"),
             ],
             totalWidth: 200,
             totalHeight: 200

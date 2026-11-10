@@ -84,6 +84,11 @@ internal class SyntaxStructure: NSObject, Codable, @unchecked Sendable {
     /// `SyntaxStructure.declarations(inPackageFiles:)`; nil when unknown.
     internal var loadedModules: Set<String>?
 
+    /// The modules the declaration's module re-exports, transitively (`ModuleReexports`), so a
+    /// type of its own shadows a same-named one of those (#200). Stamped by
+    /// `SyntaxStructure.declarations(inPackageFiles:)`; nil when unknown.
+    internal var reexportedModules: Set<String>?
+
     /// Set by `mergeExtensions` on an extension it merges away: the item that now shows its
     /// members. A type nested in that extension keeps the extension as its `parent`, which its
     /// name, scope and access come from, and is drawn hanging off this item (`nestingParent`).
@@ -121,6 +126,27 @@ internal class SyntaxStructure: NSObject, Codable, @unchecked Sendable {
     /// `extension [Int]` extends (#126).
     internal var isSugared = false
 
+    /// Whether the declaration is marked `@_spi(...)`: then only a file that imports its module
+    /// with that SPI sees it, however `public` it is (`TypeLookup.members(ownedBy:among:from:depth:)`).
+    internal var isSPI = false
+
+    /// Whether `@_spi(...)` marks the declaration in every build: outside any `#if` around the
+    /// attribute. A type of another module so marked surely does not shadow one for a file that
+    /// imports nothing with `@_spi` (`TypeLookup.seenAtFileScope(_:named:from:)`, #200).
+    internal var isSPIInEveryBuild = false
+
+    /// Whether the declaration sits in a clause of an `#if` block. The parser reads every clause
+    /// (#135), so it is drawn and looked up though a build may drop it
+    /// (`TypeLookup.members(ownedBy:among:from:depth:)`).
+    internal var isConditional = false
+
+    /// Where an `@available` makes the declaration unavailable: in every build, for
+    /// `@available(*, unavailable)` outside any `#if`; in some builds, for `unavailable` on one
+    /// platform, `obsoleted:`, a Swift version it is introduced in, or a mark under an `#if`.
+    /// Swift lets an available type of another module shadow it
+    /// (`TypeLookup.seenAtFileScope(_:named:from:)`, #200).
+    internal var unavailability = AttributeReach.never
+
     private enum CodingKeys: String, CodingKey {
         case accessibility = "key.accessibility"
         case attribute = "key.attribute"
@@ -153,10 +179,15 @@ internal class SyntaxStructure: NSObject, Codable, @unchecked Sendable {
         module = original.module
         imports = original.imports
         loadedModules = original.loadedModules
+        reexportedModules = original.reexportedModules
         carriedSupertypes = original.carriedSupertypes
         mergedExtensions = original.mergedExtensions
         boundGenericArguments = original.boundGenericArguments
         isSugared = original.isSugared
+        isSPI = original.isSPI
+        isConditional = original.isConditional
+        isSPIInEveryBuild = original.isSPIInEveryBuild
+        unavailability = original.unavailability
         super.init()
     }
 

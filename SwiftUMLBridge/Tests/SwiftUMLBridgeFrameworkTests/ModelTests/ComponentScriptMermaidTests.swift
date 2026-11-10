@@ -12,7 +12,7 @@ struct ComponentScriptMermaidTests {
                 Component(name: "Networking", kind: .library, providedInterfaces: ["HttpClient"]),
                 Component(name: "App", kind: .executable, providedInterfaces: []),
             ],
-            dependencies: [ComponentDependency(from: "App", to: "Networking")]
+            dependencies: [ComponentDependency(from: "App", toComponent: "Networking")]
         )
         var configuration = Configuration.default
         configuration.format = .mermaid

@@ -54,12 +54,12 @@ extension ActivityScript {
     }
 
     static func plantUMLEdgeLine(_ edge: ActivityEdge, graph: ActivityGraph) -> String {
-        let from = plantUMLRef(id: edge.fromId, graph: graph)
-        let to = plantUMLRef(id: edge.toId, graph: graph)
+        let source = plantUMLRef(id: edge.fromId, graph: graph)
+        let target = plantUMLRef(id: edge.toId, graph: graph)
         if let label = edge.label, !label.isEmpty {
-            return "\(from) --> \(to) : \(plantUMLEscape(label))"
+            return "\(source) --> \(target) : \(plantUMLEscape(label))"
         }
-        return "\(from) --> \(to)"
+        return "\(source) --> \(target)"
     }
 
     static func plantUMLRef(id: Int, graph: ActivityGraph) -> String {

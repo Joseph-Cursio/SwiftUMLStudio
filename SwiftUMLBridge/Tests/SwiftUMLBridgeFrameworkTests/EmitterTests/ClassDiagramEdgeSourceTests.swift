@@ -94,7 +94,7 @@ struct ClassDiagramEdgeSourceTests {
 
     /// The repeated class has no extension, so the extension setting must not move its edge.
     @Test("a repeated type owns its edge under every extension setting", arguments: [
-        ExtensionVisualization.all, .merged, .none
+        ExtensionVisualization.all, .merged, .hidden
     ])
     func repeatedTypeUnderEveryExtensionSetting(extensions: ExtensionVisualization) {
         #expect(lines(Self.repeatedType, .mermaid, containing: "<|--", extensions: extensions)

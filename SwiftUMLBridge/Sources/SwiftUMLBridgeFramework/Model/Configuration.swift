@@ -47,7 +47,7 @@ public struct Configuration: Codable, Sendable {
         ) ?? skinparamCommands
         includeRemoteURL = try container.decodeIfPresent(String.self, forKey: .includeRemoteURL) ?? includeRemoteURL
         if let themeName = try container.decodeIfPresent(String.self, forKey: .theme) {
-            theme = Theme.__directive__(themeName)
+            theme = Theme(configValue: themeName)
         }
         relationships = try container.decodeIfPresent(RelationshipOptions.self, forKey: .relationships) ?? relationships
         stereotypes = try container.decodeIfPresent(Stereotypes.self, forKey: .stereotypes) ?? stereotypes

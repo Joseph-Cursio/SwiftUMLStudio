@@ -114,6 +114,7 @@ extension String {
     }
 }
 
+// Private at file scope, so the TokenSyntax extension above reads these too.
 private extension String {
     /// Whether this name reads the same without backticks wherever it is written: not a raw
     /// identifier or a keyword, nor `Type` or `Protocol`, which a type member must escape.

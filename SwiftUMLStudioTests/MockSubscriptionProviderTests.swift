@@ -36,18 +36,18 @@ struct MockSubscriptionProviderTests {
     }
 
     @Test("restore call is tracked")
-    func restoreCallTracked() async {
+    func restoreCallTracked() {
         let mock = MockSubscriptionProvider()
-        await mock.restorePurchases()
+        mock.restorePurchases()
         #expect(mock.restoreCallCount == 1)
     }
 
     @Test("multiple restore calls accumulate")
-    func multipleRestoreCallsAccumulate() async {
+    func multipleRestoreCallsAccumulate() {
         let mock = MockSubscriptionProvider()
-        await mock.restorePurchases()
-        await mock.restorePurchases()
-        await mock.restorePurchases()
+        mock.restorePurchases()
+        mock.restorePurchases()
+        mock.restorePurchases()
         #expect(mock.restoreCallCount == 3)
     }
 

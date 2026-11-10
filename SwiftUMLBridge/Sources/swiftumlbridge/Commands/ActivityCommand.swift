@@ -32,6 +32,7 @@ extension SwiftUMLBridgeCLI {
             )
 
             await common.output.present(script)
+            EntryNotFoundReporter.report(entry: entry, found: script.foundEntry)
         }
     }
 }

@@ -10,5 +10,6 @@ included:
   - SwiftUMLBridge/Tests
 
 excluded:
+  - .claude
   - SwiftUMLBridge/.build
   - SwiftUMLBridge/Tests/SwiftUMLBridgeFrameworkTests/TestData

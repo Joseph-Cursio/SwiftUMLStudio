@@ -12,7 +12,7 @@ struct ComponentScriptPlantUMLTests {
                 Component(name: "Networking", kind: .library, providedInterfaces: ["HttpClient"]),
                 Component(name: "App", kind: .executable, providedInterfaces: ["AppMain"]),
             ],
-            dependencies: [ComponentDependency(from: "App", to: "Networking")]
+            dependencies: [ComponentDependency(from: "App", toComponent: "Networking")]
         )
         let script = ComponentScript(model: model, configuration: .default)
         #expect(script.text.contains("@startuml"))
@@ -31,7 +31,7 @@ struct ComponentScriptPlantUMLTests {
                 Component(name: "swift-syntax", kind: .library),
                 Component(name: "App.Main", kind: .executable),
             ],
-            dependencies: [ComponentDependency(from: "App.Main", to: "swift-syntax")]
+            dependencies: [ComponentDependency(from: "App.Main", toComponent: "swift-syntax")]
         )
         let script = ComponentScript(model: model, configuration: .default)
         #expect(script.text.contains("as swift_syntax"))

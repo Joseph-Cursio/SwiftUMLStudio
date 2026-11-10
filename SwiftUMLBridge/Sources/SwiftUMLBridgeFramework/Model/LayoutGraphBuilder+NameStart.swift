@@ -16,8 +16,12 @@ extension LayoutGraphBuilder {
         /// `typealias API = Networking.API` `API` of `Networking.API`: its members are
         /// recorded under that name.
         case projectType(OwningType?, renamedTo: String?)
-        /// A type outside the diagram, such as Swift's `Array`.
-        case outsideType
+        /// A type outside the diagram, such as Swift's `Array`. `spelledAs` is the name it is
+        /// spelled by when the first component is another name for it, as
+        /// `typealias Array = Date` makes `Array` of Foundation's `Date`, and
+        /// `typealias Arr = [Int]` `Arr` of Swift's `Array`: an extension of it records its
+        /// members under that name (#247).
+        case outsideType(spelledAs: String?)
     }
 
     /// The outermost type a declaration belongs to past any extension, by its module and name
@@ -61,7 +65,9 @@ extension LayoutGraphBuilder.TypeLookup {
         of first: String, in name: String, from scope: LayoutGraphBuilder.Scope, depth: Int
     ) -> LayoutGraphBuilder.NameStart {
         func lookUp() -> LayoutGraphBuilder.NameStart {
-            guard let type = firstComponentType(of: name, from: scope, depth: depth) else { return .outsideType }
+            guard let type = firstComponentType(of: name, from: scope, depth: depth) else {
+                return .outsideType(spelledAs: outsideSpelling(of: first, from: scope, depth: depth))
+            }
             let recorded = recordedName(of: type.declaration)
             return .projectType(owningType(of: type, depth: depth + 1), renamedTo: recorded == first ? nil : recorded)
         }
@@ -84,6 +90,17 @@ extension LayoutGraphBuilder.TypeLookup {
         return type(first, from: scope, depth: depth + 1)
     }
 
+    /// The name of the type outside the diagram that the first component `first`, written in
+    /// `scope`, is another name for, once every typealias on the way is followed
+    /// (`resolvedName(of:from:readingModules:depth:)`): `Date` for `Array` after
+    /// `typealias Array = Date`, and `Array` for `Arr` after `typealias Arr = [Int]`. `nil` when
+    /// `first` is that type's own name.
+    private func outsideSpelling(of first: String, from scope: LayoutGraphBuilder.Scope, depth: Int) -> String? {
+        let written = qualifiedName(ofWritten: first, from: scope, depth: depth + 1)
+        let spelled = resolvedName(of: written, from: scope, depth: depth + 1)
+        return spelled == first ? nil : spelled
+    }
+
     /// The `candidates` that are members of the type a dotted name starts at (`starts(_:at:depth:)`),
     /// an extension's only if the writer's module loads it (`loaded(_:from:depth:)`); `nil` when
     /// none of a project type's is left. Swift code that builds names a member of the type, so
@@ -99,7 +116,8 @@ extension LayoutGraphBuilder.TypeLookup {
         depth: Int
     ) -> [LayoutGraphBuilder.Declared]? {
         let members = loaded(candidates.filter { starts($0, at: start, depth: depth) }, from: scope, depth: depth)
-        guard !members.isEmpty || start == .outsideType else { return nil }
+        if case .outsideType = start { return members }
+        guard !members.isEmpty else { return nil }
         return members
     }
 
@@ -153,7 +171,10 @@ extension LayoutGraphBuilder.TypeLookup {
         let seen = candidates.filter { candidate in
             candidate.scope.module.map { sees(name, in: $0, from: scope) } ?? true
         }
-        guard seen.count > 1 else { return seen }
+        // Each step below drops only candidates of a known module other than the writer's, so with
+        // none of those it can drop nothing: sources read without their package skip them all.
+        guard seen.count > 1,
+              seen.contains(where: { $0.scope.module.map { $0 != scope.module } ?? false }) else { return seen }
         // Whether a scoped import names an imported candidate. A candidate of the file's own
         // module or of no known module is neither, and ranks as before.
         enum ScopedImport { case names, doesNotName, ownOrUnknownModule }
@@ -161,15 +182,109 @@ extension LayoutGraphBuilder.TypeLookup {
             guard let module = candidate.scope.module, module != scope.module else { return .ownOrUnknownModule }
             return seesAlone(name, in: module, from: scope) ? .names : .doesNotName
         }
-        guard seen.contains(where: { scopedImport(of: $0) == .names }) else { return seen }
-        return seen.filter { scopedImport(of: $0) != .doesNotName }
+        let unscoped = seen.contains { scopedImport(of: $0) == .names }
+            ? seen.filter { scopedImport(of: $0) != .doesNotName }
+            : seen
+        let opened = withoutUnopenedSPI(unscoped, from: scope)
+        return availableOverUnavailable(unshadowedByReexport(opened, named: name, from: scope), from: scope)
     }
 
-    /// `members` of the type a dotted name starts at without those an extension in a module
-    /// that `scope`'s module does not load adds (`isLoaded(_:from:depth:)`). Items built without
+    /// `candidates` without those of other modules marked `@_spi` in every build
+    /// (`Declared.isSPIInEveryBuild`), when the file imports nothing with `@_spi` and another
+    /// candidate remains: Swift shows such a type only to a file that
+    /// imports its module with `@_spi`, so one an `@_spi` re-exporter declares does not shadow
+    /// the type it re-exports (#200). A file that imports anything with `@_spi` keeps them all, as
+    /// it cannot be told which module's group that import opens.
+    private func withoutUnopenedSPI(
+        _ candidates: [LayoutGraphBuilder.Declared], from scope: LayoutGraphBuilder.Scope
+    ) -> [LayoutGraphBuilder.Declared] {
+        guard scope.imports?.contains(ImportExtractor.spiImport) != true else { return candidates }
+        func isUnopened(_ candidate: LayoutGraphBuilder.Declared) -> Bool {
+            candidate.isSPIInEveryBuild && candidate.scope.module.map { $0 != scope.module } == true
+        }
+        guard candidates.contains(where: isUnopened), candidates.contains(where: { !isUnopened($0) }) else {
+            return candidates
+        }
+        return candidates.filter { !isUnopened($0) }
+    }
+
+    /// `candidates` without the unavailable ones (`Declared.unavailability`) of other modules, when
+    /// one of another module is less so: Swift lets an available type shadow an unavailable one,
+    /// such as a stub `@available(*, unavailable, renamed: "NewBase")` leaves behind (#200). Those
+    /// unavailable in every build go first, then, among the rest, those unavailable in some
+    /// builds, as on one platform alone or after `obsoleted:`: where such a one is available the
+    /// name is ambiguous, so the file builds only where the other is meant. It runs last, as the
+    /// writer's own module, a scoped import and a re-exporter each shadow first, so a candidate of
+    /// the writer's module or of no known module stays. Swift reads no availability in a
+    /// member's lookup, `Foo.X`, so it does not run there.
+    private func availableOverUnavailable(
+        _ candidates: [LayoutGraphBuilder.Declared], from scope: LayoutGraphBuilder.Scope
+    ) -> [LayoutGraphBuilder.Declared] {
+        func isImported(_ candidate: LayoutGraphBuilder.Declared) -> Bool {
+            candidate.scope.module.map { $0 != scope.module } ?? false
+        }
+        var kept = candidates
+        for reach in [AttributeReach.everyBuild, .someBuilds] {
+            guard kept.contains(where: { isImported($0) && $0.unavailability == reach }),
+                  kept.contains(where: { isImported($0) && $0.unavailability < reach }) else { continue }
+            kept = kept.filter { !isImported($0) || $0.unavailability != reach }
+        }
+        return kept
+    }
+
+    /// `candidates` without those of a module that another candidate's module re-exports: a file
+    /// that sees both through that one means the re-exporter's, as Swift lets a module's own
+    /// declaration shadow one it re-exports (#200). It runs only among the candidates the file
+    /// already sees, so `import Alpha` alone keeps Alpha's, and an internal one of the
+    /// re-exporter shadows nothing. Nor does one the file may not see: one marked `@_spi` in
+    /// every build, unless the file imports something with `@_spi` (`withoutUnopenedSPI(_:from:)`
+    /// drops it before), and one under an `#if`, which a build may drop, so there the read order
+    /// decides, as before. Nor does a re-export shadow a module the file imports directly
+    /// (`ModuleReexports.directImportPrefix`): where both types are available that file does not
+    /// build, and where the re-exporter's is unavailable Swift means the other. A re-exporter's
+    /// candidate unavailable in every build shadows nothing at all, as a file that reaches the
+    /// other only through it does not build either, and so it stays right for a file that
+    /// reaches the other through a second re-exporter. One unavailable in some builds alone
+    /// still shadows, as Swift reads re-exports before availability. It reads the writer's module
+    /// and imports and each candidate's own data, so `SharedLookupKey` holds what it depends on.
+    private func unshadowedByReexport(
+        _ candidates: [LayoutGraphBuilder.Declared], named name: String, from scope: LayoutGraphBuilder.Scope
+    ) -> [LayoutGraphBuilder.Declared] {
+        guard candidates.count > 1 else { return candidates }
+        let opensSPI = scope.imports?.contains(ImportExtractor.spiImport) == true
+        var shadowed: Set<String> = []
+        // What re-exporters the file names in a scoped import, `import class ModX.Base`, re-export:
+        // that import names their own type, so a direct import does not lift their shadowing.
+        var shadowedByScoped: Set<String> = []
+        for candidate in candidates where candidate.scope.module != scope.module && !candidate.isConditional
+            && candidate.unavailability != .everyBuild && (!candidate.isSPIInEveryBuild || opensSPI) {
+            let reexports = candidate.scope.reexports ?? []
+            shadowed.formUnion(reexports)
+            if let module = candidate.scope.module,
+               scope.imports?.contains("\(modules.writtenName(of: module)).\(name)") == true {
+                shadowedByScoped.formUnion(reexports)
+            }
+        }
+        guard !shadowed.isEmpty else { return candidates }
+        return candidates.filter { candidate in
+            guard let module = candidate.scope.module, module != scope.module else { return true }
+            let written = modules.writtenName(of: module)
+            let direct = ModuleReexports.directImportPrefix
+            let isScopedOver = shadowedByScoped.contains(module) || shadowedByScoped.contains(written)
+            if !isScopedOver,
+               scope.imports?.contains(direct + written) == true || scope.imports?.contains(direct + module) == true {
+                return true
+            }
+            return !shadowed.contains(module) && !shadowed.contains(written) && !shadowed.contains("\(written).\(name)")
+        }
+    }
+
+    /// `members` of the type a dotted name starts at, or of the type a module-qualified name
+    /// names (#245), without those an extension in a module that `scope`'s module does not load
+    /// adds (`isLoaded(_:from:depth:)`). Items built without
     /// `SyntaxStructure.loadedModules` miss the imports of a file that declares nothing
     /// (`ModuleLoads.knowsEveryLoad(of:)`), so for them every member is kept when none is loaded.
-    private func loaded(
+    func loaded(
         _ members: [LayoutGraphBuilder.Declared], from scope: LayoutGraphBuilder.Scope, depth: Int
     ) -> [LayoutGraphBuilder.Declared] {
         let loaded = members.filter { isLoaded($0, from: scope, depth: depth) }
@@ -190,17 +305,61 @@ extension LayoutGraphBuilder.TypeLookup {
     }
 
     /// `name` spelled through the type its first component is another name for, as that type is
-    /// recorded (`NameStart.projectType`): `Bar.V` for `Foo.V` after `typealias Foo = ModA.Bar`,
-    /// so a name the lookup finds nothing for, as a hidden nested type, comes to the name it
-    /// would through a typealias of the whole. `nil` when its start is no such type, or when
-    /// another type is recorded under that spelling, which an edge to the name would seem to
-    /// end on, as a `Bar.V` that `Foo.V` does not mean.
+    /// recorded (`NameStart.projectType`) or spelled (`NameStart.outsideType`): `Bar.V` for
+    /// `Foo.V` after `typealias Foo = ModA.Bar`, and `Array.Index` for `Arr.Index` after
+    /// `typealias Arr = [Int]`, so a name the lookup finds nothing for, as a hidden nested type,
+    /// comes to the name it would through a typealias of the whole. `nil` when its start is no
+    /// such type, or when another type is recorded under that spelling, which an edge to the name
+    /// would seem to end on, as a `Bar.V` that `Foo.V` does not mean. `nil` too inside an
+    /// extension of a type outside the diagram, where the first component may be one of that
+    /// type's members (`mayStartAtOutsideMember(_:from:depth:)`), as `Base` in `extension Host`
+    /// is `Host.Base` when Host has one: the name is left as written, as
+    /// `sureResolvedName(of:from:depth:)` leaves it unsure, so the text formats never write the
+    /// edge to a box the graph does not end it on.
     func spelledThroughStart(
         _ name: LayoutGraphBuilder.QualifiedName, from scope: LayoutGraphBuilder.Scope, depth: Int
     ) -> String? {
-        guard case .projectType(_, let renamed?) = started(name, from: scope, depth: depth).start else { return nil }
+        guard !mayStartAtOutsideMember(name, from: scope, depth: depth) else { return nil }
+        let start = started(name, from: scope, depth: depth).start
+            ?? outsideStartWithoutModule(of: name, from: scope, depth: depth)
+        guard let renamed = startSpelling(of: start) else { return nil }
         let spelled = renamed + name.name.drop { $0 != "." }
         return typesForName[spelled] == nil ? spelled : nil
+    }
+
+    /// The start of the dotted name `name` written in a file of no known module, as sources read
+    /// without their package are, where `started(_:from:depth:)` works out none, when its first
+    /// component, read as a bare name (`firstComponentType(of:from:depth:)`), is a type outside
+    /// the diagram: spelled through the typealias that component is (`outsideSpelling`). So
+    /// `Base.Inner` after `typealias Base = Second` is `Second.Inner`, and two directories' own
+    /// `typealias Base` and `extension Base.Inner` stay apart, as two targets' do. With no
+    /// modules, a leading component of what the alias comes to may be one, so a spelling that
+    /// ends in a name the project records, as `Main.Real` after `typealias O = Main.Real` in the
+    /// module `Main`, may be the project's own `Real` and is no sure outside type. `nil` for any
+    /// other name; only the spelling reads it, never the lookup's candidates.
+    private func outsideStartWithoutModule(
+        of name: LayoutGraphBuilder.QualifiedName, from scope: LayoutGraphBuilder.Scope, depth: Int
+    ) -> LayoutGraphBuilder.NameStart? {
+        guard scope.module == nil, name.root == .asWritten, name.start == nil,
+              let dot = name.name.firstIndex(of: "."),
+              firstComponentType(of: name.name, from: scope, depth: depth) == nil,
+              let spelled = outsideSpelling(of: String(name.name[..<dot]), from: scope, depth: depth)
+        else { return nil }
+        let parts = spelled.split(separator: ".")
+        guard !parts.indices.contains(where: { typesForName[parts[$0...].joined(separator: ".")] != nil }) else {
+            return nil
+        }
+        return .outsideType(spelledAs: spelled)
+    }
+
+    /// The name a start's type is recorded or spelled under when the first component is another
+    /// name for it, `nil` otherwise.
+    private func startSpelling(of start: LayoutGraphBuilder.NameStart?) -> String? {
+        switch start {
+        case .projectType(_, let renamed): renamed
+        case .outsideType(let spelled): spelled
+        case nil: nil
+        }
     }
 
     /// The names the declarations `name` can mean are recorded under: `name` itself, and, when
@@ -209,8 +368,12 @@ extension LayoutGraphBuilder.TypeLookup {
     /// where `Foo` is ModA's. When the first component is another name for a type
     /// (`NameStart.projectType`), the rest is also looked for under the name that type is
     /// recorded under, with and without the module an extension spells it through, and
-    /// qualified or not.
+    /// qualified or not. When it is another name for a type outside the diagram
+    /// (`NameStart.outsideType`), the rest is looked for under that type's name alone, since what
+    /// is recorded under the name as written is another type's: after `typealias Array = Date`,
+    /// `Date.V`, and not the `Array.V` that `extension [Int]` declares.
     func spellings(of name: LayoutGraphBuilder.QualifiedName) -> [String] {
+        if case let .outsideType(spelled?) = name.start { return [spelled + name.name.drop { $0 != "." }] }
         guard case let .projectType(owner?, renamed) = name.start, let module = owner.module else {
             return [name.name]
         }

@@ -68,7 +68,7 @@ struct BoundGenericExtensionTests {
         ),
     ]
 
-    static let modes: [ExtensionVisualization] = [.all, .merged, .none]
+    static let modes: [ExtensionVisualization] = [.all, .merged, .hidden]
     static let formats: [DiagramFormat] = [.plantuml, .mermaid, .nomnoml, .svg]
     static let renderings: [(DiagramFormat, ExtensionVisualization)] = formats.flatMap { format in
         modes.map { (format, $0) }
@@ -128,7 +128,7 @@ struct BoundGenericExtensionTests {
     func mergedAndHidden() {
         let source = "struct Foo<T> {}\nextension Foo<Int> { func f() {} struct Inner {} }"
         let merged = ClassDiagramIds.mermaid(for: source, elements: ElementOptions(showExtensions: .merged))
-        let hidden = ClassDiagramIds.mermaid(for: source, elements: ElementOptions(showExtensions: .some(.none)))
+        let hidden = ClassDiagramIds.mermaid(for: source, elements: ElementOptions(showExtensions: .some(.hidden)))
         #expect(merged == ["Foo", "Foo.Inner"])
         #expect(hidden == ["Foo", "Foo.Inner"])
     }

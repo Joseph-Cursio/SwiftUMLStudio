@@ -42,21 +42,30 @@ public struct SequenceDiagramGenerator: SequenceDiagramGenerating, Sendable {
             }
         }
         let aliases = TypeAliasResolver(items: declarations)
-        let allEdges = sources.flatMap {
-            CallGraphExtractor.extract(from: $0.contents, file: $0.file, aliases: aliases).edges
+        let extracted = sources.map {
+            CallGraphExtractor.extract(from: $0.contents, file: $0.file, aliases: aliases)
         }
 
         let listed = CallGraphExtractor.listedEntryPoint(type: entryType, method: entryMethod)
-        // `--entry Alias.start` is the aliased type's `start`, as its extension is (#125).
-        let entry = (type: aliases.resolve(listed.type, in: nil), method: listed.method)
-        let callGraph = CallGraph(edges: allEdges)
-        let traversed = callGraph.traverse(from: entry.type, entryMethod: entry.method, maxDepth: depth)
-        return SequenceScript(
+        // `--entry Alias.start` is the aliased type's `start`, as its extension is (#125): the first
+        // the name can come to with a body for it. The activity diagram starts from the same body.
+        let types = aliases.entryTypes(of: listed.type)
+        let bodies = extracted.flatMap(\.bodies)
+        let chosen = CallGraphExtractor.entryBody(
+            named: listed.type, among: types, method: listed.method, in: bodies
+        )
+        let callGraph = CallGraph(edges: extracted.flatMap(\.edges), bodies: bodies)
+        // With no body chosen, a call filed under this name is a local function's, or a namesake's
+        // that cannot be named from outside a body, and the activity diagram draws neither (#235).
+        let traversed = chosen.map { callGraph.traverse(from: $0, maxDepth: depth) } ?? []
+        var script = SequenceScript(
             traversedEdges: traversed,
-            entryType: entry.type,
-            entryMethod: entry.method,
+            entryType: chosen?.type ?? types[0],
+            entryMethod: listed.method,
             configuration: configuration,
             typeLocations: typeLocations
         )
+        script.foundEntry = chosen != nil
+        return script
     }
 }

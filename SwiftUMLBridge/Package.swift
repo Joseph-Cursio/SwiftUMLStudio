@@ -1,6 +1,14 @@
 // swift-tools-version: 6.2
 import PackageDescription
 
+// Every target builds in the Swift 6 language mode, and a warning in any of them fails the build.
+// SwiftPM ignores warning settings for a package built as someone else's dependency, so this
+// binds this package's own builds alone.
+let swiftSettings: [SwiftSetting] = [
+    .swiftLanguageMode(.v6),
+    .treatAllWarnings(as: .error)
+]
+
 let package = Package(
     name: "SwiftUMLBridge",
     platforms: [.macOS(.v15)],
@@ -24,7 +32,7 @@ let package = Package(
                 .product(name: "SwiftParser", package: "swift-syntax")
             ],
             resources: [.copy("Resources/graphre.js")],
-            swiftSettings: [.swiftLanguageMode(.v6)]
+            swiftSettings: swiftSettings
         ),
         .executableTarget(
             name: "swiftumlbridge",
@@ -32,13 +40,13 @@ let package = Package(
                 "SwiftUMLBridgeFramework",
                 .product(name: "ArgumentParser", package: "swift-argument-parser")
             ],
-            swiftSettings: [.swiftLanguageMode(.v6)]
+            swiftSettings: swiftSettings
         ),
         .testTarget(
             name: "SwiftUMLBridgeFrameworkTests",
             dependencies: ["SwiftUMLBridgeFramework"],
             resources: [.copy("TestData")],
-            swiftSettings: [.swiftLanguageMode(.v6)]
+            swiftSettings: swiftSettings
         ),
         // The CLI is the artifact Homebrew builds and users actually run, but it
         // sat outside every coverage measurement because nothing linked it. Its
@@ -47,7 +55,7 @@ let package = Package(
         .testTarget(
             name: "SwiftUMLBridgeCLITests",
             dependencies: ["swiftumlbridge", "SwiftUMLBridgeFramework"],
-            swiftSettings: [.swiftLanguageMode(.v6)]
+            swiftSettings: swiftSettings
         )
     ]
 )

@@ -99,7 +99,7 @@ struct ComponentEdgePointTests {
             ]
         )
         let line = try #require(
-            ComponentSVGRenderer.edgeSVGLine(for: ComponentDependency(from: "A", to: "B"), in: layout)
+            ComponentSVGRenderer.edgeSVGLine(for: ComponentDependency(from: "A", toComponent: "B"), in: layout)
         )
         #expect(line.contains(#"x1="140.0" y1="70.0" x2="360.0" y2="180.0""#), "\(line)")
     }

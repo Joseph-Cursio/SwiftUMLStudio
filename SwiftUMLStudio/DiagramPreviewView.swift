@@ -12,7 +12,7 @@ struct DiagramPreviewView: View {
         VStack(spacing: 0) {
             banners
             ZStack(alignment: .topTrailing) {
-                diagramContent
+                diagramArea
                 overlays
             }
             .onChange(of: viewModel.currentScript?.text) { _, _ in
@@ -22,8 +22,8 @@ struct DiagramPreviewView: View {
         .onReceive(inspection.notice) { inspection.visit(self, $0) }
     }
 
-    /// The banners above the diagram: low state-machine confidence, a layout fallback, and
-    /// source files that could not be read.
+    /// The banners above the diagram: low state-machine confidence, a layout fallback, and sources
+    /// read with notices.
     @ViewBuilder private var banners: some View {
         if let model = lowConfidenceModel {
             StateMachineConfidenceBanner(model: model)
@@ -40,38 +40,49 @@ struct DiagramPreviewView: View {
         }
     }
 
-    /// The diagram itself, a progress indicator while one is generated, or a prompt saying what
-    /// is still needed to generate one.
-    @ViewBuilder private var diagramContent: some View {
+    /// The diagram, a progress indicator while one is generated, or a prompt saying what it needs.
+    @ViewBuilder private var diagramArea: some View {
         if viewModel.isGenerating {
             ProgressView("Generating…")
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if let script = viewModel.currentScript {
-            if script.format == .svg, let graph = script.layoutGraph {
-                cmdScrollHost {
-                    NativeDiagramView(graph: graph, viewport: viewport)
-                }
-            } else if script.format == .svg, let seqLayout = script.sequenceLayout {
-                cmdScrollHost {
-                    NativeSequenceDiagramView(layout: seqLayout, viewport: viewport)
-                }
-            } else if script.format == .svg, let activityLayout = script.activityLayout {
-                cmdScrollHost {
-                    NativeActivityDiagramView(layout: activityLayout, viewport: viewport)
-                }
-            } else if script.format == .svg, let componentLayout = script.componentLayout {
-                cmdScrollHost {
-                    NativeComponentDiagramView(layout: componentLayout, viewport: viewport)
-                }
-            } else {
-                DiagramWebView(
-                    script: script,
-                    requestedFormat: viewModel.diagramFormat,
-                    consent: consent,
-                    onUseMermaid: useMermaid
-                )
+            renderedDiagram(script)
+        } else {
+            emptyStatePrompt
+        }
+    }
+
+    /// A native canvas for a laid-out SVG diagram, else the web view.
+    @ViewBuilder private func renderedDiagram(_ script: any DiagramOutputting) -> some View {
+        if script.format == .svg, let graph = script.layoutGraph {
+            cmdScrollHost {
+                NativeDiagramView(graph: graph, viewport: viewport)
             }
-        } else if viewModel.diagramMode == .sequenceDiagram
+        } else if script.format == .svg, let seqLayout = script.sequenceLayout {
+            cmdScrollHost {
+                NativeSequenceDiagramView(layout: seqLayout, viewport: viewport)
+            }
+        } else if script.format == .svg, let activityLayout = script.activityLayout {
+            cmdScrollHost {
+                NativeActivityDiagramView(layout: activityLayout, viewport: viewport)
+            }
+        } else if script.format == .svg, let componentLayout = script.componentLayout {
+            cmdScrollHost {
+                NativeComponentDiagramView(layout: componentLayout, viewport: viewport)
+            }
+        } else {
+            DiagramWebView(
+                script: script,
+                requestedFormat: viewModel.diagramFormat,
+                consent: consent,
+                onUseMermaid: useMermaid
+            )
+        }
+    }
+
+    /// What the diagram still needs: an entry point, a readable one, a package, or sources.
+    @ViewBuilder private var emptyStatePrompt: some View {
+        if viewModel.diagramMode == .sequenceDiagram
             || viewModel.diagramMode == .activityDiagram, viewModel.entryPoint.isEmpty {
             Text("Enter an entry point (e.g. MyType.myMethod) to generate a diagram.")
                 .foregroundStyle(.secondary)
@@ -79,6 +90,15 @@ struct DiagramPreviewView: View {
                 .padding()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .accessibilityIdentifier("entryPointPrompt")
+        } else if viewModel.entryPointIsUnreadable {
+            Text("“\(viewModel.entryPoint)” is not a Type.method name. "
+                + "Enter the type, a dot, then the method (e.g. MyType.myMethod, "
+                + "or Outer.Inner.myMethod for a nested type).")
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .padding()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .accessibilityIdentifier("entryPointUnreadablePrompt")
         } else if viewModel.diagramMode == .componentDiagram, viewModel.packageDescription == nil {
             #if APP_STORE_BUILD
             let componentPackagePromptText =
@@ -106,8 +126,7 @@ struct DiagramPreviewView: View {
         }
     }
 
-    /// What floats over the diagram: the export and viewport controls, the reveal-in-source
-    /// button, and the hovered node's tooltip.
+    /// The export menu and viewport controls, the reveal-in-source button, and the hover tooltip.
     @ViewBuilder private var overlays: some View {
         if showsExportMenu || showsViewportControls {
             HStack(spacing: 8) {

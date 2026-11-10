@@ -2,23 +2,21 @@ import XCTest
 
 final class ExplorerModeUITests: XCTestCase {
 
-    @MainActor private lazy var app = XCUIApplication()
-
+    /// The app, launched as every test here needs it. Each test holds its own, so nothing is
+    /// stored between tests and none needs unwrapping.
     @MainActor
-    override func setUp() async throws {
+    private func launchApp() -> XCUIApplication {
         continueAfterFailure = false
+        let app = XCUIApplication()
         app.launchArguments += ["-appMode", "Explorer"]
         app.launchArguments += UITestLaunchArguments.plantUMLConsentUndecided
         app.launch()
-    }
-
-    @MainActor
-    override func tearDown() async throws {
-        app.terminate()
+        return app
     }
 
     @MainActor
     func testExplorerModeShowsOpenButton() throws {
+        let app = launchApp()
         XCTAssertTrue(
             app.buttons["Open…"].waitForExistence(timeout: UITestTimeout.element),
             "Open button should exist in Explorer mode"
@@ -27,6 +25,7 @@ final class ExplorerModeUITests: XCTestCase {
 
     @MainActor
     func testExplorerModeShowsSaveToHistory() throws {
+        let app = launchApp()
         XCTAssertTrue(
             app.buttons["Save to History"].waitForExistence(timeout: UITestTimeout.element),
             "Save to History button should exist in Explorer mode"
@@ -35,6 +34,7 @@ final class ExplorerModeUITests: XCTestCase {
 
     @MainActor
     func testExplorerModeHidesDeveloperControls() throws {
+        let app = launchApp()
         // Mode picker should not exist in Explorer mode
         XCTAssertFalse(
             app.outlines["modePicker"].exists,
@@ -44,6 +44,7 @@ final class ExplorerModeUITests: XCTestCase {
 
     @MainActor
     func testExplorerModeShowsAppModeToggle() throws {
+        let app = launchApp()
         // The picker is a RadioGroup whose options are RadioButtons. The old
         // version waited on `staticTexts["Explorer"]`, which never matches, and
         // passed only via an `||` fallback after burning the whole timeout.

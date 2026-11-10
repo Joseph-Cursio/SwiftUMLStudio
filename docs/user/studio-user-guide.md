@@ -63,7 +63,7 @@ For CLI usage, see the [SwiftUMLBridge User Guide](user-guide.md).
 
 | Requirement | Minimum |
 |---|---|
-| macOS | 26.4 |
+| macOS | 26.2 |
 | Xcode (to build the app) | 26.0 |
 
 Xcode 26 is the floor because the embedded SwiftUMLBridge package declares
@@ -389,10 +389,11 @@ The entry point must be in the form `TypeName.methodName`:
 | `MyService.run` | Method `run` on `MyService` |
 | `ClassDiagramGenerator.generateScript` | Method `generateScript` on `ClassDiagramGenerator` |
 | `AuthService.login` | Method `login` on `AuthService` |
+| `Outer.Inner.run` | Method `run` on the nested type `Outer.Inner` |
 
 The names are **case-sensitive** and must exactly match the Swift source code. If no function matches, the diagram will be empty.
 
-The entry point must be `TypeName.methodName` — exactly one dot. A bare function name or a deeply qualified path (e.g., `Module.Type.method`) is not accepted.
+The method is what follows the last dot, and the type is everything before it, so a method of a nested type is typed with the type's whole name, as the entry list names it. A bare name with no dot, or one with an empty part (`MyService.`, `My..run`), is not an entry point: the preview pane says so instead of drawing. A module in front (`Module.Type.method`) reads as a type named `Module.Type` and draws an empty diagram. The list offers only methods that can be drawn, so a function local to another function's body, or a protocol requirement with no body, is not listed.
 
 ### Traversal Depth
 

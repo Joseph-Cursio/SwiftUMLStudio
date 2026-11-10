@@ -2,25 +2,23 @@ import XCTest
 
 final class DashboardUITests: XCTestCase {
 
-    @MainActor private lazy var app = XCUIApplication()
-
+    /// The app, launched as every test here needs it. Each test holds its own, so nothing is
+    /// stored between tests and none needs unwrapping.
     @MainActor
-    override func setUp() async throws {
+    private func launchApp() -> XCUIApplication {
         continueAfterFailure = false
+        let app = XCUIApplication()
         app.launchArguments += ["-appMode", "Developer"]
         app.launchArguments += UITestLaunchArguments.plantUMLConsentUndecided
         app.launch()
-    }
-
-    @MainActor
-    override func tearDown() async throws {
-        app.terminate()
+        return app
     }
 
     // MARK: - Sidebar
 
     @MainActor
     func testFileBrowserSectionExists() throws {
+        let app = launchApp()
         XCTAssertTrue(
             app.radioButtons["Files"].waitForExistence(timeout: UITestTimeout.element),
             "Files tab should exist in sidebar"
@@ -29,6 +27,7 @@ final class DashboardUITests: XCTestCase {
 
     @MainActor
     func testHistorySectionExists() throws {
+        let app = launchApp()
         XCTAssertTrue(
             app.radioButtons["History"].waitForExistence(timeout: UITestTimeout.element),
             "History tab should exist in sidebar"
@@ -39,6 +38,7 @@ final class DashboardUITests: XCTestCase {
 
     @MainActor
     func testSaveButtonDisabledWithoutDiagram() throws {
+        let app = launchApp()
         // SwiftUI on macOS 26 reports the accessibilityIdentifier on both
         // the toolbar wrapper and the inner button, so a label-based query
         // matches multiple elements. .firstMatch picks one deterministically.
@@ -49,6 +49,7 @@ final class DashboardUITests: XCTestCase {
 
     @MainActor
     func testOpenButtonExists() throws {
+        let app = launchApp()
         let openButton = app.buttons["toolbarOpenButton"].firstMatch
         XCTAssertTrue(openButton.waitForExistence(timeout: UITestTimeout.element), "Open button not found")
         XCTAssertTrue(openButton.isEnabled, "Open button should be enabled")
@@ -56,6 +57,7 @@ final class DashboardUITests: XCTestCase {
 
     @MainActor
     func testFormatPickerDefaultsToPlantUML() throws {
+        let app = launchApp()
         // A PopUpButton identified as `formatPicker` — not a RadioGroup labelled
         // "Format", which matched nothing and let the old `guard … else { return }`
         // pass this test without asserting.
@@ -77,8 +79,8 @@ final class DashboardUITests: XCTestCase {
     /// Mermaid rather than meeting the consent card again on every launch.
     @MainActor
     func testDeclinedPlantUMLConsentStartsInMermaid() throws {
-        app.terminate()
-        app = XCUIApplication()
+        continueAfterFailure = false
+        let app = XCUIApplication()
         app.launchArguments += ["-appMode", "Developer"]
         app.launchArguments += UITestLaunchArguments.plantUMLConsentDeclined
         app.launch()
@@ -98,6 +100,7 @@ final class DashboardUITests: XCTestCase {
     /// does not click it: that would write the app's stored defaults.
     @MainActor
     func testSettingsShowsPlantUMLConsentToggle() throws {
+        let app = launchApp()
         app.typeKey(",", modifierFlags: .command)
 
         let toggle = app.descendants(matching: .any).matching(identifier: "plantUMLConsentToggle").firstMatch
@@ -113,6 +116,7 @@ final class DashboardUITests: XCTestCase {
 
     @MainActor
     func testDepthStepperAppearsInSequenceMode() throws {
+        let app = launchApp()
         let modePicker = app.outlines["modePicker"]
         XCTAssertTrue(modePicker.waitForExistence(timeout: UITestTimeout.element))
         modePicker.staticTexts["Sequence Diagram"].click()
@@ -126,6 +130,7 @@ final class DashboardUITests: XCTestCase {
 
     @MainActor
     func testNoSourceSelectedLabelOnLaunch() throws {
+        let app = launchApp()
         XCTAssertTrue(
             app.staticTexts["No source selected"].waitForExistence(timeout: UITestTimeout.element),
             "Path summary should show 'No source selected' on launch"
@@ -134,6 +139,7 @@ final class DashboardUITests: XCTestCase {
 
     @MainActor
     func testModePickerExists() throws {
+        let app = launchApp()
         let modePicker = app.outlines["modePicker"]
         XCTAssertTrue(modePicker.waitForExistence(timeout: UITestTimeout.element), "Mode picker should exist")
         XCTAssertTrue(

@@ -18,7 +18,7 @@ extension DepsScript {
         var result: [String: String] = [:]
         for edge in model.edges {
             if let module = edge.fromModule { result[edge.from] = module }
-            if let module = edge.toModule { result[edge.to] = module }
+            if let module = edge.toModule { result[edge.toNode] = module }
         }
         return result
     }

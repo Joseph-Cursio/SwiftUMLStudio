@@ -16,10 +16,10 @@ public struct DagreLayoutEngine: Sendable {
     /// Height of the stereotype + label header area (px).
     private static let headerHeight: Double = 36.0
     /// Gap between neighbouring boxes: dagre's `nodesep` and `ranksep` (px).
-    private static let nodeSpacing: Double = 60.0
+    static let nodeSpacing: Double = 60.0
     /// Space between the outermost boxes and the canvas edge: dagre's
     /// `marginx` and `marginy` (px).
-    private static let canvasMargin: Double = 20.0
+    static let canvasMargin: Double = 20.0
 
     /// `layout(_:)`'s work, on the thread that calls it. Internal so a test can run it on a
     /// thread too small for the graph, and see the script throw.
@@ -110,7 +110,7 @@ public struct DagreLayoutEngine: Sendable {
         (function() {
             var Graph = graphre.graphlib.Graph;
             var layout = graphre.layout;
-            var graph = new Graph({ directed: true, compound: \(isCompound), multigraph: false });
+            var graph = new Graph({ directed: true, compound: \(isCompound), multigraph: true });
             graph.setGraph({ rankdir: "TB", nodesep: \(nodeSpacing), ranksep: \(nodeSpacing),
                 marginx: \(canvasMargin), marginy: \(canvasMargin) });
             graph.setDefaultEdgeLabel(function() { return {}; });
@@ -149,14 +149,27 @@ public struct DagreLayoutEngine: Sendable {
         return result
     }
 
+    /// Emits `setEdge` for each edge, named by `edgeName(of:)` in a multigraph. With one edge
+    /// a pair of nodes, the second edge between them replaced the first, so a nested protocol
+    /// its parent conforms to (`struct Foo: Foo.Base { protocol Base {} }`) lost its
+    /// conformance arrow, which PlantUML and nomnoml draw beside the nesting one (#249).
     private static func buildEdgeStatements(for graph: LayoutGraph) -> String {
         var result = ""
         for (idx, edge) in graph.edges.enumerated() {
             let source = jsStringLiteral(nodeIdPrefix + edge.sourceId)
             let target = jsStringLiteral(nodeIdPrefix + edge.targetId)
-            result += "    graph.setEdge(\(source), \(target), { id: \"e\(idx)\" });\n"
+            let name = jsStringLiteral(edgeName(of: edge))
+            result += "    graph.setEdge(\(source), \(target), { id: \"e\(idx)\" }, \(name));\n"
         }
         return result
+    }
+
+    /// What dagre tells apart the edges between one pair of nodes by: the edge's style and
+    /// label. Two edges that differ in either are routed apart, side by side; two that match in
+    /// both are drawn alike, so they share one route as before, and the first gets it.
+    static func edgeName(of edge: LayoutEdge) -> String {
+        // No style holds a `:`, so a name with a label never equals one without.
+        edge.label.map { "\(edge.style.rawValue):\($0)" } ?? edge.style.rawValue
     }
 
     /// Renders `value` as a JavaScript string literal, quotes included, that
@@ -195,7 +208,7 @@ public struct DagreLayoutEngine: Sendable {
             graph.edges().forEach(function(e) {
                 var edge = graph.edge(e);
                 if (edge && edge.points) {
-                    edges.push({ source: e.v, target: e.w,
+                    edges.push({ source: e.v, target: e.w, name: e.name,
                         points: edge.points.map(function(p) { return { x: p.x, y: p.y }; }) });
                 }
             });
@@ -252,28 +265,39 @@ public struct DagreLayoutEngine: Sendable {
         }
     }
 
-    /// Routes dagre's edge points onto the matching `LayoutEdge`s.
+    /// Routes dagre's edge points onto the matching `LayoutEdge`s: each route onto the first
+    /// edge with its ends and name (`edgeName(of:)`). An edge that matches an earlier one in all
+    /// three shares its route, so it is left without points, and the renderers skip it.
     private static func applyEdgePoints(
         _ edgesArray: [[String: Any]], to result: inout LayoutGraph
     ) {
+        var firstEdge: [RouteKey: Int] = [:]
+        for idx in result.edges.indices {
+            let edge = result.edges[idx]
+            let key = RouteKey(
+                source: nodeIdPrefix + edge.sourceId, target: nodeIdPrefix + edge.targetId, name: edgeName(of: edge)
+            )
+            if firstEdge[key] == nil { firstEdge[key] = idx }
+        }
         for edgeInfo in edgesArray {
             guard let source = edgeInfo["source"] as? String,
                   let target = edgeInfo["target"] as? String,
-                  let points = edgeInfo["points"] as? [[String: Double]] else { continue }
+                  let name = edgeInfo["name"] as? String,
+                  let points = edgeInfo["points"] as? [[String: Double]],
+                  let idx = firstEdge[RouteKey(source: source, target: target, name: name)] else { continue }
 
-            let layoutPoints = points.compactMap { point -> LayoutPoint? in
+            result.edges[idx].points = points.compactMap { point -> LayoutPoint? in
                 guard let posX = point["x"], let posY = point["y"] else { return nil }
                 return LayoutPoint(posX: posX, posY: posY)
             }
-
-            for idx in result.edges.indices
-            where nodeIdPrefix + result.edges[idx].sourceId == source
-                && nodeIdPrefix + result.edges[idx].targetId == target
-                && result.edges[idx].points.isEmpty {
-                result.edges[idx].points = layoutPoints
-                break
-            }
         }
+    }
+
+    /// The dagre edge a route belongs to: its two prefixed node ids and its name.
+    private struct RouteKey: Hashable {
+        let source: String
+        let target: String
+        let name: String
     }
 
     /// Converts the `clusters` JSON dictionary from a compound-graph layout
@@ -293,78 +317,5 @@ public struct DagreLayoutEngine: Sendable {
             cluster.height = box["height"] as? Double ?? 0
             return cluster
         }
-    }
-
-    // MARK: - Fallback
-
-    /// Grid layout for when dagre gives no result: JavaScriptCore or
-    /// `graphre.js` cannot be loaded, the layout script throws or does not
-    /// parse, or what it returns is not a JSON object.
-    ///
-    /// Every cell is the size of the largest node plus dagre's node spacing,
-    /// so no two boxes overlap, and the grid sits inside dagre's margin, so
-    /// every box is on the canvas. A fixed 250 × 200 cell let wide or tall
-    /// nodes overlap their neighbours and run off the canvas (#61). Edges are
-    /// routed straight (see `routeStraightEdges`); no module clusters are set.
-    /// `reason` goes in `fallbackReason`, so callers can say the layout failed.
-    static func fallbackLayout(_ graph: LayoutGraph, because reason: String) -> LayoutGraph {
-        var result = graph
-        result.fallbackReason = reason
-        let count = graph.nodes.count
-        let columns = max(Int(ceil(sqrt(Double(count)))), 1)
-        let rows = (count + columns - 1) / columns
-        let cellWidth = (graph.nodes.map(\.width).max() ?? 0) + nodeSpacing
-        let cellHeight = (graph.nodes.map(\.height).max() ?? 0) + nodeSpacing
-
-        for idx in result.nodes.indices {
-            let col = idx % columns
-            let row = idx / columns
-            result.nodes[idx].posX = canvasMargin + (Double(col) + 0.5) * cellWidth
-            result.nodes[idx].posY = canvasMargin + (Double(row) + 0.5) * cellHeight
-        }
-
-        result.width = 2 * canvasMargin + Double(columns) * cellWidth
-        result.height = 2 * canvasMargin + Double(rows) * cellHeight
-        routeStraightEdges(&result)
-        return result
-    }
-
-    /// Routes each edge in a straight line between the facing borders of its
-    /// two boxes, through a midpoint where both renderers put the edge's label.
-    /// Both renderers skip an edge with fewer than two points, so without this
-    /// the fallback drew no relationships at all. The ends sit on the borders,
-    /// not at the centres, because nodes are drawn over edges and would hide
-    /// the arrowhead. A line between boxes that are not neighbours can pass
-    /// under a box between them. A self-loop, or an edge to an id with no
-    /// node, is left without points.
-    private static func routeStraightEdges(_ graph: inout LayoutGraph) {
-        var boxes: [String: LayoutNode] = [:]
-        for node in graph.nodes where boxes[node.id] == nil {
-            boxes[node.id] = node
-        }
-        for idx in graph.edges.indices {
-            let edge = graph.edges[idx]
-            guard edge.sourceId != edge.targetId,
-                  let source = boxes[edge.sourceId],
-                  let target = boxes[edge.targetId] else {
-                graph.edges[idx].points = []
-                continue
-            }
-            let start = borderPoint(of: source, toward: target)
-            let end = borderPoint(of: target, toward: source)
-            let middle = LayoutPoint(posX: (start.posX + end.posX) / 2, posY: (start.posY + end.posY) / 2)
-            graph.edges[idx].points = [start, middle, end]
-        }
-    }
-
-    /// Where the line from `node`'s centre toward `other`'s centre crosses
-    /// `node`'s border: through whichever side it reaches first.
-    private static func borderPoint(of node: LayoutNode, toward other: LayoutNode) -> LayoutPoint {
-        let deltaX = other.posX - node.posX
-        let deltaY = other.posY - node.posY
-        let scaleX = deltaX == 0 ? 1 : min(node.width / 2 / abs(deltaX), 1)
-        let scaleY = deltaY == 0 ? 1 : min(node.height / 2 / abs(deltaY), 1)
-        let scale = min(scaleX, scaleY)
-        return LayoutPoint(posX: node.posX + deltaX * scale, posY: node.posY + deltaY * scale)
     }
 }

@@ -28,10 +28,10 @@ struct FileCollectorTests {
 
     @Test("getFiles(for:) on a single .swift file returns that file")
     func getFilesForSingleFile() {
-        let swiftFile = projectMockURL.appendingPathComponent("Level 0.swift")
+        let swiftFile = projectMockURL.appendingPathComponent("Level0.swift")
         let files = collector.getFiles(for: swiftFile)
         #expect(files.count == 1)
-        #expect(files.first?.lastPathComponent == "Level 0.swift")
+        #expect(files.first?.lastPathComponent == "Level0.swift")
     }
 
     @Test("getFiles(for:) returns a non-existent directory's URL as given")
@@ -58,16 +58,16 @@ struct FileCollectorTests {
 
     @Test("getFiles(for:in:) with absolute path returns files at that path")
     func getFilesWithAbsolutePath() {
-        let swiftFile = projectMockURL.appendingPathComponent("Level 0.swift")
+        let swiftFile = projectMockURL.appendingPathComponent("Level0.swift")
         let files = collector.getFiles(for: [swiftFile.path], in: projectMockURL.path)
         #expect(files.count == 1)
     }
 
     @Test("getFiles(for:in:) with relative path appends to directory")
     func getFilesWithRelativePath() {
-        let files = collector.getFiles(for: ["Level 0.swift"], in: projectMockURL.path)
+        let files = collector.getFiles(for: ["Level0.swift"], in: projectMockURL.path)
         #expect(files.count == 1)
-        #expect(files.first?.lastPathComponent == "Level 0.swift")
+        #expect(files.first?.lastPathComponent == "Level0.swift")
     }
 
     // MARK: - getFiles(for paths:, in directory:, honoring fileOptions:)

@@ -79,7 +79,7 @@ struct PackageModeOrderTests {
 
     @Test("a class diagram is the same on every call, whatever order the description lists", arguments: [
         DiagramFormat.plantuml, .mermaid, .nomnoml, .svg
-    ], [ExtensionVisualization.all, .merged, .none])
+    ], [ExtensionVisualization.all, .merged, .hidden])
     func classDiagramIsRepeatable(format: DiagramFormat, extensions: ExtensionVisualization) throws {
         let package = try Self.package()
         defer { package.remove() }

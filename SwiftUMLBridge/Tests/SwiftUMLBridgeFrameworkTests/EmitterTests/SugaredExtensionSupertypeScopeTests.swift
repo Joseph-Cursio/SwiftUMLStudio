@@ -13,7 +13,7 @@ import Testing
 struct SugaredExtensionSupertypeScopeTests {
 
     static let formats: [DiagramFormat] = [.plantuml, .mermaid, .nomnoml, .svg]
-    static let modes: [ExtensionVisualization] = [.all, .merged, .none]
+    static let modes: [ExtensionVisualization] = [.all, .merged, .hidden]
 
     /// The ids the supertype edges drawn from `child` end on, in drawing order.
     private func ends(
@@ -213,7 +213,7 @@ struct SugaredExtensionSupertypeScopeTests {
             + "\nenum Outer {}\nextension Outer { typealias Array = [Int] }",
         "extension [Int] { class Base { var sugar = 0 } }\nstruct Array { class Base { var local = 0 } }"
             + "\nenum Outer { typealias Array = Swift.Array<Int> }",
-    ], [ExtensionVisualization.all, .merged, .none])
+    ], [ExtensionVisualization.all, .merged, .hidden])
     func writtenPathThroughEnclosingAlias(declarations: String, mode: ExtensionVisualization) {
         let source = declarations + "\nextension Outer { class Sub: Array.Base { func f() -> Int { sugar } } }"
         #expect(endMembers(from: "Outer.Sub", source, mode) == [["~ sugar"]])

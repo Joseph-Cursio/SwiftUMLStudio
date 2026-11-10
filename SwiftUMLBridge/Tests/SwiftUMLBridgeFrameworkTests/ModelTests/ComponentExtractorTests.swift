@@ -64,7 +64,7 @@ struct ComponentExtractorTests {
         let model = ComponentExtractor.extract(
             package: makeDemoPackage(), packageRoot: dummyRoot
         )
-        let edges = Set(model.dependencies.map { "\($0.from)→\($0.to)" })
+        let edges = Set(model.dependencies.map { "\($0.from)→\($0.toComponent)" })
         #expect(edges == ["Persistence→Networking", "App→Persistence", "App→Networking"])
     }
 
@@ -89,7 +89,7 @@ struct ComponentExtractorTests {
             ]
         )
         let model = ComponentExtractor.extract(package: extras, packageRoot: dummyRoot)
-        let edges = Set(model.dependencies.map { "\($0.from)→\($0.to)" })
+        let edges = Set(model.dependencies.map { "\($0.from)→\($0.toComponent)" })
         // Only the Other → Lib edge survives; Other → TestHelpers is pruned.
         #expect(edges == ["Other→Lib"])
     }

@@ -8,7 +8,7 @@ extension DepsScript {
         var seenNodes = Set<String>()
         for edge in model.edges {
             seenNodes.insert(edge.from)
-            seenNodes.insert(edge.to)
+            seenNodes.insert(edge.toNode)
         }
 
         let stereotypes = Self.nodeStereotypes(model: model)
@@ -41,7 +41,7 @@ extension DepsScript {
         // Emit edge lines
         for edge in model.edges {
             let fromId = ids.id(for: edge.from)
-            let toId = ids.id(for: edge.to)
+            let toId = ids.id(for: edge.toNode)
             lines.append("    \(fromId) --> \(toId)")
         }
 

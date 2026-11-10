@@ -18,7 +18,7 @@ struct ComponentSVGRendererWellFormednessTests {
                 Component(name: "App", kind: .executable),
                 Component(name: label, kind: .library, providedInterfaces: [label]),
             ],
-            dependencies: [ComponentDependency(from: "App", to: label)]
+            dependencies: [ComponentDependency(from: "App", toComponent: label)]
         )
         let svg = ComponentSVGRenderer.render(model).svg
 

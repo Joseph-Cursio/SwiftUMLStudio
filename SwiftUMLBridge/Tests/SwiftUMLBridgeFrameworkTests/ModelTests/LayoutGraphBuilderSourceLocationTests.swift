@@ -31,7 +31,7 @@ struct LayoutGraphBuilderSourceLocationTests {
     @Test("buildDependencyGraph emits nodes with no sourceLocation")
     func dependencyGraphHasNoLocation() throws {
         let model = DependencyGraphModel(
-            edges: [DependencyEdge(from: "A", to: "B", kind: .imports)]
+            edges: [DependencyEdge(from: "A", toNode: "B", kind: .imports)]
         )
         let graph = LayoutGraphBuilder.buildDependencyGraph(from: model)
         for node in graph.nodes {

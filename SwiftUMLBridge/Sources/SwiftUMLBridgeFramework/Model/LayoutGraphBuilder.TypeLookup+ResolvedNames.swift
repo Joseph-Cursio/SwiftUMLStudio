@@ -10,6 +10,16 @@ extension LayoutGraphBuilder.TypeLookup {
         aliasNames.contains(name)
     }
 
+    /// Whether the first component of the dotted name `name`, written in `scope`, means a
+    /// typealias there, as one declared inside a type does, which `namesTypealias(_:)` cannot
+    /// tell: it is recorded under its type's name, as `Mine.Base` for
+    /// `struct Mine { typealias Base = First }`, where `Base.Inner` is `First.Inner`.
+    func startsAtTypealias(_ name: LayoutGraphBuilder.QualifiedName, from scope: LayoutGraphBuilder.Scope) -> Bool {
+        guard name.root == .asWritten, let dot = name.name.firstIndex(of: ".") else { return false }
+        let first = qualifiedName(ofWritten: String(name.name[..<dot]), from: scope)
+        return nearestMatch(first, from: scope, depth: 0)?.declared.aliasTarget != nil
+    }
+
     /// `resolvedName(of:from:depth:)` when the type the name comes to is sure, else `nil`. Swift
     /// looks a name written inside an extension of a type outside the diagram up among that
     /// type's members first, which the lookup cannot see, so a name, or an alias's target,
@@ -18,20 +28,60 @@ extension LayoutGraphBuilder.TypeLookup {
     /// Foundation's protocol `FormatStyle`. A name the project declares is taken as the lookup
     /// takes it everywhere else, so `Describable` written there is the project's typealias. A
     /// name the lookup finds nothing for comes to its spelling through its first component's
-    /// typealias (`spelledThroughStart(_:from:depth:)`).
+    /// typealias (`spelledThroughStart(_:from:depth:)`). Each typealias is followed at the same
+    /// depth, in a loop, as `resolvedName(of:from:readingModules:depth:)` follows it, and what a
+    /// walk from each comes to is kept (`AliasWalks`) (#248).
     func sureResolvedName(
-        of name: LayoutGraphBuilder.QualifiedName, from scope: LayoutGraphBuilder.Scope, depth: Int = 0
+        of written: LayoutGraphBuilder.QualifiedName, from writerScope: LayoutGraphBuilder.Scope, depth: Int = 0
     ) -> String? {
-        guard depth < 8 else { return name.name }
-        let match = nearestMatch(name, from: scope, depth: depth)
-        if match == nil, name.root == .asWritten, mayMeanOutsideMember(from: scope, depth: depth) {
-            return nil
+        guard depth < 8 else { return written.name }
+        var (name, scope, chain) = (written, writerScope, LayoutGraphBuilder.AliasChain())
+        var followed: [LayoutGraphBuilder.Declared] = []
+        let resolved: String?
+        while true {
+            let match = nearestMatch(name, from: scope, depth: depth)
+            if match == nil, mayStartAtOutsideMember(name, from: scope, depth: depth) {
+                resolved = nil
+                break
+            }
+            guard let match else {
+                resolved = spelledThroughStart(name, from: scope, depth: depth) ?? name.name
+                break
+            }
+            let alias = match.declared
+            guard let target = alias.aliasTarget, !alias.isSugared else {
+                resolved = alias.aliasTarget ?? match.name
+                break
+            }
+            if let known = aliasSureNames.entry(for: alias, depth: depth, readingModules: true) {
+                resolved = known.value
+                break
+            }
+            // A cycle's answer turns on where the walk came into it, so it is not kept.
+            guard chain.follow(alias) else { return name.name }
+            followed.append(alias)
+            scope = alias.scope
+            name = qualifiedName(ofWritten: target, from: scope, depth: depth + 1)
         }
-        guard let match else { return spelledThroughStart(name, from: scope, depth: depth) ?? name.name }
-        guard let target = match.declared.aliasTarget else { return match.name }
-        guard !match.declared.isSugared else { return target }
-        let targetName = qualifiedName(ofWritten: target, from: match.declared.scope, depth: depth + 1)
-        return sureResolvedName(of: targetName, from: match.declared.scope, depth: depth + 1)
+        for alias in followed {
+            aliasSureNames.record(resolved, for: alias, depth: depth, readingModules: true)
+        }
+        return resolved
+    }
+
+    /// Whether `name`, written in `scope`, may start at a member of a type outside the diagram
+    /// (`mayMeanOutsideMember(from:depth:)`), unless its first component means a type or
+    /// typealias the project declares inside a type, which it sees only as a member of a type
+    /// around it: `Base` in the project's own `extension Host { typealias Base = First }`. Swift
+    /// rejects such a name as ambiguous when the outside type has a `Base` too, so in code that
+    /// builds it is the project's.
+    func mayStartAtOutsideMember(
+        _ name: LayoutGraphBuilder.QualifiedName, from scope: LayoutGraphBuilder.Scope, depth: Int
+    ) -> Bool {
+        guard name.root == .asWritten, mayMeanOutsideMember(from: scope, depth: depth) else { return false }
+        let first = qualifiedName(ofWritten: String(name.name.prefix { $0 != "." }), from: scope, depth: depth + 1)
+        guard let match = nearestMatch(first, from: scope, depth: depth + 1) else { return true }
+        return match.declared.scope.enclosingTypes.isEmpty
     }
 
     /// Whether a name written in `scope` may be a member of a type outside the diagram: it is
@@ -43,55 +93,6 @@ extension LayoutGraphBuilder.TypeLookup {
         // An extension's own clause sees no enclosing types, only its file, module and imports.
         let clause = scope.fileScope
         return !startsAtProjectType(enclosing.name, from: clause, depth: depth)
-    }
-
-    /// Whether `name`, written in `scope`, is a type the project declares or a member of one, as
-    /// far as the lookup can tell. A name the lookup finds, through any typealiases, is the
-    /// project's, wherever the type is nested: `Date.Box` after `extension Date { struct Box {} }`,
-    /// whose own members Swift looks a name up among, never `Date`'s, and `Outer.Alias` after
-    /// `struct Outer { struct Inner {}; typealias Alias = Inner }`. Otherwise the longest leading
-    /// part of it that the project declares decides, a nested type the items do not list
-    /// included (`unlistedMembers`): a type is the project's, and a typealias is as its target,
-    /// read as the lookup reads it and followed by the parts after it, is. So `Crate.Inner`
-    /// after `typealias Crate = Outer` is judged as `Outer.Inner`, the project's, and `Crate.D`
-    /// after `struct Outer { typealias D = Date }` as `Date`, which is not, nor is `Day` after
-    /// `typealias Day = Date`. A name no part of which the project declares is a type outside the
-    /// diagram; a first part that is the scope's own module is skipped, as in
-    /// `extension MyModule.Outer`. Only the deciding part's alias is followed, so this costs a
-    /// lookup a part for each alias on the way, and the depth guard ends a cycle of them.
-    private func startsAtProjectType(_ name: String, from scope: LayoutGraphBuilder.Scope, depth: Int) -> Bool {
-        var parts = name.split(separator: ".").map(String.init)
-        if parts.count > 1, parts[0] == scope.module,
-           nearestVisible(named: parts[0], from: scope, depth: depth) == nil {
-            parts.removeFirst()
-        }
-        if type(named: parts.joined(separator: "."), from: scope, depth: depth) != nil { return true }
-        var prefix = ""
-        var deciding: LayoutGraphBuilder.Declared?
-        var used = 0
-        for (index, part) in parts.enumerated() {
-            prefix = prefix.isEmpty ? part : "\(prefix).\(part)"
-            guard let nearest = nearestVisible(named: prefix, from: scope, depth: depth)
-                ?? unlistedMembers[prefix]?.first(where: { isVisible($0, from: scope, depth: depth) })
-            else { continue }
-            deciding = nearest
-            used = index + 1
-        }
-        guard let deciding else { return false }
-        guard let target = deciding.aliasTarget else { return true }
-        guard !deciding.isSugared, depth < 8 else { return false }
-        // The parts after the deciding alias are members of what it stands for.
-        let tail = Array(parts.dropFirst(used))
-        // A target nested beside the alias that the lookup does not record, as while nested types
-        // are hidden, is one of the unlisted members of the alias's container or of a type around
-        // it: `Stamp = Real` in `Box.Inner` is `Box.Inner.Real`.
-        if let unlisted = unlistedTarget(target, around: Array(parts.prefix(used - 1))),
-           startsAtProjectType(([unlisted] + tail).joined(separator: "."), from: deciding.scope, depth: depth + 1) {
-            return true
-        }
-        let written = qualifiedName(ofWritten: target, from: deciding.scope, depth: depth + 1)
-        let rest = ([written.name] + tail).joined(separator: ".")
-        return startsAtProjectType(rest, from: deciding.scope, depth: depth + 1)
     }
 
     /// Whether a nested type the items do not list (`unlistedMembers`), as while nested types are
@@ -123,20 +124,6 @@ extension LayoutGraphBuilder.TypeLookup {
         return scope.nearest(among: ranked, scope: \.rankScope)?.declaration != nearest.declaration
     }
 
-    /// `target`, written in the container `container` names, as the full name of an unlisted
-    /// member (`unlistedMembers`) of that container or of a type around it, innermost first.
-    private func unlistedTarget(_ target: String, around container: [String]) -> String? {
-        guard !container.isEmpty, !unlistedMembers.isEmpty else { return nil }
-        var targetParts = target.split(separator: ".").map(String.init)
-        guard !targetParts.isEmpty else { return nil }
-        let head = targetParts.removeFirst()
-        for count in stride(from: container.count, to: 0, by: -1) {
-            let candidate = (container.prefix(count) + [head]).joined(separator: ".")
-            if unlistedMembers[candidate] != nil { return ([candidate] + targetParts).joined(separator: ".") }
-        }
-        return nil
-    }
-
     /// The name the type an extension around `scope` extends is recorded under, when the
     /// extension spells it through a typealias: `Outer` inside `extension Crate` after
     /// `typealias Crate = Outer`, whose body sees `Outer`'s members (`qualifiedName(ofWritten:)`).
@@ -160,32 +147,16 @@ extension LayoutGraphBuilder.TypeLookup {
         return resolved
     }
 
-    /// The nearest type or typealias recorded under `name` exactly that `scope` sees, as
-    /// `DeclarationScope.nearest(among:scope:)` picks it: one in `scope`'s own file first, found
-    /// without the rest, so a name a thousand files each declare privately costs no scan of them.
-    private func nearestVisible(
-        named name: String, from scope: LayoutGraphBuilder.Scope, depth: Int
-    ) -> LayoutGraphBuilder.Declared? {
-        if let filePath = scope.filePath,
-           let local = typesForNameInFile[name]?[filePath]?.first(where: { isVisible($0, from: scope, depth: depth) }) {
-            return local
-        }
-        let visible = (typesForName[name] ?? []).filter { isVisible($0, from: scope, depth: depth) }
-        return scope.nearest(among: visible, scope: \.rankScope)
-    }
-
     /// Records the typealiases among `items` and among their members, a member as
     /// `Container.Alias`, so a name written through one means the type it aliases (#125). Run
     /// after the types are recorded: when nothing else tells two candidates apart, `nearest`
     /// picks the first, and that should be a type. A typealias that an extension merged into
     /// its container declares (`SyntaxStructure.mergedExtensions`) is read where that extension
-    /// declares it, as when the extensions are drawn apart, but ranks as a member of its
-    /// container, where a lookup of the container finds it: moved into ModA's `Foo` from ModB's
-    /// `extension ModA.Foo`, it ranks as ModA's, so ModB's own `Foo.Alias` still comes first in
-    /// ModB. It is recorded under the extension's own spelling too: `extension Crate { typealias
-    /// Desc }` merged into `struct Outer` makes both `Outer.Desc` and `Crate.Desc`. The nested
-    /// types the items do not list are kept apart (`unlistedMembers`), and the modules each
-    /// module loads are read from `items` (`moduleLoads`).
+    /// declares it, as when the extensions are drawn apart, and ranks by `memberRank`. It is
+    /// recorded under the extension's own spelling too: `extension Crate { typealias Desc }`
+    /// merged into `struct Outer` makes both `Outer.Desc` and `Crate.Desc`. The nested types the
+    /// items do not list are kept apart (`unlistedMembers`), and the modules each module loads
+    /// are read from `items` (`moduleLoads`).
     mutating func recordAliases(in items: [SyntaxStructure]) {
         moduleLoads = ModuleLoads(of: items)
         for item in items {
@@ -203,18 +174,25 @@ extension LayoutGraphBuilder.TypeLookup {
                 )
             }
             recordMergedAliases(of: item, named: containerName)
-            unlistedMembers.merge(unlistedMembers(of: item, named: containerName)) { $0 + $1 }
+            let unlisted = unlistedMembers(of: item, named: containerName)
+            unlistedMembers.merge(unlisted) { $0 + $1 }
+            for (name, members) in unlisted {
+                for member in members { inheritableNames.record(member, named: name, isListed: false) }
+            }
+            for (name, members) in unlisted where members.contains(where: { $0.extended != nil }) {
+                unlistedNamesWithExtendedTypes.insert(name)
+            }
         }
         for item in items where item.kind == .extension { recordAliasSpelledMembers(of: item) }
     }
 
     /// Records each typealias an extension declares under the name of the type it extends too,
     /// when it spells that type through a typealias or a module, as merging it does
-    /// (`recordMergedAliases`), ranked as a member of that type, where a lookup of the type
-    /// finds it: after `extension Crate { typealias D = Date }`, `Outer.D` is `Date` drawn apart
-    /// as well, and an alias in `extension ModA.Foo` is also `Foo.Alias`. Spelled through a
-    /// module, it is also recorded under the name the declaration the spelling means is recorded
-    /// under, before any typealias is followed: `FA.Alias` in `extension ModA.FA`.
+    /// (`recordMergedAliases`), ranked by `memberRank`: after `extension Crate { typealias
+    /// D = Date }`, `Outer.D` is `Date` drawn apart as well, and an alias in `extension ModA.Foo`
+    /// is also `Foo.Alias`. Spelled through a module, it is also recorded under the name the
+    /// declaration the spelling means is recorded under, before any typealias is followed:
+    /// `FA.Alias` in `extension ModA.FA`.
     private mutating func recordAliasSpelledMembers(of anExtension: SyntaxStructure) {
         let aliases = (anExtension.substructure ?? []).filter { $0.kind == .typealias }
         guard !aliases.isEmpty, !anExtension.isSugared, let spelling = anExtension.fullName ?? anExtension.name
@@ -253,7 +231,7 @@ extension LayoutGraphBuilder.TypeLookup {
     }
 
     /// The typealias `member` of `container`, read in the extension it was merged in from,
-    /// `home`, when there is one, and ranked as a member of `container` (`memberRank`).
+    /// `home`, when there is one, and ranked by `memberRank`.
     private func mergedAlias(
         _ member: SyntaxStructure, in container: SyntaxStructure, from home: SyntaxStructure?
     ) -> LayoutGraphBuilder.Declared {
@@ -263,14 +241,17 @@ extension LayoutGraphBuilder.TypeLookup {
         return LayoutGraphBuilder.Declared(member, kind: .typealias, nodeId: nil, in: home, rankedAs: rank)
     }
 
-    /// The scope a typealias an extension in `adding` adds to a type in `type` ranks by: the
-    /// type's, as a member of it, where a lookup of the type finds it, when the two share a
-    /// module; else its own module's, in no file. A module cannot import one that depends on it,
-    /// so ranked as the type, ModB's `Foo.X` would come first in ModA's own file, where ModA's
-    /// own `Foo.X` is meant.
+    /// The scope a member an extension in `adding` adds to a type in `type` ranks by: the type's,
+    /// as a member of it, where a lookup of the type finds it, when the two share a module; else
+    /// its own module's, in no file. A module cannot import one that depends on it, so ranked as
+    /// the type, ModB's `Foo.X` would come first in ModA's own file, where ModA's own `Foo.X` is
+    /// meant. With no module on either, the extension's own scope: the directory stands in for
+    /// the module, and ranked in the type's file, every extension's `Foo.X` would be as near as
+    /// any other to a writer elsewhere, so the first read would win, in another target (#230).
     private func memberRank(
         adding scope: LayoutGraphBuilder.Scope, to type: LayoutGraphBuilder.Scope
     ) -> LayoutGraphBuilder.Scope {
+        guard scope.module != nil || type.module != nil else { return scope }
         guard let module = scope.module, let typeModule = type.module, module != typeModule else { return type }
         return LayoutGraphBuilder.Scope(filePath: nil, module: module)
     }

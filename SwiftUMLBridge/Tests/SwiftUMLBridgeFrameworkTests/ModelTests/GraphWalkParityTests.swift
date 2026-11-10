@@ -54,7 +54,7 @@ struct GraphWalkParityTests {
         if names.isEmpty { return [] }
         var adjacency: [String: [String]] = [:]
         for dependency in model.dependencies {
-            adjacency[dependency.from, default: []].append(dependency.to)
+            adjacency[dependency.from, default: []].append(dependency.toComponent)
         }
         var depthCache: [String: Int] = [:]
         func depth(of name: String, visiting: Set<String>) -> Int {
@@ -85,7 +85,7 @@ struct GraphWalkParityTests {
         var generator = SeededGenerator(state: 149)
         for _ in 0..<2_000 {
             let (_, pairs) = Self.randomPairs(using: &generator)
-            let edges = pairs.map { DependencyEdge(from: $0.0, to: $0.1, kind: .imports) }
+            let edges = pairs.map { DependencyEdge(from: $0.0, toNode: $0.1, kind: .imports) }
             let found = DependencyGraphModel(edges: edges).detectCycles()
             #expect(found == Self.nodesThatReachThemselves(pairs), "\(pairs)")
         }
@@ -98,7 +98,7 @@ struct GraphWalkParityTests {
             let (names, pairs) = Self.randomPairs(using: &generator)
             let model = ComponentModel(
                 components: names.map { Component(name: $0, kind: .library) },
-                dependencies: pairs.map { ComponentDependency(from: $0.0, to: $0.1) }
+                dependencies: pairs.map { ComponentDependency(from: $0.0, toComponent: $0.1) }
             )
             #expect(ComponentSVGRenderer.dependencyLevels(for: model) == Self.recursiveLevels(for: model),
                     "\(names) \(pairs)")

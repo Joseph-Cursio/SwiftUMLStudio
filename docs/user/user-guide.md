@@ -64,9 +64,9 @@ SwiftUMLBridge is a command-line tool and Swift Package that generates architect
 
 | Requirement | Minimum Version |
 |---|---|
-| macOS | 15.0 (Sequoia) for the CLI / Swift Package; 26.0 for the SwiftUML Studio app |
-| Xcode | 16.0 |
-| Swift | 6.0 (strict concurrency / Swift 6 language mode) |
+| macOS | 15.0 (Sequoia) for the CLI / Swift Package; 26.2 for the SwiftUML Studio app |
+| Xcode | 26.0 |
+| Swift | 6.2 (strict concurrency / Swift 6 language mode) |
 | Swift toolchain | Current or one prior major release |
 
 The package targets `.macOS(.v15)` and compiles with `swiftLanguageMode(.v6)`. The Bridge surface is Foundation + SourceKitten + swift-syntax + Yams + JavaScriptCore — none of which require macOS 26 — so the CLI runs on Sequoia hosts (and on the GitHub Actions `macos-latest` runner). The SwiftUML Studio app stays at macOS 26 because it adopts the macOS 26 `Tab` API and other newer SwiftData features. Linux support is not currently shipped; see `Package.swift` for the authoritative platform list.
@@ -80,11 +80,10 @@ SwiftUMLBridge ships as a CLI binary, a Homebrew formula, and a reusable GitHub 
 ### Homebrew (recommended for local use)
 
 ```bash
-brew tap Joseph-Cursio/tap
-brew install swiftumlbridge
+brew install Joseph-Cursio/tap/swiftumlbridge
 ```
 
-The formula builds from source on first install and tracks the latest tagged Bridge release. Upgrade with `brew upgrade swiftumlbridge`.
+Use the full name the first time: it adds the tap and trusts the formula, and Homebrew 7 refuses a bare `brew install swiftumlbridge` from a tap it does not trust yet. The formula builds from source on first install and tracks the latest tagged Bridge release. Upgrade with `brew upgrade swiftumlbridge`.
 
 ### Build from source
 
@@ -408,6 +407,8 @@ swiftumlbridge classdiagram --package /path/to/MyPackage --format mermaid --outp
 
 `--package` overrides any positional `<paths>` arguments — the file list is derived from each target's `sources` array, and the files are read in path order, so the same package gives the same diagram on every run. Test targets are excluded.
 
+Without `--package`, nothing says which module a file belongs to. When several files declare a type of one name, an edge ends on the type in the writer's file, else on the one whose file shares the most leading directories with the writer's, else on the first read, a protocol coming before other types and a typealias after them. Among same-named members that extensions add, a dotted name such as `Foo.X` keeps those of the `Foo` it starts at where the writer stands, and a `public` member of that `Foo`'s body comes before an extension's in another directory. That keeps a scan of several packages' edges within each package when each package is its own directory tree, but it is a guess: only `--package` reads what each file imports.
+
 ---
 
 ## Generating Sequence Diagrams
@@ -438,6 +439,8 @@ swiftumlbridge sequence Sources/ Tests/ --entry DataPipeline.run
 The type and method names are case-sensitive and must exactly match the Swift source code. If no functions match, `SequenceScript.empty` is returned and the diagram is blank.
 
 A method declared in an extension of a bound generic type is entered under the type it extends, without the arguments: `Foo.run` for `extension Foo<Int> { func run() }`, `Array.run` for `extension [Int]`.
+
+The method is what follows the last dot, so a method of a nested type is entered with the type's whole name: `--entry Outer.Inner.run` for `run` in `Inner`'s body or in `extension Outer.Inner`. A name with no dot, or with an empty part (`Loader.`, `Loader..load`), is rejected. A module in front (`MyModule.Loader.load`) reads as a type named `MyModule.Loader` and draws an empty diagram.
 
 ### Controlling Traversal Depth
 

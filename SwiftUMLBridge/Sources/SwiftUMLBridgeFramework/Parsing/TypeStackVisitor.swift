@@ -58,3 +58,61 @@ class TypeStackVisitor: SyntaxVisitor {
     }
     override func visitPost(_: ExtensionDeclSyntax) { typeStack.removeLast() }
 }
+
+extension FunctionDeclSyntax {
+    /// Whether this is a member of the type around it: written directly in a member block, under
+    /// an `#if` too. A function local to a method, initializer, accessor, subscript or closure is
+    /// not, though the type's name is still on the stack: `T.method` cannot name it.
+    var isMember: Bool {
+        parent?.is(MemberBlockItemSyntax.self) == true
+    }
+}
+
+extension SyntaxProtocol {
+    /// Whether a function, initializer, accessor or closure holds this, or a statement in
+    /// top-level code does. A function local to one is no member, and a type local to one can be
+    /// named only inside it, so choosing among several types for an entry counts neither.
+    var isInsideBody: Bool {
+        sequence(first: Syntax(self), next: \.parent).dropFirst().contains {
+            $0.is(CodeBlockSyntax.self) || $0.is(ClosureExprSyntax.self)
+                || $0.is(AccessorBlockSyntax.self) || $0.is(SwitchCaseSyntax.self)
+        }
+    }
+
+    /// The type or extension declaration nearest around this.
+    var enclosingTypeDeclaration: Syntax? {
+        sequence(first: Syntax(self), next: \.parent).dropFirst().first { $0.isProtocol(DeclGroupSyntax.self) }
+    }
+
+    /// The function named `name` that a body around this declares, nearest first, as Swift looks
+    /// up a bare call: before a member of that name, and wherever in the body it is written. The
+    /// search ends at the members of the type around this, as a member is not looked for here.
+    func localFunction(named name: String) -> FunctionDeclSyntax? {
+        for ancestor in sequence(first: Syntax(self), next: \.parent).dropFirst() {
+            if ancestor.is(MemberBlockSyntax.self) { return nil }
+            guard let statements = ancestor.as(CodeBlockItemListSyntax.self) else { continue }
+            for statement in statements {
+                if let function = statement.item.as(FunctionDeclSyntax.self), function.name.canonicalName == name {
+                    return function
+                }
+            }
+        }
+        return nil
+    }
+
+    /// The type named `name` that a body around this declares, nearest first, which a name
+    /// written here means before any type declared outside a body.
+    func localType(named name: String) -> Syntax? {
+        for ancestor in sequence(first: Syntax(self), next: \.parent).dropFirst() {
+            guard let statements = ancestor.as(CodeBlockItemListSyntax.self),
+                  !(statements.parent?.is(SourceFileSyntax.self) ?? true) else { continue }
+            for statement in statements {
+                let item = statement.item
+                let declared = item.as(StructDeclSyntax.self)?.name ?? item.as(ClassDeclSyntax.self)?.name
+                    ?? item.as(EnumDeclSyntax.self)?.name ?? item.as(ActorDeclSyntax.self)?.name
+                if declared?.canonicalName == name { return Syntax(item) }
+            }
+        }
+        return nil
+    }
+}

@@ -11,6 +11,11 @@ public struct ActivityScript: Sendable, DiagramOutputting {
     /// Positioned activity layout (available when format is `.svg`).
     public let activityLayout: ActivityLayout?
 
+    /// Whether the entry point came to a method with a body, which the diagram draws. `false`
+    /// when it came to none, so the diagram is empty for that reason and not because the method
+    /// does nothing, which the CLI warns of (#239).
+    public internal(set) var foundEntry = true
+
     /// An empty script (used when the entry point is not found).
     public static let empty = Self(text: "", format: .plantuml)
 
@@ -32,6 +37,7 @@ public struct ActivityScript: Sendable, DiagramOutputting {
         self.text = text
         self.format = format
         self.activityLayout = nil
+        self.foundEntry = false
     }
 
     // Internal rather than private so a test can call them directly.

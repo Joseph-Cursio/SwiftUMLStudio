@@ -22,12 +22,20 @@ struct ParsedEntryPointTests {
         #expect(throws: CLIError.self) { try "Loader".parsedEntryPoint() }
     }
 
-    /// A nested or module-qualified name has three components and is rejected.
-    /// Worth pinning: `MyModule.Loader.load` is a plausible thing to type, and
-    /// the CLI refuses it rather than guessing which dot separates the method.
-    @Test("a three-part name is rejected rather than guessed at")
-    func rejectsThreeParts() {
-        #expect(throws: CLIError.self) { try "MyModule.Loader.load".parsedEntryPoint() }
+    /// A method of a nested type, as `extension NS.Real { func run() }`, is listed as `NS.Real.run`,
+    /// so the last dot separates the method (#234). A module-qualified name reads the same way,
+    /// as a type `MyModule.Loader`, and draws an empty diagram rather than an error.
+    @Test(
+        "a three-part name splits at the last dot",
+        arguments: [
+            ("NS.Real.run", "NS.Real", "run"),
+            ("MyModule.Loader.load", "MyModule.Loader", "load"),
+        ]
+    )
+    func splitsThreePartsAtLastDot(entry: String, expectedType: String, expectedMethod: String) throws {
+        let (type, method) = try entry.parsedEntryPoint()
+        #expect(type == expectedType)
+        #expect(method == expectedMethod)
     }
 
     @Test("an empty string is rejected")
@@ -35,12 +43,9 @@ struct ParsedEntryPointTests {
         #expect(throws: CLIError.self) { try "".parsedEntryPoint() }
     }
 
-    /// `split(separator:)` drops empty subsequences, so a leading or trailing
-    /// dot yields one component and is rejected. Pinned because the behaviour
-    /// depends on that `split` detail rather than on an explicit check — a
-    /// future rewrite using `components(separatedBy:)` would return two
-    /// components, one of them empty, and silently start accepting these.
-    @Test("a dangling dot is rejected", arguments: ["Loader.", ".load", ".", ".."])
+    /// Any part left empty, by a leading, trailing or doubled dot, is rejected: `EntryPointName`
+    /// checks every part, so `Loader..load` cannot read as a type `Loader.`.
+    @Test("a dangling or doubled dot is rejected", arguments: ["Loader.", ".load", ".", "..", "Loader..load"])
     func rejectsDanglingDot(input: String) {
         #expect(throws: CLIError.self) { try input.parsedEntryPoint() }
     }

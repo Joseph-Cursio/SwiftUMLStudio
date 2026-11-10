@@ -217,7 +217,7 @@ extension SyntaxStructure {
             guard generateElementsWithAccessLevel.contains(effectiveAccessibility) else { return true }
         }
 
-        if configuration.elements.showExtensions.safelyUnwrap == .none, kind == .extension {
+        if configuration.elements.showExtensions.safelyUnwrap == .hidden, kind == .extension {
             return true
         }
 

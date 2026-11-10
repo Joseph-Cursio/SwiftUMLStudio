@@ -195,6 +195,7 @@ final class SyntaxStructureBuilder: SyntaxVisitor {
             kind: kind,
             name: node.name.canonicalName
         )
+        structure.markReach(of: node, attributes: node.attributes)
         stampLocation(on: structure, at: node.name.positionAfterSkippingLeadingTrivia)
         pushType(structure, genericParams: genericParams)
         return .visitChildren
@@ -237,6 +238,7 @@ final class SyntaxStructureBuilder: SyntaxVisitor {
             structure.boundGenericArguments = node.extendedType.boundGenericArguments
             structure.isSugared = node.extendedType.isSugared
         }
+        structure.markReach(of: node, attributes: node.attributes)
         stampLocation(on: structure, at: node.extendedType.positionAfterSkippingLeadingTrivia)
         pushType(structure)
         return .visitChildren
@@ -320,6 +322,7 @@ final class SyntaxStructureBuilder: SyntaxVisitor {
             typename: target
         )
         structure.isSugared = node.initializer.value.isSugared
+        structure.markReach(of: node, attributes: node.attributes)
         stampLocation(on: structure, at: node.name.positionAfterSkippingLeadingTrivia)
         if typeStack.isEmpty {
             topLevelItems.append(structure)

@@ -8,6 +8,430 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed — Bridge and Studio (build)
+
+- **Compiler warnings are errors.** `Package.swift` gives every Bridge
+  target `.treatAllWarnings(as: .error)`, and the Studio project sets
+  `SWIFT_TREAT_WARNINGS_AS_ERRORS` and `GCC_TREAT_WARNINGS_AS_ERRORS` in
+  all three configurations, so a warning now fails the local build and
+  CI. A clean build of each had no warnings. SwiftPM ignores warning
+  settings for a package built as a dependency, so a project that depends
+  on SwiftUMLBridge still builds when a newer compiler adds a warning.
+  Notes from Xcode's App Intents metadata tool are not compiler warnings
+  and do not count.
+- **SwiftLint runs 88 more opt-in rules: 92 in all, plus two analyzer
+  rules.** 61 already passed, such as `first_where`, `toggle_bool` and
+  `unhandled_throwing_task`. The other 27 each needed up to ten fixes in
+  the code, one commit per rule; none is disabled inline. Notable fixes:
+  `ExtensionVisualization.none` is now `.hidden` (see the breaking-API
+  entry), `LayoutGraphBuilder` is a caseless enum, two long SwiftUI bodies
+  are split into named parts, and the UI tests launch the app per test
+  instead of holding an implicitly unwrapped `app`. `capture_variable` and
+  `typesafe_array_init` run under `swiftlint analyze`. Three rules stay off,
+  each with a written reason: `async_without_await` (its remaining hits are
+  fixtures that are async on purpose), `prefixed_toplevel_constant`, and
+  `private_subject` (ViewInspector's `InspectionEmissary` needs a visible
+  subject).
+- **SwiftLint takes its rules from the shared SwiftLintConfig.**
+  `.swiftlint.yml` now lists only this project's paths and inherits every
+  rule from `../SwiftLintConfig/.swiftlint.yml`, so linting needs that
+  repository cloned beside this one; the rule list above and
+  `SwiftUMLBridge/.swiftlint.yml` are gone. The code is changed to meet
+  the shared rules (trailing commas, sorted imports, one type per file,
+  wrapped arguments and the like) without changing what it does.
+
+### Changed — Bridge (API, breaking)
+
+Four public names are renamed to satisfy SwiftLint rules. Three passed only
+because the Bridge's own config loosened `identifier_name`, and the Bridge now
+lints with that rule as SwiftLint ships it; one broke the opt-in
+`discouraged_none_name`. Swift code that uses the old names must change;
+config files, the CLI, and the diagrams it writes do not.
+
+- **`DependencyEdge.to` is `toNode`, and `ComponentDependency.to` is
+  `toComponent`**, initializer labels included. Each keeps `from`, and names
+  its far end as `StateTransition.toState` and `ERRelationship.toEntity`
+  already do. `DependencyEdge.fromModule` and `toModule` are unchanged.
+- **`Theme.__directive__(String)` is `Theme.directive(String)`.** A config
+  file's `theme:` string is still read as text and wrapped in this case. The
+  reference had documented a `theme: "__directive__(\"…\")"` config form,
+  which wrote `!theme __directive__(…)`, naming no theme. It now says
+  the value goes after `!theme` as written, so a hosted theme is
+  `theme: "hacker from https://example.com/themes"`.
+- **`ExtensionVisualization.none` is `ExtensionVisualization.hidden`.** Beside
+  an `ExtensionVisualization?`, such as `ElementOptions.showExtensions`, `.none`
+  reads as nil, the default, which draws every extension rather than hiding
+  them; a test had already had to write `.some(.none)`. The raw value stays
+  `"none"`, so `showExtensions: none` in a config file is unchanged.
+
+### Changed — Bridge (test infrastructure)
+
+- **Wall-clock time limits are checked only off CI** (#237). Eight limits
+  in `SupertypeEdgeKindCertaintyTests`, `AliasSpelledExtensionScopeTests`
+  and `NestedSquareBracketTests` read the wall clock, which counts time
+  spent waiting for a core, so a busy shared runner failed them with the
+  code unchanged, as PR #259's first run did. They now go through
+  `WallClockLimit.expect`, which skips the limit when `CI` is set, as
+  GitHub Actions sets it. The rest of each test still runs there. Locally
+  the limits still apply, so a cost that explodes is still caught before a
+  push, though a busy machine can still fail them. The three limits that
+  read the thread's CPU clock count no waiting and stay on CI.
+- **Those limits now read a thread's CPU clock, and run on CI again**
+  (#237). The five in `SupertypeEdgeKindCertaintyTests` and
+  `AliasSpelledExtensionScopeTests` read the test thread's CPU clock, and
+  the three class-diagram limits in `NestedSquareBracketTests` read the
+  parsing thread's, timed inside `ParsingStack.run`, since the parse runs
+  on a thread of its own. Both go through the new `ThreadCPUClock`. They
+  passed under 64 busy loops at a load average of 64, and with the `[` cut
+  turned off seven of the eight 20-deep shapes still failed, at 5.7 to
+  64 s of CPU. SourceKit works on threads of its own, which no thread clock
+  sees, so a new `sourceKitTime` case keeps a wall-clock bound, 10 s, on
+  the shape that doubles in SourceKit alone, 26 deep: 27 s uncut, under
+  0.1 s cut. It is the only limit left on `WallClockLimit`, so off CI only.
+
+### Fixed — Bridge
+
+- **A config file's camelCase theme is written in PlantUML's kebab-case.**
+  The reference said `theme: carbonGray` writes `!theme carbon-gray`, but
+  every config value was written as typed, so `!theme carbonGray` named no
+  PlantUML theme. A value that is a built-in theme's case name, exactly as
+  written, now gives that theme's kebab-case name. Any other value is
+  still written as typed, so a hosted theme
+  (`hacker from https://example.com/themes`) and an already-kebab
+  `reddress-darkblue` are unchanged. The reference's theme table listed
+  the reddress themes as `reddress-darkBlue` and the like, written as typed
+  with the capital letter; it now lists their case names, such as
+  `reddressDarkblue`.
+- **With `--package`, a bare name seen in two targets follows Swift's shadowing by
+  re-export and by availability, not read order** (#200). A target's own type
+  shadows a same-named one of a target it re-exports: in a file that imports
+  ModX, which has `@_exported import ModA` and its own `Base`, `class C: Base`
+  now ends on ModX's `Base`, through a chain of re-exports too, and for a
+  typealias or the first component of `Foo.V`. A re-exporter's type marked
+  `@_spi` shadows only for a file that imports something with `@_spi`, and is
+  not seen at all by one that does not. An available type shadows another
+  target's marked unavailable, as a stub
+  `@available(*, unavailable, renamed: "NewBase")` is: in a file that imports
+  that target and another with its own `Base`, `Base` is the other's. A mark
+  for one platform alone, `obsoleted:`, `@available(swift, introduced:)` and a
+  mark under an `#if` count too, after one for every platform: a type obsoleted
+  in a later version shadows a stub. As in Swift, the writer's own target, a
+  scoped import and a re-exporter shadow first. A re-export does not shadow a
+  target the file also imports directly, and a re-exporter's type marked
+  `@available(*, unavailable)` shadows nothing: Swift then means the type the
+  file reaches another way. A member such as `Foo.X` is never shadowed by
+  availability. Still read by read order, as before: a re-exporter's type under
+  an `#if`, which shadows nothing; two types each marked unavailable in some
+  builds, as for different platforms or one platform two ways, or one type
+  declared twice under `#if`; an `@_spi` re-exporter's type in a file that
+  imports any module with `@_spi`, whichever module or group it opens. Still
+  wrong: a re-exporter's type unavailable on one platform where the file also
+  reaches the re-exported target through a second re-exporter or its own
+  target's re-export; a re-exporter's
+  `@available(*, unavailable)` type used from unavailable code; the short form
+  `@available(swift 99)`, which is not read; a scoped re-export,
+  `@_exported import class ModA.Base`, beside the re-exporter's own `Base`,
+  which still ends on ModA's; and an internal type seen through
+  `@testable import`. Without `--package` no file has a target, so none of this
+  applies.
+- **An edge through a typealias of a type outside the diagram ends on an
+  extension of that type, not on the first of that spelling** (#231). Each
+  target can have its own `typealias Base`, and each target's
+  `extension Base` gets its own box. With `typealias Base = NSException` in
+  ModA and `typealias Base = NSObject` in ModB, ModB's `class U: Base` ended
+  on the first box drawn, ModA's, so the diagram showed `U` as an
+  `NSException` and the box depended on read order. It now ends on ModB's
+  box, in every format, with or without `--package` and
+  `--merge-extensions`. With no such extension drawn, the edge is written to
+  `NSObject`, as a node of its own. The same goes for a dotted name through
+  an alias of a project type, as `Foo.V` with nested types hidden. With
+  `--package`, an alias whose target is spelled like another target's alias
+  no longer ends on that alias's extension, nor does a name in an extension
+  of an outside type, as `Sendable` in `extension Date`, on another target's
+  `extension Sendable` of something else. Both of those edges are now left
+  out, as a drawn box has the name they would be written to. A dotted name
+  through an alias of a type outside the diagram is followed too, with
+  `--package` since #247's fix below and now without it: with
+  `typealias Base = First` and `extension Base.Inner` in ModA, and
+  `typealias Base = Second` and `extension Base.Inner` in ModB, ModB's
+  `struct U: Base.Inner` ends on ModB's box, and `--merge-extensions` keeps
+  the two boxes apart, where without `--package` it merged them. With no
+  `Base.Inner` extension in ModB, the edge is written to `Second.Inner`, as a
+  node of its own. `extension Day.FormatStyle` after `typealias Day = Date`
+  merges with `extension Date.FormatStyle` without `--package` too, and the
+  call graphs file a method of `extension Base.Inner` under `Second.Inner`, as
+  they file a whole alias's. Without `--package`, the name is still read as
+  written when it comes to a member the project itself declares, as
+  `extension Second { protocol Inner {} }` does. With or without it, the name
+  is read as written inside an extension of a type outside the diagram, as
+  `extension Host`, whose own member `Base` may be, as the SVG already read
+  it; with `--package` the text formats had written it to `First.Inner`, or,
+  with an `extension First.Inner` drawn, left the edge out. An alias's dotted
+  target written there, as `typealias Base = Second.Inner` in
+  `extension Host`, is now read the same way, in the SVG too. A `Base` the
+  project itself declares there, as a `typealias Base = First` in its own
+  `extension Host`, is still followed, as Swift rejects the name as ambiguous
+  were Host to have one too. Read as written, the edge is left out when a
+  drawn box has that name, as `Array.V` does beside
+  `extension [Int] { class V {} }` after `typealias Array = First`, where the
+  text formats with `--package` had written `First.V`. The call graphs,
+  which see no enclosing type, follow it there anyway, as they do a whole
+  alias. Without `--package`, nothing says which directories a file sees, so
+  another directory's alias of the same name as the target, as a
+  `typealias Second = First` beside ModA's extension, may be followed instead,
+  and the edge can end on that directory's `extension First.Inner`, as it does
+  for a whole alias.
+- **A dotted name whose first component is a typealias declared inside a type
+  ends on the extension of the member it comes to.** With
+  `extension First.Inner` drawn,
+  `struct Mine { typealias Base = First; class X: Base.Inner {} }` lost
+  `X`'s edge in every format, with or without `--package`: the SVG's end for
+  a type outside the diagram followed only an alias recorded under its own
+  name, where `Mine`'s is recorded as `Mine.Base`, and the text formats left
+  the edge out as the graph's. With an `extension Base.Inner` of another
+  type drawn, the edge ended on that box instead. It now ends on
+  `First.Inner`'s box everywhere, as it does for a `typealias Base = First`
+  at file scope, and so does one through an alias in the project's own
+  extension of a type outside the diagram, in a type around the writer, or
+  in a project superclass, as `P.Inner` in a subclass of
+  `class Parent { typealias P = First }`. A name that spells out the alias's
+  type, as `Mine.Base.Inner`, still ends on no box.
+- **With nested types hidden, an extension of a nested type is judged by the
+  nearest one, not the first read** (#232). With `showNestedTypes: false`,
+  whether `extension Box.Inner.Stamp` extends a project type took the first
+  hidden `Box.Inner.Stamp` in read order, while every other lookup takes the
+  nearest. With a `typealias Stamp = Date` in `Far/` and a `struct Stamp` in
+  `Near/`, `classdiagram Far Near` judged Near's extension to be of `Date`, so
+  a name written in it, such as `Style`, might have been a member of `Date`,
+  and `struct T: Box.Inner.Stamp.Style` lost its edge in every format; `Near
+  Far` drew it. Both orders now draw it, and so does `--package` with `Far`
+  read first. Still wrong: written in `Far/`, beside the alias, the edge is
+  now left out in both orders, where `Near Far` used to draw it, since a name
+  in an extension of an outside type may be one of its members.
+- **An entry splits at its last dot, and the entry list offers only what
+  draws** (#234). A method in `extension NS.Real` is listed as `NS.Real.run`,
+  but `--entry` took exactly two parts, so it was refused, and `Real.run`
+  drew nothing. The method is now what follows the last dot, read by one
+  public `EntryPointName` the CLI and the Studio share, so `NS.Real.run`
+  draws in both diagrams, as does `Outer.Inner.run` for a type nested inline.
+  The list (`findEntryPoints(for:)`) no longer offers a function local to a
+  body, which the activity diagram cannot draw, or a protocol requirement,
+  which has no body. A doubled dot, as `Loader..load`, is now refused, where
+  it read as `Loader.load`. One cost: `--entry MyModule.Loader.load` reads as
+  a type `MyModule.Loader` and draws an empty diagram, where it was an error.
+- **A sequence and an activity diagram of one entry draw the same body, and
+  only one Swift can reach by that name** (#235). The call graph filed each
+  body under its innermost type and function name alone, so overloads,
+  same-named nested types, and functions and types local to a body all
+  shared one `Type.method`. The sequence diagram drew every body filed under
+  it and the activity diagram the first it met: `Over.run` drew both
+  overloads in one and the first in the other, and `--entry Real.run` drew a
+  `Real` local to an initializer in place of the top-level `Real`. Each body
+  is now told apart by where it is declared, and both diagrams start from
+  one, chosen in one place: a member of a type that can be named from
+  outside a body, preferring a top-level type to a nested one of the same
+  name, and of several, the first in read order and source order. So
+  `--entry RealB.run`, where `run` is local to a method, draws nothing in
+  either, and the entry list no longer offers a type local to a body. Below
+  the entry, a bare call reaches a local function before a member of its
+  name, as Swift does, so `Both.outer` draws its local `run` and not the
+  member's calls; a call to `self` in a local type's member stays among
+  that type's members; and nothing else reaches a local function or type.
+  A call reaches only the overloads its argument labels fit, with a
+  defaulted parameter left out or a variadic one, so `load()` no longer
+  draws the calls of `load(_:)`; a call with a trailing closure, or whose
+  labels fit none, still reaches each. Still merged below the entry: a call
+  to a name same-named nested types share, which Swift tells apart by where
+  the call is written. The activity diagram now reads every file to choose,
+  as the sequence diagram does.
+- **`--entry Svc.run` reaches the type's own body through a typealias whose
+  dotted target starts with another typealias or the writer's own module**
+  (#239). After `typealias O = Real` and `typealias Svc = O.In`, or
+  `typealias Svc = Main.Real` in a module Main, the entry came to `O.In.run`
+  or `Main.Real.run`, under which nothing is filed, and both diagrams were
+  empty. A target's first part is now also read through its typealias, so
+  `O.In` comes to `Real.In`, and so is a typed name's, so `--entry O.In.run`
+  does too. The sequence and activity commands read no package, so no
+  module is known by name; but Swift lets a file write another module's
+  name only when it imports it, so a first part the alias's file does not
+  import, which names no type or typealias of the project, is read as the
+  file's own module and dropped. `Main.Real`, `Main.Real.In` and `O.In`
+  after `typealias O = Main.Real` all draw. A typed name with a module
+  first, as `--entry MyModule.Loader.load`, has no file and still draws an
+  empty diagram, as does a target of `any P` or `P & Q`. For those, and any
+  entry that comes to no method with a body, `sequence` and `activity` now
+  print `warning: --entry … came to no method with a body` on stderr. The
+  diagram and exit status are unchanged; `SequenceScript` and
+  `ActivityScript` say which through `foundEntry`.
+- **A module-qualified name reads only the members the writer's module
+  loads** (#245). With `--package`, when ModB and ModD each add a `V` to
+  ModA's `Foo` and ModC loads only ModD, ModC's `struct W: ModA.Foo.V` ended
+  on whichever `V` was read first, so the edge could end on ModB's, which
+  ModC never sees, and renaming a target flipped it. The bare `Foo.V`
+  already checked the writer's loads; the module-qualified spelling now
+  does too, whether the extensions are written `extension ModA.Foo` or
+  `extension Foo`, in every format.
+- **A typealias in an enclosing type keeps a name from being read as a
+  module** (#246). Swift looks up a dotted name's first component among the
+  enclosing types' members before reading it as a module, so in
+  `enum E { typealias ModA = Other; struct W: ModA.Foo {} }`, `ModA.Foo` is
+  `Other.Foo`, even in a module named ModA. With `--package`, the diagram
+  read `ModA` as the module and ended the edge on its `Foo`, in every
+  format. It now follows the enclosing alias, at any depth and from an
+  extension of the enclosing type too. Without a known module, where no
+  enclosing alias is followed under any name, such an edge ends on an
+  undeclared `ModA.Foo` box rather than the module's `Foo`.
+- **A typealias of a type outside the diagram starts a dotted name at that
+  type** (#247). After `typealias Array = Date`, Swift reads `Array.V` as
+  `Date.V`. With `--package`, the diagram searched the name as written, so
+  the edge ended on the `V` that `extension [Int]` declares, or with none,
+  on an undeclared `Array.V` box, in every format. It now follows the alias,
+  whether it is at file scope or in an enclosing type, through a chain of
+  aliases, and for an alias of sugar such as `[Int]`. Two enclosing types
+  that each give `Array` a different meaning no longer share an answer.
+  Inside an extension of a type outside the diagram, where `Array` may be
+  that type's member, the name is read as written (#231's follow-up above),
+  so with the `V` of `extension [Int]` drawn, the edge is left out.
+  Without `--package` it is followed too since #231's follow-up above, except
+  to a member the project declares, as an `extension Date { typealias V = P2 }`
+  would; such a name is still read as written.
+- **A chain of typealiases is followed to its end, however long** (#248).
+  Each alias in a chain used up a level of the lookup's depth limit of 8, so
+  `struct W: A9 {}` after nine aliases from `A1 = P1` to `A9 = A8` stopped
+  partway. The text formats drew an `inherits` edge to an undeclared `A1`,
+  SVG drew no edge, and `sequence`/`activity --entry` found nothing past 9 or
+  10 links. Steps along a chain no longer count against the limit, and a
+  cycle of aliases, which Swift rejects, ends where it comes back to an alias
+  it has followed. The chain is walked in a loop rather than one nested call
+  per alias, so a chain of thousands of links doesn't overflow the stack.
+  What each alias leads to is remembered, so a thousand writers along one
+  chain walk it once. When the
+  walk checks whether an extension's type is the project's, a name that
+  several readings lead to is judged once, so a chain whose links each read
+  two ways (as with nested types hidden) no longer takes time that doubles
+  with each link. This holds across files and modules, inside enclosing
+  types, for module-qualified and sugared links, for dotted names and
+  extensions spelled through a chain, and for `--entry` names whose every
+  alias reads one more dotted part. A chain whose every link reads a member
+  through the alias before it (`typealias A2 = A1.X`) still stops after
+  about 8 links, as before.
+- **SVG draws both of two edges between the same pair of boxes** (#249).
+  `struct Foo: Foo.Base { public protocol Base {} }` has a nesting edge and a
+  supertype edge, both from `Foo` to `Foo.Base`. PlantUML and nomnoml draw
+  both, but the layout kept one edge per pair of boxes, so the SVG and the
+  Studio's canvas drew only the nesting edge. The layout now routes each edge
+  of a different style or label on its own path, side by side. Two edges of
+  one style and label still share one path, as before. The grid layout used
+  when dagre fails still draws parallel edges on one line.
+- **A member a class inherits is read through the class** (#250). A subclass
+  has its superclass's nested types and typealiases as members, so after
+  `class Parent { typealias P = R }` and `class Outer: Parent {}`, `Outer.P`
+  means `R`. The class diagram looked only at what `Outer` and its extensions
+  declare. With `--package`, `struct W: Outer.P` drew `inherits` to an
+  undeclared `Outer.P`, and SVG drew no edge. Without it, the edge ended on
+  another directory's `Outer.P`. A name with a class before its last part
+  now finds the member that class inherits, through any depth of
+  superclasses, when the class declares none of its own. So does a bare name
+  written inside a subclass, ahead of any type further out, and a member of
+  an inherited nested type (`Outer.Inner.X`). A superclass's `private` member
+  stays hidden from its subclasses, as in Swift. A protocol's members are
+  still not read through a type that conforms to it.
+- **A name written inside a type means that type's member, without
+  `--package`** (#252). `class W: X {}` inside `extension Foo` means `Foo.X`,
+  a member of the `Foo` that extension extends. 1.2.0 ranks an alias an
+  extension adds in the extension's own file, so one that `extension AF`
+  adds to another target's `Foo`, through `typealias AF = Foo`, could sit in
+  or near `W`'s file and win. That happened whether `W` sat inside `extension
+  Foo` or, with extensions merged, inside `struct Foo` itself. Such a name now
+  takes a member of the type around the writer before one of another
+  same-named type, as a dotted name such as `Foo.X` already did. A `public`
+  member of that type's body also comes before an extension's in another
+  directory. Still wrong without `--package`: when the writer's own `Foo`
+  has no `X` at all, another `Foo`'s `X` still beats a top-level `X`.
+- **A name written inside a type that lacks it means the name further out,
+  with `--package`** (#252). `class W: X {}` inside `extension Foo`, when
+  the writer's own `Foo` has no `X` at all, means the `X` further out, as in
+  Swift, not another same-named `Foo`'s. Before, that other `Foo`'s `X` won,
+  whether its body or an extension declared it, even an extension in a
+  module downstream of the writer's that it cannot see. An `X` the writer's
+  `Foo` inherits still counts, even from a superclass named `Foo` too
+  (`class Foo: Core.Foo`), or through an inherited nested type. The other
+  `Foo`'s `X` gives way only where Swift's rules settle which `Foo` the
+  writer's is: its own module's, or one its file imports alone
+  (`import struct A.Foo`). Elsewhere, as beside a module's own `Foo` that
+  shadows one it re-exports, a member of a `Foo` the file sees is kept.
+  Without `--package` the lookup is as before:
+  which same-named `Foo` a file means is then a guess by directory, and
+  targets sharing a directory, files an Xcode project compiles into several
+  targets, and files a package excludes all defeat it. Still wrong with
+  `--package`: when the writer's `Foo` has an `X` but the writer's own
+  module adds a nearer one to another `Foo`, the edge ends on that one.
+- **A public member an extension in the type's own file adds comes before a
+  sibling directory's, without `--package`** (#253). With Core's `extension
+  Foo { public typealias X = RCore }` in `Foo`'s own file, `class W: Foo.X {}`
+  in `Features/Profile` took the `X` that `Features/Login`'s extension adds,
+  nearest by directory, though `Profile` cannot see it. That file is compiled
+  wherever `Foo` is, so every file that sees `Foo` sees the member, and a
+  file that saw a second `Foo.X` would not compile. So it now comes first, as
+  a `public` member of `Foo`'s body already did. That holds in every format,
+  in `deps --types` and the typealiases sequence and activity follow, and for
+  a bare `X` written inside `extension Foo`. The member must be `public` once
+  capped by the type it extends, not `@_spi`, and not inside an `#if`, and
+  no other type may share `Foo`'s name, as then which `Foo` the writer means
+  is itself a guess. Still wrong without
+  `--package`: #253's own layout, with Core's extension in a file of its own
+  beside `Foo`'s. Another file in `Foo`'s directory can belong to another
+  target, in an Xcode project or through a package's `sources:` and
+  `exclude:`, and reading the directory as `Foo`'s module turned right
+  answers wrong there.
+- **A body member marked `@_spi` no longer comes first for a file with only
+  plain imports, without `--package`.** A `public` member of `Foo`'s body
+  came before an extension's `Foo.X` in another directory even when marked
+  `@_spi(T)`, which a file that imports `Core` without `@_spi` cannot see, so
+  such a file's edge ended on a member it could not name. It now comes first
+  only for a file that imports something with `@_spi(...)`. Which module's
+  SPI that opens is not known without `--package`, so it still comes first
+  there, even when the import opens another module's group. A file inside
+  `Foo`'s own module sees the member with no import at all, which a scan
+  without `--package` cannot tell either: when another target, nested in
+  `Foo`'s module's directory, adds a nearer `Foo.X`, that file's edge now
+  ends there instead. Left as they were, since the files cannot say which is
+  right: a body member inside an `#if`, which one build has and another
+  lacks; a `package` one, which a file of the same package sees and one of
+  another package does not; and a member of a `Foo` that shares its name
+  with another type.
+
+### Fixed — Studio
+
+- **Picking a nested type's method from the entry list draws it** (#234).
+  Picking `NS.Real.run` generated nothing and set no error: the previous
+  entry's diagram stayed up under its own title, or with none, the pane asked
+  for files that were already selected. It now draws, and a name that is no
+  `Type.method`, as `Foo` or `Foo.`, clears the old diagram and says so in
+  the pane, not in an alert, since generating follows each pause in typing.
+  The dashboard's suggestion cards, fed by the same list, no longer offer a
+  local function.
+
+## [1.2.0] — 2026-11-06
+
+The first release since v1.1.0 (2026-08-16), covering about 350 commits, not
+counting merges, most of them correctness work.
+
+Two themes dominate. **Name resolution**: a class-diagram edge now ends on the
+type Swift means in far more cases, through typealiases, enclosing types,
+module-qualified extensions and, under `--package`, each file's imports. Without
+`--package` that is still a guess from directories, and issues remain open,
+#232, #233, #252 and #253 among them. **Output that holds up**: Nomnoml class
+diagrams parse again, Mermaid no longer rejects a diagram over `@unchecked
+Sendable`, SVG class diagrams draw only the types the text formats draw, and
+deep nesting and long chains that crashed a run now draw, though past 256 levels
+of nesting the rest of a file is still dropped.
+
+Alongside those: filters and config files do what they say, and Studio sends no
+PlantUML anywhere until you agree. Upgraders should read Changed — Bridge first:
+a bad `--config` and an empty `classdiagram` selection now exit 1, diagram text
+changes, two public protocols gain requirements, and swift-syntax is 602.x only.
+
 ### Added — Studio
 
 - **A banner names each file whose nested `[` were read as spaces**
@@ -105,6 +529,113 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   The leftover files can be removed once each is checked to hold `{}`.
 
 ### Fixed — Bridge
+
+- **`classdiagram --package` no longer overflows the stack on a name that
+  means both a module and a type around the writer** (#244). In module `M`,
+  `enum M { enum M { class W: M.V {} } }` built with `swift build`, but
+  `--package` exited with 132 and no output, in every format, so the whole
+  diagram was lost. Whether the enclosing `M` is read as a module takes what
+  `M.V`'s first component means, and that takes the enclosing `M` again.
+  `readsModule` restarted its depth at 0 each time, so no guard ended the
+  loop. It now takes the lookup's depth and stops past 8, and such a name
+  draws the edge Swift means, here to the inner `M.V`. Depth 8 itself still
+  reads, so the last link of an eight-link alias chain is still found through
+  its module.
+
+- **`brew install` works on Homebrew 7, and a Homebrew install draws SVG.**
+  Homebrew 7 refused to load the formula, because it had `depends_on :macos`
+  beside `depends_on macos:`. It also refuses a bare
+  `brew install swiftumlbridge` from a tap it does not trust yet, so the
+  documented command is now `brew install Joseph-Cursio/tap/swiftumlbridge`.
+  The formula installed only the executable, so `--format svg` crashed for
+  want of its resource bundle. The bundle is now installed, and the formula's
+  test covers SVG. The tap, which still served v1.0.0, is updated to v1.1.0
+  with these fixes.
+
+- **Without `--package`, a name several types share means the one nearest
+  by directory, not the first read** (#78). A run without `--package`, or
+  a folder opened in Studio, gives files no module, so among same-named
+  types in other files an edge ended on the first in the diagram's order,
+  protocols and then other types as the file system lists them, often in
+  another package: with Yams read first, `Parser.StatementLabel`, nested
+  in swift-syntax's `extension Parser`, hung off Yams' `class Parser`. The
+  name now means the type whose file shares the most leading directories
+  with the writer's, compared whole, so `Sources/Foo` shares only `Sources`
+  with `Sources/FooBar`. Types equally near still fall to that first, so a
+  directory every path is under, such as the scan's root, changes
+  nothing. This is how supertype and extension edges in every format, a
+  nesting edge that ends on a type rather than on an extension's own box
+  (Mermaid draws none), `--merge-extensions`, a hidden type's stand-in, and
+  the typealiases that sequence, activity and `deps --types` follow all find
+  a name, apart from the cases below and #232. A nearer typealias now
+  comes before a farther type.
+
+  With `--package` nothing changes: a directory never decides among
+  modules. Without it, a directory is only a guess at the module. A test
+  in `Tests/FooTests` that imports `Foo` takes a `Base` in
+  `Tests/BarTests` before one in `Sources/Foo`. An edge found this way,
+  among types of different kinds, is still labelled as inheritance unless
+  it ends on the protocol's own box. Paths are compared as the scan
+  reports them: a directory argument's files come back under its real
+  path, while a file argument keeps the spelling typed, so a file typed
+  through a symlink, such as `/tmp` for `/private/tmp`, or with `./`,
+  shares only what the two spellings have in common.
+
+  A typealias an extension adds to a type ranks where the extension is, not
+  where the type is, whether the extension spells the type directly or
+  through a typealias and whether or not it is merged, and so does a nested
+  type merged in with nested types hidden (#230). So `class W: Foo.X {}`
+  beside `extension Foo { typealias X = R }` means that `X`, not the first
+  read in another target. When an extension's member is among a dotted
+  name's candidates, the name means a member of the type its first component
+  means to the writer, so a nearer `Foo.X` of another `Foo` does not win. A
+  `public` or `package` member of `Foo`'s body then comes before an
+  extension's in another directory, since a file that sees both does not
+  compile.
+
+  That leaves these wrong, without `--package`. A writer that imports only
+  `Core` takes an extension's `Foo.X` in a sibling directory before one in
+  `Core`, when `Foo`'s body declares no such member for it to see (#253). A
+  name built on the type around the writer, in `extension Foo` or, merged,
+  in `struct Foo`, can take the `X` near it that an extension adds to another
+  target's `Foo` through a typealias of it (#252). An extension equally near two
+  `Foo`s extends the first read, so a directory's name can decide whose
+  member it adds. And extensions equally near fall to the first read, which
+  merging and edges can take differently, so with one written `extension
+  Crate` and another `extension Outer`, an `extension Outer.X`'s members can
+  merge into a different box than an edge of that name ends on.
+
+  `--entry` has no file to rank from, so `--entry Alias.method` means the
+  first declaration of `Alias` with a body for the method, a top-level type
+  of that name before a typealias, and a typealias before a nested type of
+  that name or a type the files only extend. Sequence and activity diagrams
+  find a method in an `extension Alias` whichever directory claims it. In
+  choosing among several declarations, a protocol requirement has no body, a
+  function local to any body is no member, and a type local to one cannot be
+  named from outside it, so none of them counts; macros are not expanded, so
+  a function in a macro's closure reads as local to it. The activity diagram
+  also passes over a function local to an initializer, accessor or closure
+  for the member of that name, and draws nothing when there is no member, as
+  it already did for a function local to a method.
+
+  When several have a body, the first is meant, with no warning; name the
+  aliased type to choose, as in `--entry Real.method`. That works only for a
+  type with a name of its own: `--entry` takes exactly `Type.method`, so
+  same-named aliased types cannot be told apart, and a nested type or
+  extension that loses to a typealias with the method cannot be typed. A
+  method in a nested type's own body is typed by its innermost name. An
+  extension is filed under what its written name comes to, so one in
+  `extension Outer.Inner`, `extension App.Real` or `extension O.Inner` is
+  reached only through a typealias that comes to that same spelling, and
+  counts for no other. A dotted target with a module or a typealias before
+  its last part, as in `typealias Svc = App.Real`, or `typealias Svc = O.Inner`
+  after `typealias O = Outer`, reaches only those extensions, not the type's
+  own body, and a target of `any P` or `P & Q` is not followed. Those draw an
+  empty diagram, so name the type where one can be typed. Once a type is
+  chosen, the activity diagram takes the first body filed under its name, so
+  a same-named type local to an initializer, accessor or closure, read first,
+  can draw in its place, and the sequence diagram merges every body filed
+  under the name.
 
 - **An SVG class diagram links an extension's box to the type it
   extends** (#75). PlantUML, Mermaid and Nomnoml draw this `ext` edge,
@@ -1358,13 +1889,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   braces expand only in `files.include` and `files.exclude`, and corrects
   the description of a plain string, which matches the path it names
   and what lies inside it, not a substring anywhere.
-- **A plain `files.include` or `files.exclude` entry stops at a path
-  component** (#111). It matched every path that merely began with the
-  same text: `--exclude Sources/App` also dropped `Sources/AppKit/…` and
-  `Sources/AppDelegate.swift`, and `--exclude Generated` dropped
-  `GeneratedExtra/`. `Glob.matches` tested `path.contains`, a substring
-  match left from before entries and enumerated files were spelled
-  alike; it now takes the named path and what lies inside it.
 - **A type nested in a hidden type no longer hangs off an unrelated type
   with the hidden type's short name** (#67). In PlantUML and Nomnoml,
   the edge from a drawn nested type to a parent the diagram does not draw
@@ -1410,33 +1934,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   builder, on a private copy of the items. Repeated or concurrent
   diagrams from one parse now give the same output, and a `.merged` run
   no longer leaves `<&bolt>` on a later `.all` one.
-- **`classdiagram` no longer diagrams the whole current directory when its
-  file selection comes out empty.** The command collected and filtered
-  its files, then passed the paths to `ClassDiagramGenerator.generate(for:)`,
-  which collected them again — and `FileCollector` reads an empty path
-  list as "the current directory". So a `files.include` that matched
-  nothing, a `files.exclude` or `--exclude` that matched everything, or a
-  path holding no Swift files produced a diagram of every Swift file under
-  the working directory, with exit status 0: the files the selection had
-  just ruled out. It now fails with `No Swift files were found in the
-  given paths, or the files.include / files.exclude (--exclude) filters
-  left none.` and a non-zero exit, as `er`, `state` and `component`
-  already do when they find nothing. Only `classdiagram` applies file
-  filters; the other subcommands, Studio and the framework API are
-  unchanged.
-- **Every `--exclude` and `files.exclude` entry applies, not only the
-  last.** `FileCollector.getFiles(for:in:honoring:)` replaced its set of
-  excluded files with each exclude glob in turn, so only the last entry
-  excluded anything. The documented
-  `classdiagram Sources/ --exclude Sources/Generated/ --exclude Sources/Mocks/`
-  dropped `Mocks` and kept `Generated`, and a `.swiftumlbridge.yml` with
-  several `files.exclude` patterns honoured only the last one. Include
-  globs had a related fault: a file matching two of them came back twice,
-  as did a file with include globs and two exclude entries, and include
-  results followed the order of the globs rather than the order the
-  files were found. Files are now filtered in one pass: dropped if any
-  exclude glob matches, kept if any include glob does, each at most once
-  and in the order found.
 - **A PlantUML diagram reaches planttext.com whole** (#57). `DiagramText`
   deflated the script with `compression_encode_buffer`, passing the
   string's `Character` count as both the number of bytes to read and the
@@ -1604,9 +2101,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   as `.nomnoml`. The fallbacks now report `.mermaid`, as the
   `--format svg` fallback in `state` and `er` already did, so the CLI
   opens mermaid.live and Studio previews and exports the text as
-  Mermaid. A diagram reopened from Studio's history still takes the
-  format picker's value rather than the script's, so it is still sent
-  to `nomnoml.js`.
+  Mermaid.
 - **`--format` help no longer lists only `plantuml` and `mermaid`**
   (#82). The hand-written "Options: plantuml, mermaid" sat beside
   ArgumentParser's own "(values: plantuml, mermaid, nomnoml, svg)",
@@ -1704,9 +2199,71 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed — Bridge
 
-- **swift-syntax 602 or later is required** (`a53bedd`). The pin moved
-  from `from: "600.0.0"`, which allowed only 600.x, to `from: "602.0.0"`,
-  so a package that also depends on something needing 602 resolves.
+- **`classdiagram` no longer diagrams the whole current directory when its
+  file selection comes out empty.** The command collected and filtered
+  its files, then passed the paths to `ClassDiagramGenerator.generate(for:)`,
+  which collected them again — and `FileCollector` reads an empty path
+  list as "the current directory". So a `files.include` that matched
+  nothing, a `files.exclude` or `--exclude` that matched everything, or a
+  path holding no Swift files produced a diagram of every Swift file under
+  the working directory, with exit status 0: the files the selection had
+  just ruled out. It now fails with `No Swift files were found in the
+  given paths, or the files.include / files.exclude (--exclude) filters
+  left none.` and a non-zero exit, as `er` and `component` already do
+  when they find nothing. `deps`, `sequence`, `activity` and `state` still
+  exit 0 on an empty directory. Only `classdiagram` applies file
+  filters; the other subcommands, Studio and the framework API are
+  unchanged.
+- **Every `--exclude` and `files.exclude` entry applies, not only the
+  last.** `FileCollector.getFiles(for:in:honoring:)` replaced its set of
+  excluded files with each exclude glob in turn, so only the last entry
+  excluded anything. The documented
+  `classdiagram Sources/ --exclude Sources/Generated/ --exclude Sources/Mocks/`
+  dropped `Mocks` and kept `Generated`, and a `.swiftumlbridge.yml` with
+  several `files.exclude` patterns honoured only the last one. Include
+  globs had a related fault: a file matching two of them came back twice,
+  as did a file with include globs and two exclude entries, and include
+  results followed the order of the globs rather than the order the
+  files were found. Files are now filtered in one pass: dropped if any
+  exclude glob matches, kept if any include glob does, each at most once
+  and in the order found.
+- **A plain `files.include` or `files.exclude` entry stops at a path
+  component** (#111). It matched every path that merely began with the
+  same text: `--exclude Sources/App` also dropped `Sources/AppKit/…` and
+  `Sources/AppDelegate.swift`, and `--exclude Generated` dropped
+  `GeneratedExtra/`. `Glob.matches` tested `path.contains`, a substring
+  match left from before entries and enumerated files were spelled
+  alike; it now takes the named path and what lies inside it.
+- **Library callers: a few public declarations change.** Conformers of
+  `ClassDiagramGenerating` must add `analyzeTypes(for:sdkPath:) -> [TypeInfo]`,
+  and conformers of `DependencyGraphGenerating` must add
+  `extractEdges(for:mode:with:) -> [DependencyEdge]`; neither has a default.
+  Code that only uses the provided generators is unaffected.
+  `PersistenceSchemaExtractor.extract(from:)` gained a defaulted `file:`, so a
+  reference to it needs a closure, and `ComponentExtractor.extract`'s
+  `analyzer` takes `any ClassDiagramGenerating`, so `analyzer: .init()` must
+  be written `analyzer: ClassDiagramGenerator()`. Values change too:
+  `TypeInfo.inheritedTypeNames` holds `Sendable` for `@unchecked Sendable` and
+  no longer holds `~Copyable`, `TypeInfo.name` is `Foo` for `extension
+  Foo<Int>`, and `script.format` is `.mermaid` when a `.nomnoml` request falls
+  back to Mermaid. The package has no manifest at the repository root, so it
+  can only be used by path, and none of this reaches a version requirement.
+- **`classdiagram --sdk` now does the work it promises** (#147). It added no
+  types from 0.3.0 to 1.1.0, so it now takes longer: on Studio's own sources,
+  about 0.15 s became about 6 s. A file that imports a module SourceKit cannot
+  find can put `error: no such module` on stderr, with exit 0, which a build
+  step that treats `error:` as failure will trip on.
+- **Existing excludes can hide more.** A prefix glob such as `Diagram*`
+  reaches nested types, `Name` hides `extension Notification.Name`, `Foo` also
+  hides `extension Foo<Int>`, a supertype exclude also matches an edge written
+  through a typealias, and an `elements.exclude` pattern that matches a module
+  or target name hides it from `deps --modules`. Patterns written for spellings
+  that are no longer names, such as `Foo<Int>`, `@unchecked*` and `~*`, match
+  nothing; use the plain type name.
+- **swift-syntax 602.x is required** (`a53bedd`). The pin moved from
+  `from: "600.0.0"`, which allowed only 600.x, to `from: "602.0.0"`, which
+  allows only 602.x. A package that also needs 602 now resolves, and one
+  that needs 600, 601, 603 or 604 does not.
   602 checks each `[` for InlineArray sugar, which made a chain of
   nested `[` slow until #148.
 
@@ -1772,6 +2329,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   PlantUML fallback.
 
 ### Fixed — Studio
+
+- **A folder whose path needs URL encoding opens.** A folder or file
+  picked in the open panel, or restored from a saved diagram's bookmark,
+  was passed on with its URL's percent-encoded path, so `My Project` was
+  looked for as `My%20Project`, which does not exist: the sidebar stayed
+  empty and the diagram came out with no types or calls, and no error.
+  This hit any path with a space, a non-ASCII letter, `#` or `%`. A saved
+  diagram with no usable bookmark still holds the encoded path, so pick
+  its folder again.
 
 - **A PlantUML diagram reopened from history renders.** A restored
   history item is a `SimpleDiagramScript`, which still overrode

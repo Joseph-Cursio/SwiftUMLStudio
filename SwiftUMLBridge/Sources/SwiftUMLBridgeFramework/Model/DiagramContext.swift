@@ -59,7 +59,7 @@ class DiagramContext {
     /// The typealiases among the items the diagram was built from, found by
     /// `reserveIdentifiers(drawing:among:)`: a supertype written through one ends on the type it
     /// aliases (#125).
-    private var aliases = TypeAliasResolver.followingNothing
+    private var aliases = TypeAliasResolver.withoutProject
 
     private var linkTypeInheritance: String {
         (format == .nomnoml || format == .svg) ? "-:>" : "<|--"
@@ -98,8 +98,8 @@ class DiagramContext {
     }
 
     /// Where the edge to `parent`, written in `scope`, ends, as SVG ends it (`DrawnEdgeEnds`): the
-    /// drawn element the name means there, by file, module and access, or a hidden type's
-    /// stand-in. Writing the name instead ended the edge on the first box with that name, so
+    /// drawn element the name means there, by file, module or directory, and access, or a hidden
+    /// type's stand-in. Writing the name instead ended the edge on the first box with that name, so
     /// `struct U: P` reached another file's `P`. `element` is `nil` when SVG finds none: a type
     /// outside the diagram, such as `Codable`, or a hidden type with no stand-in. `isProtocol`
     /// says whether the edge is a realization (`DrawnEdgeEnds.supertype(named:from:)`).

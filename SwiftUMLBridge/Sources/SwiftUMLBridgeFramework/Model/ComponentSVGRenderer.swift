@@ -110,7 +110,7 @@ public enum ComponentSVGRenderer {
         // Compute by traversing the `from -> to` adjacency.
         var adjacency: [String: [String]] = [:]
         for dependency in model.dependencies {
-            adjacency[dependency.from, default: []].append(dependency.to)
+            adjacency[dependency.from, default: []].append(dependency.toComponent)
         }
 
         var depthCache: [String: Int] = [:]

@@ -53,9 +53,9 @@ with `subgraph` clusters.
 
 ## Requirements
 
-- **Bridge** (CLI / Swift Package) — macOS 15+ (per `SwiftUMLBridge/Package.swift`), Swift 6.0+, Xcode 16+
-- **Studio** (macOS app) — macOS 26.4+
-- A Swift toolchain new enough for SourceKitten and SwiftSyntax 600.x
+- **Bridge** (CLI / Swift Package) — macOS 15+ (per `SwiftUMLBridge/Package.swift`), Swift 6.2+, Xcode 26+
+- **Studio** (macOS app) — macOS 26.2+
+- A Swift toolchain new enough for SourceKitten and SwiftSyntax 602.x
 
 ## Project Structure
 
@@ -106,8 +106,7 @@ SwiftSyntax            call edges,            Mermaid.js
 ### Homebrew (recommended for local use)
 
 ```bash
-brew tap Joseph-Cursio/tap
-brew install swiftumlbridge
+brew install Joseph-Cursio/tap/swiftumlbridge
 ```
 
 The formula builds from source on first install and tracks the latest tagged Bridge release.

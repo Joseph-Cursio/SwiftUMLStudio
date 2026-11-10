@@ -9,7 +9,7 @@ This repository contains two related products built around the same diagram-gene
 - **SwiftUMLBridge** — a Swift-native CLI (`swiftumlbridge`) and Swift Package that generates architectural diagrams from Swift source. A modern, Swift 6 evolution of SwiftPlantUML with support for actors, async/await, macros, and multi-format output.
 - **SwiftUMLStudio** — a macOS SwiftUI application that embeds SwiftUMLBridge and provides an interactive workspace with persistent snapshots, native-canvas rendering, architectural insights, and a paid (StoreKit) tier.
 
-**Status (2026-08)**: Bridge v1.0.0 shipped 2026-05-11 (tag + GitHub release). M0–M12 and M15 are complete. M13 and M14 are partially done — the sandboxing audit landed but the Homebrew tap is unpublished and the App Store submission is outstanding. See PRD §9.2 for the exact split. Everything since v1.0.0 sits in `CHANGELOG.md`'s `[Unreleased]`, so **a v1.1.0 cut is the next release step** — `homebrew/README.md` documents the procedure. Not started: M16 (DOT/GraphViz emitter), M17 (macro expansion fidelity). See `docs/internal/SwiftUML Studio PRD.md` for the canonical spec — sections 5 (Bridge) and 6 (Studio) — and `CHANGELOG.md` for shipped scope.
+**Status (2026-11)**: v1.2.0 shipped 2026-11-06 (tag + GitHub release, Bridge and Studio together), after v1.1.0 on 2026-08-16 and v1.0.0 on 2026-05-11. M0–M12 and M15 are complete. M13 and M14 are partially done — the sandboxing audit landed and the public tap `Joseph-Cursio/homebrew-tap` is at v1.2.0, but the App Store submission and the announcement are outstanding. See PRD §9.2 for the exact split. Everything since v1.2.0 sits in `CHANGELOG.md`'s `[Unreleased]`, awaiting **the next release cut** — `homebrew/README.md` documents the procedure. Not started: M16 (DOT/GraphViz emitter), M17 (macro expansion fidelity). See `docs/internal/SwiftUML Studio PRD.md` for the canonical spec — sections 5 (Bridge) and 6 (Studio) — and `CHANGELOG.md` for shipped scope.
 
 ## Build & Test Commands
 
@@ -50,12 +50,12 @@ swift test  --package-path SwiftUMLBridge
 swift run --package-path SwiftUMLBridge swiftumlbridge classdiagram <paths...>
 ```
 
-- **Studio target platform**: macOS 26.4+, `SDKROOT = macosx`
-- **Bridge target platform**: macOS 15+ (per `Package.swift`). Lower than Studio because nothing in the Bridge requires macOS 26 — kept at 15 so the SwiftPM tests run on GitHub's `macos-latest` runner (still macOS 15) and on every other Sequoia host.
+- **Studio target platform**: macOS 26.2+, `SDKROOT = macosx`
+- **Bridge target platform**: macOS 15+ (per `Package.swift`). Lower than Studio because nothing in the Bridge requires macOS 26 — kept at 15 so the CLI and the package still run on Sequoia hosts. CI no longer runs on macOS 15: the deployment target still makes the compiler reject newer APIs used without `#available`, but nothing runs the tests there.
 - **Swift toolchain**: Swift 6.0 strict concurrency enabled across all targets
 - **Bundle ID**: `name.JosephCursio.SwiftUMLStudio`
 - **Build configs**: `Debug` / `Release` (direct distribution, unsandboxed) plus `AppStoreRelease`, which defines `APP_STORE_BUILD` and enables App Sandbox. The flag gates every subprocess/`dlopen` path — SourceKit typename supplementation and `Open Package…` are both disabled under it (see M14 in `CHANGELOG.md`).
-- **CI is deliberately dormant.** `.github/workflows/ci.yml` triggers on `workflow_dispatch` only, and the workflow itself is disabled on GitHub, to avoid the macOS runner's 10x billing (commit `5257203`). Do not add `push` / `pull_request` triggers without asking — run the suites locally instead.
+- **CI runs on every push to `main` and every PR against it.** `.github/workflows/ci.yml` builds and tests the Bridge and the Studio app, unsigned, on the `xcode-27` runner with the newest stable Xcode 27, matching local development. It's a standard GitHub-hosted runner, free because the repo is public, but a preview image: the GA images stop at Xcode 26.6 / Swift 6.3, so move to the GA image with Xcode 27 when one ships. CI was dormant from May to October 2026 to avoid macOS's 10x billing (commit `5257203`), but that rate applies only to private repos. Ask before making the repo private or moving a job to a larger runner (such as `xcode-27-xlarge`): either one makes the minutes billable.
 
 ## Architecture
 
@@ -116,6 +116,7 @@ swiftumlbridge component   --package <Package.swift dir> [--include-test-targets
 
 ## Conventions
 
-- Follow `.swiftlint.yml` — fix violations rather than disabling rules. Identifier names should be 3+ chars (`database` not `db`, `identifier` not `id`).
+- Follow `.swiftlint.yml` — fix violations rather than disabling rules. It lists only this project's paths and takes every rule from the shared `../SwiftLintConfig/.swiftlint.yml`, so clone SwiftLintConfig beside this repo and change rules there, never here. Identifier names should be 3+ chars (`database` not `db`). Run `swiftlint lint` from the repo root. The shared config's analyzer rules run only under `swiftlint analyze --compiler-log-path <log of a clean build> --only-rule <rule>`, one rule at a time.
+- Compiler warnings are build errors, set in both `Package.swift` (`.treatAllWarnings(as: .error)`) and the Xcode project (`SWIFT_TREAT_WARNINGS_AS_ERRORS`). Fix the warning; don't turn the setting off or silence the warning to get a build through.
 - Make small, focused commits — one logical change per commit. Each commit should build cleanly and pass tests before the next.
 - Use the task list (`TaskCreate` / `TaskUpdate`) for multi-step work.

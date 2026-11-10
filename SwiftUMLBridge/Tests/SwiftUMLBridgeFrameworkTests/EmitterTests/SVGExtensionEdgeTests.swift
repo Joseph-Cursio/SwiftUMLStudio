@@ -47,7 +47,7 @@ struct SVGExtensionEdgeTests {
         #expect(svgEdges("fileprivate struct Foo {}\nextension Foo {}").isEmpty)
     }
 
-    @Test("merged and hidden extensions draw no extension edge", arguments: [ExtensionVisualization.merged, .none])
+    @Test("merged and hidden extensions draw no extension edge", arguments: [ExtensionVisualization.merged, .hidden])
     func noEdgeWhenNotDrawnApart(extensions: ExtensionVisualization) {
         #expect(svgEdges("struct Foo {}\nextension Foo {}", extensions).isEmpty)
     }

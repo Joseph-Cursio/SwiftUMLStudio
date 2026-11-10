@@ -9,8 +9,7 @@ These doubles as end-to-end install smoke tests — if all seven samples produce
 Install the CLI via [Homebrew](../user/user-guide.md#installation):
 
 ```bash
-brew tap Joseph-Cursio/tap
-brew install swiftumlbridge
+brew install Joseph-Cursio/tap/swiftumlbridge
 ```
 
 If you built from source instead, substitute `swift run --package-path /path/to/SwiftUMLBridge swiftumlbridge` for `swiftumlbridge` in the commands below.

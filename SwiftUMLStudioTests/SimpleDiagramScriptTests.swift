@@ -22,7 +22,7 @@ struct SimpleDiagramScriptTests {
         viewModel.diagramFormat = .plantuml
         var config = Configuration.default
         config.format = .plantuml
-        let model = DependencyGraphModel(edges: [DependencyEdge(from: "Café", to: "Naïve", kind: .conforms)])
+        let model = DependencyGraphModel(edges: [DependencyEdge(from: "Café", toNode: "Naïve", kind: .conforms)])
         let saved = DepsScript(model: model, configuration: config)
         viewModel.depsScript = saved
         viewModel.saveToHistory()

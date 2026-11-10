@@ -54,13 +54,13 @@ extension ActivityScript {
     }
 
     static func mermaidEdgeLine(_ edge: ActivityEdge) -> String {
-        let from = "N\(edge.fromId)"
-        let to = "N\(edge.toId)"
+        let source = "N\(edge.fromId)"
+        let target = "N\(edge.toId)"
         if let label = edge.label, !label.isEmpty {
             // Quoted, since Mermaid rejects a `(` or `[` in a bare edge label and with it the whole
             // diagram: `-->|.failure(let error)|` and `-->|#if os(iOS)|` did not parse.
-            return "\(from) -->|\"\(mermaidEscape(label))\"| \(to)"
+            return "\(source) -->|\"\(mermaidEscape(label))\"| \(target)"
         }
-        return "\(from) --> \(to)"
+        return "\(source) --> \(target)"
     }
 }

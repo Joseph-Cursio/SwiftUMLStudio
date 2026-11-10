@@ -211,7 +211,7 @@ struct TypealiasExtensionTests {
     /// inside that extension, which needs `X` again. The lookup used to start that over at depth
     /// 0, and overflowed the stack.
     @Test("an alias that cycles through its extension's member ends",
-          arguments: [DiagramFormat.plantuml, .mermaid, .nomnoml, .svg], [ExtensionVisualization.all, .merged, .none])
+          arguments: [DiagramFormat.plantuml, .mermaid, .nomnoml, .svg], [ExtensionVisualization.all, .merged, .hidden])
     func aliasCycleThroughExtensionMember(format: DiagramFormat, mode: ExtensionVisualization) {
         // Swift rejects this; the lookup still has to end.
         let source = "typealias X = X.Y\nextension X {\n    typealias Y = Int\n    class Sub: Base {}\n}\nclass Base {}"

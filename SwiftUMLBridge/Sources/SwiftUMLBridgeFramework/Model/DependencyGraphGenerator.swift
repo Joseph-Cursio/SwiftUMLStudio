@@ -127,7 +127,7 @@ public struct DependencyGraphGenerator: DependencyGraphGenerating, Sendable {
                 ) else { continue }
                 edges.append(DependencyEdge(
                     from: basis.name,
-                    to: parentName,
+                    toNode: parentName,
                     kind: basis.edgeKind,
                     fromModule: module(basis.name),
                     toModule: module(parentName)
@@ -168,7 +168,7 @@ public struct DependencyGraphGenerator: DependencyGraphGenerating, Sendable {
             where !shouldExclude(name: importEdge.importedModule, configuration: configuration) {
                 edges.append(DependencyEdge(
                     from: importEdge.sourceModule,
-                    to: importEdge.importedModule,
+                    toNode: importEdge.importedModule,
                     kind: .imports
                 ))
             }
@@ -198,7 +198,7 @@ public struct DependencyGraphGenerator: DependencyGraphGenerating, Sendable {
                 let toModule = internalTargets.contains(dependency) ? dependency : nil
                 edges.append(DependencyEdge(
                     from: target.name,
-                    to: dependency,
+                    toNode: dependency,
                     kind: .imports,
                     fromModule: target.name,
                     toModule: toModule

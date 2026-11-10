@@ -3,8 +3,6 @@ import XCTest
 /// UI tests that load the SampleProject fixture and verify diagram generation end-to-end.
 final class DiagramGenerationUITests: XCTestCase {
 
-    @MainActor private lazy var app = XCUIApplication()
-
     /// Path to the SampleProject fixture, derived from the source tree at compile time.
     private var fixturePath: String {
         URL(fileURLWithPath: #filePath)
@@ -14,26 +12,26 @@ final class DiagramGenerationUITests: XCTestCase {
             .path
     }
 
+    /// The app, launched as every test here needs it. Each test holds its own, so nothing is
+    /// stored between tests and none needs unwrapping.
     @MainActor
-    override func setUp() async throws {
+    private func launchApp() -> XCUIApplication {
         continueAfterFailure = false
+        let app = XCUIApplication()
         app.launchArguments += [
             "-appMode", "Developer",
             "-testFixturePath", fixturePath,
         ]
         app.launchArguments += UITestLaunchArguments.plantUMLConsentUndecided
         app.launch()
-    }
-
-    @MainActor
-    override func tearDown() async throws {
-        app.terminate()
+        return app
     }
 
     // MARK: - Fixture Loading
 
     @MainActor
     func testFixtureLoadsPathSummary() throws {
+        let app = launchApp()
         // The toolbar should show "SampleProject" instead of "No source selected"
         let noSource = app.staticTexts["No source selected"]
         // Wait a moment for the fixture to load
@@ -46,6 +44,7 @@ final class DiagramGenerationUITests: XCTestCase {
 
     @MainActor
     func testFixturePopulatesFileBrowser() throws {
+        let app = launchApp()
         // Wait for the Files tab to exist (sidebar segmented control)
         let filesTab = app.radioButtons["Files"]
         XCTAssertTrue(filesTab.waitForExistence(timeout: UITestTimeout.element))
@@ -65,6 +64,7 @@ final class DiagramGenerationUITests: XCTestCase {
     /// that would mean the diagram had been uploaded unasked.
     @MainActor
     func testClassDiagramPreviewAsksBeforeUploading() throws {
+        let app = launchApp()
         // Switch to Preview tab
         let detailTabs = app.tabGroups["detailTabs"]
         XCTAssertTrue(
@@ -86,6 +86,7 @@ final class DiagramGenerationUITests: XCTestCase {
 
     @MainActor
     func testMarkupTabShowsContent() throws {
+        let app = launchApp()
         // Wait for diagram to generate
         XCTAssertTrue(
             app.buttons["plantUMLConsentAllowButton"].waitForExistence(timeout: UITestTimeout.element),
@@ -117,6 +118,7 @@ final class DiagramGenerationUITests: XCTestCase {
 
     @MainActor
     func testSwitchToNomnomlGeneratesPreview() throws {
+        let app = launchApp()
         // Wait for initial generation to complete
         XCTAssertTrue(
             app.buttons["plantUMLConsentAllowButton"].waitForExistence(timeout: UITestTimeout.element),

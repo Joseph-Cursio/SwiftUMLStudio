@@ -45,7 +45,7 @@ extension DepsScript {
                 arrow = "-->"
             }
             let safeFrom = nomnomlLabel(edge.from, stereotype: stereotypes[edge.from])
-            let safeTo = nomnomlLabel(edge.to, stereotype: stereotypes[edge.to])
+            let safeTo = nomnomlLabel(edge.toNode, stereotype: stereotypes[edge.toNode])
             lines.append("[\(safeFrom)] \(arrow) [\(safeTo)]")
         }
 

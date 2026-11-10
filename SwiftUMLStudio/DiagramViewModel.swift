@@ -152,6 +152,15 @@ final class DiagramViewModel {
         }
     }
 
+    /// Whether a sequence or activity diagram has an entry typed that is no `Type.method` name,
+    /// as `EntryPointName` reads one, so the pane can say why nothing is drawn rather than ask for
+    /// files that are already selected (#234). Not an alert: generating follows every pause in
+    /// typing, and `Foo` on the way to `Foo.bar` is no mistake.
+    var entryPointIsUnreadable: Bool {
+        (diagramMode == .sequenceDiagram || diagramMode == .activityDiagram)
+            && !entryPoint.isEmpty && EntryPointName(entryPoint) == nil
+    }
+
     var pathSummary: String {
         switch selectedPaths.count {
         case 0:
@@ -215,6 +224,15 @@ final class DiagramViewModel {
     func save(isProUnlocked: Bool = false, at savedAt: Date = Date()) {
         saveToHistory(at: savedAt)
         saveSnapshot(isProUnlocked: isProUnlocked, at: savedAt)
+    }
+
+    /// Replace the current selection with what the user just picked.
+    func applySelection(urls: [URL]) {
+        applySelection(
+            paths: urls.map { $0.path(percentEncoded: false) },
+            bookmarks: urls.map { SecurityScopedURL.makeBookmark(for: $0) },
+            urls: urls
+        )
     }
 
     /// Replace the current selection with a freshly granted set of paths.

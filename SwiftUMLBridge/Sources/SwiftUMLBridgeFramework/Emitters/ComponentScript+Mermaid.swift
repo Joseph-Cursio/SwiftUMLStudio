@@ -21,7 +21,7 @@ extension ComponentScript {
             lines.append("    end")
         }
         for dependency in model.dependencies {
-            lines.append("    \(ids.id(for: dependency.from)) -.-> \(ids.id(for: dependency.to))")
+            lines.append("    \(ids.id(for: dependency.from)) -.-> \(ids.id(for: dependency.toComponent))")
         }
         return lines.joined(separator: "\n")
     }

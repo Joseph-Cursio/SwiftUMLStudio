@@ -24,10 +24,17 @@ final class ImportExtractor: SyntaxVisitor {
     /// The modules `sourceFile` imports anywhere at file scope, in any branch of an `#if`, each by
     /// the first component of its path: `ModA` for `import ModA` and `import ModA.Sub`. A scoped
     /// import, which makes only the declaration it names visible, is recorded with that
-    /// declaration: `ModA.Foo` for `import struct ModA.Foo`.
+    /// declaration: `ModA.Foo` for `import struct ModA.Foo`. A file that imports anything with
+    /// `@_spi(...)` also gets `spiImport`, an entry no module or declaration name can spell, so
+    /// whatever is kept per file's imports keeps it as well, while a module looked up among them
+    /// is not found in it (`ModuleLoads` leaves it out).
     static func importedModules(in sourceFile: SourceFileSyntax) -> Set<String> {
         importedModules(in: sourceFile, exportedOnly: false)
     }
+
+    /// The entry `importedModules(in:)` records for a file that imports with `@_spi(...)`. Which
+    /// module's SPI it opens is not kept: without a package, a member's module is not known.
+    static let spiImport = "@_spi"
 
     /// The modules `sourceFile` re-exports with `@_exported import`, read as
     /// `importedModules(in:)` reads them. Swift lets every file of the module, and every file
@@ -49,6 +56,7 @@ final class ImportExtractor: SyntaxVisitor {
                     } else {
                         modules.insert(module)
                     }
+                    if !exportedOnly, importDecl.attributes.hasSPI { modules.insert(spiImport) }
                 } else if let ifConfig = statement.item.as(IfConfigDeclSyntax.self) {
                     for clause in ifConfig.clauses {
                         if case .statements(let nested)? = clause.elements { collect(nested) }

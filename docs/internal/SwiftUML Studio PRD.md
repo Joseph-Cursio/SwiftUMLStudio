@@ -378,14 +378,14 @@ The CLI is a thin wrapper over the framework. SwiftUMLStudio embeds the same fra
 | M12 — Multi-module SPM | Cross-module type resolution; module namespace labels; `--package` on `classdiagram` / `deps` / `component`; module-grouped canvas layout | 2026-06 |
 | M15 — Documentation push | Tutorials, 7 sample projects, troubleshooting guide, DocC catalog | 2026-07 |
 
-Everything after v1.0.0 (2026-05-11) sits in `CHANGELOG.md`'s `[Unreleased]`
-and is not yet in a tagged release. See §9.2.
+v1.1.0 (2026-08-16) and v1.2.0 (2026-11-06) followed v1.0.0 (2026-05-11).
+Anything later sits in `CHANGELOG.md`'s `[Unreleased]`. See §9.2.
 
 ### 9.2 Partially shipped
 
 | Milestone | Done | Outstanding |
 |---|---|---|
-| M13 — Bridge v1.0 release | `v1.0.0` tag + GitHub release (2026-05-12), `.spi.yml` SPI listing, migration guide (`docs/user/migration-from-SwiftPlantUML.md`), Homebrew formula drafted | Formula is a draft — no `homebrew-tap` repo published yet (see `homebrew/README.md`); no announcement |
+| M13 — Bridge v1.0 release | `v1.0.0` tag + GitHub release (2026-05-12), `.spi.yml` SPI listing, migration guide (`docs/user/migration-from-SwiftPlantUML.md`), public Homebrew tap [`Joseph-Cursio/homebrew-tap`](https://github.com/Joseph-Cursio/homebrew-tap) (see `homebrew/README.md`), at v1.2.0 since 2026-11-06 | No announcement |
 | M14 — Studio v1.0 (App Store) | Sandboxing audit complete (2026-05): `AppStoreRelease` config + `APP_STORE_BUILD` flag, App Sandbox entitlements, security-scoped bookmarks, PlantUML third-party-upload consent gate, CDN fallbacks removed | App Store submission; the App Store Connect privacy nutrition label and a hosted privacy policy (the *user-facing* disclosure is now written — see [Studio User Guide](../user/studio-user-guide.md#plantuml-sends-your-diagram-source-to-a-third-party)); marketing site |
 
 ### 9.3 Roadmap (planned)
@@ -395,10 +395,12 @@ and is not yet in a tagged release. See §9.2.
 | M16 — DOT / GraphViz output | Optional emitter for large-scale dependency graphs | v1.1+ |
 | M17 — Macro expansion handling | Better fidelity for macro-generated types | v1.1+ |
 
-> **Note**: this repo's *own* CI (`.github/workflows/ci.yml`) is intentionally
-> dormant — `workflow_dispatch` only, and disabled on GitHub, to avoid the macOS
-> runner's 10x billing (commit `5257203`). That is unrelated to M11, which
-> tracked the action published for *consumers* and is complete.
+> **Note**: this repo's *own* CI (`.github/workflows/ci.yml`) runs on every
+> push to `main` and every pull request against it. It was dormant from May to
+> October 2026 to avoid the macOS runner's 10x billing (commit `5257203`), which
+> applies only to private repositories; standard runners are free on this public
+> one. That is unrelated to M11, which tracked the action published for
+> *consumers* and is complete.
 
 ---
 

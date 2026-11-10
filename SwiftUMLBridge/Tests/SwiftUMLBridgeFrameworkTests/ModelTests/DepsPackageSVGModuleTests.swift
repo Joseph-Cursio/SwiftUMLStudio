@@ -110,8 +110,8 @@ struct DepsPackageSVGModuleTests {
     @Test("a cycle node in a package keeps its warning in the layout graph, and its module")
     func cycleNodeKeepsWarning() throws {
         let model = DependencyGraphModel(edges: [
-            DependencyEdge(from: "CA", to: "CB", kind: .conforms, fromModule: "Core", toModule: "Core"),
-            DependencyEdge(from: "CB", to: "CA", kind: .inherits, fromModule: "Core", toModule: "Core"),
+            DependencyEdge(from: "CA", toNode: "CB", kind: .conforms, fromModule: "Core", toModule: "Core"),
+            DependencyEdge(from: "CB", toNode: "CA", kind: .inherits, fromModule: "Core", toModule: "Core"),
         ])
         let graph = try #require(DepsScript(model: model, configuration: Configuration(format: .svg)).layoutGraph)
         #expect(graph.nodes.map(\.stereotype) == ["warning", "warning"])

@@ -150,7 +150,7 @@ struct RelationshipExcludeTests {
     }
 
     @Test("dependency.exclude changes nothing when extensions are merged or hidden", arguments: [
-        ExtensionVisualization.merged, .none
+        ExtensionVisualization.merged, .hidden
     ])
     func dependencyExcludeIdleWithoutExtensionBoxes(extensions: ExtensionVisualization) {
         let excluded = edges(Self.model, configuration(dependency: ["Point"], extensions: extensions))

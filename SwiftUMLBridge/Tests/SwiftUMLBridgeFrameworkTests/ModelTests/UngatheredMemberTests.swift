@@ -1,10 +1,11 @@
 @testable import SwiftUMLBridgeFramework
 import Testing
 
-/// A dotted name whose member Swift means is one the lookup does not gather, as one a superclass
-/// declares or an extension adds through a typealias, and one the diagram hides: the edge ends on
-/// no type the writer cannot reach, and a hidden type named through an alias ends where its own
-/// name does. Each case builds with swiftc (`ImportAwareRankTests`).
+/// A dotted name whose member Swift means is one the lookup does not gather, as one an extension
+/// adds through a typealias, or one a superclass declares, which it now does (#250), and one the
+/// diagram hides: the edge ends on Swift's member or on no type the writer cannot reach, and a
+/// hidden type named through an alias ends where its own name does. Each case builds with swiftc
+/// (`ImportAwareRankTests`).
 @Suite("A dotted name whose member is not gathered, or hidden, ends where Swift's would or nowhere")
 struct UngatheredMemberTests {
     typealias File = ImportAwareRankTests.File
@@ -68,20 +69,34 @@ struct UngatheredMemberTests {
         File(module: "App", source: "import ModA\nimport ModB\n\nfinal class C: Foo.V {}\n"),
     ]
 
-    /// Where Swift's member is one the lookup cannot gather, inherited (`Foo.V` is `Base.V`
-    /// after `typealias Foo = ModA.Bar` and `class Bar: Base`) or added through a typealias
+    /// Where Swift's member is one the lookup cannot gather, added through a typealias
     /// (`extension FooAlias { class V }`), `C` ends on no box, not on a type the writer cannot
-    /// reach: another target's `Bar.V` (swiftc: `zOnly` does not resolve), the writer
-    /// module's own `Bar.V`, which the alias does not name (`cOnly` does not), nor a `V` that a
-    /// target no file of App imports adds to `Foo` (`cOnly` does not). The text formats keep
-    /// the name as written, `Foo.V`, as no box has it, though `Bar.V` is a drawn box's.
+    /// reach: a `V` that a target no file of App imports adds to `Foo` (`cOnly` does not
+    /// resolve). The text formats keep the name as written, `Foo.V`, as no box has it.
     @Test("a name whose member is not gathered ends on no type the writer cannot reach", arguments: [false, true])
     func endsOnNothingOutOfReach(reversed: Bool) throws {
-        let fixtures = [
-            (Self.inheritedMember, "zOnly"), (Self.inheritedBesideOwnBar, "cOnly"),
-            (Self.memberAddedThroughAlias, "cOnly"),
-        ]
-        for (given, outOfReach) in fixtures {
+        let ordered = reversed ? Self.memberAddedThroughAlias.reversed() : Self.memberAddedThroughAlias
+        let files = ordered.map { (module: Optional($0.module), source: $0.source) }
+        for mode in [ExtensionVisualization.all, .merged] {
+            let elements = ElementOptions(showExtensions: mode)
+            let svg = Configuration(elements: elements, format: .svg)
+            let graph = LayoutGraphBuilder.buildClassDiagram(from: try moduleQualifiedItems(files), configuration: svg)
+            #expect(graph.owner(of: "cOnly") != nil, "\(mode)")
+            #expect(!graph.edgeEnds.contains { $0.hasPrefix("C -> ") }, "\(mode)")
+            let text = DiagramScript(
+                items: try moduleQualifiedItems(files), configuration: Configuration(elements: elements)
+            ).text
+            #expect(ClassDiagramIds.lines(of: text, containing: "<|-- C ") == ["Foo.V <|-- C : inherits"], "\(mode)")
+        }
+    }
+
+    /// `Foo.V` after `typealias Foo = ModA.Bar` and `class Bar: Base` is the `V` that `Bar` inherits
+    /// from `Base` (swiftc: `vOnly` resolves), so `C` ends on `Base.V`, not on another target's
+    /// `Bar.V` (`zOnly` does not resolve) nor the writer module's own `Bar.V`, which the alias does
+    /// not name (`cOnly` does not), in SVG and in the text formats (#250).
+    @Test("a name whose member a superclass declares ends on that member", arguments: [false, true])
+    func inheritedEndsOnSuperclassMember(reversed: Bool) throws {
+        for given in [Self.inheritedMember, Self.inheritedBesideOwnBar] {
             let ordered = reversed ? given.reversed() : given
             let files = ordered.map { (module: Optional($0.module), source: $0.source) }
             for mode in [ExtensionVisualization.all, .merged] {
@@ -89,13 +104,13 @@ struct UngatheredMemberTests {
                 let svg = Configuration(elements: elements, format: .svg)
                 let items = try moduleQualifiedItems(files)
                 let graph = LayoutGraphBuilder.buildClassDiagram(from: items, configuration: svg)
-                #expect(graph.owner(of: outOfReach) != nil, "\(outOfReach), \(mode)")
-                #expect(!graph.edgeEnds.contains { $0.hasPrefix("C -> ") }, "\(outOfReach), \(mode)")
+                let member = try #require(graph.owner(of: "vOnly"), "\(mode)")
+                #expect(graph.edgeEnds.filter { $0.hasPrefix("C -> ") } == ["C -> \(member)"], "\(mode)")
                 let text = DiagramScript(
                     items: try moduleQualifiedItems(files), configuration: Configuration(elements: elements)
                 ).text
-                #expect(ClassDiagramIds.lines(of: text, containing: "<|-- C ") == ["Foo.V <|-- C : inherits"],
-                        "\(outOfReach), \(mode)")
+                #expect(ClassDiagramIds.lines(of: text, containing: "<|-- C ") == ["Base.V <|-- C : inherits"],
+                        "\(mode)")
             }
         }
     }

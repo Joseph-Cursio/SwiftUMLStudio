@@ -111,14 +111,14 @@ struct ParenthesizedSupertypeTests {
     @Test("deps --types draws the edge to the type inside the parentheses")
     func depsEdges() throws {
         let edges = try Self.withFile(Self.shapes) { DependencyGraphGenerator().extractEdges(for: [$0], mode: .types) }
-        #expect(edges.map { "\($0.from) -> \($0.to)" } == [
+        #expect(edges.map { "\($0.from) -> \($0.toNode)" } == [
             "Circle -> Base", "Circle -> Shape", "Square -> Shape", "Square -> Named", "Label -> Named"
         ])
         let excluding = Configuration(elements: ElementOptions(exclude: ["Shape", "Named"]))
         let kept = try Self.withFile(Self.shapes) {
             DependencyGraphGenerator().extractEdges(for: [$0], mode: .types, with: excluding)
         }
-        #expect(kept.map { "\($0.from) -> \($0.to)" } == ["Circle -> Base"])
+        #expect(kept.map { "\($0.from) -> \($0.toNode)" } == ["Circle -> Base"])
     }
 
     @Test("a GRDB record whose conformance is parenthesized is an ER entity")

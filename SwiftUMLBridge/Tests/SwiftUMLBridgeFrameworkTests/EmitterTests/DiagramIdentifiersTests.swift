@@ -61,8 +61,8 @@ struct DiagramIdentifiersTests {
     @Test("Deps Mermaid draws two names that sanitize alike as two nodes")
     func depsMermaidKeepsCollidingNodesApart() {
         let model = DependencyGraphModel(edges: [
-            DependencyEdge(from: "App", to: "Outer.Inner", kind: .inherits),
-            DependencyEdge(from: "Tool", to: "Outer_Inner", kind: .inherits),
+            DependencyEdge(from: "App", toNode: "Outer.Inner", kind: .inherits),
+            DependencyEdge(from: "Tool", toNode: "Outer_Inner", kind: .inherits),
         ])
         var config = Configuration.default
         config.format = .mermaid
@@ -80,7 +80,7 @@ struct DiagramIdentifiersTests {
                 Component(name: "swift-syntax", kind: .library),
                 Component(name: "swift_syntax", kind: .library),
             ],
-            dependencies: [ComponentDependency(from: "swift_syntax", to: "swift-syntax")]
+            dependencies: [ComponentDependency(from: "swift_syntax", toComponent: "swift-syntax")]
         )
         let text = ComponentScript(model: model, configuration: .default).text
         #expect(text.contains("component \"swift-syntax\" as swift_syntax "))
@@ -95,7 +95,7 @@ struct DiagramIdentifiersTests {
                 Component(name: "A", kind: .library, providedInterfaces: ["B"]),
                 Component(name: "A_B", kind: .library),
             ],
-            dependencies: [ComponentDependency(from: "A_B", to: "A")]
+            dependencies: [ComponentDependency(from: "A_B", toComponent: "A")]
         )
         var config = Configuration.default
         config.format = .mermaid

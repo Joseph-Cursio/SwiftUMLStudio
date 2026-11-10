@@ -14,14 +14,14 @@ struct GraphWalkDepthTests {
     /// `class Root: Q9999`, `protocol Q1: Root`, `protocol Q<i>: Q<i-1>`: one cycle through every
     /// node, so a depth-first search from any node goes `length` deep, whatever its start order.
     static let ring: [DependencyEdge] = [
-        DependencyEdge(from: "Root", to: "Q\(length - 1)", kind: .inherits),
-        DependencyEdge(from: "Q1", to: "Root", kind: .conforms),
-    ] + (2..<length).map { DependencyEdge(from: "Q\($0)", to: "Q\($0 - 1)", kind: .conforms) }
+        DependencyEdge(from: "Root", toNode: "Q\(length - 1)", kind: .inherits),
+        DependencyEdge(from: "Q1", toNode: "Root", kind: .conforms),
+    ] + (2..<length).map { DependencyEdge(from: "Q\($0)", toNode: "Q\($0 - 1)", kind: .conforms) }
 
     /// `class C<i>: C<i-1>`, listed from the bottom up, so a search that starts at the first node
     /// it meets goes the whole chain deep.
     static let chain: [DependencyEdge] = (1..<length).reversed().map {
-        DependencyEdge(from: "C\($0)", to: "C\($0 - 1)", kind: .inherits)
+        DependencyEdge(from: "C\($0)", toNode: "C\($0 - 1)", kind: .inherits)
     }
 
     /// The other tests show the fix only on a stack this small. On an 8 MB thread they would
@@ -72,7 +72,7 @@ struct GraphWalkDepthTests {
         let model = ComponentModel(
             components: names.map { Component(name: $0, kind: .library) },
             dependencies: (1..<Self.length).map {
-                ComponentDependency(from: String(format: "T%05d", $0), to: String(format: "T%05d", $0 - 1))
+                ComponentDependency(from: String(format: "T%05d", $0), toComponent: String(format: "T%05d", $0 - 1))
             }
         )
         let levels = ComponentSVGRenderer.dependencyLevels(for: model)

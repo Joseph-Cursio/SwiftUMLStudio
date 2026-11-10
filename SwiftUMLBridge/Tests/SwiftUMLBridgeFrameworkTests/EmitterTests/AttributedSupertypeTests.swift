@@ -196,12 +196,12 @@ struct AttributedSupertypeTests {
             final class Box: @unchecked Sendable {}
             """
         let edges = try Self.withFile(source) { DependencyGraphGenerator().extractEdges(for: [$0], mode: .types) }
-        #expect(edges.map { "\($0.from) -> \($0.to)" } == ["Foo -> Q", "Foo -> P", "Box -> Sendable"])
+        #expect(edges.map { "\($0.from) -> \($0.toNode)" } == ["Foo -> Q", "Foo -> P", "Box -> Sendable"])
         let excluding = Configuration(elements: ElementOptions(exclude: ["Sendable"]))
         let kept = try Self.withFile(source) {
             DependencyGraphGenerator().extractEdges(for: [$0], mode: .types, with: excluding)
         }
-        #expect(kept.map { "\($0.from) -> \($0.to)" } == ["Foo -> Q", "Foo -> P"])
+        #expect(kept.map { "\($0.from) -> \($0.toNode)" } == ["Foo -> Q", "Foo -> P"])
     }
 
     /// A type in a target that defaults to `@MainActor` keeps a GRDB conformance nonisolated.

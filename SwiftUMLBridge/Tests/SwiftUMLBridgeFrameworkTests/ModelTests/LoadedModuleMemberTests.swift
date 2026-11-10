@@ -102,7 +102,8 @@ struct LoadedModuleMemberTests {
     }
 
     /// Read without their package, the files have no modules, so imports cannot tell the two
-    /// `Base`s apart: the name means the first recorded, as before imports were read.
+    /// `Base`s apart, and all three lie in one directory: the name means the first recorded, as
+    /// before imports were read.
     @Test("without modules, a name means the first of its candidates, as before", arguments: [false, true])
     func directoryModeKeepsTheFirst(reversed: Bool) throws {
         let given: [(module: String?, source: String)] = [

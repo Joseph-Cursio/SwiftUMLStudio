@@ -248,7 +248,8 @@ struct AliasSpelledExtensionScopeTests {
     /// Eight levels of typealiases, each spelled through eight parts that are each a typealias of
     /// the level below. Only the longest part the lookup records decides whether the extension is
     /// the project's, so only its alias is followed: following every part's alias took eight to
-    /// the eighth lookups for the one name written in the last extension.
+    /// the eighth lookups for the one name written in the last extension. Timed by this thread's
+    /// CPU clock, so a busy machine does not count (#237).
     @Test("an extension spelled through many aliased parts is judged by its longest part alone")
     func manyAliasedPartsCostALookupAPart() throws {
         var lines = ["import Foundation", "struct Base {}"]
@@ -268,7 +269,7 @@ struct AliasSpelledExtensionScopeTests {
         // Parsed outside the clock, so a busy SourceKit does not count.
         let items = try #require(SyntaxStructure.create(from: lines.joined(separator: "\n"))?.substructure)
         let configuration = Configuration(elements: ElementOptions(showExtensions: .merged), format: .plantuml)
-        let elapsed = ContinuousClock().measure { _ = DiagramScript(items: items, configuration: configuration) }
-        #expect(elapsed < .seconds(2), "\(elapsed)")
+        let seconds = ThreadCPUClock.seconds { _ = DiagramScript(items: items, configuration: configuration) }
+        #expect(seconds < 2, "\(seconds)")
     }
 }

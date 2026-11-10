@@ -20,7 +20,8 @@ struct ModuleLoads {
             let name = ModuleQualifiers.c99Name(of: module)
             targetsForName[name, default: []].insert(module)
             imported[name, default: []].formUnion(
-                imports.map { ModuleQualifiers.c99Name(of: String($0.prefix { $0 != "." })) }
+                imports.filter { $0 != ImportExtractor.spiImport && !$0.hasPrefix(ModuleReexports.directImportPrefix) }
+                    .map { ModuleQualifiers.c99Name(of: String($0.prefix { $0 != "." })) }
             )
         }
         for name in imported.keys {

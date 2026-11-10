@@ -20,7 +20,7 @@ struct NestedTypeExcludeTests {
         """
 
     static let formats: [DiagramFormat] = [.plantuml, .mermaid, .nomnoml, .svg]
-    static let modes: [ExtensionVisualization] = [.all, .merged, .none]
+    static let modes: [ExtensionVisualization] = [.all, .merged, .hidden]
 
     private func script(
         _ source: String,

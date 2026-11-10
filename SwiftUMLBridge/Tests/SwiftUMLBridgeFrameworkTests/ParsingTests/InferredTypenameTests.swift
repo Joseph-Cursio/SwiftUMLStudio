@@ -9,6 +9,11 @@ import Testing
 ///
 /// The suite runs in parallel on purpose: SourceKit cancels a cursor-info request when another
 /// arrives unless each request says not to, and only concurrent parses show the lost types.
+///
+/// Each test waits for its diagram suspended, through `offCooperativePool`, not blocked. The
+/// supplement waits for cursor info synchronously, and a request is never answered while every
+/// cooperative thread is blocked waiting on one. Swift Testing has one such thread per core, so
+/// on a 3-core CI runner three of these tests deadlocked the run (PR #224).
 @Suite("The typename supplement resolves inferred types when given an SDK")
 struct InferredTypenameTests {
     /// `xcrun --show-sdk-path -sdk macosx`, or nil on a machine without an SDK.
@@ -37,13 +42,23 @@ struct InferredTypenameTests {
         return directory
     }
 
+    /// The result of `body`, run on a thread of its own while the calling test is suspended, so
+    /// the test holds no cooperative thread while SourceKit works.
+    private static func offCooperativePool<T: Sendable>(_ body: @escaping @Sendable () -> T) async -> T {
+        await withCheckedContinuation { continuation in
+            Thread { continuation.resume(returning: body()) }.start()
+        }
+    }
+
     /// The PlantUML class diagram's member lines for `files`, written to a fresh directory.
-    private func members(_ files: [String: String], sdkPath: String?) throws -> [String] {
+    private func members(_ files: [String: String], sdkPath: String?) async throws -> [String] {
         let directory = try directory(with: files.mapValues { Data($0.utf8) })
         defer { try? FileManager.default.removeItem(at: directory) }
-        let text = ClassDiagramGenerator()
-            .generateScript(for: [directory.path], with: Configuration(format: .plantuml), sdkPath: sdkPath)
-            .text
+        let text = await Self.offCooperativePool {
+            ClassDiagramGenerator()
+                .generateScript(for: [directory.path], with: Configuration(format: .plantuml), sdkPath: sdkPath)
+                .text
+        }
         return Self.memberLines(text)
     }
 
@@ -54,16 +69,16 @@ struct InferredTypenameTests {
     }
 
     @Test("literals and initialisers give their inferred type", .enabled(if: sdkPath != nil))
-    func inferredFromLiterals() throws {
-        let members = try members([
+    func inferredFromLiterals() async throws {
+        let members = try await members([
             "S.swift": "struct S { var count = 0; var name = \"a\"; var flag = true; var typed: Double = 1 }"
         ], sdkPath: Self.sdkPath)
         #expect(members == ["~count : Int", "~name : String", "~flag : Bool", "~typed : Double"])
     }
 
     @Test("a static property in an extension and a nested type's property", .enabled(if: sdkPath != nil))
-    func extensionAndNesting() throws {
-        let members = try members([
+    func extensionAndNesting() async throws {
+        let members = try await members([
             "Store.swift": """
                 final class Store {
                     var items = [String]()
@@ -80,8 +95,8 @@ struct InferredTypenameTests {
     }
 
     @Test("a type the file cannot see is left unwritten, not shown as `_`", .enabled(if: sdkPath != nil))
-    func unresolvedIsLeftOut() throws {
-        let members = try members([
+    func unresolvedIsLeftOut() async throws {
+        let members = try await members([
             "Store.swift": "struct Store { var cache = Cache() }",
             "Cache.swift": "struct Cache { var hits = 0 }",
         ], sdkPath: Self.sdkPath)
@@ -92,19 +107,21 @@ struct InferredTypenameTests {
     /// Reading a file into a `String` drops its byte-order mark, so the offsets the parsers give
     /// are 3 short of the file's, which cursor info reads.
     @Test("a file that starts with a byte-order mark", .enabled(if: sdkPath != nil))
-    func byteOrderMark() throws {
+    func byteOrderMark() async throws {
         let directory = try directory(with: [
             "S.swift": Data([0xEF, 0xBB, 0xBF]) + Data("struct S {\n    var count = 0\n    var name = \"a\"\n}\n".utf8)
         ])
         defer { try? FileManager.default.removeItem(at: directory) }
-        let text = ClassDiagramGenerator()
-            .generateScript(for: [directory.path], with: Configuration(format: .plantuml), sdkPath: Self.sdkPath)
-            .text
+        let text = await Self.offCooperativePool {
+            ClassDiagramGenerator()
+                .generateScript(for: [directory.path], with: Configuration(format: .plantuml), sdkPath: Self.sdkPath)
+                .text
+        }
         #expect(Self.memberLines(text) == ["~count : Int", "~name : String"])
     }
 
     @Test("a package's files resolve inferred types too", .enabled(if: sdkPath != nil))
-    func packageMode() throws {
+    func packageMode() async throws {
         let root = try directory(with: [:])
         defer { try? FileManager.default.removeItem(at: root) }
         let sources = root.appendingPathComponent("Sources/Core", isDirectory: true)
@@ -115,15 +132,18 @@ struct InferredTypenameTests {
                 name: "Core", kind: .library, path: "Sources/Core", sources: ["S.swift"], dependencies: []
             ),
         ])
-        let text = ClassDiagramGenerator().generateScript(
-            forPackage: description, packageRoot: root, with: Configuration(format: .plantuml), sdkPath: Self.sdkPath
-        ).text
+        let text = await Self.offCooperativePool {
+            ClassDiagramGenerator().generateScript(
+                forPackage: description, packageRoot: root,
+                with: Configuration(format: .plantuml), sdkPath: Self.sdkPath
+            ).text
+        }
         #expect(Self.memberLines(text) == ["~count : Int"], "\(text)")
     }
 
     @Test("without an SDK only written types are known")
-    func noSDKKeepsWrittenTypesOnly() throws {
-        let members = try members([
+    func noSDKKeepsWrittenTypesOnly() async throws {
+        let members = try await members([
             "S.swift": "struct S { var count = 0; var typed: Double = 1 }"
         ], sdkPath: nil)
         #expect(members == ["~count", "~typed : Double"])

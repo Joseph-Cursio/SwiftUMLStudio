@@ -17,7 +17,7 @@ struct BoundGenericExtensionModelTests {
         let source = "struct Foo<T> {}\nextension Foo<Int> { struct Inner {} }"
         #expect(svg(source, .all)?.nodeIds == ["Foo", "Foo.Inner", "Foo_1"])
         #expect(svg(source, .all)?.edgeEnds == ["Foo -> Foo.Inner", "Foo_1 -> Foo"])
-        #expect(svg(source, .none)?.edgeEnds == ["Foo -> Foo.Inner"])
+        #expect(svg(source, .hidden)?.edgeEnds == ["Foo -> Foo.Inner"])
     }
 
     @Test("deps --types draws a bound extension's conformance from the type it extends")
@@ -29,6 +29,6 @@ struct BoundGenericExtensionModelTests {
         try source.write(to: url, atomically: true, encoding: .utf8)
         defer { try? FileManager.default.removeItem(at: url) }
         let edges = DependencyGraphGenerator().extractEdges(for: [url.path], mode: .types)
-        #expect(edges.map { "\($0.from) -> \($0.to)" } == ["Foo -> P", "Array -> P"])
+        #expect(edges.map { "\($0.from) -> \($0.toNode)" } == ["Foo -> P", "Array -> P"])
     }
 }

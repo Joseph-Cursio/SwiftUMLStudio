@@ -98,7 +98,9 @@ extension LayoutGraphBuilder.TypeLookup {
     }
 
     /// The `candidates` recorded under `name` that it can mean from `scope`. A name built on an
-    /// enclosing type takes only those of that type's root. A bare name takes those the file
+    /// enclosing type takes only those of that type's root, and with no module, where an
+    /// extension adds one of them, only those of that very type (`membersOfEnclosingType`,
+    /// #252). A bare name takes those the file
     /// sees (`seenAtFileScope(_:named:from:)`). A dotted name as written takes the members of the
     /// type its first component means there. Where that is worked out (`started(_:from:depth:)`),
     /// they are the members of that very type, an extension's if the writer's module loads it.
@@ -107,7 +109,8 @@ extension LayoutGraphBuilder.TypeLookup {
     /// but only when the candidates are not all of one root: a name the diagram does not mix up
     /// keeps every candidate, as it always has, and costs no lookup. So are a started name's
     /// when that type has none, among those the file can reach
-    /// (`fallbackCandidates(_:for:from:depth:)`).
+    /// (`fallbackCandidates(_:for:from:depth:)`). With no module, where an extension adds one of
+    /// them, they are also that type's alone (`membersOfWrittenStart(_:named:from:depth:)`).
     func fitting(
         _ candidates: [LayoutGraphBuilder.Declared],
         for name: LayoutGraphBuilder.QualifiedName,
@@ -120,7 +123,9 @@ extension LayoutGraphBuilder.TypeLookup {
             // does, so `Inner` in it is not one nested in a namespace the file does not import.
             let seen = name.isRecorded
                 ? candidates : seenWhenQualifierIsModule(candidates, named: name.name, from: scope, depth: depth)
-            return seen.filter { !isInExtensionOfOutsideType($0, depth: depth) }
+            let fitted = seen.filter { !isInExtensionOfOutsideType($0, depth: depth) }
+            guard fitted.count > 1, fitted.contains(where: { $0.extended != nil }) else { return fitted }
+            return membersOfEnclosingType(fitted, from: scope, depth: depth)
 
         case .outsideType:
             return candidates.filter { isInExtensionOfOutsideType($0, depth: depth) }
@@ -131,14 +136,175 @@ extension LayoutGraphBuilder.TypeLookup {
             if let start = name.start {
                 if let members = members(of: start, among: narrowed, from: scope, depth: depth) { return members }
                 narrowed = fallbackCandidates(narrowed, for: name, from: scope, depth: depth)
+            } else {
+                // A first component read as a module, `ModA` in `ModA.Foo.V`, sets no start, but
+                // the writer still sees only the extensions its module loads (#245).
+                narrowed = loaded(narrowed, from: scope, depth: depth)
             }
             guard narrowed.count > 1, narrowed.contains(where: { $0.extended != nil }) else {
                 return narrowed
             }
+            narrowed = membersOfWrittenStart(narrowed, named: name.name, from: scope, depth: depth)
+            guard narrowed.count > 1 else { return narrowed }
             let isOutside = narrowed.map { isInExtensionOfOutsideType($0, depth: depth) }
             guard isOutside.contains(true), isOutside.contains(false) else { return narrowed }
             let startsOutside = firstComponentType(of: name.name, from: scope, depth: depth) == nil
             return zip(narrowed, isOutside).filter { $0.1 == startsOutside }.map(\.0)
         }
+    }
+
+    /// In a file of no known module, where no start is worked out (`started(_:from:depth:)`), the
+    /// `candidates` of the dotted `name` that belong to the type its first component means from
+    /// `scope` (`members(ownedBy:among:from:depth:)`, #230).
+    private func membersOfWrittenStart(
+        _ candidates: [LayoutGraphBuilder.Declared],
+        named name: String,
+        from scope: LayoutGraphBuilder.Scope,
+        depth: Int
+    ) -> [LayoutGraphBuilder.Declared] {
+        guard scope.module == nil, depth < 8,
+              let start = firstComponentType(of: name, from: scope, depth: depth),
+              let owner = owningDeclaration(of: start, depth: depth) else { return candidates }
+        return members(ownedBy: owner, among: candidates, from: scope, depth: depth)
+    }
+
+    /// In a file of no known module, the `candidates` of a name built on the types around `scope`
+    /// that belong to the outermost of them (`members(ownedBy:among:from:depth:)`, #252): for
+    /// `class W: X` in `extension Foo`, a member of the `Foo` that extension extends, and not one
+    /// another extension near `W` adds to another target's `Foo`. That type is the one the
+    /// outermost name means from the file, as an extension's own lookup finds it, which is also the
+    /// type a member merged out of an extension sits in.
+    private func membersOfEnclosingType(
+        _ candidates: [LayoutGraphBuilder.Declared], from scope: LayoutGraphBuilder.Scope, depth: Int
+    ) -> [LayoutGraphBuilder.Declared] {
+        guard scope.module == nil, let owner = enclosingOwner(of: scope, depth: depth) else { return candidates }
+        return members(ownedBy: owner, among: candidates, from: scope, depth: depth)
+    }
+
+    /// Whether `localNearest(_:from:depth:)` may answer a name built on the types around `scope`
+    /// with `local`, the first candidate ranked in the writer's file, without the rest: when it
+    /// belongs to the outermost of those types, or that type is unknown, `fitting` keeps it among
+    /// all of them, and ranked in the writer's file, it comes first. Otherwise the others decide.
+    func mayAnswerAlone(
+        _ local: LayoutGraphBuilder.Declared, builtOnTypesAround scope: LayoutGraphBuilder.Scope, depth: Int
+    ) -> Bool {
+        guard let owner = enclosingOwner(of: scope, depth: depth) else { return true }
+        return owningDeclaration(of: local, depth: depth).map { $0 == owner } ?? false
+    }
+
+    /// `lookUp`'s candidates for `name` from `scope`, kept for a name built on the types around a
+    /// writer of no known module that is fitted by what the whole set holds
+    /// (`fitsEachAlone(_:from:)`). Those depend on the name, the writer's scope and the depth
+    /// alone, and every writer in one extension of a file shares the scope, so each such scope
+    /// scans the name's same-named types once rather than at each of its many lookups (#252). Any
+    /// other name is looked up afresh, as before: its candidates cost no more.
+    func enclosingCandidates(
+        _ name: LayoutGraphBuilder.QualifiedName,
+        from scope: LayoutGraphBuilder.Scope,
+        depth: Int,
+        lookUp: () -> [LayoutGraphBuilder.Declared]
+    ) -> [LayoutGraphBuilder.Declared] {
+        guard name.root == .projectType, scope.module == nil, !fitsEachAlone(name, from: scope) else { return lookUp() }
+        return enclosingLookups.candidates(for: enclosingKey(name, from: scope, depth: depth), lookUp: lookUp)
+    }
+
+    /// `name` built on the types around `scope`, with all of the writer's scope that what it means
+    /// there can depend on (`EnclosingCandidatesKey`).
+    func enclosingKey(
+        _ name: LayoutGraphBuilder.QualifiedName, from scope: LayoutGraphBuilder.Scope, depth: Int
+    ) -> LayoutGraphBuilder.EnclosingCandidatesKey {
+        LayoutGraphBuilder.EnclosingCandidatesKey(
+            name: name.name, isRecorded: name.isRecorded, filePath: scope.filePath.map { Array($0.utf8) },
+            imports: scope.imports,
+            enclosingTypes: scope.enclosingTypes, enclosingExtension: scope.enclosingExtension?.name,
+            isSugared: scope.enclosingExtension?.isSugared ?? false, depth: depth
+        )
+    }
+
+    /// The outermost type around `scope`, by name and file (`owningDeclaration(of:depth:)`): the
+    /// one the outermost name means from the file, as an extension's own lookup finds it.
+    /// `nil` at top level, or when the name means no type of the diagram. Kept per name and file
+    /// (`EnclosingLookups`), as each writer there asks it of every name it builds on them.
+    func enclosingOwner(
+        of scope: LayoutGraphBuilder.Scope, depth: Int
+    ) -> LayoutGraphBuilder.OwningDeclaration? {
+        guard depth < 8, let outermost = scope.enclosingTypes.last else { return nil }
+        let isSugared = scope.enclosingExtension?.isSugared ?? false
+        let key = LayoutGraphBuilder.EnclosingOwnerKey(
+            outermost: outermost, isSugared: isSugared, filePath: scope.filePath.map { Array($0.utf8) },
+            imports: scope.imports, depth: depth
+        )
+        return enclosingLookups.owner(for: key) {
+            extendedType(named: outermost, from: scope.fileScope, isSugared: isSugared, depth: depth + 1)
+                .flatMap { owningDeclaration(of: $0, depth: depth) }
+        }
+    }
+
+    /// The `candidates` that belong to the outermost type `owner`, or every candidate when none
+    /// does. A member every module that sees the type sees then goes before an extension's in
+    /// another directory: a file that sees both does not compile (`ambiguous type name`), so one
+    /// that compiles means the seen one. That is a member the type's body declares for every
+    /// module to see, or one an extension in the type's own file does (`seenWithType`, #253). An
+    /// `internal` one proves nothing, as another module cannot see it, and an extension in the
+    /// writer's directory stays, since there the `Foo` both read may be another target's
+    /// unrelated one, first read of those equally near.
+    private func members(
+        ownedBy owner: LayoutGraphBuilder.OwningDeclaration,
+        among candidates: [LayoutGraphBuilder.Declared],
+        from scope: LayoutGraphBuilder.Scope,
+        depth: Int
+    ) -> [LayoutGraphBuilder.Declared] {
+        let members = candidates.filter { candidate in
+            owningDeclaration(of: candidate, depth: depth).map { $0 == owner } ?? false
+        }
+        guard !members.isEmpty else { return candidates }
+        let isSeen = { (member: LayoutGraphBuilder.Declared) in
+            self.seenWithType(member, owner: owner, from: scope, depth: depth)
+        }
+        guard members.contains(where: isSeen), let writer = scope.rankingDirectory else { return members }
+        return members.filter { isSeen($0) || $0.scope.rankingDirectory == writer }
+    }
+
+    /// Whether every module that sees `owner` sees its member `member`, as far as the files tell:
+    /// a member of its body that is `public` or `package`, or one an extension in its own file
+    /// adds that is `public` (#253). A body member marked `@_spi` counts only for a writer whose
+    /// file, in `scope`, imports something with `@_spi(...)`: a file that imports nothing so
+    /// cannot see it from another module. Which module's SPI an import opens is not known
+    /// without a package, so a file that has one still counts it, as does a writer in the type's
+    /// own module, which sees it unimported. An extension's member so marked never counts. A file is
+    /// compiled whole into each target that compiles it, so that extension goes wherever the type
+    /// does; another file in the type's directory can be another target's, in an Xcode project or
+    /// through a package's `sources:` and `exclude:`.
+    /// The extension's member must be `public` once capped by the type it extends, as `public`
+    /// inside `extension Foo.Inner` is no more than `Inner`; `package` stops at a package, which a
+    /// scan cannot see. It must not
+    /// sit in an `#if`, whose clause a build may drop. And the type must be the only one of its
+    /// name: of two `Foo`s, the one the writer means is a guess, and the other's member would
+    /// then drop the one the writer sees.
+    private func seenWithType(
+        _ member: LayoutGraphBuilder.Declared,
+        owner: LayoutGraphBuilder.OwningDeclaration,
+        from scope: LayoutGraphBuilder.Scope,
+        depth: Int
+    ) -> Bool {
+        guard member.extended != nil else {
+            return member.ownAccess >= .package
+                && (!member.isSPI || scope.imports?.contains(ImportExtractor.spiImport) == true)
+        }
+        guard member.ownAccess >= .public, !member.isSPI, !member.isConditional, let typeFile = owner.filePath,
+              let file = member.scope.filePath, file.utf8.elementsEqual(typeFile.utf8), let typeName = owner.name,
+              declarations(named: typeName).count(where: { !$0.isExtension }) == 1 else { return false }
+        return access(of: member, depth: depth) >= .public
+    }
+
+    /// The outermost type `declared` belongs to past any extension, by name and file, which tell
+    /// same-named types apart where they have no module; `nil` for one in an extension of a type
+    /// outside the diagram.
+    func owningDeclaration(
+        of declared: LayoutGraphBuilder.Declared, depth: Int
+    ) -> LayoutGraphBuilder.OwningDeclaration? {
+        guard declared.extended != nil else { return (declared.outermostName, declared.outermostFilePath) }
+        guard depth < 8, let type = enclosingExtensionType(of: declared, depth: depth) else { return nil }
+        return owningDeclaration(of: type, depth: depth + 1)
     }
 }
