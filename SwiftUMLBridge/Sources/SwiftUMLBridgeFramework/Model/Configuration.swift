@@ -57,7 +57,7 @@ public struct Configuration: Codable, Sendable {
             self.includeRemoteURL = includeRemoteURL
         }
         if let theme = try container.decodeIfPresent(String.self, forKey: .theme) {
-            self.theme = Theme.directive(theme)
+            self.theme = Theme(configValue: theme)
         }
         if let relationships = try container.decodeIfPresent(RelationshipOptions.self, forKey: .relationships) {
             self.relationships = relationships
