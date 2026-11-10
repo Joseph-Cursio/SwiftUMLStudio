@@ -74,7 +74,7 @@ public struct Configuration: Codable, Sendable {
     }
 
     /// A configuration using the defaults for every option.
-    public static let `default` = Configuration()
+    public static let `default` = Self()
 
     /// Which source files are included in generation (globs and excludes).
     public var files = FileOptions()

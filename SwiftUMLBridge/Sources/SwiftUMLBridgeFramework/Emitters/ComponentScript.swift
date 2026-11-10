@@ -10,12 +10,12 @@ public struct ComponentScript: Sendable {
     public let format: DiagramFormat
     public let componentLayout: ComponentLayout?
 
-    public static let empty = ComponentScript(text: "", format: .plantuml)
+    public static let empty = Self(text: "", format: .plantuml)
 
     public init(model: ComponentModel, configuration: Configuration = .default) {
         let drawn = configuration.format.drawn(
-            plantUML: { ComponentScript.buildPlantUMLText(model: model) },
-            mermaid: { ComponentScript.buildMermaidText(model: model) },
+            plantUML: { Self.buildPlantUMLText(model: model) },
+            mermaid: { Self.buildMermaidText(model: model) },
             svg: {
                 let result = ComponentSVGRenderer.render(model)
                 return (result.svg, result.layout)

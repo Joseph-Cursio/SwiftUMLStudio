@@ -18,7 +18,7 @@ enum HiddenParentEnd {
     static func ends(
         of drawn: [SyntaxStructure], through edgeEnds: DrawnEdgeEnds,
         declaringIdentifier declares: (SyntaxStructure) -> Bool
-    ) -> [ObjectIdentifier: HiddenParentEnd] {
+    ) -> [ObjectIdentifier: Self] {
         let drawnItems = Set(drawn)
         // The first of a name keeps it as its alias.
         let declaredNames = Set(drawn.compactMap { item -> String? in
@@ -26,7 +26,7 @@ enum HiddenParentEnd {
             return item.fullName ?? item.name
         })
 
-        var ends: [ObjectIdentifier: HiddenParentEnd] = [:]
+        var ends: [ObjectIdentifier: Self] = [:]
         for item in drawn {
             guard let parent = item.nestingParent, !drawnItems.contains(parent),
                   let parentName = parent.fullName else { continue }

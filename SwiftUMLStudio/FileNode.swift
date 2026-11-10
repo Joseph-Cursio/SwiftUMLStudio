@@ -12,19 +12,19 @@ struct FileNode: Identifiable, Hashable {
     let name: String
     let url: URL
     let isDirectory: Bool
-    var children: [FileNode]?
+    var children: [Self]?
 
     func hash(into hasher: inout Hasher) {
         hasher.combine(url)
     }
 
-    static func == (lhs: FileNode, rhs: FileNode) -> Bool {
+    static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.url == rhs.url
     }
 
     /// Build a file tree from a flat list of paths (files and/or directories).
     /// Only `.swift` files are included; empty directories are pruned.
-    static func buildTree(from paths: [String]) -> [FileNode] {
+    static func buildTree(from paths: [String]) -> [Self] {
         let fileManager = FileManager.default
         var swiftURLs: [URL] = []
 
@@ -95,7 +95,7 @@ struct FileNode: Identifiable, Hashable {
     }
 
     /// Build a nested tree of FileNodes from flat file URLs, relative to a base directory.
-    private static func buildNodes(from urls: [URL], relativeTo base: URL) -> [FileNode] {
+    private static func buildNodes(from urls: [URL], relativeTo base: URL) -> [Self] {
         let baseComponents = base.pathComponents
         let entries: [Entry] = urls.map { url in
             let components = url.pathComponents
@@ -106,7 +106,7 @@ struct FileNode: Identifiable, Hashable {
         return buildLevel(entries: entries, depth: 0, basePath: base)
     }
 
-    private static func buildLevel(entries: [Entry], depth: Int, basePath: URL) -> [FileNode] {
+    private static func buildLevel(entries: [Entry], depth: Int, basePath: URL) -> [Self] {
         // Group entries by the component at the current depth
         var groups: [String: [Entry]] = [:]
         for entry in entries {
@@ -115,7 +115,7 @@ struct FileNode: Identifiable, Hashable {
             groups[key, default: []].append(entry)
         }
 
-        var nodes: [FileNode] = []
+        var nodes: [Self] = []
         for (name, groupEntries) in groups {
             let dirURL = basePath.appendingPathComponent(name, isDirectory: true)
 
@@ -128,7 +128,7 @@ struct FileNode: Identifiable, Hashable {
                 // This is a directory
                 let childNodes = buildLevel(entries: deeper, depth: depth + 1, basePath: dirURL)
                 let leafNodes = leaves.map { entry in
-                    FileNode(id: entry.url, name: entry.url.lastPathComponent,
+                    Self(id: entry.url, name: entry.url.lastPathComponent,
                              url: entry.url, isDirectory: false, children: nil)
                 }
                 // If the directory has only subdirectory children (no leaf files at this level),
@@ -136,14 +136,14 @@ struct FileNode: Identifiable, Hashable {
                 let allChildren = (childNodes + leafNodes).sorted {
                     $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
                 }
-                nodes.append(FileNode(
+                nodes.append(Self(
                     id: dirURL, name: name, url: dirURL,
                     isDirectory: true, children: allChildren
                 ))
             } else {
                 // All entries are leaf files
                 for entry in leaves {
-                    nodes.append(FileNode(
+                    nodes.append(Self(
                         id: entry.url, name: name,
                         url: entry.url, isDirectory: false, children: nil
                     ))
@@ -159,7 +159,7 @@ struct FileNode: Identifiable, Hashable {
     }
 
     /// Collect all leaf (non-directory) URLs from a tree.
-    static func allLeafURLs(from nodes: [FileNode]) -> [URL] {
+    static func allLeafURLs(from nodes: [Self]) -> [URL] {
         var result: [URL] = []
         for node in nodes {
             if let children = node.children {

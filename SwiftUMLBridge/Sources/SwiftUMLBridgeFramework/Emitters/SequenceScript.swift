@@ -12,7 +12,7 @@ public struct SequenceScript: Sendable {
     public let sequenceLayout: SequenceLayout?
 
     /// An empty script (used when no entry point matches).
-    public static let empty = SequenceScript(text: "", format: .plantuml)
+    public static let empty = Self(text: "", format: .plantuml)
 
     internal init(
         traversedEdges: [CallEdge],
@@ -23,12 +23,12 @@ public struct SequenceScript: Sendable {
     ) {
         let drawn = configuration.format.drawn(
             plantUML: {
-                SequenceScript.buildPlantUMLText(
+                Self.buildPlantUMLText(
                     traversedEdges: traversedEdges, entryType: entryType, entryMethod: entryMethod
                 )
             },
             mermaid: {
-                SequenceScript.buildMermaidText(
+                Self.buildMermaidText(
                     traversedEdges: traversedEdges, entryType: entryType, entryMethod: entryMethod
                 )
             },

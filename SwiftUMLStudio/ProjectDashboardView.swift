@@ -235,7 +235,7 @@ struct InsightRowView: View {
     }
 
     private var insightColor: SwiftUI.Color {
-        InsightRowView.color(for: insight.severity)
+        Self.color(for: insight.severity)
     }
 
     /// Maps an `Insight.Severity` to its dashboard row color.

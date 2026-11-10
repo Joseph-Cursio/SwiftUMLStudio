@@ -40,7 +40,7 @@ public enum DetectionConfidence: String, Sendable, Hashable, Comparable {
     /// cases participate in transitions.
     case low
 
-    public static func < (lhs: DetectionConfidence, rhs: DetectionConfidence) -> Bool {
+    public static func < (lhs: Self, rhs: Self) -> Bool {
         lhs.rank < rhs.rank
     }
 

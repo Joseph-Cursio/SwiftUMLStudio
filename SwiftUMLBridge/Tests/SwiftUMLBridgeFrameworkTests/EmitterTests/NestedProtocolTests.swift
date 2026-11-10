@@ -94,7 +94,7 @@ struct NestedProtocolTests {
 
     /// Each format and extension mode, as `"<format> <mode>"`, for which `check` fails.
     private func misses(
-        formats: [DiagramFormat] = NestedProtocolTests.formats, _ check: (DiagramFormat, ExtensionVisualization) -> Bool
+        formats: [DiagramFormat] = Self.formats, _ check: (DiagramFormat, ExtensionVisualization) -> Bool
     ) -> [String] {
         formats.flatMap { format in
             Self.modes.compactMap { mode in check(format, mode) ? nil : "\(format) \(mode)" }

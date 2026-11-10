@@ -17,19 +17,19 @@ public struct DepsScript: Sendable {
 
         switch configuration.format {
         case .plantuml:
-            self.text = DepsScript.buildPlantUMLText(model: model, cycleNodes: cycleNodes)
+            self.text = Self.buildPlantUMLText(model: model, cycleNodes: cycleNodes)
             self.layoutGraph = nil
 
         case .mermaid:
-            self.text = DepsScript.buildMermaidText(model: model, cycleNodes: cycleNodes)
+            self.text = Self.buildMermaidText(model: model, cycleNodes: cycleNodes)
             self.layoutGraph = nil
 
         case .nomnoml:
-            self.text = DepsScript.buildNomnomlText(model: model, cycleNodes: cycleNodes)
+            self.text = Self.buildNomnomlText(model: model, cycleNodes: cycleNodes)
             self.layoutGraph = nil
 
         case .svg:
-            let result = DepsScript.buildSVGWithGraph(model: model)
+            let result = Self.buildSVGWithGraph(model: model)
             self.text = result.text
             self.layoutGraph = result.graph
         }
@@ -75,7 +75,7 @@ private extension DepsScript {
     /// --package) — emit explicit PlantUML node declarations so each node
     /// is stereotyped with its module / target kind.
     static func packageNodeDeclarations(model: DependencyGraphModel) -> [String] {
-        let stereotypes = DepsScript.nodeStereotypes(model: model)
+        let stereotypes = Self.nodeStereotypes(model: model)
         guard !stereotypes.isEmpty else { return [] }
         // Modules-mode + --package: emit one `component` line per target.
         if !model.targetKinds.isEmpty {
@@ -129,7 +129,7 @@ private extension DepsScript {
             seenNodes.insert(edge.to)
         }
 
-        let stereotypes = DepsScript.nodeStereotypes(model: model)
+        let stereotypes = Self.nodeStereotypes(model: model)
 
         // One identifier per node, claimed in sorted order so the output is stable.
         var ids = DiagramIdentifiers(sanitize: mermaidId)
@@ -201,7 +201,7 @@ private extension DepsScript {
             "#edges: rounded"
         ]
 
-        let stereotypes = DepsScript.nodeStereotypes(model: model)
+        let stereotypes = Self.nodeStereotypes(model: model)
 
         // Declare each cycle node as a `warning` box before any edge names it. nomnoml merges
         // nodes of the same text and keeps the first, so the box must come first and be spelled

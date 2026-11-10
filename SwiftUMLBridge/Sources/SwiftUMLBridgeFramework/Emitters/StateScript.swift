@@ -9,13 +9,13 @@ public struct StateScript: Sendable {
     public let format: DiagramFormat
 
     /// An empty script (used when no candidate matches).
-    public static let empty = StateScript(text: "", format: .plantuml)
+    public static let empty = Self(text: "", format: .plantuml)
 
     internal init(model: StateMachineModel, configuration: Configuration) {
         // No SVG layout for state diagrams yet, so SVG is drawn as Mermaid, as Nomnoml is.
         let drawn = configuration.format.drawn(
-            plantUML: { StateScript.buildPlantUMLText(model: model) },
-            mermaid: { StateScript.buildMermaidText(model: model) }
+            plantUML: { Self.buildPlantUMLText(model: model) },
+            mermaid: { Self.buildMermaidText(model: model) }
         )
         self.text = drawn.text
         self.format = drawn.format

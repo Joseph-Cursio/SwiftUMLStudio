@@ -284,7 +284,7 @@ struct DiagramPreviewView: View {
     }
 
     private var lowConfidenceModel: StateMachineModel? {
-        DiagramPreviewView.lowConfidenceModel(
+        Self.lowConfidenceModel(
             diagramMode: viewModel.diagramMode,
             stateMachineModel: viewModel.currentStateMachineModel
         )

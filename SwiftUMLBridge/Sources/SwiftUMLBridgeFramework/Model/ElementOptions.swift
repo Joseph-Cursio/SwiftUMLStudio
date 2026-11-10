@@ -10,9 +10,9 @@ public struct ElementOptions: Codable, Sendable {
     /// were four identical `[.open, .public, .package, .internal, .private]` literals.
     public static let defaultAccessLevels: [AccessLevel] = [.open, .public, .package, .internal, .private]
     /// Only types declared at one of these access levels are drawn. `deps --public-only` sets it.
-    public var havingAccessLevel: [AccessLevel] = ElementOptions.defaultAccessLevels
+    public var havingAccessLevel: [AccessLevel] = Self.defaultAccessLevels
     /// Only members declared at one of these access levels are listed inside a type box.
-    public private(set) var showMembersWithAccessLevel: [AccessLevel] = ElementOptions.defaultAccessLevels
+    public private(set) var showMembersWithAccessLevel: [AccessLevel] = Self.defaultAccessLevels
     /// Whether nested types are drawn as their own boxes.
     public private(set) var showNestedTypes: Bool = true
     /// Whether generic parameter clauses are shown in type and member signatures.
@@ -67,8 +67,8 @@ public struct ElementOptions: Codable, Sendable {
     }
 
     public init(
-        havingAccessLevel: [AccessLevel] = ElementOptions.defaultAccessLevels,
-        showMembersWithAccessLevel: [AccessLevel] = ElementOptions.defaultAccessLevels,
+        havingAccessLevel: [AccessLevel] = Self.defaultAccessLevels,
+        showMembersWithAccessLevel: [AccessLevel] = Self.defaultAccessLevels,
         showNestedTypes: Bool = true,
         showGenerics: Bool = true,
         showExtensions: ExtensionVisualization? = nil,

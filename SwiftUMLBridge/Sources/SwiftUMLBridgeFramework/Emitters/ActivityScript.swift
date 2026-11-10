@@ -12,7 +12,7 @@ public struct ActivityScript: Sendable {
     public let activityLayout: ActivityLayout?
 
     /// An empty script (used when the entry point is not found).
-    public static let empty = ActivityScript(text: "", format: .plantuml)
+    public static let empty = Self(text: "", format: .plantuml)
 
     internal init(graph: ActivityGraph, configuration: Configuration) {
         let drawn = configuration.format.drawn(

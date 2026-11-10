@@ -220,7 +220,7 @@ extension UnknownCaseRepresentable {
 // own accessibility keys (raw values `source.lang.swift.accessibility.*`) — a distinct layer.
 // swiftprojectlint:disable:next parallel-list-drift
 internal enum ElementAccessibility: String, RawRepresentable, Comparable {
-    internal static func < (lhs: ElementAccessibility, rhs: ElementAccessibility) -> Bool {
+    internal static func < (lhs: Self, rhs: Self) -> Bool {
         lhs.value < rhs.value
     }
 

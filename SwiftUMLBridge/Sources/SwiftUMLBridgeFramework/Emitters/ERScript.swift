@@ -6,13 +6,13 @@ public struct ERScript: Sendable {
     public let format: DiagramFormat
 
     /// An empty script (returned when no `@Model` types are found).
-    public static let empty = ERScript(text: "", format: .plantuml)
+    public static let empty = Self(text: "", format: .plantuml)
 
     internal init(model: ERModel, configuration: Configuration) {
         // No SVG layout for ER diagrams yet, so SVG is drawn as Mermaid, as Nomnoml is.
         let drawn = configuration.format.drawn(
-            plantUML: { ERScript.buildPlantUMLText(model: model) },
-            mermaid: { ERScript.buildMermaidText(model: model) }
+            plantUML: { Self.buildPlantUMLText(model: model) },
+            mermaid: { Self.buildMermaidText(model: model) }
         )
         self.text = drawn.text
         self.format = drawn.format
@@ -36,9 +36,9 @@ private extension ERScript {
         }
 
         for relationship in model.relationships {
-            let leftSymbol = ERScript.mermaidLeftSymbol(for: relationship.fromCardinality)
-            let rightSymbol = ERScript.mermaidRightSymbol(for: relationship.toCardinality)
-            let label = ERScript.sanitizeLabel(relationship.label)
+            let leftSymbol = Self.mermaidLeftSymbol(for: relationship.fromCardinality)
+            let rightSymbol = Self.mermaidRightSymbol(for: relationship.toCardinality)
+            let label = Self.sanitizeLabel(relationship.label)
             lines.append(
                 "\(relationship.from) \(leftSymbol)--\(rightSymbol) \(relationship.toEntity) : \(label)"
             )

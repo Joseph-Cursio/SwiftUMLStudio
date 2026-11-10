@@ -56,23 +56,23 @@ struct DiagramViewportControls: View {
         let help: String
         let identifier: String
 
-        static let zoomOut = Control(
+        static let zoomOut = Self(
             title: "Zoom Out", systemImage: "minus.magnifyingglass",
             shortcut: KeyboardShortcut("-"), help: "Zoom out (⌘−)", identifier: "viewportZoomOut"
         )
-        static let zoomIn = Control(
+        static let zoomIn = Self(
             title: "Zoom In", systemImage: "plus.magnifyingglass",
             shortcut: KeyboardShortcut("="), help: "Zoom in (⌘=)", identifier: "viewportZoomIn"
         )
-        static let fitToWindow = Control(
+        static let fitToWindow = Self(
             title: "Fit to Window", systemImage: "arrow.up.left.and.down.right.magnifyingglass",
             shortcut: KeyboardShortcut("9"), help: "Fit to window (⌘9)", identifier: "viewportFit"
         )
-        static let actualSize = Control(
+        static let actualSize = Self(
             title: "Actual Size", systemImage: "1.magnifyingglass",
             shortcut: KeyboardShortcut("0"), help: "Actual size (⌘0)", identifier: "viewportActualSize"
         )
-        static let reset = Control(
+        static let reset = Self(
             title: "Reset Zoom and Pan", systemImage: "arrow.counterclockwise",
             shortcut: KeyboardShortcut("r", modifiers: [.command, .shift]),
             help: "Reset zoom and pan (⇧⌘R)", identifier: "viewportReset"

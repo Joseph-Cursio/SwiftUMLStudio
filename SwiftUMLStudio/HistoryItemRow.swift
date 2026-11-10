@@ -23,7 +23,7 @@ struct HistoryItemRow: View {
     }
 
     private var displayMode: String {
-        HistoryItemRow.displayMode(mode: item.mode, entryPoint: item.entryPoint)
+        Self.displayMode(mode: item.mode, entryPoint: item.entryPoint)
     }
 
     /// Pure formatter for the history-row mode label.

@@ -23,10 +23,10 @@ private struct Layout {
 
     /// Writes the layout into a fresh temporary directory, plus a symlink `lnk`
     /// to `Other/Deep` beside a second `Other/Pkg`, target `Gamma`.
-    static func make() throws -> Layout {
+    static func make() throws -> Self {
         let root = URL(fileURLWithPath: NSTemporaryDirectory())
             .appendingPathComponent("swiftumlbridge-package-root-\(UUID().uuidString)")
-        let layout = Layout(root: root)
+        let layout = Self(root: root)
         try writePackage(at: layout.package, name: "Pkg", target: "Core", type: "Engine")
         try writePackage(at: root.appendingPathComponent("Outer"), name: "Outer", target: "Alpha", type: "AlphaType")
         try writePackage(at: layout.inner, name: "Inner", target: "Beta", type: "BetaType")

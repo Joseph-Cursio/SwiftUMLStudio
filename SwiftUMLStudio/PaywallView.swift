@@ -12,24 +12,24 @@ nonisolated struct PaywallFeature: Identifiable, Hashable {
     /// diagram" is — the rest of that mode describes what you'll see rather than
     /// naming the artefact (see `SuggestionEngine`). Developer mode still uses
     /// the precise terms via `DiagramMode.rawValue`.
-    static let all: [PaywallFeature] = [
-        PaywallFeature(
+    static let all: [Self] = [
+        Self(
             title: "Execution Flows",
             description: "Trace how your code runs, step by step"
         ),
-        PaywallFeature(
+        Self(
             title: "Dependency Maps",
             description: "See how your modules depend on each other"
         ),
-        PaywallFeature(
+        Self(
             title: "Share Your Diagrams",
             description: "Copy or save your diagrams to use elsewhere"
         ),
-        PaywallFeature(
+        Self(
             title: "Choose How Diagrams Look",
             description: "Pick the diagram style that suits you"
         ),
-        PaywallFeature(
+        Self(
             title: "Unlimited Projects",
             description: "Explore as many codebases as you want"
         )

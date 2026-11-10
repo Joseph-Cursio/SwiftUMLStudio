@@ -4,7 +4,7 @@ import SwiftData
 /// Manages the SwiftData model container for the app.
 @MainActor
 struct PersistenceController {
-    static let shared = PersistenceController()
+    static let shared = Self()
 
     let container: ModelContainer
 

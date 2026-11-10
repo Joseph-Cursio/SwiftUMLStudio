@@ -43,8 +43,8 @@ struct DeclarationScope {
 
     /// This scope's file, module and imports alone: where an extension's own clause is read,
     /// which sees no enclosing types.
-    var fileScope: DeclarationScope {
-        DeclarationScope(filePath: filePath, module: module, imports: imports)
+    var fileScope: Self {
+        Self(filePath: filePath, module: module, imports: imports)
     }
 
     /// `context` and the types around it, innermost first, stopping after an extension: its body
@@ -67,7 +67,7 @@ struct DeclarationScope {
     /// (`TypeLookup.memberRank`), so in ModB, ModB's own `Foo.X` still comes first, whichever
     /// was recorded first: there, `Foo` is ModB's own `Foo`.
     func nearest<Candidate>(
-        among candidates: [Candidate], scope: (Candidate) -> DeclarationScope
+        among candidates: [Candidate], scope: (Candidate) -> Self
     ) -> Candidate? {
         guard let first = candidates.first else { return nil }
         if let filePath, let local = candidates.first(where: { scope($0).filePath == filePath }) {

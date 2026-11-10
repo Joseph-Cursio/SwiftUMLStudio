@@ -32,7 +32,7 @@ extension Color {
     public init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
         let name = try container.decode(String.self)
-        guard let color = Color.allCases.first(where: { $0.rawValue.caseInsensitiveCompare(name) == .orderedSame })
+        guard let color = Self.allCases.first(where: { $0.rawValue.caseInsensitiveCompare(name) == .orderedSame })
         else {
             throw DecodingError.dataCorruptedError(
                 in: container, debugDescription: "'\(name)' is not a colour name this tool knows"

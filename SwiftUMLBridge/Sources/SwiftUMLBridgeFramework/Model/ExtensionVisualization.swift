@@ -6,11 +6,11 @@ public enum ExtensionVisualization: String, Codable, Sendable {
     case merged
     case none
 
-    static func from(_ showExtensions: Bool) -> ExtensionVisualization {
+    static func from(_ showExtensions: Bool) -> Self {
         showExtensions ? .all : .none
     }
 
-    public static var `default`: ExtensionVisualization { .all }
+    public static var `default`: Self { .all }
 }
 
 extension Optional where Wrapped == ExtensionVisualization {
