@@ -1,6 +1,6 @@
-import Testing
-@testable import SwiftUMLBridgeFramework
 import Foundation
+@testable import SwiftUMLBridgeFramework
+import Testing
 
 @Suite("SequenceDiagramGenerator - Edge Cases and Format")
 struct SequenceDiagramGeneratorEdgeCaseTests {

@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// A supertype edge starts at the box of the declaration that writes it (#68). The text formats
 /// drew it from the first box with the declaration's name, so an extension's conformances and

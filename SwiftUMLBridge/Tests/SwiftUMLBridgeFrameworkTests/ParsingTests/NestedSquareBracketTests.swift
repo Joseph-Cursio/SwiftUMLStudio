@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// A chain of `[`, each inside the one before, as in `[[[1]]]` or `[[[Int]]]`, doubled the time
 /// SwiftParser and SourceKit take with each `[`: 20 deep took 8 to 15 s a read in a debug build,

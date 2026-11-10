@@ -1,8 +1,8 @@
 import Foundation
 import SwiftUI
+@testable import SwiftUMLStudio
 import Testing
 import ViewInspector
-@testable import SwiftUMLStudio
 
 private func makeSnapshot(
     typeCount: Int = 10,

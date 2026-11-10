@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// Mermaid reads a class-body line as an annotation only when the whole line is `<<…>>`, so a
 /// generic clause after `<<struct>>` made a member or a garbled annotation. Every `<<` line must be

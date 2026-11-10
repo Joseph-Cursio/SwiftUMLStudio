@@ -8,9 +8,9 @@
 
 import Foundation
 import SwiftData
-import Testing
 import SwiftUMLBridgeFramework
 @testable import SwiftUMLStudio
+import Testing
 
 // MARK: - DiagramViewModel Feature Tests
 

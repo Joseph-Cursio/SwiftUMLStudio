@@ -1,7 +1,7 @@
 import SwiftParser
 import SwiftSyntax
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// `` `Plain` `` and `Plain` are one identifier, so the parsers read both as `Plain`. A name that
 /// needs its backticks wherever it is written keeps them (#123).

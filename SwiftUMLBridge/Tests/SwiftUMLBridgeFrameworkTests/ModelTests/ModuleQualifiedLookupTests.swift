@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// How `TypeLookup` reads a module qualifier (#124): which modules a qualifier names, which
 /// declarations a module owns, when a type keeps a qualifier from being read as a module, which

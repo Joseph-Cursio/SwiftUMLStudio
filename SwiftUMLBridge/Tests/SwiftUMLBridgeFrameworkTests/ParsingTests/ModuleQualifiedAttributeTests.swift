@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// `@SwiftData.Model` is SwiftData's `@Model` written with its module, and the compiler applies the
 /// same macro to it. The same holds for `@Observation.Observable`, `GRDB.FetchableRecord` and

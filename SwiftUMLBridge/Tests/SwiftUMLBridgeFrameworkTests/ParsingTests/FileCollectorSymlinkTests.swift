@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// Include/exclude globs for a directory spelled through a symlink. Directory
 /// enumeration reports entries under the directory's resolved path, so a glob

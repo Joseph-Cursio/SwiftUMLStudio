@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// A plain include or exclude entry names a file or directory: that path and what lies inside
 /// it. It used to take every path that merely began with the same text, so excluding

@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// A protocol nested in a type (SE-0404, Swift 5.10), `enum Outer { protocol Shape {} }`, is a
 /// nested type like any other: it gets a box of its own under the id `Outer.Shape`, it hangs off

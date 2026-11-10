@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// When several drawn types share a name, an edge that names it ends at the one Swift would
 /// most likely mean: declared in the same file, then in the same module, then the first (#55).

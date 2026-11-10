@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// Include/exclude globs under a search directory whose real path contains glob
 /// syntax — a folder named `Proj [old]`, say. A relative entry is anchored at

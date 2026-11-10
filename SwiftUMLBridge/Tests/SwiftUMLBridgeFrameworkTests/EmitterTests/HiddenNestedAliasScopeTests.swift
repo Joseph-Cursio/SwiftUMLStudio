@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// With `elements.showNestedTypes: false` the lookup records no nested type, so whether an
 /// extension is of a project type goes by the nested types the items do not list

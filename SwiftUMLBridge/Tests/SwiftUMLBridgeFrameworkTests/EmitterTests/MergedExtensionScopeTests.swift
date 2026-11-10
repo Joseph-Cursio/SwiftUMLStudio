@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// What a name written inside an extension means once `--merge-extensions` moves the extension's
 /// members into its type, and inside an extension spelled through typealiases. Merging must not

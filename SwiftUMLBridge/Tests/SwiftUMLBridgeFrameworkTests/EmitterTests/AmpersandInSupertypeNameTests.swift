@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// The parser splits a composition `P & Q` into its parts on the syntax tree (#160), so an `&`
 /// left in a supertype's name belongs to that one type: a generic argument, as in

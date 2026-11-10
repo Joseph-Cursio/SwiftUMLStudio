@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// `uniqName` must hand out an alias no other element of the diagram uses (#54).
 @Suite("DiagramContext — distinct aliases")

@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// An extension spelled through a typealias with its module first, `extension
 /// MyModule.Describable` after `typealias Describable = CustomStringConvertible`, extends the type

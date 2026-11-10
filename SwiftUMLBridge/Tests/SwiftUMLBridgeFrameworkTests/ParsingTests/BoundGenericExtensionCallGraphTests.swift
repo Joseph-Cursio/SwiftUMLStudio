@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// `extension Foo<Int>` is shorthand for `extension Foo where T == Int` (SE-0361), and `[Int]`,
 /// `[String: Int]` and `Int?` for `Array`, `Dictionary` and `Optional` with the same kind of

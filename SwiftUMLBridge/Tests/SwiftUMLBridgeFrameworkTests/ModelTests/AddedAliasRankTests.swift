@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// Where a typealias another module adds to a type ranks: ModB, which imports ModA, adds `X` to
 /// ModA's `Foo` through a typealias or a module, and ModA's own `extension Foo` declares an `X`

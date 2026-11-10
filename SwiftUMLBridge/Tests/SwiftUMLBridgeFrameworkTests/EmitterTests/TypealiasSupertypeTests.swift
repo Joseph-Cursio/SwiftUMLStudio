@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// After `typealias Q = Proto`, `struct S: Q {}` conforms to `Proto`. PlantUML, Mermaid and
 /// Nomnoml wrote the edge to an undeclared `Q`, labelled `inherits`, and `deps --types` drew it

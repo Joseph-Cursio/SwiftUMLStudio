@@ -1,6 +1,6 @@
-import Testing
 import Foundation
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 @Suite("DiagramText")
 struct DiagramTextTests {

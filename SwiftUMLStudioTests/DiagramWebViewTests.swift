@@ -9,9 +9,9 @@
 // were removed when the view was rewritten. HTML escaping is tested via MermaidHTMLBuilder
 // in the Swift Testing suite (SwiftUMLStudioTests.swift).
 
-import XCTest
 import SwiftUI
 @testable import SwiftUMLStudio
+import XCTest
 
 @MainActor
 final class DiagramWebViewXCTests: XCTestCase {

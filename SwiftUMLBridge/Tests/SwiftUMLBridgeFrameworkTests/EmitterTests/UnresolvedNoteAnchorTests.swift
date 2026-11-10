@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// An "Unresolved:" note says that a call could not be followed. It belongs beside the participant
 /// that made the call, which the edge names as `callerType` (#132). Each witness has a control, the

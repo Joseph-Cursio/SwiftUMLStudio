@@ -1,7 +1,7 @@
-import Testing
-@testable import SwiftUMLBridgeFramework
 import SwiftParser
 import SwiftSyntax
+@testable import SwiftUMLBridgeFramework
+import Testing
 
 /// The extended type of the first extension in `extension <spelling> {}`.
 private func extendedType(_ spelling: String) throws -> TypeSyntax {

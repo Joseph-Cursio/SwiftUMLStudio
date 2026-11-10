@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// `elements.exclude: [Foo]` hides `struct Foo` and `extension Foo` together. These check the same
 /// for a nested type, whether the pattern names it `Inner` or `Outer.Inner`, in every format and

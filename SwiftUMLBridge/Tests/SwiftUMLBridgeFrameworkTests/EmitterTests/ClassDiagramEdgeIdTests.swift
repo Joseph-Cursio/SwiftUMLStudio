@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// An alias never takes an id that only an edge uses — Mermaid and PlantUML give an edge's
 /// undeclared end a node of its own, so the two would be drawn as one (#54).

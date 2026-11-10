@@ -1,9 +1,9 @@
 import Foundation
 import SwiftUI
-import Testing
-import ViewInspector
 import SwiftUMLBridgeFramework
 @testable import SwiftUMLStudio
+import Testing
+import ViewInspector
 
 /// The PlantUML preview contacts planttext.com only with consent.
 ///

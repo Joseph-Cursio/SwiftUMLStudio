@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// Which relationship PlantUML, Mermaid and Nomnoml name a supertype edge with: `conforms to`,
 /// with the realization arrow, when the name means a protocol the sources declare, drawn or

@@ -6,8 +6,8 @@
 //
 
 import Foundation
-import Testing
 @testable import SwiftUMLStudio
+import Testing
 
 // MARK: - DiagramMode Tests
 

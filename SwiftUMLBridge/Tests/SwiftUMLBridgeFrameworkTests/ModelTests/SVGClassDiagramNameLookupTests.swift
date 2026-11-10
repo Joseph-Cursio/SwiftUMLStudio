@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// Which type an SVG class-diagram edge means when several share a name, once some are hidden.
 ///

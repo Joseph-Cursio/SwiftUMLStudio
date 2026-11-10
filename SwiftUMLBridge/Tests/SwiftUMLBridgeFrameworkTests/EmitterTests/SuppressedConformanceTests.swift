@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// `~Copyable` or `~Escapable` in an inheritance clause says a type does not conform to
 /// `Copyable` or `Escapable`. These check that no diagram draws it as a supertype, in any format

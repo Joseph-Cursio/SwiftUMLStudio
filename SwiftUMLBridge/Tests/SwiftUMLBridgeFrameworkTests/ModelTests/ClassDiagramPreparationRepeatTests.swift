@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// Class-diagram preparation edits the structures it works on, and it used to edit the caller's
 /// parsed items: a second diagram from the same items saw the first one's merged members, parent

@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// Where supertype edges end, and how they are drawn, once a name read through a module resolves
 /// (#124): through a typealias that `--merge-extensions` moves, onto a class that shares a name

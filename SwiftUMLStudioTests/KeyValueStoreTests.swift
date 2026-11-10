@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLStudio
+import Testing
 
 /// The preference-store tests run on ``InMemoryKeyValueStore``, so it has to answer like the
 /// `UserDefaults` the app passes. Each test runs once against each.

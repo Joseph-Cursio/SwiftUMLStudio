@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 @Suite("A Nomnoml dependency graph draws its cycle's own boxes with the warning style")
 struct DepsNomnomlCycleHighlightTests {

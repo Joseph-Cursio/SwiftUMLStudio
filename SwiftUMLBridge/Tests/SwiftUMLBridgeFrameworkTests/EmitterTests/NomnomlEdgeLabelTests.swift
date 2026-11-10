@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// nomnoml reads an edge's label only beside the arrow, as in `[A] --> label [B]`. Written after
 /// the end, as the ` : label` Mermaid and PlantUML take, it reads as the start of another edge and

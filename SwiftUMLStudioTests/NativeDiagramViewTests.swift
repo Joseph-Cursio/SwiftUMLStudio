@@ -21,9 +21,9 @@ import AppKit
 import CoreGraphics
 import Foundation
 import SwiftUI
-import Testing
 import SwiftUMLBridgeFramework
 @testable import SwiftUMLStudio
+import Testing
 
 // MARK: - Fixtures
 

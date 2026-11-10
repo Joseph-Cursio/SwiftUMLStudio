@@ -6,8 +6,8 @@
 //
 
 import SwiftUI
-import WebKit
 import SwiftUMLBridgeFramework
+import WebKit
 
 /// Renders a diagram using the native SwiftUI WebView (macOS 26+).
 /// - PlantUML diagrams go to ``PlantTextPreview``, which loads planttext.com only after

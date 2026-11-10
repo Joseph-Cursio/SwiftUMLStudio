@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// What exclude patterns and the text formats' supertype edges do with a module-qualified name
 /// (#124): the patterns match the type it means, and PlantUML, Mermaid and Nomnoml end the edge on

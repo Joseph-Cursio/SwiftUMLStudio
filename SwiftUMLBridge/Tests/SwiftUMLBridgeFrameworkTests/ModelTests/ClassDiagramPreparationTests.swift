@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// Preparing class-diagram items (nesting, ordering, merging extensions) used to run twice for an
 /// SVG class diagram, once for text definitions the SVG path then threw away, and preparation

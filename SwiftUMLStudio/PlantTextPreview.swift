@@ -1,6 +1,6 @@
 import SwiftUI
-import WebKit
 import SwiftUMLBridgeFramework
+import WebKit
 
 /// The PlantUML preview, and the only place Studio contacts `planttext.com`.
 ///

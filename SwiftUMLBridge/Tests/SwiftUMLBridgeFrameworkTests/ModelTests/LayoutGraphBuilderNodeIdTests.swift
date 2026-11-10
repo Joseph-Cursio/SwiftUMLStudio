@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// The SVG class-diagram path gives every node its own id, and resolves each edge end to the
 /// node that declares it (#55). The dagre layout keys nodes by id, so a shared id puts two

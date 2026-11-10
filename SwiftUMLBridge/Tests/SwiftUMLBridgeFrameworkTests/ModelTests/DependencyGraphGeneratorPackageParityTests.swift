@@ -1,6 +1,6 @@
-import Testing
-@testable import SwiftUMLBridgeFramework
 import Foundation
+@testable import SwiftUMLBridgeFramework
+import Testing
 
 /// Mermaid / Nomnoml emitter-parity tests for `deps --package`. Split out of
 /// `DependencyGraphGeneratorPackageTests` to keep each suite focused; the

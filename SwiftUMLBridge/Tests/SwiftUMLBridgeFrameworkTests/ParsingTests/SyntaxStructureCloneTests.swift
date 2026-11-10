@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// `SyntaxStructure.clonedForest(of:)` gives class-diagram preparation a private copy to edit (#73).
 @Suite("SyntaxStructure — cloned forest")

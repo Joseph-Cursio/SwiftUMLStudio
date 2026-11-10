@@ -1,9 +1,9 @@
 import CoreGraphics
 import Foundation
 import SwiftUI
+@testable import SwiftUMLStudio
 import Testing
 import UniformTypeIdentifiers
-@testable import SwiftUMLStudio
 
 @Suite("DiagramExportKind")
 struct DiagramExportKindTests {

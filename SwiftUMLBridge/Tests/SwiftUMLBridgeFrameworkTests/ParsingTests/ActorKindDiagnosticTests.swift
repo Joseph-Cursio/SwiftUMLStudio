@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 // Actor declarations are now parsed correctly via SyntaxStructureBuilder (SwiftSyntax).
 // ActorDeclSyntax maps to ElementKind.actor, replacing the previous SourceKit workaround

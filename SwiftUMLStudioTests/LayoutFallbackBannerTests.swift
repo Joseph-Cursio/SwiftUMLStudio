@@ -1,7 +1,7 @@
 import Foundation
-import Testing
 import SwiftUMLBridgeFramework
 @testable import SwiftUMLStudio
+import Testing
 
 /// A script in `format` holding `layoutGraph`, as a class diagram or deps graph does.
 private struct StubScript: DiagramOutputting {

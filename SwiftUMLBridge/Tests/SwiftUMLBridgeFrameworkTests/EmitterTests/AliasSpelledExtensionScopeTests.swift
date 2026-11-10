@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// Where a name written inside an extension goes when the type it means also has an extension
 /// written through a typealias (`AliasSpelledExtensionEndTests`). Inside an extension of a type

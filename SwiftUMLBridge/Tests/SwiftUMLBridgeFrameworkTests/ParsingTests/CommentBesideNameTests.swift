@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// A comment is trivia, not part of the name beside it: `var tag: String // note` declares a
 /// `String`, and a comment line above `Store.shared.load()` does not change its receiver (#128).

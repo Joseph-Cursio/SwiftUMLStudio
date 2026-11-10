@@ -1,9 +1,9 @@
 import Foundation
 import SwiftUI
-import Testing
-import ViewInspector
 import SwiftUMLBridgeFramework
 @testable import SwiftUMLStudio
+import Testing
+import ViewInspector
 
 /// A file with `[` nested past the parsers' limit is drawn with those brackets read as spaces, so
 /// the banner is the only sign in Studio that it was not read as written (#148).

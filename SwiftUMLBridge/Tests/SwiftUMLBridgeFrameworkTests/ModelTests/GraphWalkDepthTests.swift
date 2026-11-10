@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// `detectCycles` and the component layering each recursed once per node on their path, on
 /// whatever thread called them. Swift Testing runs a test on a cooperative thread with a 512 KB

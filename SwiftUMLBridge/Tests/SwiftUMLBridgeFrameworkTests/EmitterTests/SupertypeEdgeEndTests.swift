@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// PlantUML, Mermaid and Nomnoml wrote a supertype edge's end as the supertype's name, so when
 /// two boxes shared it the edge reached the first, while SVG ends it on the type the name means

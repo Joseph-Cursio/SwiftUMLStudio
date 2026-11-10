@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 @Suite("ElementKind")
 struct ElementKindTests {

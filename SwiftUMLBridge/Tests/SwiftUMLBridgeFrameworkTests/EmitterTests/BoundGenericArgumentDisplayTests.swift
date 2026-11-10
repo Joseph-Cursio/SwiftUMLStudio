@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// `extension Foo<Int>` is drawn as an extension of `Foo` (#66), with the arguments it binds shown
 /// beside the name while `showGenerics` is on, as a generic type's own parameters are. They are

@@ -1,9 +1,9 @@
 import Foundation
 import SwiftUI
-import Testing
-import ViewInspector
 @testable import SwiftUMLBridgeFramework
 @testable import SwiftUMLStudio
+import Testing
+import ViewInspector
 
 @Suite("DiagramExportMenu")
 @MainActor

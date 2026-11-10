@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// `ElementKind.classNode` is the one table the Mermaid and Nomnoml emitters label nodes from (#209).
 @Suite("ElementKind.classNode")

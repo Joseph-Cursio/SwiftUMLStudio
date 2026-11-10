@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// `DiagramFormat.drawn` picks the builder for each format and reports the format it drew, with
 /// Mermaid standing in for any format a script has no builder for (#209).

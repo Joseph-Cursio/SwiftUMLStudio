@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// After `typealias Alias = Real`, a method declared in `extension Alias` is `Real`'s, and
 /// `Alias.make()` calls into `Real`. Sequence and activity diagrams filed such a method under

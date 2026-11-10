@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 @Suite("LayoutGraphBuilder — dependency graph and advanced class-diagram cases")
 struct LayoutGraphBuilderDepsTests {

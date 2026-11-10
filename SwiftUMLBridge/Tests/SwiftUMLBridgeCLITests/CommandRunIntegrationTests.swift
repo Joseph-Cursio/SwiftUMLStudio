@@ -1,7 +1,7 @@
 import Foundation
-import Testing
-import SwiftUMLBridgeFramework
 @testable import swiftumlbridge
+import SwiftUMLBridgeFramework
+import Testing
 
 // End-to-end runs of each subcommand against the on-disk fixtures: parse real
 // arguments, execute `run()`, let the whole pipeline work — file collection,

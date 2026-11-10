@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// The grid `DagreLayoutEngine` falls back to when dagre gives no result. It is pure geometry,
 /// so these tests call `fallbackLayout` directly on graphs whose nodes are already sized, as

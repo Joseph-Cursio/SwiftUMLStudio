@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// Each parse recursed once per level of nesting, on whatever thread called it. Swift Testing
 /// runs a test on a cooperative thread with a 512 KB stack, as the CLI runs its commands and

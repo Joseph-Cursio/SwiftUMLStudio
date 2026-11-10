@@ -1,7 +1,7 @@
 import Foundation
 import JavaScriptCore
-import Testing
 @testable import SwiftUMLStudio
+import Testing
 
 @Suite("NomnomlHTMLBuilder")
 struct NomnomlHTMLBuilderTests {

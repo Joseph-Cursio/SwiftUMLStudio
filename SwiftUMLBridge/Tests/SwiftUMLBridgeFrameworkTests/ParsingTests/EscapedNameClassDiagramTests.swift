@@ -1,7 +1,7 @@
 import SwiftParser
 import SwiftSyntax
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// `` `Plain` `` and `Plain` are one identifier, so a class diagram draws a name escaped in one place
 /// and not in another as one name. `SyntaxStructureBuilder` read each name as written, so

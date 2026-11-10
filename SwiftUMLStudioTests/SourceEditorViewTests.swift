@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLStudio
+import Testing
 
 @Suite("SourceEditorView.lineRange")
 @MainActor

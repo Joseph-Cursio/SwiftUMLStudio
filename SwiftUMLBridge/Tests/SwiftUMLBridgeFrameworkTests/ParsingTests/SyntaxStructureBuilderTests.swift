@@ -1,7 +1,7 @@
-import Testing
-@testable import SwiftUMLBridgeFramework
 import SwiftParser
 import SwiftSyntax
+@testable import SwiftUMLBridgeFramework
+import Testing
 
 // MARK: - Helpers
 

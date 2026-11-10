@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// Parses `ComponentSVGRenderer` output as XML. The other `ComponentSVGRenderer` tests check
 /// substrings, which a malformed document can still contain (#80).

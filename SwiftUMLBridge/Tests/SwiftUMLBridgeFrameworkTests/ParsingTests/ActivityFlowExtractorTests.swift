@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// Helpers shared by the split-up activity-extractor test suites.
 enum ActivityExtractionFixture {

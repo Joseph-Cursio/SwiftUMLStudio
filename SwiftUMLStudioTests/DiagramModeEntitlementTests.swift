@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLStudio
+import Testing
 
 /// Which diagram modes are paid, stated once and checkable.
 ///

@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// Swift reads `struct Foo: (P)` as `struct Foo: P`, and `(P & Q)` and `(P) & Q` as `P & Q`. Every
 /// reader should too.

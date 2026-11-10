@@ -1,8 +1,8 @@
 import Foundation
+@testable import swiftumlbridge
+import SwiftUMLBridgeFramework
 import Synchronization
 import Testing
-import SwiftUMLBridgeFramework
-@testable import swiftumlbridge
 
 /// A script holding `layoutGraph`, as a class diagram or deps graph in SVG does.
 private struct StubScript: DiagramOutputting {

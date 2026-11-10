@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// An attribute or specifier in an inheritance clause says how a type conforms (`@MainActor P`,
 /// `@unchecked Sendable`, `nonisolated P`), not what it conforms to. These check that every diagram

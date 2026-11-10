@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// The SVG class diagram draws exactly the types the PlantUML, Mermaid and Nomnoml ones draw (#74).
 /// `LayoutGraphBuilder` kept every processable kind, so `showExtensions: .none`,

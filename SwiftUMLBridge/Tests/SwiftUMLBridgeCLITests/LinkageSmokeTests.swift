@@ -1,5 +1,5 @@
-import Testing
 @testable import swiftumlbridge
+import Testing
 
 /// Proves the executable target links into a test bundle at all. The CLI is
 /// declared with `@main`, which can collide with the test runner's own entry

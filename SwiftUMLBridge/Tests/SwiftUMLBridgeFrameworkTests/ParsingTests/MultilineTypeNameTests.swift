@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// A type written across lines is the type written on one line: `Swift` then `.Equatable` on the
 /// next line is `Swift.Equatable`. The builder named it `"Swift\n    .Equatable"`, which split the

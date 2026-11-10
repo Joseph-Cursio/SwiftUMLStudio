@@ -1,9 +1,9 @@
 import Foundation
 import StoreKit
 import SwiftUI
+@testable import SwiftUMLStudio
 import Testing
 import ViewInspector
-@testable import SwiftUMLStudio
 
 // The `MockSubscriptionProvider` used here is defined in
 // `SubscriptionManagerTests.swift`.

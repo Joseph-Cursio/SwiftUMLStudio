@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// An SVG class diagram draws an extension's box with an edge to the type it extends, as the text
 /// formats' `ext` edge does (#75), and draws none where they draw none.

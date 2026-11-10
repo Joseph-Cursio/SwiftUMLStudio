@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// In package mode every declaration carries its target as its module, so `extension ModA.Foo`
 /// written in ModB extends ModA's `Foo`, and `extension ModA.Foo.Inner` its nested `Foo.Inner`: the

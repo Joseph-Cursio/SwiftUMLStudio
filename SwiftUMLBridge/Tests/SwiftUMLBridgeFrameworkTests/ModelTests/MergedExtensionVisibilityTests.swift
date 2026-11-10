@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// Under `showExtensions: .merged`, an extension merges into the type its name means where it is
 /// written, by the lookup SVG edges use (#74): only a type Swift's access control lets it see.

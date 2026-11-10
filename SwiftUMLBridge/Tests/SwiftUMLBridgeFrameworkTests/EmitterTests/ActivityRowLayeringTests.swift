@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 @Suite("ActivitySVGRenderer — longest-path rows on extracted graphs")
 struct ActivityRowLayeringTests {

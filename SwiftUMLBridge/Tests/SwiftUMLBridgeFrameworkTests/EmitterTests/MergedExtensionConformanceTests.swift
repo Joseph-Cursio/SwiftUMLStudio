@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// Under `showExtensions: .merged`, the supertypes an extension's inheritance clause names are
 /// drawn from the box its members are merged into, as that type's own supertypes are. Merging

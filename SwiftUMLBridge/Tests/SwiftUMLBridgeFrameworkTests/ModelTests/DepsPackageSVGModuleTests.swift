@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// `deps --package` labels each node with the module that declares it (`--types`) or with its
 /// target kind (`--modules`) in PlantUML, Mermaid and Nomnoml. The SVG document, and Studio's

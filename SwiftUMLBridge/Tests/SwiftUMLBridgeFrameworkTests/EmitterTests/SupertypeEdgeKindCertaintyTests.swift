@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// When PlantUML, Mermaid and Nomnoml are sure a supertype's name means a protocol, so its edge
 /// is a conformance. Among same-named types of files read without their package, or of modules

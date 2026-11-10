@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// An extension's `ext` edge ends on the type it extends: the drawn type its name means where it
 /// is written, the one `--merge-extensions` merges it into. `uniqName` matched the extension's

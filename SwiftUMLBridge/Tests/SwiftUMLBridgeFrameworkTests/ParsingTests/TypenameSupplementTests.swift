@@ -1,7 +1,7 @@
 import SwiftParser
 import SwiftSyntax
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// In `var a, b: Int` the syntax gives only `b` a type annotation, and SourceKit's structure gives
 /// both names the shared type. `a`'s type came from the SourceKit typename supplement until the

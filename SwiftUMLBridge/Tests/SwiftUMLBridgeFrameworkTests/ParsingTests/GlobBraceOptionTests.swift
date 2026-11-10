@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// A `{…}` group in an include or exclude entry expands the entry into one entry per option, so
 /// a brace entry means exactly the list of its expansions (#58). Groups used to become a regex

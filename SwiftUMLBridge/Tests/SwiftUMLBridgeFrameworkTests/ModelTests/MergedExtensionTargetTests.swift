@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// Under `showExtensions: .merged`, an extension's members go into the type of its name that
 /// `LayoutGraphBuilder` resolves the name to: declared in the same file, then in the same module,

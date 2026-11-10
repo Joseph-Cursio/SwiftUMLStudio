@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// `@Attribute`'s options and `@Relationship`'s `inverse:` are read from the syntax rather than
 /// searched for in the arguments' text, so a comment or a string that mentions `.unique` or a key

@@ -1,7 +1,7 @@
 import Foundation
 import SwiftUI
-import ViewInspector
 @testable import SwiftUMLStudio
+import ViewInspector
 
 extension Inspection: @retroactive InspectionEmissary { }
 

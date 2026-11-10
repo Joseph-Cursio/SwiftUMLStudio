@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// The `elements` defaults as the code has them, which is what `docs/user/reference.md`
 /// should state: `fileprivate` left out, access symbols on, `<&bolt>` on merged members.

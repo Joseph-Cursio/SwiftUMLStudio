@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 // Fixtures and readers shared by the class-diagram suites, each of which used to declare a
 // private copy (#209).

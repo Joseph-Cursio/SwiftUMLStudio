@@ -15,9 +15,9 @@
 
 import Foundation
 import SwiftData
-import Testing
 @testable import SwiftUMLBridgeFramework
 @testable import SwiftUMLStudio
+import Testing
 
 // MARK: - Mock Generators
 

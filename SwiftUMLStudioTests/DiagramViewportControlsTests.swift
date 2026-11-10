@@ -1,7 +1,7 @@
 import SwiftUI
+@testable import SwiftUMLStudio
 import Testing
 import ViewInspector
-@testable import SwiftUMLStudio
 
 @Suite("DiagramViewportControls")
 @MainActor

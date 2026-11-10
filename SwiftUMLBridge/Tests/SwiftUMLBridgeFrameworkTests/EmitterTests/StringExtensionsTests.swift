@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 @Suite("String+Extensions")
 struct StringExtensionsTests {

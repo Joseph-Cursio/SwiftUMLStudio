@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// Read-from-disk integration tests for the state-machine pipeline.
 /// Each test points `StateMachineGenerator` at one fixture file under

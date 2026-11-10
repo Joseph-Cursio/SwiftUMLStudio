@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// `showExtensions: .all` draws an extension of a type the diagram hides as a box of its own, which
 /// stands in for that type (#74). `.merged` used to merge it into the hidden type instead, so its

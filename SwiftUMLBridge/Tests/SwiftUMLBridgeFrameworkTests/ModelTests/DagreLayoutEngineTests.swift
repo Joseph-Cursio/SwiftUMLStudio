@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 @Suite("DagreLayoutEngine Tests")
 struct DagreLayoutEngineTests {

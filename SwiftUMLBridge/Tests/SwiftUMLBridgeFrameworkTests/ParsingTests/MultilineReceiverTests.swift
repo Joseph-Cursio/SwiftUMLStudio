@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// A call written across lines has the receiver it has on one line: `Store` / `.shared` / `.load()`
 /// calls `load()` on `Store.shared`. The receiver was named by its text, line breaks and indent

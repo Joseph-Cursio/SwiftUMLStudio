@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// A source whose extensions are spelled with generic arguments or sugar, beside the same source
 /// with each extension spelled as the `where` clause it is shorthand for (SE-0361).

@@ -1,7 +1,7 @@
 import CoreGraphics
 import Foundation
-import Testing
 @testable import SwiftUMLStudio
+import Testing
 
 @Suite("DiagramViewport")
 @MainActor

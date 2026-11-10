@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// A type nested in an extension is recorded under the extended type's name, so `Array.Base` is
 /// both a `Base` nested in a project `struct Array` and one declared in `extension [Int]`, a member

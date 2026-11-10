@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLStudio
+import Testing
 
 // Each test keeps its store in memory, so they run in parallel and never touch
 // `UserDefaults.standard`, which in this app-hosted bundle is the developer's

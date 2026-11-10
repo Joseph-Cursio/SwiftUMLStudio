@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// `Process` drops each `..` of a relative `currentDirectoryURL` that climbs above its base, so
 /// `describe(at:)` failed on `../Outer` and described the wrong package for `..` (#141). A URL

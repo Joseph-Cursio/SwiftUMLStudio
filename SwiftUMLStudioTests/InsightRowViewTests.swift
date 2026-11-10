@@ -1,7 +1,7 @@
 import Foundation
 import SwiftUI
-import Testing
 @testable import SwiftUMLStudio
+import Testing
 
 @Suite("InsightRowView.color")
 @MainActor

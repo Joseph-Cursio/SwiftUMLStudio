@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// What `--merge-extensions` and the lookup do with members of an extension spelled through a
 /// module (#124): a typealias it declares, a type nested in it, an extension `elements.exclude`

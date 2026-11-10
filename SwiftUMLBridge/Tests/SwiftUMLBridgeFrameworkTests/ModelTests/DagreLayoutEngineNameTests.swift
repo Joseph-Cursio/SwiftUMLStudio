@@ -1,7 +1,7 @@
 import Foundation
 import JavaScriptCore
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// Names that reach the JavaScript `DagreLayoutEngine` runs on JavaScriptCore:
 /// node ids, edge ends and module names must come back from dagre unchanged.

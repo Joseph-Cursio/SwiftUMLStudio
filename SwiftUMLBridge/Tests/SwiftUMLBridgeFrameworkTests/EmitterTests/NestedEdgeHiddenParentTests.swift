@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// A nested type's edge names a parent the diagram does not draw by its qualified name, so it
 /// never hangs off a drawn type that shares the parent's short name (#67).

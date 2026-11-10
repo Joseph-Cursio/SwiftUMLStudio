@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// nomnoml names a node by its `id=`, or else by its title, while every Nomnoml edge names a node
 /// by its alias. Declared under their titles alone, nested types, extensions and decorated headers

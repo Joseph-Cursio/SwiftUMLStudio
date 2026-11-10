@@ -1,8 +1,8 @@
 import Foundation
 import SwiftParser
 import SwiftSyntax
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// A keyword used as a member name must be escaped where it is declared (`` func `default`() ``),
 /// but not after a `.`: `self.default()`, `.default` and `\Book.default` name the same member. The

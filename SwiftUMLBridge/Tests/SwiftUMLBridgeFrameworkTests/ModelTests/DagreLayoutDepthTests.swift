@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// graphre.js recurses once per rank (`initOrder`) and once per level of its spanning tree
 /// (`dfsAssignLowLim`), inside JavaScriptCore, which gives a script no more stack than the thread

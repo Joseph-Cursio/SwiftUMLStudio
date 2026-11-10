@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// What a dotted name means when the type its first component means has none of the members
 /// recorded under it: the fallback reads only the name as written, among types of modules the

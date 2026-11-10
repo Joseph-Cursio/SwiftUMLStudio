@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// `[Int]`, `[String: Int]` and `Int?` always mean Swift's `Array`, `Dictionary` and `Optional`,
 /// even where the project declares a type of that name. `extendedTypeName` names such an

@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// Where a module qualifier can be read (#124): only in a file that imports the module or is in
 /// it, and only when no type of that name the file can see is in the way. And where an edge to a

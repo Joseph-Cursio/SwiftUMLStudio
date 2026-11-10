@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// `` `Pet` `` and `Pet` are one identifier, so a name escaped where it is declared and not where it
 /// is used, or the other way round, is still one name to the ER, state-machine, GRDB / SQLite.swift

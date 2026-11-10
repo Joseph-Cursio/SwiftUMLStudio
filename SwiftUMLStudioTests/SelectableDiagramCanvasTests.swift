@@ -1,6 +1,6 @@
 import SwiftUI
-import Testing
 @testable import SwiftUMLStudio
+import Testing
 
 /// The selection handlers themselves are tested through each canvas, in NativeDiagramViewTests
 /// and NativeSequenceDiagramViewTests. This pins the key each arrow direction listens for, which

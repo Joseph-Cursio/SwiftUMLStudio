@@ -1,9 +1,9 @@
 import CoreGraphics
 import Foundation
 import SwiftUI
-import Testing
 import SwiftUMLBridgeFramework
 @testable import SwiftUMLStudio
+import Testing
 
 private func makeMessage(
     fromX: Double = 100, toX: Double = 200, posY: Double = 50,

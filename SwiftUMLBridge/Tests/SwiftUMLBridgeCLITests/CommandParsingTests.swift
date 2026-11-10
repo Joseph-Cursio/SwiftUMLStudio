@@ -1,7 +1,7 @@
 import Foundation
-import Testing
-import SwiftUMLBridgeFramework
 @testable import swiftumlbridge
+import SwiftUMLBridgeFramework
+import Testing
 
 // Argument parsing only — no command is `run()`, so nothing here parses Swift
 // source or writes output. What is under test is the contract between what a

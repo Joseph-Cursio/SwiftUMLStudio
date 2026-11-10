@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// A dotted name whose member Swift means is one the lookup does not gather, as one a superclass
 /// declares or an extension adds through a typealias, and one the diagram hides: the edge ends on

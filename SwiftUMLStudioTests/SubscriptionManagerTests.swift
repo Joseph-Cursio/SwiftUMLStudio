@@ -1,8 +1,8 @@
 import Foundation
 import Observation
 import StoreKit
-import Testing
 @testable import SwiftUMLStudio
+import Testing
 
 // MARK: - GCD dispatch helper
 

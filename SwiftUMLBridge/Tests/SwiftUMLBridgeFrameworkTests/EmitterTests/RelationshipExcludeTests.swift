@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// `relationships.realize.exclude` and `relationships.dependency.exclude` were decoded but never
 /// read, so the documented `realize.exclude: [Codable, Sendable]` hid nothing (#113).

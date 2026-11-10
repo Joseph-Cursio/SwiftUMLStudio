@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// SwiftData's `@Model` macro stores a class's stored instance properties, except `@Transient`
 /// ones. Of stacked attributes it reads only the first `@Attribute` and the first

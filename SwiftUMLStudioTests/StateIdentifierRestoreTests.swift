@@ -7,8 +7,8 @@
 
 import Foundation
 import SwiftUMLBridgeFramework
-import Testing
 @testable import SwiftUMLStudio
+import Testing
 
 /// Since #123 every name is read as Swift reads it, so `` class `Lamp` `` lists its machine as
 /// `Lamp.Light`. A state diagram saved before that stored `` `Lamp`.Light ``, which no candidate

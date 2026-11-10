@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// `loadConfiguration(at:)` says why a file cannot be used, where `getConfiguration(for:)` falls
 /// back to the defaults without a word (#138).

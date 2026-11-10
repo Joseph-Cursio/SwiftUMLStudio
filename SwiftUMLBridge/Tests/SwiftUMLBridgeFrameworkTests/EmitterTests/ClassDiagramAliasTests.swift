@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// No two elements of a Mermaid or PlantUML class diagram are declared under one id (#54).
 @Suite("Class-diagram aliases — distinct declared ids")

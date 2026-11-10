@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// After `typealias Alias = Real`, `extension Alias {}` extends `Real`: its members merge into
 /// `Real`, its `ext` edge ends on `Real`, and a type nested in it hangs off `Real`. The parser

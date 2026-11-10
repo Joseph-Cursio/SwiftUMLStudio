@@ -1,8 +1,8 @@
 import Foundation
+@testable import swiftumlbridge
+import SwiftUMLBridgeFramework
 import Synchronization
 import Testing
-import SwiftUMLBridgeFramework
-@testable import swiftumlbridge
 
 /// The warnings a loader printed.
 private final class Warnings: Sendable {

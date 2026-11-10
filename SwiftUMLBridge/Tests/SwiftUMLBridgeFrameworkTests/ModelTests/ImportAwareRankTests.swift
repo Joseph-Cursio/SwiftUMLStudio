@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// Which of several same-named types of different modules a name means, as Swift reads it: a
 /// bare name among the writer's own module and the modules its file imports, and a dotted name

@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// An `#if` among statements is a decision with a branch per clause, and a switch case inside
 /// `#if` is a branch of its switch. Code inside `#if` used to make no node at all (#135).

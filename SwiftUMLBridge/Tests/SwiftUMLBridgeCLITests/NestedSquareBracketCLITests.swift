@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import swiftumlbridge
+import Testing
 
 /// A chain of `[` nested past the parsers' limit is read with its deepest brackets as spaces, so
 /// the parse ends; the CLI says so on stderr, naming the file, whatever the subcommand (#148).

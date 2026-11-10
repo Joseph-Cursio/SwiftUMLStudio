@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// In `var a, b: T` only `b` has a type annotation in the syntax; `a` shares it. These check that
 /// `a` gets `T` in an extension and in a type nested in one, for a name in backticks, and that no

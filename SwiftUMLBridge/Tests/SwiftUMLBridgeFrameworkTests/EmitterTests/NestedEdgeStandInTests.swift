@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// When a class diagram does not draw a nested type's parent, PlantUML and Nomnoml end its edge
 /// where SVG does (`LayoutGraphBuilder.EdgeEndIds`): on a drawn extension that stands in for the

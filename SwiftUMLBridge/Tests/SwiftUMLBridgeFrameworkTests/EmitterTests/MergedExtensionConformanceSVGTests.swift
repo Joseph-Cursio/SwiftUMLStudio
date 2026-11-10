@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// Under `showExtensions: .merged`, the SVG class diagram draws the supertypes an extension's
 /// inheritance clause names from the box its members are merged into, each looked up from where

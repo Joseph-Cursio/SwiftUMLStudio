@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// Which namespaces a file sees when it reads a module qualifier (#124): a type named like a
 /// target keeps `Analytics.Event` a type only where Swift shows it to the file, through the

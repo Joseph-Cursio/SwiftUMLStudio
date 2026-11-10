@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// An extension written through a typealias, `extension Describable` after
 /// `typealias Describable = CustomStringConvertible`, extends the type the alias names, and

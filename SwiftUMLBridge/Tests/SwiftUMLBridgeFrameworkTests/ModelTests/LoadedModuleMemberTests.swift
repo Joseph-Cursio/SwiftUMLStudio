@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// Which of several same-named members a dotted name means: one of the type its first component
 /// means, from a module that the writer's module loads through any of its files' imports, a file

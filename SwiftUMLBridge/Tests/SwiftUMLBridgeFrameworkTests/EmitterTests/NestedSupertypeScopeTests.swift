@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// A supertype written by its short name inside the type that declares it, `class Near: Base` in
 /// `enum Outer`, means `Outer.Base`: Swift looks the name up in each enclosing type first,

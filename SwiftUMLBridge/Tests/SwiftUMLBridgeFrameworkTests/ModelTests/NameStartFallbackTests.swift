@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// Where reading a dotted name's first component through the file's imports needs more than the
 /// imports: a tie Swift settles by shadowing, a typealias on the way, an extension the lookup cannot

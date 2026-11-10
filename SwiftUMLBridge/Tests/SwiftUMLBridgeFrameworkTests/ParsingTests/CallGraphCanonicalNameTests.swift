@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// `` `Plain` `` and `Plain` are one identifier, so sequence and activity diagrams file a method,
 /// and the calls to it, under one name however each is spelt, and an entry point typed with

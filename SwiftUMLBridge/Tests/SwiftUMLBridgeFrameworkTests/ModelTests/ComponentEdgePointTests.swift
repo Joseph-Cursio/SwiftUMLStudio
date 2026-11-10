@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// `edgePoint` anchors an edge where the ray from the source's center towards the target's center
 /// leaves the source box. Its doc comment used to call that the border point closest to the
