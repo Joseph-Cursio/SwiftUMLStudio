@@ -296,7 +296,7 @@ struct NativeDiagramViewPointerTests {
         let viewport = DiagramViewport()
         viewport.selectedNodeId = "Client"
 
-        makeView(viewport).select(at: CGPoint(x: 4000, y: 4000))
+        makeView(viewport).select(at: CGPoint(x: 4_000, y: 4_000))
 
         #expect(viewport.selectedNodeId == nil)
     }
@@ -327,7 +327,7 @@ struct NativeDiagramViewPointerTests {
         let viewport = DiagramViewport()
         viewport.hoveredNodeId = "Client"
 
-        makeView(viewport).updateHover(.active(CGPoint(x: 4000, y: 4000)))
+        makeView(viewport).updateHover(.active(CGPoint(x: 4_000, y: 4_000)))
 
         #expect(viewport.hoveredNodeId == nil)
     }

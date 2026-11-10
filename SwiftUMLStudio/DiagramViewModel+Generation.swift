@@ -210,7 +210,7 @@ extension DiagramViewModel {
     /// `at` is the instant this entry records. `loadHistory` sorts by it, so it decides the order
     /// the history list is shown in.
     func saveToHistory(at savedAt: Date = Date()) {
-        guard let currentScript = currentScript else { return }
+        guard let currentScript else { return }
 
         // `DiagramEntity()` already mints an identifier — the assignment that used to be here
         // minted a second one.

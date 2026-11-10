@@ -174,7 +174,6 @@ private extension DepsScript {
 
         return lines.joined(separator: "\n")
     }
-
 }
 
 // MARK: - SVG

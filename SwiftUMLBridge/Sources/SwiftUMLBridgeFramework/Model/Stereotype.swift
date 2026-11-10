@@ -46,7 +46,7 @@ public struct Stereotype: Codable, Sendable {
     public var spot: Spot
 
     var plantuml: String {
-        guard let name = name else {
+        guard let name else {
             return "<< (\(spot.character), \(spot.color.rawValue)) >>"
         }
         return "<< (\(spot.character), \(spot.color.rawValue)) \(name) >>"

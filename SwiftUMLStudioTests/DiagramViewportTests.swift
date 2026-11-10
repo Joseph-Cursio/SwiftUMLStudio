@@ -49,7 +49,7 @@ struct DiagramViewportTests {
         let fit = try #require(
             DiagramViewport.fitScale(
                 content: CGSize(width: 1, height: 1),
-                visible: CGSize(width: 1000, height: 1000)
+                visible: CGSize(width: 1_000, height: 1_000)
             )
         )
         #expect(fit == DiagramViewport.maxScale)

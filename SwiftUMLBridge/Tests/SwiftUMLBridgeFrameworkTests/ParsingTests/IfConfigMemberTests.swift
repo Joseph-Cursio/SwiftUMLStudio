@@ -221,7 +221,6 @@ struct IfConfigERTests {
         #expect(model.entities.map(\.name) == [debugName])
         #expect(model.entities.flatMap(\.attributes).map(\.name) == ["id"])
     }
-
 }
 
 @Suite("State-machine declarations inside #if are read")

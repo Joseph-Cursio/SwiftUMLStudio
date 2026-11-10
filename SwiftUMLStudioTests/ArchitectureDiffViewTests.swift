@@ -7,7 +7,7 @@ import ViewInspector
 // MARK: - Fixtures
 
 private func makeDiff(
-    previousTimestamp: Date = Date().addingTimeInterval(-3600),
+    previousTimestamp: Date = Date().addingTimeInterval(-3_600),
     typeDelta: Int = 0,
     relationshipDelta: Int = 0,
     moduleDelta: Int = 0,

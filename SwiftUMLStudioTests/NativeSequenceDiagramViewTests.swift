@@ -276,7 +276,7 @@ struct NativeSequenceDiagramViewPointerTests {
         let viewport = DiagramViewport()
         viewport.selectedNodeId = "Caller"
 
-        makeView(viewport).select(at: CGPoint(x: 4000, y: 4000))
+        makeView(viewport).select(at: CGPoint(x: 4_000, y: 4_000))
 
         #expect(viewport.selectedNodeId == nil)
     }
@@ -305,7 +305,7 @@ struct NativeSequenceDiagramViewPointerTests {
         let viewport = DiagramViewport()
         viewport.hoveredNodeId = "Caller"
 
-        makeView(viewport).updateHover(.active(CGPoint(x: 4000, y: 4000)))
+        makeView(viewport).updateHover(.active(CGPoint(x: 4_000, y: 4_000)))
 
         #expect(viewport.hoveredNodeId == nil)
     }

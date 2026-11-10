@@ -17,11 +17,11 @@ final class MockSubscriptionProvider: SubscriptionProviding {
     private(set) var purchaseCallCount: Int = 0
     private(set) var restoreCallCount: Int = 0
 
-    func purchase(_ product: Product) async {
+    func purchase(_ product: Product) {
         purchaseCallCount += 1
     }
 
-    func restorePurchases() async {
+    func restorePurchases() {
         restoreCallCount += 1
     }
 }

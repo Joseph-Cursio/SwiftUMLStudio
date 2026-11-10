@@ -14,9 +14,8 @@ public struct ConfigurationProvider {
         if let config = decodeYml(config: fileURL) {
             BridgeLogger.shared.info("config file \(configPath) found")
             return config
-        } else {
-            return readSwiftConfig()
         }
+        return readSwiftConfig()
     }
 
     func readSwiftConfig() -> Configuration {
@@ -24,10 +23,9 @@ public struct ConfigurationProvider {
         if let config = decodeYml(config: defaultYmlPath) {
             BridgeLogger.shared.info(".swiftumlbridge.yml file found")
             return config
-        } else {
-            BridgeLogger.shared.info("return default configuration")
-            return defaultConfig
         }
+        BridgeLogger.shared.info("return default configuration")
+        return defaultConfig
     }
 
     var defaultYmlPath: URL {

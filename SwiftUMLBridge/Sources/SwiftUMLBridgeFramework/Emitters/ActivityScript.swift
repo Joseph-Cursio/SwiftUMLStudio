@@ -105,7 +105,6 @@ private extension ActivityScript {
         }
         return "N\(id)"
     }
-
 }
 
 // MARK: - Mermaid (flowchart flavor)

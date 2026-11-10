@@ -56,7 +56,7 @@ struct SwiftUMLStudioApp: App {
                     .environment(subscriptionManager)
             }
         }
-        .defaultSize(width: 1500, height: 700)
+        .defaultSize(width: 1_500, height: 700)
         .commands {
             CommandGroup(replacing: .newItem) {
                 Button("Open…") {

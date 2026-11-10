@@ -142,7 +142,7 @@ extension SyntaxStructure {
     private func members(context: DiagramContext) -> String {
         var members = ""
 
-        guard let substructure = substructure, substructure.count > 0 else { return members }
+        guard let substructure, substructure.count > 0 else { return members }
 
         for sub in substructure {
             if let msig = member(element: sub, context: context) {
@@ -188,16 +188,14 @@ extension SyntaxStructure {
         case .varInstance:
             if let typename = element.typename {
                 return "\(name) : \(typename)"
-            } else {
-                return "\(name)"
             }
+            return "\(name)"
 
         case .varStatic:
             if let typename = element.typename {
                 return "{static} \(name) : \(typename)"
-            } else {
-                return "{static} \(name)"
             }
+            return "{static} \(name)"
 
         case .enumelement:
             return "\(name)"
@@ -236,7 +234,7 @@ extension SyntaxStructure {
     /// `class D: Base<[Int]> {}`).
     func genericsStatement() -> String? {
         if let boundGenericArguments { return "<\(boundGenericArguments)>" }
-        guard let substructure = substructure else {
+        guard let substructure else {
             guard let parent = inheritedTypes?.first else { return nil }
             return parent.name?.getAngleBracketsWithContent()
         }

@@ -227,7 +227,7 @@ extension LayoutGraphBuilder {
             // Most supertypes, `Encodable` say, are no enclosing type's member. Working the root
             // out takes a lookup of the enclosing extension's type, so it waits for a name a type
             // is recorded under, or one a module may be read in.
-            let throughModule = { (probeName: String) in readingModules && self.mayReadModule(probeName) }
+            let throughModule = { (probeName: String) in readingModules && mayReadModule(probeName) }
             guard probes.contains(where: { typesForName[$0.name] != nil || throughModule($0.name) }) else {
                 return asWritten
             }

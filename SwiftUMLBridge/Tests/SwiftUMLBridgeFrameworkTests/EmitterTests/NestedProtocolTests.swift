@@ -137,7 +137,7 @@ struct NestedProtocolTests {
             return
         }
         // The edge to `AnyObject`, which neither diagram declares, with the id swapped.
-        let edge = { (drawn: DiagramScript) in self.lines(drawn).filter { $0.contains("AnyObject") } }
+        let edge = { (drawn: DiagramScript) in lines(drawn).filter { $0.contains("AnyObject") } }
         let expected = edge(topLevel).map {
             $0.replacingOccurrences(of: "[Delegate]", with: "[TableView.Delegate]")
                 .replacingOccurrences(of: " Delegate", with: " TableView.Delegate")

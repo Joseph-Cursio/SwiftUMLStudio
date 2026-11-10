@@ -193,12 +193,11 @@ internal class SyntaxStructure: NSObject, Codable, @unchecked Sendable {
     internal func find(_ type: ElementKind = .struct, named searchName: String) -> SyntaxStructure? {
         if name == searchName, kind == type {
             return self
-        } else {
-            guard let subs = substructure else { return nil }
-            for sub in subs {
-                if let found = sub.find(type, named: searchName) {
-                    return found
-                }
+        }
+        guard let subs = substructure else { return nil }
+        for sub in subs {
+            if let found = sub.find(type, named: searchName) {
+                return found
             }
         }
         return nil

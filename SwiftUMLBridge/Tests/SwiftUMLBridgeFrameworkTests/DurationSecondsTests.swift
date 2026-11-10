@@ -20,7 +20,7 @@ struct DurationSecondsTests {
     /// every one of those stages as `0.0`.
     @Test("the fractional part survives")
     func fractionsSurvive() {
-        #expect(Duration.milliseconds(1500).seconds == 1.5)
+        #expect(Duration.milliseconds(1_500).seconds == 1.5)
         #expect(Duration.milliseconds(4).seconds == 0.004)
     }
 

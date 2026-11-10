@@ -58,7 +58,7 @@ enum ReviewReminderManager {
         content.sound = .default
 
         let trigger = UNTimeIntervalNotificationTrigger(
-            timeInterval: TimeInterval(intervalDays * 86400),
+            timeInterval: TimeInterval(intervalDays * 86_400),
             repeats: false
         )
 

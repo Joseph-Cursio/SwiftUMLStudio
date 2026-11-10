@@ -172,32 +172,32 @@ final class DiagramViewModel {
             try? await Task.sleep(for: .milliseconds(300))
             guard !Task.isCancelled else { return }
 
-            switch self.diagramMode {
+            switch diagramMode {
             case .classDiagram:
-                await self.generateClassDiagram()
+                await generateClassDiagram()
 
             case .sequenceDiagram:
-                await self.generateSequenceDiagram()
+                await generateSequenceDiagram()
 
             case .dependencyGraph:
-                await self.generateDependencyGraph()
+                await generateDependencyGraph()
 
             case .stateMachine:
-                await self.generateStateMachineDiagram()
+                await generateStateMachineDiagram()
 
             case .activityDiagram:
-                await self.generateActivityDiagram()
+                await generateActivityDiagram()
 
             case .erDiagram:
-                await self.generateERDiagram()
+                await generateERDiagram()
 
             case .componentDiagram:
-                await self.generateComponentDiagram()
+                await generateComponentDiagram()
             }
 
             guard !Task.isCancelled else { return }
-            self.collectSourceReadNotices()
-            self.isGenerating = false
+            collectSourceReadNotices()
+            isGenerating = false
         }
     }
 

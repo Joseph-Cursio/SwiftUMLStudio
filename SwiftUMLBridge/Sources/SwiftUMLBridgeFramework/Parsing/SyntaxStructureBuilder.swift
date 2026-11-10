@@ -173,7 +173,7 @@ final class SyntaxStructureBuilder: SyntaxVisitor {
     private func effectSpecifierTypename(for specifiers: FunctionEffectSpecifiersSyntax?) -> String? {
         let isAsync = specifiers?.asyncSpecifier != nil
         let isThrows = specifiers?.throwsClause != nil
-        if isAsync && isThrows { return "async throws" }
+        if isAsync, isThrows { return "async throws" }
         if isAsync { return "async" }
         if isThrows { return "throws" }
         return nil

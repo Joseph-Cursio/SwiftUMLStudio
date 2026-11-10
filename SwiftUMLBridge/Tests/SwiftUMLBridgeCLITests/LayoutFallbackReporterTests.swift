@@ -15,7 +15,7 @@ private struct StubScript: DiagramOutputting {
 private final class Recorder: DiagramPresenting {
     let events = Mutex<[String]>([])
 
-    func present(script: any DiagramOutputting) async {
+    func present(script: any DiagramOutputting) {
         events.withLock { $0.append("presented") }
     }
 

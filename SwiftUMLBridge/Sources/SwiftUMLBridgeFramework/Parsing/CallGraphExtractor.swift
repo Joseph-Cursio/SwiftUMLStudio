@@ -55,22 +55,22 @@ final class CallGraphExtractor: TypeStackVisitor {
                 memberAccess, callerType: callerType,
                 callerMethod: callerMethod, isAsync: isAsync
             )
-        } else if let declRef = calledExpr.as(DeclReferenceExprSyntax.self) {
+        }
+        if let declRef = calledExpr.as(DeclReferenceExprSyntax.self) {
             let methodName = declRef.baseName.canonicalName
             return CallEdge(
                 callerType: callerType, callerMethod: callerMethod,
                 calleeType: callerType, calleeMethod: methodName,
                 isAsync: isAsync, isUnresolved: false
             )
-        } else {
-            // Closure or other complex expression — unresolved
-            let rawDesc = calledExpr.singleLineDescription
-            return CallEdge(
-                callerType: callerType, callerMethod: callerMethod,
-                calleeType: nil, calleeMethod: rawDesc,
-                isAsync: isAsync, isUnresolved: true
-            )
         }
+        // Closure or other complex expression — unresolved
+        let rawDesc = calledExpr.singleLineDescription
+        return CallEdge(
+            callerType: callerType, callerMethod: callerMethod,
+            calleeType: nil, calleeMethod: rawDesc,
+            isAsync: isAsync, isUnresolved: true
+        )
     }
 
     private func resolveMemberAccess(

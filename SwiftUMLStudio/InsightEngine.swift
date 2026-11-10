@@ -77,7 +77,7 @@ nonisolated enum InsightEngine {
             ))
         }
 
-        if summary.totalRelationships == 0 && summary.totalTypes > 0 {
+        if summary.totalRelationships == 0, summary.totalTypes > 0 {
             insights.append(Insight(
                 icon: "circle.dashed",
                 title: "No type relationships found",

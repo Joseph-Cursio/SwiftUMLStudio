@@ -56,7 +56,7 @@ private extension ERScript {
         for attribute in primaries {
             lines.append("  * \(plantUMLAttributeText(attribute))")
         }
-        if !primaries.isEmpty && !others.isEmpty {
+        if !primaries.isEmpty, !others.isEmpty {
             lines.append("  --")
         }
         for attribute in others {
@@ -72,7 +72,7 @@ private extension ERScript {
             text += "?"
         }
         var stereotypes: [String] = []
-        if attribute.isUnique && !attribute.isPrimaryKey {
+        if attribute.isUnique, !attribute.isPrimaryKey {
             stereotypes.append("UK")
         }
         if attribute.isTransient {

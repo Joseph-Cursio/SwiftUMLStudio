@@ -127,27 +127,26 @@ public struct DiagramScript: @unchecked Sendable {
 
         if hideShowCommands.isEmpty, skinparamCommands.isEmpty {
             return ""
-        } else {
-            return """
+        }
+        return """
             ' STYLE START
             \(hideShowCommands.joined(separator: "\n"))
             \(skinparamCommands.joined(separator: "\n"))
             ' STYLE END
             """
-        }
     }
 
     func processStructureItem(item: SyntaxStructure, index _: Int) -> String? {
         guard item.isDrawn(in: context.configuration) else { return nil }
         switch format {
         case .plantuml:
-            return item.plantuml(context: context) ?? nil
+            return item.plantuml(context: context)
 
         case .mermaid:
-            return item.mermaid(context: context) ?? nil
+            return item.mermaid(context: context)
 
         case .nomnoml:
-            return item.nomnoml(context: context) ?? nil
+            return item.nomnoml(context: context)
 
         case .svg:
             // SVG uses LayoutGraphBuilder directly; skip per-item text emission

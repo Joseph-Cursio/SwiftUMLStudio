@@ -8,7 +8,7 @@ private func makeSnapshot(
     typeCount: Int = 10,
     relationshipCount: Int = 20,
     moduleCount: Int = 3,
-    timestamp: Date? = Date().addingTimeInterval(-3600)
+    timestamp: Date? = Date().addingTimeInterval(-3_600)
 ) -> ProjectSnapshot {
     ProjectSnapshot(
         identifier: UUID(),

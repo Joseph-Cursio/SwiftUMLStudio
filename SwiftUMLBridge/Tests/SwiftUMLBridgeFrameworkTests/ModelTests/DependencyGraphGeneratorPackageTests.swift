@@ -173,5 +173,4 @@ struct DependencyGraphGeneratorPackageTests {
         #expect(script.text.contains("Sub --> CoreBase : inherits"))
         #expect(!script.text.contains("Analytics.Base"))
     }
-
 }

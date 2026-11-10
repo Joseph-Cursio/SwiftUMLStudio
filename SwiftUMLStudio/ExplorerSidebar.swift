@@ -10,7 +10,7 @@ struct ExplorerSidebar: View {
 
     var body: some View {
         List {
-            if viewModel.insights.isEmpty && viewModel.suggestions.isEmpty {
+            if viewModel.insights.isEmpty, viewModel.suggestions.isEmpty {
                 Section {
                     ContentUnavailableView(
                         "Open a project",

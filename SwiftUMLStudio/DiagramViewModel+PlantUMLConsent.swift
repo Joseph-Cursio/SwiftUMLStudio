@@ -37,7 +37,7 @@ extension DiagramViewModel {
     /// build view models without injecting a consent store, and reading ``PlantUMLConsent/shared``
     /// there would tie them to the developer's own decision.
     func applyLaunchFormatPreference(consent: PlantUMLConsent) {
-        if diagramFormat == .plantuml && consent.decision == .declined {
+        if diagramFormat == .plantuml, consent.decision == .declined {
             diagramFormat = .mermaid
         }
     }

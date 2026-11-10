@@ -105,17 +105,15 @@ struct DiagramPreviewView: View {
                                 onUseMermaid: useMermaid
                             )
                         }
-                    } else if (viewModel.diagramMode == .sequenceDiagram
-                        || viewModel.diagramMode == .activityDiagram)
-                        && viewModel.entryPoint.isEmpty {
+                    } else if viewModel.diagramMode == .sequenceDiagram
+                        || viewModel.diagramMode == .activityDiagram, viewModel.entryPoint.isEmpty {
                         Text("Enter an entry point (e.g. MyType.myMethod) to generate a diagram.")
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)
                             .padding()
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                             .accessibilityIdentifier("entryPointPrompt")
-                    } else if viewModel.diagramMode == .componentDiagram
-                        && viewModel.packageDescription == nil {
+                    } else if viewModel.diagramMode == .componentDiagram, viewModel.packageDescription == nil {
                         #if APP_STORE_BUILD
                         let componentPackagePromptText =
                             "Component diagrams require an open Swift Package. "

@@ -145,7 +145,7 @@ struct ContentView: View {
         } detail: {
             DiagramDetailView(viewModel: viewModel)
         }
-        .frame(minWidth: 1200)
+        .frame(minWidth: 1_200)
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
                 Button("Open…", systemImage: "folder", action: openPanel)

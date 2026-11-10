@@ -97,11 +97,11 @@ struct DeltaChip: View {
     private var chipBackground: some ShapeStyle {
         if delta > 0 {
             return AnyShapeStyle(.green.opacity(0.1))
-        } else if delta < 0 {
-            return AnyShapeStyle(.red.opacity(0.1))
-        } else {
-            return AnyShapeStyle(.quaternary.opacity(0.3))
         }
+        if delta < 0 {
+            return AnyShapeStyle(.red.opacity(0.1))
+        }
+        return AnyShapeStyle(.quaternary.opacity(0.3))
     }
 }
 

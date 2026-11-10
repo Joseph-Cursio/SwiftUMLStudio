@@ -70,7 +70,7 @@ struct ComponentEdgePointTests {
     @Test(
         "the anchor lies on the ray towards the target and on the border",
         arguments: [
-            (300.0, 7.0), (-250.0, 90.0), (13.0, -400.0), (-5.0, 380.0), (70.0, 20.0), (-1000.0, -1.0)
+            (300.0, 7.0), (-250.0, 90.0), (13.0, -400.0), (-5.0, 380.0), (70.0, 20.0), (-1_000.0, -1.0)
         ]
     )
     func onTheRayAndTheBorder(deltaX: Double, deltaY: Double) {

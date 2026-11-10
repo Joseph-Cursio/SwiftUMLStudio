@@ -79,7 +79,7 @@ final class StateMachineExtractor: TypeStackVisitor {
             if rejected { break }
         }
 
-        if !rejected && !caseNames.isEmpty {
+        if !rejected, !caseNames.isEmpty {
             simpleEnums[enumName] = caseNames
         }
 

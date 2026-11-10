@@ -236,7 +236,7 @@ struct NativeDiagramGeometryHitNodeTests {
 
     @Test("returns nil for an empty graph")
     func emptyGraph() {
-        #expect(NativeDiagramGeometry.hitNode(in: LayoutGraph(), at: CGPoint(x: 0, y: 0)) == nil)
+        #expect(NativeDiagramGeometry.hitNode(in: LayoutGraph(), at: CGPoint.zero) == nil)
     }
 }
 

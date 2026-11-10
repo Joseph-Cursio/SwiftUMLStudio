@@ -15,18 +15,17 @@ extension FileOptions: CustomStringConvertible {
     public var description: String {
         let includeArray = include ?? []
         let excludeArray = exclude ?? []
-        if includeArray.isEmpty && excludeArray.isEmpty {
+        if includeArray.isEmpty, excludeArray.isEmpty {
             return "no values"
-        } else {
-            if includeArray.isEmpty {
-                return "exclude: \(excludeArray.joined(separator: ", "))"
-            } else if excludeArray.isEmpty {
-                return "include: \(includeArray.joined(separator: ", "))"
-            } else {
-                let includeStr = includeArray.joined(separator: ", ")
-                let excludeStr = excludeArray.joined(separator: ", ")
-                return "include: \(includeStr) && exclude: \(excludeStr)"
-            }
         }
+        if includeArray.isEmpty {
+            return "exclude: \(excludeArray.joined(separator: ", "))"
+        }
+        if excludeArray.isEmpty {
+            return "include: \(includeArray.joined(separator: ", "))"
+        }
+        let includeStr = includeArray.joined(separator: ", ")
+        let excludeStr = excludeArray.joined(separator: ", ")
+        return "include: \(includeStr) && exclude: \(excludeStr)"
     }
 }

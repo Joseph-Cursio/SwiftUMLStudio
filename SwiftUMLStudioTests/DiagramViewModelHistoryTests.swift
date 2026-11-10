@@ -311,7 +311,7 @@ struct DiagramViewModelBookmarkRestorationTests {
         let restoredURL = URL(fileURLWithPath: viewModel.selectedPaths[0])
         #expect(restoredURL.standardizedFileURL == directory.standardizedFileURL)
         #expect(viewModel.selectedPathBookmarks.count == 1)
-        #expect(viewModel.selectedPathBookmarks.first ?? nil == bookmark)
+        #expect(viewModel.selectedPathBookmarks.first == bookmark)
     }
 
     @Test("loadDiagram falls back to raw paths when bookmark resolution fails")

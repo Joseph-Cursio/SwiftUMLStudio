@@ -52,9 +52,8 @@ public struct FileCollector: Sendable {
             sanitizedPaths.append(contentsOf: paths.map { path -> URL in
                 if path.hasPrefix("/") {
                     return URL(fileURLWithPath: path)
-                } else {
-                    return URL(fileURLWithPath: directory).appendingPathComponent(path)
                 }
+                return URL(fileURLWithPath: directory).appendingPathComponent(path)
             })
         }
 
@@ -95,9 +94,8 @@ public struct FileCollector: Sendable {
                 }
             }
             return files
-        } else {
-            return [url]
         }
+        return [url]
     }
 }
 
