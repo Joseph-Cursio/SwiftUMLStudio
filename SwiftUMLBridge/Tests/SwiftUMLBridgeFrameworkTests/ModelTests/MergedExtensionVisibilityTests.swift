@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// Under `showExtensions: .merged`, an extension merges into the type its name means where it is
 /// written, by the lookup SVG edges use (#74): only a type Swift's access control lets it see.
@@ -12,8 +12,12 @@ struct MergedExtensionVisibilityTests {
 
     /// A hand-built declaration in `file`, in `module`.
     private func declared(
-        _ kind: ElementKind, _ name: String, in file: String, module: String,
-        access: ElementAccessibility? = nil, members: [SyntaxStructure] = []
+        _ kind: ElementKind,
+        _ name: String,
+        in file: String,
+        module: String,
+        access: ElementAccessibility? = nil,
+        members: [SyntaxStructure] = []
     ) -> SyntaxStructure {
         let item = SyntaxStructure(
             accessibility: access, kind: kind, name: name, substructure: members.isEmpty ? nil : members
@@ -37,7 +41,7 @@ struct MergedExtensionVisibilityTests {
         return [
             declared(.struct, "Foo", in: "B.swift", module: "ModM", access: access, members: [member("hidden")]),
             declared(.struct, "Foo", in: "C.swift", module: "ModN", access: .public, members: [member("shown")]),
-            declared(.extension, "Foo", in: "A.swift", module: "ModM", members: [bar, inner])
+            declared(.extension, "Foo", in: "A.swift", module: "ModM", members: [bar, inner]),
         ]
     }
 
@@ -77,7 +81,7 @@ struct MergedExtensionVisibilityTests {
         #expect(ClassDiagramIds.lines(of: script, containing: "bar").count == 1)
         #expect(ClassDiagramIds.lines(of: script, containing: "+--") == ["Foo0 +-- Foo.Inner"])
         let foo0 = script.components(separatedBy: "as Foo0").last ?? ""
-        #expect(foo0.prefix(while: { $0 != "}" }).contains("bar"), "\(script)")
+        #expect(foo0.prefix { $0 != "}" }.contains("bar"), "\(script)")
     }
 
     /// With no type visible, the extension extends a type outside the diagram, as the SVG
@@ -87,7 +91,7 @@ struct MergedExtensionVisibilityTests {
         let bar = SyntaxStructure(kind: .functionMethodInstance, name: "bar")
         let laid = graph([
             declared(.struct, "Foo", in: "B.swift", module: "ModM", access: .private, members: [member("hidden")]),
-            declared(.extension, "Foo", in: "A.swift", module: "ModM", members: [bar])
+            declared(.extension, "Foo", in: "A.swift", module: "ModM", members: [bar]),
         ], .merged)
         #expect(laid.nodeIds == ["Foo", "Foo_1"])
         #expect(laid.memberLines == [["~ hidden: Int"], ["~ bar()"]])
@@ -100,7 +104,7 @@ struct MergedExtensionVisibilityTests {
         let bar = SyntaxStructure(kind: .functionMethodInstance, name: "bar")
         let items = [
             declared(.struct, "Foo", in: "A.swift", module: "ModA", members: [member("count")]),
-            declared(.extension, "Foo", in: "C.swift", module: "ModC", members: [bar])
+            declared(.extension, "Foo", in: "C.swift", module: "ModC", members: [bar]),
         ]
         #expect(graph(items, .merged).memberLines == [["~ count: Int"], ["~ bar()"]])
         #expect(graph(items, .all).memberLines == [["~ count: Int"], ["~ bar()"]])
@@ -116,7 +120,7 @@ struct MergedExtensionVisibilityTests {
         let items = [
             declared(.struct, "Foo", in: "A.swift", module: "ModA", access: .public),
             declared(.extension, "Foo", in: "A.swift", module: "ModA", access: .public, members: [inner]),
-            declared(.extension, "Foo.Inner", in: "B.swift", module: "ModB", members: [method])
+            declared(.extension, "Foo.Inner", in: "B.swift", module: "ModB", members: [method]),
         ]
         let laid = graph(items, .merged)
         #expect(laid.nodeIds == ["Foo", "Foo.Inner"])
@@ -131,7 +135,7 @@ struct MergedExtensionVisibilityTests {
         let laid = graph([
             declared(.struct, "Foo", in: "B.swift", module: "ModM", access: .private, members: [member("hidden")]),
             declared(.extension, "Foo", in: "A.swift", module: "ModM", members: [one]),
-            declared(.extension, "Foo", in: "C.swift", module: "ModM", members: [two])
+            declared(.extension, "Foo", in: "C.swift", module: "ModM", members: [two]),
         ], .merged)
         #expect(laid.nodeIds == ["Foo", "Foo_1"])
         #expect(laid.memberLines == [["~ hidden: Int"], ["~ one()", "~ two()"]])

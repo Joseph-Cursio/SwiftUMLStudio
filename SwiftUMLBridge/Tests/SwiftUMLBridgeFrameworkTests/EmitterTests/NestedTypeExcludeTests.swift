@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// `elements.exclude: [Foo]` hides `struct Foo` and `extension Foo` together. These check the same
 /// for a nested type, whether the pattern names it `Inner` or `Outer.Inner`, in every format and
@@ -47,7 +47,7 @@ struct NestedTypeExcludeTests {
 
     @Test("each spelling hides the struct and its extension", arguments: ["Inner", "Outer.Inner", "Outer.*"])
     func bothSpellings(pattern: String) {
-        #expect(leaks(Self.nested, exclude: [pattern], words: ["Inner", "draw"]) == [])
+        #expect(leaks(Self.nested, exclude: [pattern], words: ["Inner", "draw"]).isEmpty)
     }
 
     @Test("a type nested in an extension, and an extension of it", arguments: ["Row", "Panel.Row"])
@@ -62,7 +62,7 @@ struct NestedTypeExcludeTests {
                 func draw() {}
             }
             """
-        #expect(leaks(source, exclude: [pattern], words: ["Row", "draw"]) == [])
+        #expect(leaks(source, exclude: [pattern], words: ["Row", "draw"]).isEmpty)
     }
 
     static let threeLevels = """
@@ -73,7 +73,7 @@ struct NestedTypeExcludeTests {
 
     @Test("three levels deep, the short and the full name each hide both", arguments: ["C", "A.B.C"])
     func threeLevelsDeep(pattern: String) {
-        #expect(leaks(Self.threeLevels, exclude: [pattern], words: ["depth", "draw"]) == [])
+        #expect(leaks(Self.threeLevels, exclude: [pattern], words: ["depth", "draw"]).isEmpty)
     }
 
     /// A pattern matches a whole name, so a partial path is neither the short nor the full one.
@@ -87,7 +87,7 @@ struct NestedTypeExcludeTests {
     func dependencyExclude(pattern: String) {
         let relationships = RelationshipOptions(dependency: Relationship(label: "ext", exclude: [pattern]))
         let text = script(Self.nested, relationships: relationships)
-        #expect(ClassDiagramIds.lines(of: text, containing: " <.. ") == [])
+        #expect(ClassDiagramIds.lines(of: text, containing: " <.. ").isEmpty)
     }
 
     // MARK: - Guards: these pass today, and a fix should keep them passing.
@@ -95,7 +95,7 @@ struct NestedTypeExcludeTests {
     @Test("a top-level type and its extension")
     func topLevel() {
         let source = "protocol Drawable {}\nstruct Shape { var size = 0 }\nextension Shape: Drawable { func draw() {} }"
-        #expect(leaks(source, exclude: ["Shape"], words: ["Shape", "draw"]) == [])
+        #expect(leaks(source, exclude: ["Shape"], words: ["Shape", "draw"]).isEmpty)
     }
 
     @Test("the outer type's name does not hide what is nested in it")

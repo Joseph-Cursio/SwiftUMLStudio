@@ -1,7 +1,7 @@
 import Foundation
-import Testing
 import SwiftUMLBridgeFramework
 @testable import SwiftUMLStudio
+import Testing
 
 /// A script in `format` holding `layoutGraph`, as a class diagram or deps graph does.
 private struct StubScript: DiagramOutputting {
@@ -39,10 +39,12 @@ struct LayoutFallbackBannerTests {
     func hiddenOtherwise() {
         let fallen = fallenBack("RangeError")
         #expect(LayoutFallbackBanner.reason(
-            for: StubScript(format: .svg, layoutGraph: fallen), isGenerating: true) == nil)
+            for: StubScript(format: .svg, layoutGraph: fallen), isGenerating: true
+        ) == nil)
         #expect(LayoutFallbackBanner.reason(for: nil, isGenerating: false) == nil)
         #expect(LayoutFallbackBanner.reason(
-            for: StubScript(format: .mermaid, layoutGraph: fallen), isGenerating: false) == nil)
+            for: StubScript(format: .mermaid, layoutGraph: fallen), isGenerating: false
+        ) == nil)
     }
 
     @Test("the text names the reason and says nothing was lost")

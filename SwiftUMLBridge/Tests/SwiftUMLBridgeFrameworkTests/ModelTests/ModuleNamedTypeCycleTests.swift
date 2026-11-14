@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// A name that means both a module and a type around the writer sends the lookup in a loop (#244):
 /// whether the enclosing `M` is read as a module takes what `M.V`'s first component means, which
@@ -13,16 +13,18 @@ struct ModuleNamedTypeCycleTests {
     private typealias Files = [(module: String?, source: String)]
 
     /// `class W: M.V` in the inner `M` calls the inner `V`'s method; the outer `V`'s does not build.
-    private static let nestedInItsNamesake: Files = [("M", """
-        enum M {
-            class V { func outer() {} }
+    private static let nestedInItsNamesake: Files = [
+        ("M", """
             enum M {
-                class V { func inner() {} }
-                class W: M.V {}
+                class V { func outer() {} }
+                enum M {
+                    class V { func inner() {} }
+                    class W: M.V {}
+                }
             }
-        }
-        func use() { M.M.W().inner() }
-        """)]
+            func use() { M.M.W().inner() }
+            """),
+    ]
 
     /// No type is nested in one of its own name here: `extension ModB.Base` extends the struct's
     /// `Base`, and `Thing` is that struct's.
@@ -40,7 +42,7 @@ struct ModuleNamedTypeCycleTests {
             extension ModB.Base {
                 class W: ModB.Thing {}
             }
-            """)
+            """),
     ]
 
     private func supertypeLines(_ files: Files, _ format: DiagramFormat) throws -> [String] {

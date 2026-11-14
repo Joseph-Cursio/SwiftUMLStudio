@@ -74,22 +74,26 @@ extension ComponentSVGRenderer {
         let originX = component.centerX - component.width / 2
         let originY = component.centerY - component.height / 2
         var lines: [String] = [
-            boxRect(originX: originX, originY: originY,
-                    width: component.width, height: component.height, fill: "#f7f7f9"),
-            boxRect(originX: originX, originY: originY,
-                    width: component.width, height: headerHeight, fill: "#e6e8ef")
+            boxRect(
+                originX: originX, originY: originY,
+                width: component.width, height: component.height, fill: "#f7f7f9"
+            ),
+            boxRect(
+                originX: originX, originY: originY,
+                width: component.width, height: headerHeight, fill: "#e6e8ef"
+            ),
         ]
         let stereotype = "«\(stereotypeLabel(for: component.kind))»"
         lines.append(textElement(
             originX: component.centerX,
             originY: originY + 12,
-            style: TextStyle(anchor: "middle", fontSize: 10, fontStyle: "italic", fill: "#555"),
+            style: TextStyle(anchor: "middle", fontSize: 10, fill: "#555", fontStyle: "italic"),
             text: stereotype
         ))
         lines.append(textElement(
             originX: component.centerX,
             originY: originY + 24,
-            style: TextStyle(anchor: "middle", fontSize: 12, fontWeight: "600", fill: "#222"),
+            style: TextStyle(anchor: "middle", fontSize: 12, fill: "#222", fontWeight: "600"),
             text: component.name
         ))
         var interfaceY = originY + headerHeight + boxPadding
@@ -126,9 +130,9 @@ extension ComponentSVGRenderer {
         init(
             anchor: String,
             fontSize: Int,
+            fill: String,
             fontStyle: String? = nil,
-            fontWeight: String? = nil,
-            fill: String
+            fontWeight: String? = nil
         ) {
             self.anchor = anchor
             self.fontSize = fontSize

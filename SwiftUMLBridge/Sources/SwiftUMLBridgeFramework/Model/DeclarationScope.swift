@@ -1,3 +1,4 @@
+// swiftlint:disable:next unused_import - memcmp is Darwin's, which Foundation re-exports
 import Foundation
 
 /// Where a declaration lives, for picking among declarations that share a name.
@@ -48,8 +49,8 @@ struct DeclarationScope {
 
     /// This scope's file, module and imports alone: where an extension's own clause is read,
     /// which sees no enclosing types.
-    var fileScope: DeclarationScope {
-        DeclarationScope(filePath: filePath, module: module, imports: imports)
+    var fileScope: Self {
+        Self(filePath: filePath, module: module, imports: imports)
     }
 
     /// `context` and the types around it, innermost first, stopping after an extension: its body
@@ -74,7 +75,7 @@ struct DeclarationScope {
     /// ModB, ModB's own `Foo.X` still comes first, whichever was recorded first: there, `Foo` is
     /// ModB's own `Foo`.
     func nearest<Candidate>(
-        among candidates: [Candidate], scope: (Candidate) -> DeclarationScope
+        among candidates: [Candidate], scope: (Candidate) -> Self
     ) -> Candidate? {
         guard let first = candidates.first else { return nil }
         if let filePath, let local = candidates.first(where: { scope($0).filePath == filePath }) {
@@ -106,7 +107,7 @@ struct DeclarationScope {
     /// lookup, so it adds no recursion. A name can have thousands of candidates, so it compares
     /// bytes: `hasPrefix` or splitting the paths took seconds.
     private func nearestByDirectory<Candidate>(
-        among candidates: [Candidate], scope: (Candidate) -> DeclarationScope
+        among candidates: [Candidate], scope: (Candidate) -> Self
     ) -> Candidate? {
         guard candidates.count > 1, var writer = filePath else { return nil }
         return writer.withUTF8 { writerBytes in

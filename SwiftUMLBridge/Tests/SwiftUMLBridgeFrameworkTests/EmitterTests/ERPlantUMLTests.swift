@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 @Suite("ERScript — PlantUML")
 struct ERPlantUMLTests {
@@ -32,7 +32,7 @@ struct ERPlantUMLTests {
         let model = ERModel(entities: [
             EREntity(name: "User", attributes: [
                 ERAttribute(name: "id", type: "UUID", isPrimaryKey: true)
-            ])
+            ]),
         ])
         let script = makeScript(model: model)
         #expect(script.text.contains("* id : UUID"))
@@ -43,11 +43,11 @@ struct ERPlantUMLTests {
         let model = ERModel(entities: [
             EREntity(name: "User", attributes: [
                 ERAttribute(name: "name", type: "String")
-            ])
+            ]),
         ])
         let script = makeScript(model: model)
         let nameLine = script.text.split(separator: "\n")
-            .first(where: { $0.contains("name : String") })
+            .first { $0.contains("name : String") }
         #expect(nameLine?.contains("*") == false)
     }
 
@@ -56,15 +56,15 @@ struct ERPlantUMLTests {
         let model = ERModel(entities: [
             EREntity(name: "User", attributes: [
                 ERAttribute(name: "id", type: "UUID", isPrimaryKey: true),
-                ERAttribute(name: "name", type: "String")
-            ])
+                ERAttribute(name: "name", type: "String"),
+            ]),
         ])
         let script = makeScript(model: model)
         let lines = script.text.split(separator: "\n").map(String.init)
-        let idIndex = try #require(lines.firstIndex(where: { $0.contains("* id") }))
-        let nameIndex = try #require(lines.firstIndex(where: { $0.contains("name : String") }))
+        let idIndex = try #require(lines.firstIndex { $0.contains("* id") })
+        let nameIndex = try #require(lines.firstIndex { $0.contains("name : String") })
         let separatorIndex = try #require(
-            lines.firstIndex(where: { $0.trimmingCharacters(in: .whitespaces) == "--" })
+            lines.firstIndex { $0.trimmingCharacters(in: .whitespaces) == "--" }
         )
         #expect(idIndex < separatorIndex)
         #expect(separatorIndex < nameIndex)
@@ -75,7 +75,7 @@ struct ERPlantUMLTests {
         let model = ERModel(entities: [
             EREntity(name: "OnlyID", attributes: [
                 ERAttribute(name: "id", type: "UUID", isPrimaryKey: true)
-            ])
+            ]),
         ])
         let script = makeScript(model: model)
         #expect(script.text.contains("  --") == false)
@@ -86,7 +86,7 @@ struct ERPlantUMLTests {
         let model = ERModel(entities: [
             EREntity(name: "Misc", attributes: [
                 ERAttribute(name: "name", type: "String")
-            ])
+            ]),
         ])
         let script = makeScript(model: model)
         #expect(script.text.contains("  --") == false)
@@ -97,7 +97,7 @@ struct ERPlantUMLTests {
         let model = ERModel(entities: [
             EREntity(name: "User", attributes: [
                 ERAttribute(name: "handle", type: "String", isUnique: true)
-            ])
+            ]),
         ])
         let script = makeScript(model: model)
         #expect(script.text.contains("handle : String <<UK>>"))
@@ -108,7 +108,7 @@ struct ERPlantUMLTests {
         let model = ERModel(entities: [
             EREntity(name: "Cached", attributes: [
                 ERAttribute(name: "preview", type: "String", isTransient: true)
-            ])
+            ]),
         ])
         let script = makeScript(model: model)
         #expect(script.text.contains("preview : String <<transient>>"))
@@ -119,7 +119,7 @@ struct ERPlantUMLTests {
         let model = ERModel(entities: [
             EREntity(name: "Profile", attributes: [
                 ERAttribute(name: "bio", type: "String", isOptional: true)
-            ])
+            ]),
         ])
         let script = makeScript(model: model)
         #expect(script.text.contains("bio : String?"))
@@ -136,7 +136,7 @@ struct ERPlantUMLTests {
                     from: "Author", toEntity: "Book",
                     fromCardinality: .exactlyOne, toCardinality: .zeroOrMany,
                     label: "books"
-                )
+                ),
             ]
         )
         let script = makeScript(model: model)
@@ -152,13 +152,13 @@ struct ERPlantUMLTests {
                     from: "Author", toEntity: "Book",
                     fromCardinality: .exactlyOne, toCardinality: .zeroOrMany,
                     label: "books"
-                )
+                ),
             ]
         )
         let script = makeScript(model: model)
         let lines = script.text.split(separator: "\n").map(String.init)
         let lastClose = try #require(lines.lastIndex(of: "}"))
-        let edgeIndex = try #require(lines.firstIndex(where: { $0.contains("||--o{") }))
+        let edgeIndex = try #require(lines.firstIndex { $0.contains("||--o{") })
         #expect(lastClose < edgeIndex)
     }
 

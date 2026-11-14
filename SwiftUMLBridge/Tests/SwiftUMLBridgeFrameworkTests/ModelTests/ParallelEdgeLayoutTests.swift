@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// Two edges between one pair of boxes, in one direction, as a nested protocol its parent
 /// conforms to has: a nesting edge and a supertype edge. dagre laid out one edge a pair, so the
@@ -16,14 +16,14 @@ struct ParallelEdgeLayoutTests {
 
     @Test("edges of two styles between one pair are each routed, apart", arguments: [nil, "App"] as [String?])
     func stylesRoutedApart(module: String?) {
-        let nodes = Self.nodes.map { node in
+        let moduleNodes = Self.nodes.map { node in
             LayoutNode(id: node.id, label: node.label, module: module)
         }
         let edges = [
             LayoutEdge(sourceId: "Foo", targetId: "Foo.Base", style: .composition),
-            LayoutEdge(sourceId: "Foo", targetId: "Foo.Base", style: .realization)
+            LayoutEdge(sourceId: "Foo", targetId: "Foo.Base", style: .realization),
         ]
-        let result = DagreLayoutEngine.layout(LayoutGraph(nodes: nodes, edges: edges))
+        let result = DagreLayoutEngine.layout(LayoutGraph(nodes: moduleNodes, edges: edges))
         #expect(result.fallbackReason == nil)
         #expect(result.edges.allSatisfy { $0.points.count >= 2 })
         #expect(Set(middles(of: result.edges)).count == 2)
@@ -34,7 +34,7 @@ struct ParallelEdgeLayoutTests {
         let edges = [
             LayoutEdge(sourceId: "Foo", targetId: "Foo.Base", label: "first", style: .association),
             LayoutEdge(sourceId: "Foo", targetId: "Foo.Base", label: "second", style: .association),
-            LayoutEdge(sourceId: "Foo", targetId: "Foo.Base", style: .association)
+            LayoutEdge(sourceId: "Foo", targetId: "Foo.Base", style: .association),
         ]
         let result = DagreLayoutEngine.layout(LayoutGraph(nodes: Self.nodes, edges: edges))
         #expect(result.edges.allSatisfy { $0.points.count >= 2 })
@@ -68,7 +68,7 @@ struct ParallelEdgeLayoutTests {
         let edges = [
             LayoutEdge(sourceId: "Foo", targetId: "Foo.Base", style: .composition),
             LayoutEdge(sourceId: "Foo.Base", targetId: "Foo", style: .dependency),
-            LayoutEdge(sourceId: "Foo", targetId: "Foo.Base", style: .inheritance)
+            LayoutEdge(sourceId: "Foo", targetId: "Foo.Base", style: .inheritance),
         ]
         let result = DagreLayoutEngine.layout(LayoutGraph(nodes: Self.nodes, edges: edges))
         #expect(result.edges.allSatisfy { $0.points.count >= 2 })

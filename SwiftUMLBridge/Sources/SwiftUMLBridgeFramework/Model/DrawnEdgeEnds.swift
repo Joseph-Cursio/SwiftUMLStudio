@@ -1,5 +1,3 @@
-import Foundation
-
 /// The drawn elements PlantUML, Mermaid and Nomnoml end an edge on, found as SVG finds them
 /// (`LayoutGraphBuilder.EdgeEndIds`), so the formats agree on which box an edge reaches: the
 /// type a name means where it is written, drawn or hidden, as Swift's access control allows.
@@ -41,11 +39,6 @@ struct DrawnEdgeEnds {
     ) -> (element: SyntaxStructure?, isProtocol: Bool) {
         let end = endIds.supertype(named: name, from: scope)
         return (end.id.flatMap { elementForKey[$0] }, end.isProtocol)
-    }
-
-    /// Whether `item` is a drawn extension of a drawn type (`extendedType(of:)`).
-    func isExtensionOfDrawnType(_ item: SyntaxStructure) -> Bool {
-        item.kind == .extension && extendedType(of: item) != nil
     }
 
     /// The drawn type the drawn extension `anExtension` extends: the one its name means where it

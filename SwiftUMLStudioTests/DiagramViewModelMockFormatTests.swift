@@ -8,9 +8,9 @@
 //
 
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
 @testable import SwiftUMLStudio
+import Testing
 
 @Suite("DiagramViewModel Mock Format & Dispatch")
 struct DiagramViewModelMockFormatTests {
@@ -119,7 +119,7 @@ struct DiagramViewModelMockFormatTests {
                 SPMTargetDescription(
                     name: "Demo", kind: .library,
                     path: "Sources/Demo", sources: ["Foo.swift"], dependencies: []
-                )
+                ),
             ]
         )
     }

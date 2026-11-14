@@ -1,5 +1,3 @@
-import Foundation
-
 // MARK: - Activity Node Kind
 
 /// The kind of node in an activity diagram.
@@ -90,11 +88,11 @@ public struct ActivityGraph: Sendable {
     public var isEmpty: Bool { nodes.isEmpty }
 
     /// Returns the unique `.start` node, if any.
-    public var startNode: ActivityNode? { nodes.first(where: { $0.kind == .start }) }
+    public var startNode: ActivityNode? { nodes.first { $0.kind == .start } }
 
     /// Returns the node with the given id, or nil.
     public func node(withId identifier: Int) -> ActivityNode? {
-        nodes.first(where: { $0.id == identifier })
+        nodes.first { $0.id == identifier }
     }
 
     /// Outgoing edges from the given node id.

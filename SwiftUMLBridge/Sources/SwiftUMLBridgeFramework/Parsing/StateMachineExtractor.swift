@@ -79,7 +79,7 @@ final class StateMachineExtractor: TypeStackVisitor {
             if rejected { break }
         }
 
-        if !rejected && !caseNames.isEmpty {
+        if !rejected, !caseNames.isEmpty {
             simpleEnums[enumName] = caseNames
         }
 
@@ -131,7 +131,7 @@ final class StateMachineExtractor: TypeStackVisitor {
         funcStack.append(node.name.canonicalName)
         return .visitChildren
     }
-    override func visitPost(_ node: FunctionDeclSyntax) { funcStack.removeLast() }
+    override func visitPost(_: FunctionDeclSyntax) { funcStack.removeLast() }
 
     // MARK: - Switch tracking
 
@@ -143,7 +143,7 @@ final class StateMachineExtractor: TypeStackVisitor {
         ))
         return .visitChildren
     }
-    override func visitPost(_ node: SwitchExprSyntax) { switchStack.removeLast() }
+    override func visitPost(_: SwitchExprSyntax) { switchStack.removeLast() }
 
     override func visit(_ node: SwitchCaseSyntax) -> SyntaxVisitorContinueKind {
         guard !switchStack.isEmpty else { return .visitChildren }
@@ -169,7 +169,7 @@ final class StateMachineExtractor: TypeStackVisitor {
             guard let propertyName = Self.propertyName(from: ExprSyntax(lhs)),
                   let rhsCase = Self.enumCaseFromMemberAccess(ExprSyntax(rhs)) else { continue }
 
-            let activeSwitch = switchStack.last(where: { $0.currentCaseName != nil })
+            let activeSwitch = switchStack.last { $0.currentCaseName != nil }
             let matches = activeSwitch?.subjectPropertyName == propertyName
             observedTransitions.append(ObservedTransition(
                 typeName: typeName,

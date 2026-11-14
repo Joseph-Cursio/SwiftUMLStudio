@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 @Suite("DependencyGraphModel")
 struct DependencyGraphModelTests {
@@ -16,7 +16,7 @@ struct DependencyGraphModelTests {
     func linearChainNoCycles() {
         let edges = [
             DependencyEdge(from: "A", toNode: "B", kind: .conforms),
-            DependencyEdge(from: "B", toNode: "C", kind: .conforms)
+            DependencyEdge(from: "B", toNode: "C", kind: .conforms),
         ]
         let model = DependencyGraphModel(edges: edges)
         #expect(model.detectCycles().isEmpty)
@@ -27,7 +27,7 @@ struct DependencyGraphModelTests {
         let edges = [
             DependencyEdge(from: "Core", toNode: "A", kind: .imports),
             DependencyEdge(from: "Core", toNode: "B", kind: .imports),
-            DependencyEdge(from: "Core", toNode: "C", kind: .imports)
+            DependencyEdge(from: "Core", toNode: "C", kind: .imports),
         ]
         let model = DependencyGraphModel(edges: edges)
         #expect(model.detectCycles().isEmpty)
@@ -39,7 +39,7 @@ struct DependencyGraphModelTests {
     func directCycleMarksBothNodes() {
         let edges = [
             DependencyEdge(from: "A", toNode: "B", kind: .conforms),
-            DependencyEdge(from: "B", toNode: "A", kind: .conforms)
+            DependencyEdge(from: "B", toNode: "A", kind: .conforms),
         ]
         let model = DependencyGraphModel(edges: edges)
         let cycles = model.detectCycles()
@@ -64,7 +64,7 @@ struct DependencyGraphModelTests {
         let edges = [
             DependencyEdge(from: "A", toNode: "B", kind: .imports),
             DependencyEdge(from: "B", toNode: "C", kind: .imports),
-            DependencyEdge(from: "C", toNode: "A", kind: .imports)
+            DependencyEdge(from: "C", toNode: "A", kind: .imports),
         ]
         let model = DependencyGraphModel(edges: edges)
         let cycles = model.detectCycles()
@@ -80,7 +80,7 @@ struct DependencyGraphModelTests {
             DependencyEdge(from: "D", toNode: "A", kind: .imports),
             DependencyEdge(from: "A", toNode: "B", kind: .imports),
             DependencyEdge(from: "B", toNode: "C", kind: .imports),
-            DependencyEdge(from: "C", toNode: "B", kind: .imports)
+            DependencyEdge(from: "C", toNode: "B", kind: .imports),
         ]
         let model = DependencyGraphModel(edges: edges)
         let cycles = model.detectCycles()
@@ -101,7 +101,7 @@ struct DependencyGraphModelTests {
         DependencyEdge(from: "Canvas", toNode: "Themed", kind: .inherits),
         DependencyEdge(from: "Drawable", toNode: "Paintable", kind: .conforms),
         DependencyEdge(from: "Paintable", toNode: "Canvas", kind: .conforms),
-        DependencyEdge(from: "Themed", toNode: "Paintable", kind: .conforms)
+        DependencyEdge(from: "Themed", toNode: "Paintable", kind: .conforms),
     ]
 
     /// The same for `class Node: Visible, Styled {}`, `protocol Visible: Rooted, Framed {}`,
@@ -114,7 +114,7 @@ struct DependencyGraphModelTests {
         DependencyEdge(from: "Visible", toNode: "Framed", kind: .conforms),
         DependencyEdge(from: "Rooted", toNode: "Node", kind: .conforms),
         DependencyEdge(from: "Styled", toNode: "Visible", kind: .conforms),
-        DependencyEdge(from: "Framed", toNode: "Rooted", kind: .conforms)
+        DependencyEdge(from: "Framed", toNode: "Rooted", kind: .conforms),
     ]
 
     private func results(_ edges: [DependencyEdge], calls: Int = 50) -> Set<[String]> {
@@ -142,7 +142,7 @@ struct DependencyGraphModelTests {
     func selfLoopOnly() {
         let edges = [
             DependencyEdge(from: "Core", toNode: "Core", kind: .imports),
-            DependencyEdge(from: "Core", toNode: "Foundation", kind: .imports)
+            DependencyEdge(from: "Core", toNode: "Foundation", kind: .imports),
         ]
         #expect(results(edges) == [["Core"]])
     }
@@ -154,7 +154,7 @@ struct DependencyGraphModelTests {
             DependencyEdge(from: "B", toNode: "A", kind: .imports),
             DependencyEdge(from: "B", toNode: "C", kind: .imports),
             DependencyEdge(from: "C", toNode: "D", kind: .imports),
-            DependencyEdge(from: "D", toNode: "C", kind: .imports)
+            DependencyEdge(from: "D", toNode: "C", kind: .imports),
         ]
         #expect(results(edges) == [["A", "B", "C", "D"]])
     }
@@ -165,7 +165,7 @@ struct DependencyGraphModelTests {
     func modelExposesEdges() {
         let edges = [
             DependencyEdge(from: "Foo", toNode: "Bar", kind: .inherits),
-            DependencyEdge(from: "Bar", toNode: "Baz", kind: .conforms)
+            DependencyEdge(from: "Bar", toNode: "Baz", kind: .conforms),
         ]
         let model = DependencyGraphModel(edges: edges)
         #expect(model.edges.count == 2)

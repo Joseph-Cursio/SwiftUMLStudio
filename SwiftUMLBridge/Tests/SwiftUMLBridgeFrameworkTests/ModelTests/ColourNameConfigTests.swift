@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// Colours written as `docs/user/reference.md` writes them (`DarkGray`, `AliceBlue`).
 @Suite("Colour names in a config file")

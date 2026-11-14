@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// A plain include or exclude entry names a file or directory: that path and what lies inside
 /// it. It used to take every path that merely began with the same text, so excluding
@@ -11,7 +11,7 @@ struct FileCollectorPlainEntryTests {
     private struct Fixture {
         static let files = [
             "Sources/App/A.swift", "Sources/App/Sub/B.swift", "Sources/AppKit/K.swift",
-            "Sources/AppDelegate.swift", "Sources/Core/C.swift", "Generated/G.swift", "GeneratedExtra/E.swift"
+            "Sources/AppDelegate.swift", "Sources/Core/C.swift", "Generated/G.swift", "GeneratedExtra/E.swift",
         ]
 
         let root: URL
@@ -49,7 +49,7 @@ struct FileCollectorPlainEntryTests {
         defer { fixture.remove() }
         #expect(fixture.collected(exclude: ["Sources/App"]) == [
             "Generated/G.swift", "GeneratedExtra/E.swift", "Sources/AppDelegate.swift",
-            "Sources/AppKit/K.swift", "Sources/Core/C.swift"
+            "Sources/AppKit/K.swift", "Sources/Core/C.swift",
         ])
         #expect(fixture.collected(exclude: ["Generated"]).contains("GeneratedExtra/E.swift"))
     }

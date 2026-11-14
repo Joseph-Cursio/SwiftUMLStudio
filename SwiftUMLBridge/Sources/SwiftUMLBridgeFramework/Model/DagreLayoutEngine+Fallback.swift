@@ -1,3 +1,4 @@
+// swiftlint:disable:next unused_import - ceil and sqrt are Darwin's, which Foundation re-exports
 import Foundation
 
 // MARK: - Fallback

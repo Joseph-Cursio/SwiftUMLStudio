@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 @Suite("DiagramContext")
 struct DiagramContextTests {
@@ -80,10 +80,10 @@ struct DiagramContextTests {
     func uniqNameExtensionWithParent() {
         let ctx = DiagramContext()
         let parent = SyntaxStructure(kind: .class, name: "Foo")
-        let extensionItem = SyntaxStructure(kind: .extension, name: "Foo")
-        ctx.reserveIdentifiers(drawing: [parent, extensionItem])
+        let extensionStructure = SyntaxStructure(kind: .extension, name: "Foo")
+        ctx.reserveIdentifiers(drawing: [parent, extensionStructure])
         _ = ctx.uniqName(item: parent, relationship: "inherits")
-        _ = ctx.uniqName(item: extensionItem, relationship: "ext")
+        _ = ctx.uniqName(item: extensionStructure, relationship: "ext")
         #expect(ctx.extnConnections == ["Foo <.. Foo0 : ext"])
     }
 

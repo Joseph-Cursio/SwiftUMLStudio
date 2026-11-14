@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// An extension's `ext` edge ends on the type it extends: the drawn type its name means where it
 /// is written, the one `--merge-extensions` merges it into. `uniqName` matched the extension's
@@ -31,7 +31,10 @@ struct ExtensionEdgeTargetTests {
     }
 
     private func declared(
-        _ kind: ElementKind, _ name: String, in file: String, module: String? = nil,
+        _ kind: ElementKind,
+        _ name: String,
+        in file: String,
+        module: String? = nil,
         access: ElementAccessibility? = nil
     ) -> SyntaxStructure {
         let item = SyntaxStructure(accessibility: access, kind: kind, name: name)
@@ -70,7 +73,7 @@ struct ExtensionEdgeTargetTests {
             edge("APublic.BPublic", "APublic.BPublic0", format),
             edge("APublic.BPublic", "APublic.BPublic1", format),
             edge("APublic.BPublic.CPublic", "APublic.BPublic.CPublic2", format),
-            edge("APublic.BPublic.CInternal", "APublic.BPublic.CInternal3", format)
+            edge("APublic.BPublic.CInternal", "APublic.BPublic.CInternal3", format),
         ])
     }
 
@@ -83,7 +86,7 @@ struct ExtensionEdgeTargetTests {
         let items = [
             declared(.struct, "Foo", in: "A.swift", module: "ModA", access: .public),
             declared(.struct, "Foo", in: "B.swift", module: "ModB", access: .public),
-            declared(.extension, "Foo", in: "C.swift", module: "ModB")
+            declared(.extension, "Foo", in: "C.swift", module: "ModB"),
         ]
         #expect(extEdges(of: items, format) == [edge("Foo0", "Foo1", format)])
     }
@@ -94,7 +97,7 @@ struct ExtensionEdgeTargetTests {
     func hiddenType(format: DiagramFormat) {
         let types = [
             declared(.struct, "Foo", in: "A.swift"),
-            declared(.struct, "Foo", in: "B.swift", access: .fileprivate)
+            declared(.struct, "Foo", in: "B.swift", access: .fileprivate),
         ]
         let sameFile = types + [declared(.extension, "Foo", in: "B.swift")]
         #expect(extEdges(of: sameFile, format).isEmpty)

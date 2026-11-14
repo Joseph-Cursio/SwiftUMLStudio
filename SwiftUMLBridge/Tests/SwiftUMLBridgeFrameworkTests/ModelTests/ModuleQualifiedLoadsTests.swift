@@ -1,6 +1,4 @@
-import Foundation
 import Testing
-@testable import SwiftUMLBridgeFramework
 
 /// A module-qualified name, `ModA.Foo.V`, means the member of ModA's `Foo` that the writer's
 /// module loads, as the bare `Foo.V` does. Two modules each add a `V` to `Foo`; the writer
@@ -55,7 +53,7 @@ struct ModuleQualifiedLoadsTests {
             ], member: "otherOnly", hiddenLabel: nil),
             Case(name: "extension \(extended): the class the writer loads, not the alias", files: [
                 bareFoo, classAdded(as: extended), aliasAdded(as: extended), writer(loading: "ModB")
-            ], member: "vOnly", hiddenLabel: "ModA.Foo.V")
+            ], member: "vOnly", hiddenLabel: "ModA.Foo.V"),
         ]
     }
 

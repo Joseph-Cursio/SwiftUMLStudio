@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// In package mode every declaration carries its target as its module, so `extension ModA.Foo`
 /// written in ModB extends ModA's `Foo`, and `extension ModA.Foo.Inner` its nested `Foo.Inner`: the
@@ -20,13 +20,6 @@ func moduleQualifiedItems(_ files: [(module: String?, source: String)]) throws -
         urls.append((url, file.module))
     }
     return SyntaxStructure.declarations(inPackageFiles: urls)
-}
-
-extension LayoutGraph {
-    /// The id of the node that lists `member`.
-    func owner(of member: String) -> String? {
-        nodes.first { $0.compartments.flatMap(\.items).contains { $0.contains(member) } }?.id
-    }
 }
 
 @Suite("Module-qualified extensions find the type they extend")
@@ -192,7 +185,7 @@ struct ModuleQualifiedExtensionTests {
 
     @Test("a module may qualify its own types")
     func ownModuleQualifier() throws {
-        let modB = """
+        let moduleBSource = """
             import ModA
 
             struct Foo {}
@@ -201,7 +194,7 @@ struct ModuleQualifiedExtensionTests {
                 func own() {}
             }
             """
-        let graph = mergedGraph(try packageItems(modB: modB))
+        let graph = mergedGraph(try packageItems(modB: moduleBSource))
         #expect(owner(of: "own", in: graph) == "Foo_1")
     }
 
@@ -248,29 +241,29 @@ struct ModuleQualifiedExtensionTests {
 
     @Test("a module's internal type is not reached from another module")
     func internalTypeIsNotVisible() throws {
-        let modA = "struct Hidden {}"
-        let modB = """
+        let moduleASource = "struct Hidden {}"
+        let moduleBSource = """
             import ModA
 
             extension ModA.Hidden {
                 func fromB() {}
             }
             """
-        let graph = mergedGraph(try items([("ModA", modA), ("ModB", modB)]))
+        let graph = mergedGraph(try items([("ModA", moduleASource), ("ModB", moduleBSource)]))
         #expect(owner(of: "fromB", in: graph) == "ModA.Hidden")
     }
 
     @Test("a qualified typealias means the type it aliases")
     func qualifiedTypealias() throws {
-        let modA = Self.modA + "\npublic typealias Thing = Foo\n"
-        let modB = """
+        let moduleASource = Self.modA + "\npublic typealias Thing = Foo\n"
+        let moduleBSource = """
             import ModA
 
             extension ModA.Thing {
                 func viaAlias() {}
             }
             """
-        let graph = mergedGraph(try items([("ModA", modA), ("ModB", modB)]))
+        let graph = mergedGraph(try items([("ModA", moduleASource), ("ModB", moduleBSource)]))
         #expect(owner(of: "viaAlias", in: graph) == "Foo")
     }
 
@@ -279,19 +272,19 @@ struct ModuleQualifiedExtensionTests {
     /// qualified extension stands in for `Foo`, as `extension Foo` would in ModA (#74, #153).
     @Test("a qualified extension stands in for the hidden type it extends")
     func standInForHiddenType() throws {
-        let modA = """
+        let moduleASource = """
             public struct Foo {
                 struct Inner {}
             }
             """
-        let modB = """
+        let moduleBSource = """
             import ModA
 
             extension ModA.Foo {
                 func fromB() {}
             }
             """
-        let items = try items([("ModA", modA), ("ModB", modB)])
+        let items = try items([("ModA", moduleASource), ("ModB", moduleBSource)])
         let internalOnly = ElementOptions(havingAccessLevel: [.internal])
         let svg = LayoutGraphBuilder.buildClassDiagram(
             from: items, configuration: Configuration(elements: internalOnly, format: .svg)
@@ -303,14 +296,21 @@ struct ModuleQualifiedExtensionTests {
 
     @Test("a qualified supertype in a qualified extension reaches its protocol in SVG")
     func qualifiedSupertypeSVG() throws {
-        let modA = Self.modA + "\npublic protocol Q {}\n"
-        let modB = """
+        let moduleASource = Self.modA + "\npublic protocol Q {}\n"
+        let moduleBSource = """
             import ModA
 
             extension ModA.Foo: ModA.Q {}
             """
-        let items = try items([("ModA", modA), ("ModB", modB)])
+        let items = try items([("ModA", moduleASource), ("ModB", moduleBSource)])
         let svg = LayoutGraphBuilder.buildClassDiagram(from: items, configuration: Configuration(format: .svg))
         #expect(svg.edgeEnds.contains("ModA.Foo -> Q"))
+    }
+}
+
+extension LayoutGraph {
+    /// The id of the node that lists `member`.
+    func owner(of member: String) -> String? {
+        nodes.first { $0.compartments.flatMap(\.items).contains { $0.contains(member) } }?.id
     }
 }

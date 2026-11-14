@@ -1,5 +1,3 @@
-import Foundation
-
 enum ProFeature: String, CaseIterable {
     case sequenceDiagrams
     case dependencyGraphs
@@ -15,7 +13,7 @@ enum ProFeature: String, CaseIterable {
 
 @MainActor
 enum FeatureGate {
-    static func isUnlocked(_ feature: ProFeature, manager: some SubscriptionProviding) -> Bool {
+    static func isUnlocked(_: ProFeature, manager: some SubscriptionProviding) -> Bool {
         manager.isProUnlocked
     }
 }

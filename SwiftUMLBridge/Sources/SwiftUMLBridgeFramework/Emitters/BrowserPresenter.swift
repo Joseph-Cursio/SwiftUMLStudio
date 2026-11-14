@@ -17,27 +17,36 @@ public struct BrowserPresenter: DiagramPresenting {
     }
 
     public func present(script: any DiagramOutputting) async {
-        let url: URL
+        let url: URL?
         switch script.format {
         case .plantuml:
             let encodedText = script.encodeText()
             switch format {
             case .png:
-                url = URL(string: "https://www.planttext.com/api/plantuml/png/\(encodedText)")!
+                url = URL(string: "https://www.planttext.com/api/plantuml/png/\(encodedText)")
+
             case .svg:
-                url = URL(string: "https://www.planttext.com/api/plantuml/svg/\(encodedText)")!
+                url = URL(string: "https://www.planttext.com/api/plantuml/svg/\(encodedText)")
+
             default:
-                url = URL(string: "https://www.planttext.com/?text=\(encodedText)")!
+                url = URL(string: "https://www.planttext.com/?text=\(encodedText)")
             }
+
         case .mermaid:
             url = mermaidLiveURL(for: script.text)
+
         case .nomnoml:
             url = nomnomlLiveURL(for: script.text)
+
         case .svg:
             // SVG is self-contained; write to temp file and open
             let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("diagram.svg")
             try? script.text.write(to: tempURL, atomically: true, encoding: .utf8)
             url = tempURL
+        }
+        guard let url else {
+            BridgeLogger.shared.error("could not form a URL for the \(script.format) diagram")
+            return
         }
         _ = await MainActor.run { NSWorkspace.shared.open(url) }
     }
@@ -51,7 +60,7 @@ public struct BrowserPresenter: DiagramPresenting {
     private func mermaidLiveURL(for text: String) -> URL {
         let payload: [String: Any] = [
             "code": text,
-            "mermaid": ["theme": "default"]
+            "mermaid": ["theme": "default"],
         ]
         let data = (try? JSONSerialization.data(withJSONObject: payload)) ?? Data()
         let base64 = data.base64EncodedString()

@@ -5,9 +5,8 @@
 //  An empty selection clears what was derived from the old one.
 //
 
-import Foundation
-import Testing
 @testable import SwiftUMLStudio
+import Testing
 
 /// Refreshing with nothing selected empties the derived lists rather than leaving them.
 ///

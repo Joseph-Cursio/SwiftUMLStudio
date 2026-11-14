@@ -180,32 +180,24 @@ extension LayoutGraphBuilder {
                 .flatMap { aliased($0.declared, depth: depth, readingModules: readingModules) }
         }
 
-        /// The name `name` comes to where it is written once every typealias it goes through is
+        /// The name `written` comes to where it is written once every typealias it goes through is
         /// followed: `Dictionary` for `JSON` after `typealias JSON = [String: Int]`, and otherwise
-        /// the name the declaration it means is recorded under — `name` itself, or `Foo` for a
-        /// `ModA.Foo` read through its module, or with none, `name` through its first component's
-        /// typealias (`spelledThroughStart(_:from:depth:)`). Two extensions of one type outside the diagram share
-        /// this name however each spells the type. `readingModules: false` reads no module
-        /// qualifier, for the text formats' supertype edges, which end on a name and so cannot
-        /// tell ModA's `Foo` from another `Foo` (`TypeAliasResolver`).
-        func resolvedName(of name: String, from scope: Scope, readingModules: Bool = true, depth: Int = 0) -> String {
-            resolvedName(
-                of: QualifiedName(name: name, root: .asWritten), from: scope, readingModules: readingModules,
-                depth: depth
-            )
-        }
-
-        /// `resolvedName(of:from:readingModules:depth:)` for a name whose root is known
-        /// (`qualifiedName(ofWritten:from:)`). Each typealias is followed at the same depth, in a
-        /// loop, so a chain of any length runs to its end, and a cycle, which Swift rejects, ends
-        /// where it comes back to one (`AliasChain`), on the name it came to there (#248). What a
-        /// walk from each alias comes to is kept (`AliasWalks`), so writers along one chain walk
-        /// it once; a cycle's is not, as it turns on where the walk came into it.
+        /// the name the declaration it means is recorded under — `written` itself, or `Foo` for a
+        /// `ModA.Foo` read through its module, or with none, `written` through its first component's
+        /// typealias (`spelledThroughStart(_:from:depth:)`). Two extensions of one type outside the
+        /// diagram share this name however each spells the type. `readingModules: false` reads no
+        /// module qualifier, for the text formats' supertype edges, which end on a name and so
+        /// cannot tell ModA's `Foo` from another `Foo` (`TypeAliasResolver`). The root of `written`
+        /// is already worked out (`qualifiedName(ofWritten:from:)`). Each typealias is followed at
+        /// the same depth, in a loop, so a chain of any length runs to its end, and a cycle, which
+        /// Swift rejects, ends where it comes back to one (`AliasChain`), on the name it came to
+        /// there (#248). What a walk from each alias comes to is kept (`AliasWalks`), so writers
+        /// along one chain walk it once; a cycle's is not, as it turns on where the walk came into it.
         func resolvedName(
-            of name: QualifiedName, from scope: Scope, readingModules: Bool = true, depth: Int = 0
+            of written: QualifiedName, from writerScope: Scope, readingModules: Bool = true, depth: Int = 0
         ) -> String {
-            guard depth < 8 else { return name.name }
-            var (name, scope, chain) = (name, scope, AliasChain())
+            guard depth < 8 else { return written.name }
+            var (name, scope, chain) = (written, writerScope, AliasChain())
             var followed: [Declared] = []
             let resolved: String
             while true {
@@ -264,7 +256,7 @@ extension LayoutGraphBuilder {
             // Most supertypes, `Encodable` say, are no enclosing type's member. Working the root
             // out takes a lookup of the enclosing extension's type, so it waits for a name a type
             // is recorded under, one a module may be read in, or one a superclass may declare.
-            let throughModule = { (probeName: String) in readingModules && self.mayReadModule(probeName) }
+            let throughModule = { (probeName: String) in readingModules && mayReadModule(probeName) }
             guard probes.contains(where: {
                 typesForName[$0.name] != nil || throughModule($0.name) || mayBeInherited($0.name)
             }) else {
@@ -275,7 +267,7 @@ extension LayoutGraphBuilder {
                 .map { probe in (probe, QualifiedName(name: probe.name, root: root, isRecorded: probe.isRecorded)) }
                 .first { probe, qualified in
                     let meant = meansMember(qualified, from: scope, depth: depth, readingModules: readingModules)
-                    if let meant { return meant }
+                    if meant != .noDeclaration { return meant == .member }
                     // A recorded name's first component is a type, never a module qualifier.
                     guard !probe.isRecorded, throughModule(probe.name),
                           readsModule(probe.enclosing, from: scope, depth: depth)
@@ -296,8 +288,10 @@ extension LayoutGraphBuilder {
             switch inheritedLookup(name, from: scope, depth: depth, readingModules: readingModules) {
             case .member(let inherited):
                 return Match(declared: inherited, name: recordedName(of: inherited.declaration) ?? name.name)
+
             case .hidden:
                 return nil
+
             case nil:
                 break
             }

@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// How the walks along a chain of typealiases that #248 made run to its end tell a cycle from a
 /// legal chain, and what they cost: each source here builds with swiftc.

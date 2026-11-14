@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 // What a name built on the type around the writer means when no file has a module (#252):
 // `class W: X` inside `extension Foo` means a member of the `Foo` that extension extends. A member
@@ -45,7 +45,7 @@ struct EnclosingTypeMemberRankTests {
             extension AF { typealias X = RE }
             class RE {}
             extension Foo { class W: X {} }
-            """)
+            """),
         ]
         #expect(try enclosingWriterLines(files, mode: mode, reversed: reversed) == ["RB <|-- Foo.W : inherits"])
         #expect(try enclosingWriterEdges(files, mode: mode, reversed: reversed) == ["Foo.W -> RB"])
@@ -59,7 +59,7 @@ struct EnclosingTypeMemberRankTests {
             Self.otherTargetsFoo,
             ("/r/Sources/B/Foo.swift", "struct Foo { typealias X = RB }\nclass RB {}"),
             ("/r/Sources/B/Sub/E.swift", "extension AF { typealias X = RE }\nclass RE {}"),
-            ("/r/Sources/B/Sub/W.swift", "extension Foo { class W: X {} }")
+            ("/r/Sources/B/Sub/W.swift", "extension Foo { class W: X {} }"),
         ]
         #expect(try enclosingWriterLines(files, mode: mode, reversed: reversed) == ["RB <|-- Foo.W : inherits"])
         #expect(try enclosingWriterEdges(files, mode: mode, reversed: reversed) == ["Foo.W -> RB"])
@@ -80,7 +80,7 @@ struct EnclosingTypeMemberRankTests {
                 class W: X {}
             }
             class RB {}
-            """)
+            """),
         ]
         #expect(try enclosingWriterLines(files, mode: mode, reversed: reversed) == ["RB <|-- Foo.W : inherits"])
         #expect(try enclosingWriterEdges(files, mode: mode, reversed: reversed) == ["Foo.W -> RB"])
@@ -97,7 +97,7 @@ struct EnclosingTypeMemberRankTests {
             open class RCore { public init() {} }
             """),
             ("/r/Sources/Features/Login/E.swift", "extension Foo { typealias X = RLogin }\nclass RLogin {}"),
-            ("/r/Sources/Features/Profile/W.swift", "extension Foo { class W: X {} }")
+            ("/r/Sources/Features/Profile/W.swift", "extension Foo { class W: X {} }"),
         ]
         #expect(try enclosingWriterLines(files, mode: mode, reversed: false) == ["RCore <|-- Foo.W : inherits"])
     }
@@ -112,14 +112,14 @@ struct EnclosingTypeMemberRankTests {
     func candidatesKeyIsItsBytes(reversed: Bool) throws {
         let writers: [Fixture.File] = [
             ("/r/X/caf\u{E9}/W.swift", "extension Foo { class W1: X {} }"),
-            ("/r/X/cafe\u{301}/W.swift", "extension Foo { class W2: X {} }")
+            ("/r/X/cafe\u{301}/W.swift", "extension Foo { class W2: X {} }"),
         ]
         let files: [Fixture.File] = [
             ("/r/Core/Foo.swift", """
             public struct Foo { public typealias X = RCore; public init() {} }
             open class RCore { public init() {} }
             """),
-            ("/r/X/caf\u{E9}/E.swift", "extension Foo { typealias X = RLogin }\nclass RLogin {}")
+            ("/r/X/caf\u{E9}/E.swift", "extension Foo { typealias X = RLogin }\nclass RLogin {}"),
         ] + (reversed ? writers.reversed() : writers)
         #expect(try enclosingWriterLines(files, mode: .all, reversed: false) == [
             "RLogin <|-- Foo.W1 : inherits", "RCore <|-- Foo.W2 : inherits"
@@ -133,12 +133,12 @@ struct EnclosingTypeMemberRankTests {
     func ownerKeyIsItsBytes(reversed: Bool) throws {
         let writers: [Fixture.File] = [
             ("/r/X/caf\u{E9}/W.swift", "extension Foo { class W1: X {} }"),
-            ("/r/X/cafe\u{301}/W.swift", "extension Foo { class W2: X {} }")
+            ("/r/X/cafe\u{301}/W.swift", "extension Foo { class W2: X {} }"),
         ]
         let files: [Fixture.File] = [
             ("/r/X/caf\u{E9}/A/Foo.swift", "struct Foo { typealias X = RA }\nclass RA {}"),
             ("/r/X/cafe\u{301}/B/Foo.swift", "struct Foo { typealias X = RB }\nclass RB {}"),
-            ("/r/Z/E.swift", "extension Foo { class X {} }")
+            ("/r/Z/E.swift", "extension Foo { class X {} }"),
         ] + (reversed ? writers.reversed() : writers)
         #expect(try enclosingWriterLines(files, mode: .all, reversed: false) == [
             "RA <|-- Foo.W1 : inherits", "RB <|-- Foo.W2 : inherits"
@@ -172,7 +172,7 @@ struct EnclosingTypeMemberRankTests {
                 extension Foo {
                 \(writers)
                 }
-                """)
+                """),
             ]
         }
     }
@@ -185,7 +185,7 @@ struct EnclosingTypeMemberRankTests {
     /// which took it from 5 s to 1.2 s, as main, which also grows with the square there; without
     /// just one of them it takes about twice as long, too near a slow runner's time to bound.
     @Test("many writers inside extensions among many same-named members cost about a lookup each",
-          arguments: [("namespace", 1000, 2.0), ("issue", 150, 3.0)])
+          arguments: [("namespace", 1_000, 2.0), ("issue", 150, 3.0)])
     func manyDirectoriesCostALookupEach(layout: String, count: Int, limit: Double) throws {
         let items = try Fixture.parsed(Self.manyDirectories(layout, count: count))
         let configuration = Configuration(elements: ElementOptions(), format: .plantuml)

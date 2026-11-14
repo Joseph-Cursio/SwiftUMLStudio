@@ -1,5 +1,0 @@
-# SwiftLint configuration for SwiftUMLBridge, used when linting from this directory; a lint
-# from the repository root merges it into the root configuration.
-
-excluded:
-  - .build

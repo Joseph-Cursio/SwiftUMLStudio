@@ -1,32 +1,3 @@
-import Foundation
-
-// MARK: - Layout Graph Model
-
-/// A positioned graph produced by a layout engine, ready for SVG rendering.
-public struct LayoutGraph: Sendable {
-    public var nodes: [LayoutNode]
-    public var edges: [LayoutEdge]
-
-    /// Module grouping boxes, populated by the layout engine when the graph's
-    /// nodes carry `module` values (i.e. the diagram was generated from a
-    /// parsed SPM package). Empty for diagrams generated from loose files.
-    public var clusters: [LayoutCluster] = []
-
-    public var width: Double = 0
-    public var height: Double = 0
-
-    /// Why the layout engine put the nodes on its grid instead of laying them out with dagre,
-    /// such as `RangeError: Maximum call stack size exceeded.` from a chain too long for
-    /// JavaScriptCore (#150). `nil` when dagre laid the graph out. The grid keeps every node and
-    /// edge, so this is the only way to tell the two apart.
-    public var fallbackReason: String?
-
-    public init(nodes: [LayoutNode] = [], edges: [LayoutEdge] = []) {
-        self.nodes = nodes
-        self.edges = edges
-    }
-}
-
 // MARK: - Layout Cluster
 
 /// A module grouping box that encloses every `LayoutNode` sharing a `module`
@@ -157,5 +128,32 @@ public struct LayoutPoint: Sendable {
     public init(posX: Double, posY: Double) {
         self.posX = posX
         self.posY = posY
+    }
+}
+
+// MARK: - Layout Graph Model
+
+/// A positioned graph produced by a layout engine, ready for SVG rendering.
+public struct LayoutGraph: Sendable {
+    public var nodes: [LayoutNode]
+    public var edges: [LayoutEdge]
+
+    /// Module grouping boxes, populated by the layout engine when the graph's
+    /// nodes carry `module` values (i.e. the diagram was generated from a
+    /// parsed SPM package). Empty for diagrams generated from loose files.
+    public var clusters: [LayoutCluster] = []
+
+    public var width: Double = 0
+    public var height: Double = 0
+
+    /// Why the layout engine put the nodes on its grid instead of laying them out with dagre,
+    /// such as `RangeError: Maximum call stack size exceeded.` from a chain too long for
+    /// JavaScriptCore (#150). `nil` when dagre laid the graph out. The grid keeps every node and
+    /// edge, so this is the only way to tell the two apart.
+    public var fallbackReason: String?
+
+    public init(nodes: [LayoutNode] = [], edges: [LayoutEdge] = []) {
+        self.nodes = nodes
+        self.edges = edges
     }
 }

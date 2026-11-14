@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 @Suite("ComponentExtractor")
 struct ComponentExtractorTests {
@@ -33,7 +33,7 @@ struct ComponentExtractorTests {
                     name: "AppTests", kind: .test,
                     path: "Tests/AppTests",
                     sources: [], dependencies: ["App"]
-                )
+                ),
             ]
         )
     }
@@ -85,7 +85,7 @@ struct ComponentExtractorTests {
                     name: "TestHelpers", kind: .test,
                     path: "Tests/TestHelpers",
                     sources: [], dependencies: []
-                )
+                ),
             ]
         )
         let model = ComponentExtractor.extract(package: extras, packageRoot: dummyRoot)
@@ -116,7 +116,7 @@ struct ComponentExtractorTests {
                 SPMTargetDescription(
                     name: "Plug", kind: .other, path: "Plugins/Plug",
                     sources: [], dependencies: []
-                )
+                ),
             ]
         )
         let model = ComponentExtractor.extract(package: package, packageRoot: dummyRoot)
@@ -149,78 +149,12 @@ struct ComponentExtractorTests {
                 SPMTargetDescription(
                     name: "Core", kind: .library, path: "Sources/Core",
                     sources: ["Core.swift"], dependencies: []
-                )
+                ),
             ]
         )
         let model = ComponentExtractor.extract(package: package, packageRoot: tempRoot)
         let core = try #require(model.components.first { $0.name == "Core" })
         // Only public/open types surface, alphabetically; internal and private are excluded.
         #expect(core.providedInterfaces == ["Apple", "Bandana", "Zebra"])
-    }
-}
-
-@Suite("ComponentScript PlantUML emission")
-struct ComponentScriptPlantUMLTests {
-
-    @Test("emits a component block + dashed dependency arrow")
-    func basicShape() {
-        let model = ComponentModel(
-            components: [
-                Component(name: "Networking", kind: .library, providedInterfaces: ["HttpClient"]),
-                Component(name: "App", kind: .executable, providedInterfaces: ["AppMain"])
-            ],
-            dependencies: [ComponentDependency(from: "App", toComponent: "Networking")]
-        )
-        let script = ComponentScript(model: model, configuration: .default)
-        #expect(script.text.contains("@startuml"))
-        #expect(script.text.contains("component \"Networking\" as Networking <<library>>"))
-        #expect(script.text.contains("component \"App\" as App <<executable>>"))
-        #expect(script.text.contains("[HttpClient]"))
-        #expect(script.text.contains("[AppMain]"))
-        #expect(script.text.contains("App ..> Networking"))
-        #expect(script.text.contains("@enduml"))
-    }
-
-    @Test("safeAlias replaces special characters")
-    func safeAliasReplaces() {
-        let model = ComponentModel(
-            components: [
-                Component(name: "swift-syntax", kind: .library),
-                Component(name: "App.Main", kind: .executable)
-            ],
-            dependencies: [ComponentDependency(from: "App.Main", toComponent: "swift-syntax")]
-        )
-        let script = ComponentScript(model: model, configuration: .default)
-        #expect(script.text.contains("as swift_syntax"))
-        #expect(script.text.contains("as App_Main"))
-        #expect(script.text.contains("App_Main ..> swift_syntax"))
-    }
-
-    @Test("empty components emit only the @startuml/@enduml frame")
-    func emptyModelPlantUML() {
-        let script = ComponentScript(model: ComponentModel(), configuration: .default)
-        #expect(script.text.contains("@startuml"))
-        #expect(script.text.contains("@enduml"))
-    }
-}
-
-@Suite("ComponentScript Mermaid (flowchart fallback)")
-struct ComponentScriptMermaidTests {
-
-    @Test("emits flowchart TD with subgraphs and dashed arrows")
-    func mermaidFlowchartShape() {
-        let model = ComponentModel(
-            components: [
-                Component(name: "Networking", kind: .library, providedInterfaces: ["HttpClient"]),
-                Component(name: "App", kind: .executable, providedInterfaces: [])
-            ],
-            dependencies: [ComponentDependency(from: "App", toComponent: "Networking")]
-        )
-        var configuration = Configuration.default
-        configuration.format = .mermaid
-        let script = ComponentScript(model: model, configuration: configuration)
-        #expect(script.text.contains("flowchart TD"))
-        #expect(script.text.contains("subgraph Networking[\"Networking\"]"))
-        #expect(script.text.contains("App -.-> Networking"))
     }
 }

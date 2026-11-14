@@ -1,11 +1,10 @@
-import Foundation
-
 /// Shared protocol for any diagram output (class diagram, sequence diagram, etc.).
 /// Used by the GUI layer (DiagramWebView) and presenter layer to avoid type coupling.
 public protocol DiagramOutputting: Sendable {
     var text: String { get }
     var format: DiagramFormat { get }
 
+    /// `text` in PlantUML's URL text encoding.
     func encodeText() -> String
 
     /// Positioned layout graph (available when format is `.svg`).
@@ -32,9 +31,16 @@ public extension DiagramOutputting {
         DiagramText(rawValue: text).encodedValue
     }
 
+    /// No positioned class or dependency layout.
     var layoutGraph: LayoutGraph? { nil }
+
+    /// No positioned sequence layout.
     var sequenceLayout: SequenceLayout? { nil }
+
+    /// No positioned activity layout.
     var activityLayout: ActivityLayout? { nil }
+
+    /// No positioned component layout.
     var componentLayout: ComponentLayout? { nil }
 }
 

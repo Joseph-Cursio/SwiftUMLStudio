@@ -1,10 +1,33 @@
 import Foundation
 import Yams
 
+/// Why a configuration file could not be used: `ConfigurationProvider.loadConfiguration(at:)`.
+public struct ConfigurationLoadError: Error, CustomStringConvertible, Sendable {
+    /// The file's path.
+    public let path: String
+    /// What is wrong with it, naming the key and the value at fault where there is one.
+    public let reason: String
+    /// Whether nothing is at `path`.
+    public let isMissingFile: Bool
+
+    public init(path: String, reason: String, isMissingFile: Bool = false) {
+        self.path = path
+        self.reason = reason
+        self.isMissingFile = isMissingFile
+    }
+
+    public var description: String { "\(path): \(reason)" }
+}
+
 /// Load Configuration from file or defaults
 public struct ConfigurationProvider {
-    public init() {}
+    /// A provider; it reads the configuration afresh on every call.
+    public init() {
+        // Public because a struct's implicit initializer is internal; there is no state to set.
+    }
 
+    /// The configuration in the YAML file at `path`, else in `.swiftumlbridge.yml` in the
+    /// current directory, else the default one.
     public func getConfiguration(for path: String?) -> Configuration {
         guard let configPath = path else {
             return readSwiftConfig()
@@ -14,9 +37,8 @@ public struct ConfigurationProvider {
         if let config = decodeYml(config: fileURL) {
             BridgeLogger.shared.info("config file \(configPath) found")
             return config
-        } else {
-            return readSwiftConfig()
         }
+        return readSwiftConfig()
     }
 
     func readSwiftConfig() -> Configuration {
@@ -24,10 +46,9 @@ public struct ConfigurationProvider {
         if let config = decodeYml(config: defaultYmlPath) {
             BridgeLogger.shared.info(".swiftumlbridge.yml file found")
             return config
-        } else {
-            BridgeLogger.shared.info("return default configuration")
-            return defaultConfig
         }
+        BridgeLogger.shared.info("return default configuration")
+        return defaultConfig
     }
 
     var defaultYmlPath: URL {
@@ -85,10 +106,12 @@ public struct ConfigurationProvider {
         case let .keyNotFound(key, context):
             let parent = keyPath(context.codingPath)
             return "missing key '\(key.stringValue)'" + (parent.isEmpty ? "" : " in \(parent)")
+
         case let .dataCorrupted(context), let .typeMismatch(_, context), let .valueNotFound(_, context):
             let path = keyPath(context.codingPath)
             let detail = context.underlyingError.map { "\($0)" } ?? context.debugDescription
             return path.isEmpty ? detail : "invalid value at \(path): \(detail)"
+
         @unknown default:
             return "\(error)"
         }
@@ -108,22 +131,4 @@ public struct ConfigurationProvider {
     var defaultConfig: Configuration {
         Configuration.default
     }
-}
-
-/// Why a configuration file could not be used: `ConfigurationProvider.loadConfiguration(at:)`.
-public struct ConfigurationLoadError: Error, CustomStringConvertible, Sendable {
-    /// The file's path.
-    public let path: String
-    /// What is wrong with it, naming the key and the value at fault where there is one.
-    public let reason: String
-    /// Whether nothing is at `path`.
-    public let isMissingFile: Bool
-
-    public init(path: String, reason: String, isMissingFile: Bool = false) {
-        self.path = path
-        self.reason = reason
-        self.isMissingFile = isMissingFile
-    }
-
-    public var description: String { "\(path): \(reason)" }
 }

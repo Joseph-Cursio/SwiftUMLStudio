@@ -32,6 +32,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   fixtures that are async on purpose), `prefixed_toplevel_constant`, and
   `private_subject` (ViewInspector's `InspectionEmissary` needs a visible
   subject).
+- **SwiftLint takes its rules from the shared SwiftLintConfig.**
+  `.swiftlint.yml` now lists only this project's paths and inherits every
+  rule from `../SwiftLintConfig/.swiftlint.yml`, so linting needs that
+  repository cloned beside this one; the rule list above and
+  `SwiftUMLBridge/.swiftlint.yml` are gone. The code is changed to meet
+  the shared rules (trailing commas, sorted imports, one type per file,
+  wrapped arguments and the like) without changing what it does.
 
 ### Changed — Bridge (API, breaking)
 

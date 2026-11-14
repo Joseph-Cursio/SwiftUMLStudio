@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 @Suite("Theme")
 struct ThemeTests {
@@ -60,7 +60,7 @@ struct ThemeTests {
             ("é😀xY", "é😀x-y"),
             ("\u{1F468}\u{200D}\u{1F469}\u{200D}\u{1F467}fooBar",
              "\u{1F468}\u{200D}\u{1F469}\u{200D}\u{1F467}foo-bar"),
-            ("😀😀ABc", "😀😀a-bc")
+            ("😀😀ABc", "😀😀a-bc"),
           ])
     func kebabCaseAfterWideCharacters(input: String, expected: String) {
         #expect(input.camelCaseToKebapCase() == expected)
@@ -71,7 +71,7 @@ struct ThemeTests {
     @Test("a config value naming a built-in theme writes PlantUML's kebab-case name",
           arguments: [
             ("carbonGray", "carbon-gray"), ("sketchyOutline", "sketchy-outline"),
-            ("reddressDarkblue", "reddress-darkblue"), ("minty", "minty"), ("awsOrange", "aws-orange")
+            ("reddressDarkblue", "reddress-darkblue"), ("minty", "minty"), ("awsOrange", "aws-orange"),
           ])
     func configValueNamingBuiltIn(value: String, written: String) {
         #expect(Theme(configValue: value).rawValue == written)
@@ -81,7 +81,7 @@ struct ThemeTests {
     @Test("any other config value is written as it is",
           arguments: [
             "hacker from https://example.com/themes", "reddress-darkblue", "carbon-gray",
-            "CarbonGray", "myTheme", "directive"
+            "CarbonGray", "myTheme", "directive",
           ])
     func otherConfigValueWrittenAsIs(value: String) {
         #expect(Theme(configValue: value).rawValue == value)
@@ -114,7 +114,7 @@ struct ThemeTests {
     @Test("preferred list is non-empty and contains known themes")
     func preferredListNonEmpty() {
         #expect(Theme.preferred.isEmpty == false)
-        let rawValues = Theme.preferred.map { $0.rawValue }
+        let rawValues = Theme.preferred.map(\.rawValue)
         #expect(rawValues.contains("amiga"))
         #expect(rawValues.contains("carbon-gray"))
     }

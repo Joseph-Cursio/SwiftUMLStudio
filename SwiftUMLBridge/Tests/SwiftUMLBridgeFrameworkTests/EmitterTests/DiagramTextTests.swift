@@ -1,6 +1,6 @@
-import Testing
 import Foundation
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 @Suite("DiagramText")
 struct DiagramTextTests {
@@ -11,7 +11,7 @@ struct DiagramTextTests {
     func base64plantumlTwoBytePadding() {
         // Provide exactly 2 bytes: exercises the byteIndex + 2 == count branch
         let bytes: [UInt8] = [0xAB, 0xCD]
-        let data = NSData(bytes: bytes, length: bytes.count)
+        let data = Data(bytes)
         let diagramText = DiagramText(rawValue: "")
         let encoded = diagramText.base64plantuml(data)
         // Two input bytes → three encoded chars + one '=' padding
@@ -23,7 +23,7 @@ struct DiagramTextTests {
     @Test("base64plantuml handles 3-byte-aligned input with no padding")
     func base64plantumlNoPadding() {
         let bytes: [UInt8] = [0x01, 0x02, 0x03]
-        let data = NSData(bytes: bytes, length: bytes.count)
+        let data = Data(bytes)
         let diagramText = DiagramText(rawValue: "")
         let encoded = diagramText.base64plantuml(data)
         // Three input bytes → four encoded chars, no padding
@@ -35,7 +35,7 @@ struct DiagramTextTests {
     @Test("base64plantuml handles 1-byte-remainder with two padding chars")
     func base64plantumlOneBytePadding() {
         let bytes: [UInt8] = [0xFF]
-        let data = NSData(bytes: bytes, length: bytes.count)
+        let data = Data(bytes)
         let diagramText = DiagramText(rawValue: "")
         let encoded = diagramText.base64plantuml(data)
         // One input byte → two encoded chars + two '=' padding
@@ -60,7 +60,7 @@ struct DiagramTextTests {
         "ab",
         "a",
         "é",
-        "🚀"
+        "🚀",
     ]
 
     @Test("encodedValue decodes back to exactly the raw text", arguments: roundTripTexts)
@@ -85,7 +85,8 @@ struct DiagramTextTests {
     @Test("encodeText round-trips a generated class diagram with non-ASCII names")
     func generatedClassDiagramRoundTrips() {
         let script = ClassDiagramGenerator().generateScript(
-            for: "struct Café { let naïve: Int }", with: Configuration(format: .plantuml))
+            for: "struct Café { let naïve: Int }", with: Configuration(format: .plantuml)
+        )
         #expect(script.text.contains("naïve"))
         #expect(PlantUMLTextDecoding.decode(script.encodeText()) == script.text)
     }

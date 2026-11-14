@@ -16,7 +16,9 @@ enum WallClockLimit {
 
     /// Expects `elapsed` to be under `limit`, except on CI.
     static func expect(
-        _ elapsed: Duration, under limit: Duration, _ comment: Comment? = nil,
+        _ elapsed: Duration,
+        under limit: Duration,
+        _ comment: Comment? = nil,
         sourceLocation: SourceLocation = #_sourceLocation
     ) {
         guard isChecked else { return }

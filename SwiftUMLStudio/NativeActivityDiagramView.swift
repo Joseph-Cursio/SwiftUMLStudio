@@ -48,22 +48,33 @@ struct NativeActivityDiagramView: View {
         for node in layout.nodes {
             switch node.kind {
             case .start:
-                drawCircle(center: CGPoint(x: node.centerX, y: node.centerY),
-                           radius: node.width / 2, fill: Self.terminalFill, in: &context)
+                drawCircle(
+                    center: CGPoint(x: node.centerX, y: node.centerY),
+                    radius: node.width / 2, fill: Self.terminalFill, in: &context
+                )
+
             case .end:
-                drawCircle(center: CGPoint(x: node.centerX, y: node.centerY),
-                           radius: node.width / 2, fill: Self.mergeFill, in: &context)
-                drawCircle(center: CGPoint(x: node.centerX, y: node.centerY),
-                           radius: node.width / 2 - 5, fill: Self.terminalFill, in: &context)
+                drawCircle(
+                    center: CGPoint(x: node.centerX, y: node.centerY),
+                    radius: node.width / 2, fill: Self.mergeFill, in: &context
+                )
+                drawCircle(
+                    center: CGPoint(x: node.centerX, y: node.centerY),
+                    radius: node.width / 2 - 5, fill: Self.terminalFill, in: &context
+                )
+
             case .action:
                 let fill = node.isAsync ? Self.asyncActionFill : Self.actionFill
                 drawRoundedRect(node: node, fill: fill, in: &context)
                 drawLabel(node: node, in: &context)
+
             case .decision, .loopStart:
                 drawDiamond(node: node, fill: Self.decisionFill, in: &context)
                 drawLabel(node: node, in: &context)
+
             case .merge, .loopEnd:
                 drawDiamond(node: node, fill: Self.mergeFill, in: &context)
+
             case .fork, .join:
                 drawBar(node: node, fill: Self.forkJoinFill, in: &context)
             }
@@ -71,8 +82,10 @@ struct NativeActivityDiagramView: View {
     }
 
     private func drawCircle(
-        center: CGPoint, radius: Double,
-        fill: SwiftUI.Color, in context: inout GraphicsContext
+        center: CGPoint,
+        radius: Double,
+        fill: SwiftUI.Color,
+        in context: inout GraphicsContext
     ) {
         let rect = CGRect(
             x: center.x - radius, y: center.y - radius,

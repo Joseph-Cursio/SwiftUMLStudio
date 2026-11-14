@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// Under `showExtensions: .merged`, an extension's members go into the type of its name that
 /// `LayoutGraphBuilder` resolves the name to: declared in the same file, then in the same module
@@ -14,8 +14,12 @@ struct MergedExtensionTargetTests {
     private static let merged = ElementOptions(showExtensions: .merged)
 
     private func declared(
-        _ kind: ElementKind, _ name: String, in file: String, module: String? = nil,
-        access: ElementAccessibility? = nil, members: [SyntaxStructure] = []
+        _ kind: ElementKind,
+        _ name: String,
+        in file: String,
+        module: String? = nil,
+        access: ElementAccessibility? = nil,
+        members: [SyntaxStructure] = []
     ) -> SyntaxStructure {
         let item = SyntaxStructure(
             accessibility: access, kind: kind, name: name, substructure: members.isEmpty ? nil : members
@@ -37,7 +41,7 @@ struct MergedExtensionTargetTests {
         return [
             declared(.struct, "Foo", in: "A.swift", module: "ModA", access: .public, members: [count]),
             declared(.struct, "Foo", in: "B.swift", module: "ModB", access: .public, members: [other]),
-            declared(.extension, "Foo", in: file, module: module, members: [bar, inner])
+            declared(.extension, "Foo", in: file, module: module, members: [bar, inner]),
         ]
     }
 
@@ -93,7 +97,7 @@ struct MergedExtensionTargetTests {
         let laid = graph([
             declared(.struct, "Foo", in: "A.swift", access: .public, members: [count]),
             declared(.struct, "Foo", in: "B.swift", access: .public, members: [other]),
-            declared(.extension, "Foo", in: "B.swift", members: [bar])
+            declared(.extension, "Foo", in: "B.swift", members: [bar]),
         ])
         #expect(laid.memberLines == [["~ count: Int"], ["~ other: Int", "~ bar()"]])
     }
@@ -127,7 +131,7 @@ struct MergedExtensionTargetTests {
         let two = SyntaxStructure(kind: .functionMethodInstance, name: "two")
         let laid = graph([
             declared(.extension, "String", in: "A.swift", members: [one]),
-            declared(.extension, "String", in: "B.swift", members: [two, declared(.struct, "Inner", in: "B.swift")])
+            declared(.extension, "String", in: "B.swift", members: [two, declared(.struct, "Inner", in: "B.swift")]),
         ])
         #expect(laid.nodeIds == ["String.Inner", "String"])
         #expect(laid.memberLines == [[], ["~ one()", "~ two()"]])

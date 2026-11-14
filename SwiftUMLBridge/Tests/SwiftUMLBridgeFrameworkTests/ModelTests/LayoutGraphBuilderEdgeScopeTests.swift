@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// When several drawn types share a name, an edge that names it ends at the one Swift would
 /// most likely mean: declared in the same file, then in the same module, then the first (#55).
@@ -37,7 +37,7 @@ struct LayoutGraphBuilderEdgeScopeTests {
         let items = [
             declared(.struct, "Math", in: "Tests/Private.swift"),
             declared(.struct, "Math", in: "Math.swift"),
-            declared(.extension, "Math", in: "Math.swift", nesting: [SyntaxStructure(kind: .struct, name: "Add")])
+            declared(.extension, "Math", in: "Math.swift", nesting: [SyntaxStructure(kind: .struct, name: "Add")]),
         ]
         #expect(edges(for: items) == ["Math_1 -> Math.Add", "Math_2 -> Math_1"])
     }
@@ -47,7 +47,7 @@ struct LayoutGraphBuilderEdgeScopeTests {
         let items = [
             declared(.protocol, "Simple", in: "A.swift"),
             declared(.protocol, "Simple", in: "B.swift"),
-            declared(.struct, "Conformer", in: "B.swift", inheriting: ["Simple"])
+            declared(.struct, "Conformer", in: "B.swift", inheriting: ["Simple"]),
         ]
         #expect(edges(for: items) == ["Conformer -> Simple_1"])
     }
@@ -57,8 +57,10 @@ struct LayoutGraphBuilderEdgeScopeTests {
         let items = [
             declared(.struct, "Name", in: "Tool/Name.swift", module: "Tool"),
             declared(.struct, "Name", in: "Core/Name.swift", module: "Core"),
-            declared(.extension, "Name", in: "Core/Name+Case.swift", module: "Core",
-                     nesting: [SyntaxStructure(kind: .enum, name: "Case")])
+            declared(
+                .extension, "Name", in: "Core/Name+Case.swift", module: "Core",
+                nesting: [SyntaxStructure(kind: .enum, name: "Case")]
+            ),
         ]
         #expect(edges(for: items) == ["Name_1 -> Name.Case", "Name_2 -> Name_1"])
     }
@@ -68,7 +70,7 @@ struct LayoutGraphBuilderEdgeScopeTests {
         let items = [
             declared(.class, "Base", in: "A.swift"),
             declared(.class, "Base", in: "B.swift"),
-            declared(.class, "Sub", in: "C.swift", inheriting: ["Base"])
+            declared(.class, "Sub", in: "C.swift", inheriting: ["Base"]),
         ]
         #expect(edges(for: items) == ["Sub -> Base"])
     }
@@ -78,7 +80,7 @@ struct LayoutGraphBuilderEdgeScopeTests {
         let items = [
             declared(.class, "Base", in: "Base.swift"),
             declared(.extension, "Base", in: "Sub.swift"),
-            declared(.class, "Sub", in: "Sub.swift", inheriting: ["Base"])
+            declared(.class, "Sub", in: "Sub.swift", inheriting: ["Base"]),
         ]
         #expect(edges(for: items) == ["Sub -> Base", "Base_1 -> Base"])
     }
@@ -88,7 +90,7 @@ struct LayoutGraphBuilderEdgeScopeTests {
         let items = [
             declared(.class, "Base", in: "Core/A.swift", module: "Core"),
             declared(.class, "Base", in: "Core/B.swift", module: "Core"),
-            declared(.class, "Sub", in: "Core/B.swift", module: "Core", inheriting: ["Base"])
+            declared(.class, "Sub", in: "Core/B.swift", module: "Core", inheriting: ["Base"]),
         ]
         #expect(edges(for: items) == ["Sub -> Base_1"])
     }
@@ -99,7 +101,7 @@ struct LayoutGraphBuilderEdgeScopeTests {
             declared(.struct, "Name", in: "Tool/Name.swift", module: "Tool"),
             declared(.struct, "Name", in: "Core/A.swift", module: "Core"),
             declared(.struct, "Name", in: "Core/B.swift", module: "Core"),
-            declared(.struct, "User", in: "Core/User.swift", module: "Core", inheriting: ["Name"])
+            declared(.struct, "User", in: "Core/User.swift", module: "Core", inheriting: ["Name"]),
         ]
         #expect(edges(for: items) == ["User -> Name_1"])
     }
@@ -118,7 +120,7 @@ struct LayoutGraphBuilderEdgeScopeTests {
         let items = [
             declared(.class, "Base", in: "App/Base.swift"),
             declared(.class, "Base", in: "Tests/Base.swift"),
-            declared(.class, "Sub", in: "Tests/Base.swift", inheriting: ["Base"])
+            declared(.class, "Sub", in: "Tests/Base.swift", inheriting: ["Base"]),
         ]
         #expect(edges(for: items) == ["Sub -> Base_1"])
     }
@@ -128,7 +130,7 @@ struct LayoutGraphBuilderEdgeScopeTests {
         let items = [
             declared(.extension, "Bar", in: "X.swift"),
             declared(.extension, "Bar", in: "Y.swift"),
-            declared(.struct, "Foo", in: "Y.swift", inheriting: ["Bar"])
+            declared(.struct, "Foo", in: "Y.swift", inheriting: ["Bar"]),
         ]
         #expect(edges(for: items) == ["Foo -> Bar"])
     }
@@ -161,7 +163,7 @@ struct LayoutGraphBuilderEdgeScopeTests {
         )
         #expect(graph.edges.map { "\($0.sourceId) -> \($0.targetId)" } == [
             "Outer -> Outer.Mid", "Outer.Mid -> Outer.Mid.A",
-            "Outer -> Outer.Mid_1", "Outer.Mid_1 -> Outer.Mid.B"
+            "Outer -> Outer.Mid_1", "Outer.Mid_1 -> Outer.Mid.B",
         ])
     }
 
@@ -195,7 +197,7 @@ struct LayoutGraphBuilderEdgeScopeTests {
     func undeclaredTypeNestsInItsOwnExtension() {
         let items = [
             declared(.extension, "String", in: "A.swift", nesting: [SyntaxStructure(kind: .struct, name: "A")]),
-            declared(.extension, "String", in: "B.swift", nesting: [SyntaxStructure(kind: .struct, name: "B")])
+            declared(.extension, "String", in: "B.swift", nesting: [SyntaxStructure(kind: .struct, name: "B")]),
         ]
         #expect(edges(for: items) == ["String -> String.A", "String_1 -> String.B"])
     }

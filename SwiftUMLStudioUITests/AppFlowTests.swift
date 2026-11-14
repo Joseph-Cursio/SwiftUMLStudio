@@ -44,7 +44,7 @@ final class AppFlowTests: XCTestCase {
 
         // If there are history items, verify interaction
         let historyList = app.tables.firstMatch
-        if historyList.exists && historyList.cells.firstMatch.exists {
+        if historyList.exists, historyList.cells.firstMatch.exists {
             let firstItem = historyList.cells.element(boundBy: 0)
             XCTAssertTrue(firstItem.exists)
             firstItem.click()

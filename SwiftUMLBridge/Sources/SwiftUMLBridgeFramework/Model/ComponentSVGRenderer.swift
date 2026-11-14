@@ -1,5 +1,3 @@
-import Foundation
-
 /// Computes a positioned `ComponentLayout` from a `ComponentModel` and emits
 /// an SVG representation. Components are arranged in dependency-level rows:
 /// "leaf" components (the ones every other target depends on) at the bottom,

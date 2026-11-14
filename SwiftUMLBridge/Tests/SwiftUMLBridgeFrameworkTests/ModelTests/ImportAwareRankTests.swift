@@ -1,6 +1,5 @@
-import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// Which of several same-named types of different modules a name means, as Swift reads it: a
 /// bare name among the writer's own module and the modules its file imports, and a dotted name
@@ -109,12 +108,14 @@ struct ImportAwareRankTests {
         Case(name: "a bare name is the imported module's type", files: [
             File(module: "ModA", source: "open class Base {\n    public init() {}\n    public func aOnly() {}\n}\n"),
             File(module: "ModB", source: "open class Base {\n    public init() {}\n    public func bOnly() {}\n}\n"),
-            writer("import ModB\n", "Base")
+            writer("import ModB\n", "Base"),
         ], member: "bOnly", hiddenLabel: nil),
         Case(name: "a bare name a module the file does not import declares is the outside type", files: [
-            File(module: "ModA",
-                 source: "open class NSObject {\n    public init() {}\n    public func projectOnly() {}\n}\n"),
-            writer("import Foundation\n", "NSObject")
+            File(
+                module: "ModA",
+                source: "open class NSObject {\n    public init() {}\n    public func projectOnly() {}\n}\n"
+            ),
+            writer("import Foundation\n", "NSObject"),
         ], member: nil, hiddenLabel: nil),
         Case(name: "the first component is the imported module's type", files: [
             fooWithClass, fooWithAlias, writer("import ModB\n")
@@ -127,16 +128,16 @@ struct ImportAwareRankTests {
         ], member: "vOnly", hiddenLabel: "Foo.V"),
         Case(name: "a re-exported module shows the first component", files: [
             fooWithClass, fooWithAlias, File(module: "ModX", source: "@_exported import ModA\n"),
-            writer("import ModX\n")
+            writer("import ModX\n"),
         ], member: "vOnly", hiddenLabel: "Foo.V"),
         Case(name: "the writer module's own typealias names another module's type", files: [
             fooWithClass, fooWithAlias, File(module: "ModC", source: "import ModA\n\ntypealias Foo = ModA.Foo\n"),
-            writer("import ModB\n")
+            writer("import ModB\n"),
         ], member: "vOnly", hiddenLabel: "Foo.V"),
         Case(name: "a private typealias of another file names nothing", files: [
             fooWithClass, fooWithAlias,
             File(module: "ModC", source: "import ModA\n\nprivate typealias Foo = ModA.Foo\n"),
-            writer("import ModB\n")
+            writer("import ModB\n"),
         ], member: "baseOnly", hiddenLabel: nil),
         Case(name: "a project type the file cannot see leaves the first component outside", files: [
             projectArray, boxInIntArray, writer("import ModB\n", "Array<Int>.Box")
@@ -156,19 +157,19 @@ struct ImportAwareRankTests {
                     public func otherOnly() {}
                 }
                 """),
-            File(module: "ModC", source: "import ModB\n\nlet thing = BThing()\n"), writer("import ModA\n")
+            File(module: "ModC", source: "import ModB\n\nlet thing = BThing()\n"), writer("import ModA\n"),
         ], member: "vOnly", hiddenLabel: "Foo.V"),
         Case(name: "a member of a module no file imports is not seen", files: [
             bareFoo, classAddedToFoo, aliasAddedToFoo, writer("import ModA\nimport ModD\n")
         ], member: "otherOnly", hiddenLabel: nil),
         Case(name: "a member of a module another file imports is seen", files: [
             bareFoo, classAddedToFoo, aliasAddedToFoo,
-            File(module: "ModC", source: "import ModD\n\nstruct Holder {}\n"), writer("import ModA\n")
+            File(module: "ModC", source: "import ModD\n\nstruct Holder {}\n"), writer("import ModA\n"),
         ], member: "otherOnly", hiddenLabel: nil),
         Case(name: "of two members, the one another file's import loads is seen", files: [
             bareFoo, classAddedToFoo, aliasAddedToFoo,
-            File(module: "ModC", source: "import ModB\n\nstruct Holder {}\n"), writer("import ModA\n")
-        ], member: "vOnly", hiddenLabel: "Foo.V")
+            File(module: "ModC", source: "import ModB\n\nstruct Holder {}\n"), writer("import ModA\n"),
+        ], member: "vOnly", hiddenLabel: "Foo.V"),
     ]
 
     /// Each case is read with its files in the order given and reversed, so no answer comes from

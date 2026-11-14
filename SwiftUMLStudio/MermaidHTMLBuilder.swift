@@ -5,8 +5,6 @@
 //  Created by joe cursio on 2/27/26.
 //
 
-import Foundation
-
 enum MermaidHTMLBuilder {
     nonisolated static func htmlEscape(_ raw: String) -> String {
         raw

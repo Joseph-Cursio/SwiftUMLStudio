@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// Which relationship PlantUML, Mermaid and Nomnoml name a supertype edge with: `conforms to`,
 /// with the realization arrow, when the name means a protocol the sources declare, drawn or
@@ -21,12 +21,16 @@ struct SupertypeEdgeNamingTests {
     func classEndTakesInheritanceArrow(format: DiagramFormat) throws {
         let files = [
             ("A.swift", "fileprivate protocol Base {}\nfileprivate struct Conformer: Base {}"),
-            ("B.swift", "fileprivate class Base { var isClass = 0 }\nfileprivate class Sub: Base {}")
+            ("B.swift", "fileprivate class Base { var isClass = 0 }\nfileprivate class Sub: Base {}"),
         ]
-        let (inherits, realizes) = format == .nomnoml ? ("-:>", "--:>") : ("<|--", "<|..")
-        #expect(try supertypeEdges(from: "Sub", files, format, access: Self.everyAccessLevel) == ["Base0 \(inherits)"])
+        let (inheritsArrow, realizesArrow) = format == .nomnoml ? ("-:>", "--:>") : ("<|--", "<|..")
         #expect(
-            try supertypeEdges(from: "Conformer", files, format, access: Self.everyAccessLevel) == ["Base \(realizes)"]
+            try supertypeEdges(from: "Sub", files, format, access: Self.everyAccessLevel)
+                == ["Base0 \(inheritsArrow)"]
+        )
+        #expect(
+            try supertypeEdges(from: "Conformer", files, format, access: Self.everyAccessLevel)
+                == ["Base \(realizesArrow)"]
         )
     }
 
@@ -64,7 +68,7 @@ struct SupertypeEdgeNamingTests {
         let files = [
             ("A.swift", "private protocol Base {}"),
             ("B.swift", "fileprivate class Base { var isClass = 0 }\nextension Base { func helper() {} }\n"
-                + "private class Sub: Base { func f() -> Int { isClass } }")
+                + "private class Sub: Base { func f() -> Int { isClass } }"),
         ]
         let edge = format == .nomnoml ? "[Sub] -:> inherits [Base0]" : "Base0 <|-- Sub : inherits"
         #expect(try classDiagram(files, format).text.split(separator: "\n").contains { $0.hasPrefix(edge) })
@@ -72,7 +76,9 @@ struct SupertypeEdgeNamingTests {
 
     /// Every edge line `format` writes for `files`, whole, so `<..`, `--` and `-` show too.
     private func edgeLines(
-        _ files: [(name: String, source: String)], _ format: DiagramFormat, _ mode: ExtensionVisualization = .all,
+        _ files: [(name: String, source: String)],
+        _ format: DiagramFormat,
+        _ mode: ExtensionVisualization = .all,
         access: [AccessLevel] = ElementOptions.defaultAccessLevels
     ) throws -> [String] {
         try classDiagram(files, format, mode, access: access).text.split(separator: "\n").map(String.init)
@@ -81,8 +87,11 @@ struct SupertypeEdgeNamingTests {
     /// The edge from `child` to `parent` as each format writes it: PlantUML and Mermaid
     /// `parent arrow child : label`, Nomnoml `[child] arrow label [parent]`.
     private func edgeLine(
-        _ format: DiagramFormat, _ parent: String, _ arrow: (text: String, nomnoml: String),
-        _ child: String, _ label: String
+        _ format: DiagramFormat,
+        _ parent: String,
+        _ arrow: (text: String, nomnoml: String),
+        _ child: String,
+        _ label: String
     ) -> String {
         format == .nomnoml
             ? "[\(child)] \(arrow.nomnoml) \(label) [\(parent)]" : "\(parent) \(arrow.text) \(child) : \(label)"
@@ -96,14 +105,16 @@ struct SupertypeEdgeNamingTests {
     @Test("every kind of declaration's edge to a hidden protocol is a conformance",
           arguments: textFormats, [ExtensionVisualization.all, .merged])
     func everyKindConformsToHiddenProtocol(format: DiagramFormat, mode: ExtensionVisualization) throws {
-        let files = [("A.swift", """
-            fileprivate protocol P { func onlyP() }
-            extension P { func helper() {} }
-            struct Foo {}
-            extension Foo: P { func onlyP() {} }
-            enum E: P { case a; func onlyP() {} }
-            actor Act: P { nonisolated func onlyP() {} }
-            """)]
+        let files = [
+            ("A.swift", """
+                fileprivate protocol P { func onlyP() }
+                extension P { func helper() {} }
+                struct Foo {}
+                extension Foo: P { func onlyP() {} }
+                enum E: P { case a; func onlyP() {} }
+                actor Act: P { nonisolated func onlyP() {} }
+                """),
+        ]
         let lines = try edgeLines(files, format, mode)
         let foo = mode == .merged ? "Foo" : "Foo0"
         for child in [foo, "E", "Act"] {
@@ -113,15 +124,19 @@ struct SupertypeEdgeNamingTests {
 
     @Test("an edge to a hidden protocol through a typealias or a nested name is a conformance", arguments: textFormats)
     func hiddenProtocolThroughAliasOrNesting(format: DiagramFormat) throws {
-        let alias = [("A.swift", "fileprivate protocol P { func onlyP() }\nfileprivate typealias Q = P\n"
-            + "struct U: Q { func onlyP() {} }")]
+        let alias = [
+            ("A.swift", "fileprivate protocol P { func onlyP() }\nfileprivate typealias Q = P\n"
+                + "struct U: Q { func onlyP() {} }"),
+        ]
         #expect(try edgeLines(alias, format).contains(edgeLine(format, "P", Self.realizes, "U", "conforms to")))
-        let nested = [("A.swift", """
-            struct Outer {
-                fileprivate protocol Inner { func i() }
-                private struct Impl: Inner { func i() {} }
-            }
-            """)]
+        let nested = [
+            ("A.swift", """
+                struct Outer {
+                    fileprivate protocol Inner { func i() }
+                    private struct Impl: Inner { func i() {} }
+                }
+                """),
+        ]
         #expect(try edgeLines(nested, format)
             .contains(edgeLine(format, "Outer.Inner", Self.realizes, "Outer.Impl", "conforms to")))
     }
@@ -139,7 +154,7 @@ struct SupertypeEdgeNamingTests {
                     func onlyStruct() {}
                 }
                 private enum Kind: Code { case first = "a"; case second = "b" }
-                """)
+                """),
         ]
         let enumArrow = (text: "--", nomnoml: "-")
         #expect(try edgeLines(files, format).contains(edgeLine(format, "Code0", enumArrow, "Kind", "inherits")))
@@ -150,18 +165,20 @@ struct SupertypeEdgeNamingTests {
     /// name in another file that the writer cannot see.
     @Test("an edge to a type outside the diagram inherits, whatever box shares its name", arguments: textFormats)
     func outsideTypeEdgeInherits(format: DiagramFormat) throws {
-        let encodable = [("A.swift", """
-            extension Encodable { func encodeHelper() {} }
-            struct Foo {}
-            extension Foo: Encodable { func use() { encodeHelper() } }
-            """)]
+        let encodable = [
+            ("A.swift", """
+                extension Encodable { func encodeHelper() {} }
+                struct Foo {}
+                extension Foo: Encodable { func use() { encodeHelper() } }
+                """),
+        ]
         let dependency = (text: "<..", nomnoml: "-->")
         #expect(try edgeLines(encodable, format)
             .contains(edgeLine(format, "Encodable", dependency, "Foo0", "inherits")))
         let nsObject = [
             ("A.swift", "private protocol NSObject { func onlyProto() }"),
             ("B.swift", "import Foundation\nextension NSObject { @objc func helperFromB() {} }\n"
-                + "private class V: NSObject { func use() { helperFromB() } }")
+                + "private class V: NSObject { func use() { helperFromB() } }"),
         ]
         #expect(try edgeLines(nsObject, format).contains(edgeLine(format, "NSObject0", Self.inherits, "V", "inherits")))
     }

@@ -3,6 +3,14 @@ import Observation
 import SwiftData
 import SwiftUMLBridgeFramework
 
+/// A simple implementation of DiagramOutputting for restoring history items.
+///
+/// It keeps the protocol's `encodeText()`, the same PlantUML encoding the Bridge's scripts use.
+struct SimpleDiagramScript: DiagramOutputting {
+    let text: String
+    let format: DiagramFormat
+}
+
 @Observable @MainActor
 final class DiagramViewModel {
     var selectedPaths: [String] = []
@@ -56,7 +64,7 @@ final class DiagramViewModel {
 
     /// The full model backing the currently-selected state machine, if any.
     var currentStateMachineModel: StateMachineModel? {
-        availableStateMachines.first(where: { $0.identifier == stateIdentifier })
+        availableStateMachines.first { $0.identifier == stateIdentifier }
     }
 
     var fileTree: [FileNode] = []
@@ -157,8 +165,10 @@ final class DiagramViewModel {
         switch selectedPaths.count {
         case 0:
             return "No source selected"
+
         case 1:
             return URL(fileURLWithPath: selectedPaths[0]).lastPathComponent
+
         default:
             let first = URL(fileURLWithPath: selectedPaths[0]).lastPathComponent
             return "\(first) + \(selectedPaths.count - 1) more"
@@ -179,26 +189,32 @@ final class DiagramViewModel {
             try? await Task.sleep(for: .milliseconds(300))
             guard !Task.isCancelled else { return }
 
-            switch self.diagramMode {
+            switch diagramMode {
             case .classDiagram:
-                await self.generateClassDiagram()
+                await generateClassDiagram()
+
             case .sequenceDiagram:
-                await self.generateSequenceDiagram()
+                await generateSequenceDiagram()
+
             case .dependencyGraph:
-                await self.generateDependencyGraph()
+                await generateDependencyGraph()
+
             case .stateMachine:
-                await self.generateStateMachineDiagram()
+                await generateStateMachineDiagram()
+
             case .activityDiagram:
-                await self.generateActivityDiagram()
+                await generateActivityDiagram()
+
             case .erDiagram:
-                await self.generateERDiagram()
+                await generateERDiagram()
+
             case .componentDiagram:
-                await self.generateComponentDiagram()
+                await generateComponentDiagram()
             }
 
             guard !Task.isCancelled else { return }
-            self.collectSourceReadNotices()
-            self.isGenerating = false
+            collectSourceReadNotices()
+            isGenerating = false
         }
     }
 
@@ -236,12 +252,4 @@ final class DiagramViewModel {
         selectedPaths = paths
         selectedPathBookmarks = bookmarks
     }
-}
-
-/// A simple implementation of DiagramOutputting for restoring history items.
-///
-/// It keeps the protocol's `encodeText()`, the same PlantUML encoding the Bridge's scripts use.
-struct SimpleDiagramScript: DiagramOutputting {
-    let text: String
-    let format: DiagramFormat
 }

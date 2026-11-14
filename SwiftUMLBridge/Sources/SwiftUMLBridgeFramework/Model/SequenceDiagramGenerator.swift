@@ -1,8 +1,8 @@
-import Foundation
-
 /// Generates sequence diagram scripts from Swift source files.
 public struct SequenceDiagramGenerator: SequenceDiagramGenerating, Sendable {
-    public init() {}
+    public init() {
+        // Public because a struct's implicit initializer is internal; there is no state to set.
+    }
 
     /// Find all potential entry points (Type.method) in the given source files.
     ///

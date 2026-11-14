@@ -1,6 +1,51 @@
 import AppKit
 import SwiftUI
 
+/// NSViewRepresentable wrapper around an NSTextView that scrolls to and
+/// highlights `highlightedLine` whenever it is non-nil.
+private struct SourceTextView: NSViewRepresentable {
+    let content: String
+    let highlightedLine: Int?
+
+    private static let highlightColor = NSColor.systemYellow.withAlphaComponent(0.3)
+
+    func makeNSView(context _: Context) -> NSScrollView {
+        let scrollView = NSTextView.scrollableTextView()
+        if let textView = scrollView.documentView as? NSTextView {
+            textView.isEditable = false
+            textView.isRichText = false
+            textView.font = .monospacedSystemFont(ofSize: 13, weight: .regular)
+            textView.allowsUndo = false
+            textView.backgroundColor = .textBackgroundColor
+            textView.textContainerInset = NSSize(width: 8, height: 8)
+            textView.setAccessibilityLabel("Swift source viewer")
+            textView.setAccessibilityIdentifier("sourceTextView")
+        }
+        return scrollView
+    }
+
+    func updateNSView(_ scrollView: NSScrollView, context _: Context) {
+        guard let textView = scrollView.documentView as? NSTextView else { return }
+        if textView.string != content {
+            textView.string = content
+        }
+        applyHighlight(in: textView)
+    }
+
+    private func applyHighlight(in textView: NSTextView) {
+        guard let storage = textView.textStorage else { return }
+        let everything = NSRange(location: 0, length: storage.length)
+        storage.removeAttribute(.backgroundColor, range: everything)
+
+        guard let line = highlightedLine,
+              let range = SourceEditorView.lineRange(line: line, in: textView.string)
+        else { return }
+
+        storage.addAttribute(.backgroundColor, value: Self.highlightColor, range: range)
+        textView.scrollRangeToVisible(range)
+    }
+}
+
 /// Read-only Swift source viewer with optional line highlighting.
 /// Used by the developer-layout middle pane and by Phase 4's
 /// "Reveal in Source" diagram navigation.
@@ -31,55 +76,10 @@ struct SourceEditorView: View {
 
         var location = 0
         for index in 0..<(line - 1) {
-            let lineLength = (lines[index] as NSString).length
+            let lineLength = lines[index].utf16.count
             location += lineLength + 1
         }
-        let targetLength = (lines[line - 1] as NSString).length
+        let targetLength = lines[line - 1].utf16.count
         return NSRange(location: location, length: targetLength)
-    }
-}
-
-/// NSViewRepresentable wrapper around an NSTextView that scrolls to and
-/// highlights `highlightedLine` whenever it is non-nil.
-private struct SourceTextView: NSViewRepresentable {
-    let content: String
-    let highlightedLine: Int?
-
-    private static let highlightColor = NSColor.systemYellow.withAlphaComponent(0.3)
-
-    func makeNSView(context: Context) -> NSScrollView {
-        let scrollView = NSTextView.scrollableTextView()
-        if let textView = scrollView.documentView as? NSTextView {
-            textView.isEditable = false
-            textView.isRichText = false
-            textView.font = .monospacedSystemFont(ofSize: 13, weight: .regular)
-            textView.allowsUndo = false
-            textView.backgroundColor = .textBackgroundColor
-            textView.textContainerInset = NSSize(width: 8, height: 8)
-            textView.setAccessibilityLabel("Swift source viewer")
-            textView.setAccessibilityIdentifier("sourceTextView")
-        }
-        return scrollView
-    }
-
-    func updateNSView(_ scrollView: NSScrollView, context: Context) {
-        guard let textView = scrollView.documentView as? NSTextView else { return }
-        if textView.string != content {
-            textView.string = content
-        }
-        applyHighlight(in: textView)
-    }
-
-    private func applyHighlight(in textView: NSTextView) {
-        guard let storage = textView.textStorage else { return }
-        let everything = NSRange(location: 0, length: storage.length)
-        storage.removeAttribute(.backgroundColor, range: everything)
-
-        guard let line = highlightedLine,
-              let range = SourceEditorView.lineRange(line: line, in: textView.string)
-        else { return }
-
-        storage.addAttribute(.backgroundColor, value: Self.highlightColor, range: range)
-        textView.scrollRangeToVisible(range)
     }
 }

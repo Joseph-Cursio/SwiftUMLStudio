@@ -9,7 +9,7 @@ import Foundation
 //
 
 func pathContainsGlobSyntax(_ path: String) -> Bool {
-    "*?[{".contains(where: { path.contains($0) })
+    "*?[{".contains { path.contains($0) }
 }
 
 /// Glob type represents either an exact path or wildcard
@@ -27,6 +27,7 @@ internal enum Glob: CustomStringConvertible {
             // before it into one `Character`.
             let directory = globPath.hasSuffix("/") ? globPath : globPath + "/"
             return globPath == path || path.unicodeScalars.starts(with: directory.unicodeScalars)
+
         case let .regex(regex):
             let range = NSRange(location: 0, length: path.utf16.count)
             return regex.firstMatch(in: path, options: [], range: range) != nil
@@ -37,8 +38,10 @@ internal enum Glob: CustomStringConvertible {
         switch self {
         case let .path(path):
             return path
+
         case let .regex(regex):
-            var result = regex.pattern.dropFirst().dropLast()
+            var result = regex.pattern.dropFirst()
+                .dropLast()
                 .replacingOccurrences(of: "([^/]+)?", with: "*")
                 .replacingOccurrences(of: "(.+/)?", with: "**/")
                 .replacingOccurrences(of: ".+", with: "**")
@@ -66,9 +69,19 @@ internal func expandPath(_ path: String, in directory: String) -> URL {
         return URL(fileURLWithPath: path)
     }
     if path.hasPrefix("~") {
-        return URL(fileURLWithPath: NSString(string: path).expandingTildeInPath)
+        return URL(fileURLWithPath: expandingTilde(in: path))
     }
     return URL(fileURLWithPath: directory).appendingPathComponent(path)
+}
+
+/// `path` with its leading `~` (the current user) or `~user` replaced by that user's home
+/// directory, as a shell reads it; `path` unchanged when there is no such user.
+private func expandingTilde(in path: String) -> String {
+    let afterTilde = path.dropFirst()
+    let user = afterTilde.prefix { $0 != "/" }
+    let home = user.isEmpty ? NSHomeDirectory() : NSHomeDirectoryForUser(String(user))
+    guard let home else { return path }
+    return home + afterTilde.dropFirst(user.count)
 }
 
 /// `path` as directory enumeration spells it: its real path, with every

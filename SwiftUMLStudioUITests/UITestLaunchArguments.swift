@@ -1,5 +1,3 @@
-import Foundation
-
 /// Launch arguments the UI tests pass to the app.
 enum UITestLaunchArguments {
     /// Pins the PlantUML consent to undecided for the run.
@@ -13,12 +11,12 @@ enum UITestLaunchArguments {
     /// domain only hides — a UI test must not click them. The unit tests cover what they do.
     static let plantUMLConsentUndecided = [
         "-plantUMLRenderingConsented", "NO",
-        "-plantUMLRenderingDeclined", "NO"
+        "-plantUMLRenderingDeclined", "NO",
     ]
 
     /// Pins the PlantUML consent to declined for the run, through the argument domain as above.
     static let plantUMLConsentDeclined = [
         "-plantUMLRenderingConsented", "NO",
-        "-plantUMLRenderingDeclined", "YES"
+        "-plantUMLRenderingDeclined", "YES",
     ]
 }

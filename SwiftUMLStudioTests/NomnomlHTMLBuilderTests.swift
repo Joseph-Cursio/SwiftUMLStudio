@@ -1,7 +1,7 @@
 import Foundation
 import JavaScriptCore
-import Testing
 @testable import SwiftUMLStudio
+import Testing
 
 @Suite("NomnomlHTMLBuilder")
 struct NomnomlHTMLBuilderTests {
@@ -52,7 +52,7 @@ struct NomnomlHTMLBuilderTests {
         "[Order]->[Customer]\n[Order]+->[LineItem]",
         "[<class> He said \"hi\" \\ to 'me']",
         "line\u{2028}separator\u{2029}paragraph",
-        "</script><script>alert('xss')</script>"
+        "</script><script>alert('xss')</script>",
     ])
     func pageDrawsOriginalText(_ diagramText: String) throws {
         let html = NomnomlHTMLBuilder.nomnomlHTML(diagramText)
@@ -88,7 +88,7 @@ struct NomnomlHTMLBuilderTests {
         "<!--<script>",
         // `<` plus a combining mark is one Character, so a Character-level
         // replace would leave this `<` raw.
-        "[A]<\u{0301}/script>"
+        "[A]<\u{0301}/script>",
     ])
     func scriptHazardsAreEscaped(_ diagramText: String) throws {
         let html = NomnomlHTMLBuilder.nomnomlHTML(diagramText)
@@ -146,28 +146,5 @@ struct NomnomlHTMLBuilderTests {
         }
         let drawn = try #require(context.objectForKeyedSubscript("drawn"))
         return drawn.isString ? drawn.toString() : nil
-    }
-}
-
-@Suite("DiagramWebView.svgHTML")
-struct DiagramWebViewSVGHTMLTests {
-
-    @Test("light variant uses a white page background")
-    func lightBg() {
-        let html = DiagramWebView.svgHTML("<svg/>", dark: false)
-        #expect(html.contains("background:white"))
-    }
-
-    @Test("dark variant uses a dark page background")
-    func darkBg() {
-        let html = DiagramWebView.svgHTML("<svg/>", dark: true)
-        #expect(html.contains("background:#1e1e1e"))
-    }
-
-    @Test("inlines the supplied SVG verbatim")
-    func inlinesSVG() {
-        let svg = "<svg width=\"10\"><rect/></svg>"
-        let html = DiagramWebView.svgHTML(svg, dark: false)
-        #expect(html.contains(svg))
     }
 }

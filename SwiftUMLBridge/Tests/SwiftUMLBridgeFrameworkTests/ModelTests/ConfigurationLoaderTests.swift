@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// `loadConfiguration(at:)` says why a file cannot be used, where `getConfiguration(for:)` falls
 /// back to the defaults without a word (#138).
@@ -41,7 +41,7 @@ struct ConfigurationLoaderTests {
         ("stereotypes:\n  struct:\n    spot: {color: aliceBlue}\n",
          "missing key 'character' in stereotypes.struct.spot"),
         ("theme: hacker\ntheme: amiga\n", "duplicated key(s): 'theme'"),
-        ("elements: [\n", "parser")
+        ("elements: [\n", "parser"),
     ]
 
     @Test("a value that cannot be decoded is named, with its key", arguments: invalid)

@@ -3,7 +3,9 @@ import Foundation
 /// Collect file paths based on a set of constraints
 public struct FileCollector: Sendable {
     /// default initializer
-    public init() {}
+    public init() {
+        // Public because a struct's implicit initializer is internal; there is no state to set.
+    }
 
     /// get file urls for given constraints
     /// - Parameters:
@@ -52,15 +54,14 @@ public struct FileCollector: Sendable {
             sanitizedPaths.append(contentsOf: paths.map { path -> URL in
                 if path.hasPrefix("/") {
                     return URL(fileURLWithPath: path)
-                } else {
-                    return URL(fileURLWithPath: directory).appendingPathComponent(path)
                 }
+                return URL(fileURLWithPath: directory).appendingPathComponent(path)
             })
         }
 
         var files: [URL] = []
-        for paths in sanitizedPaths.compactMap({ $0 }) {
-            files.append(contentsOf: getFiles(for: paths))
+        for path in sanitizedPaths.compactMap(\.self) {
+            files.append(contentsOf: getFiles(for: path))
         }
 
         return files
@@ -95,9 +96,8 @@ public struct FileCollector: Sendable {
                 }
             }
             return files
-        } else {
-            return [url]
         }
+        return [url]
     }
 }
 

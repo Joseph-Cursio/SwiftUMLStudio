@@ -7,10 +7,9 @@
 //
 
 import Foundation
-import SwiftData
-import Testing
 import SwiftUMLBridgeFramework
 @testable import SwiftUMLStudio
+import Testing
 
 @MainActor
 @Suite("A selected path is spelled as it is on disk")

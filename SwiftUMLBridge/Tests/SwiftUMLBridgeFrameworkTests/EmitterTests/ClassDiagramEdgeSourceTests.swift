@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// A supertype edge starts at the box of the declaration that writes it (#68). The text formats
 /// drew it from the first box with the declaration's name, so an extension's conformances and
@@ -9,7 +9,9 @@ import Testing
 struct ClassDiagramEdgeSourceTests {
 
     private func lines(
-        _ source: String, _ format: DiagramFormat, containing marker: String,
+        _ source: String,
+        _ format: DiagramFormat,
+        containing marker: String,
         extensions: ExtensionVisualization = .all
     ) -> [String] {
         let configuration = Configuration(elements: ElementOptions(showExtensions: extensions), format: format)
@@ -72,8 +74,10 @@ struct ClassDiagramEdgeSourceTests {
     func extensionEdgesShareItsBox() {
         let source = "struct Foo {}\nextension Foo: P { struct Inner {} }\nprotocol P {}"
         #expect(lines(source, .plantuml, containing: "Foo0")
-            == ["class \"Foo\" as Foo0 << (X, orchid) extension >> {  ", "P <|.. Foo0 : conforms to",
-                "Foo0 +-- Foo.Inner", "Foo <.. Foo0 : ext"])
+            == [
+                "class \"Foo\" as Foo0 << (X, orchid) extension >> {  ", "P <|.. Foo0 : conforms to",
+                "Foo0 +-- Foo.Inner", "Foo <.. Foo0 : ext",
+            ])
     }
 
     @Test("a first declaration's edges keep its name", arguments: [DiagramFormat.mermaid, .plantuml])
@@ -152,7 +156,7 @@ struct ClassDiagramEdgeSourceTests {
         "struct Foo: P {}\nextension Foo: Q { struct Inner: P {} }\nprotocol P {}\nprotocol Q {}",
         "enum E: P {}\nextension E: Q {}\nprotocol P {}\nprotocol Q {}",
         "actor A {}\nextension A: P, Q {}\nprotocol P {}\nprotocol Q {}",
-        "struct Foo0 {}\nstruct Foo {}\nextension Foo: P {}\nprotocol P {}"
+        "struct Foo0 {}\nstruct Foo {}\nextension Foo: P {}\nprotocol P {}",
     ]
 
     /// SVG lists its nodes in the order the text formats declare them, so the n-th SVG id and the

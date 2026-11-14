@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// PlantUML, Mermaid and Nomnoml wrote a supertype edge's end as the supertype's name, so when
 /// two boxes shared it the edge reached the first, while SVG ends it on the type the name means
@@ -15,7 +15,9 @@ struct SupertypeEdgeEndTests {
     /// The members of the SVG node each supertype edge from `child` ends on, which tells the
     /// boxes that share a name apart.
     private func svgEndMembers(
-        from child: String, _ files: [(name: String, source: String)], _ mode: ExtensionVisualization = .all,
+        from child: String,
+        _ files: [(name: String, source: String)],
+        _ mode: ExtensionVisualization = .all,
         access: [AccessLevel] = ElementOptions.defaultAccessLevels
     ) throws -> [[String]] {
         let graph = try classDiagram(files, .svg, mode, access: access).layoutGraph
@@ -29,7 +31,7 @@ struct SupertypeEdgeEndTests {
     /// the protocol, so its edge ends on the protocol's stand-in, the second box named `P`.
     static let standIns: [(name: String, source: String)] = [
         ("B.swift", "fileprivate struct P {}\nextension P { func fromStructFile() {} }"),
-        ("C.swift", "fileprivate protocol P {}\nextension P { func fromProtocolFile() {} }\nstruct U: P {}")
+        ("C.swift", "fileprivate protocol P {}\nextension P { func fromProtocolFile() {} }\nstruct U: P {}"),
     ]
 
     @Test("an edge to a hidden protocol ends on its stand-in, not another hidden type's",
@@ -46,12 +48,14 @@ struct SupertypeEdgeEndTests {
     @Test("an edge to a hidden protocol ends on its stand-in, not a sugared extension of the same name",
           arguments: textFormats, [ExtensionVisualization.all, .merged])
     func endsOnStandInNotSugaredExtension(format: DiagramFormat, mode: ExtensionVisualization) throws {
-        let files = [("A.swift", """
-            protocol Optional {}
-            extension Int? { func sugared() {} }
-            extension Optional { func bare() {} }
-            public struct U: Optional {}
-            """)]
+        let files = [
+            ("A.swift", """
+                protocol Optional {}
+                extension Int? { func sugared() {} }
+                extension Optional { func bare() {} }
+                public struct U: Optional {}
+                """),
+        ]
         let arrow = format == .nomnoml ? "--:>" : "<|.."
         #expect(try supertypeEdges(from: "U", files, format, mode, access: [.public, .open]) == ["Optional0 \(arrow)"])
         #expect(try svgEndMembers(from: "U", files, mode, access: [.public, .open]) == [["~ bare()"]])
@@ -61,7 +65,7 @@ struct SupertypeEdgeEndTests {
 
     static let twoFiles: [(name: String, source: String)] = [
         ("A.swift", "fileprivate class Base { var inA = 0 }\nfileprivate class SubA: Base {}"),
-        ("B.swift", "fileprivate class Base { var inB = 0 }\nfileprivate class SubB: Base {}")
+        ("B.swift", "fileprivate class Base { var inB = 0 }\nfileprivate class SubB: Base {}"),
     ]
 
     @Test("an edge ends on the supertype in its own file, not the first of its name", arguments: textFormats)
@@ -84,21 +88,25 @@ struct SupertypeEdgeEndTests {
     func endsOnTheArrayBaseTheNameMeans(format: DiagramFormat) throws {
         let arrow = format == .nomnoml ? "-:>" : "<|--"
         // In the extension, `Base` is its own: the second `Array.Base`.
-        let inExtension = [("A.swift", """
-            struct Array { class Base { var local = 0 } }
-            extension [Int] {
-                class Base { var sugar = 0 }
-                class Sub: Base {}
-            }
-            """)]
+        let inExtension = [
+            ("A.swift", """
+                struct Array { class Base { var local = 0 } }
+                extension [Int] {
+                    class Base { var sugar = 0 }
+                    class Sub: Base {}
+                }
+                """),
+        ]
         #expect(try supertypeEdges(from: "Array.Sub", inExtension, format) == ["Array.Base0 \(arrow)"])
         #expect(try svgEndMembers(from: "Array.Sub", inExtension) == [["~ sugar"]])
         // Written `Array.Base`, it is the project's, declared second.
-        let written = [("A.swift", """
-            extension [Int] { class Base { var sugar = 0 } }
-            struct Array { class Base { var local = 0 } }
-            class Sub: Array.Base {}
-            """)]
+        let written = [
+            ("A.swift", """
+                extension [Int] { class Base { var sugar = 0 } }
+                struct Array { class Base { var local = 0 } }
+                class Sub: Array.Base {}
+                """),
+        ]
         #expect(try supertypeEdges(from: "Sub", written, format) == ["Array.Base0 \(arrow)"])
         #expect(try svgEndMembers(from: "Sub", written) == [["~ local"]])
     }
@@ -109,29 +117,32 @@ struct SupertypeEdgeEndTests {
     /// name, the edge would end on B's `extension P`, another hidden type's stand-in.
     static let noStandIn: [(name: String, source: String)] = [
         ("B.swift", "fileprivate struct P {}\nextension P { func fromStructFile() {} }"),
-        ("C.swift", "fileprivate protocol P {}\nstruct U: P {}")
+        ("C.swift", "fileprivate protocol P {}\nstruct U: P {}"),
     ]
 
     @Test("an edge SVG finds no end for is left out where a drawn box has its name",
           arguments: textFormats, [ExtensionVisualization.all, .merged])
     func noEndBesideABoxOfItsName(format: DiagramFormat, mode: ExtensionVisualization) throws {
-        #expect(try supertypeEdges(from: "U", Self.noStandIn, format, mode) == [])
-        #expect(try svgEndMembers(from: "U", Self.noStandIn, mode) == [])
+        #expect(try supertypeEdges(from: "U", Self.noStandIn, format, mode).isEmpty)
+        #expect(try svgEndMembers(from: "U", Self.noStandIn, mode).isEmpty)
         // Swift's `Optional` here only shares the hidden protocol's name.
-        let sugared = [("A.swift", """
-            protocol Optional {}
-            extension Int? { func sugared() {} }
-            public struct U: Optional {}
-            """)]
-        #expect(try supertypeEdges(from: "U", sugared, format, mode, access: [.public, .open]) == [])
+        let sugared = [
+            ("A.swift", """
+                protocol Optional {}
+                extension Int? { func sugared() {} }
+                public struct U: Optional {}
+                """),
+        ]
+        #expect(try supertypeEdges(from: "U", sugared, format, mode, access: [.public, .open]).isEmpty)
         // A `private` protocol in another file is drawn; B's own is hidden, and has no stand-in.
         let otherFile = [
             ("A.swift", "private protocol Drawable { func draw() }\n"
                 + "private struct Circle: Drawable { func draw() {} }"),
-            ("B.swift", "fileprivate protocol Drawable { func render() }\nstruct Square: Drawable { func render() {} }")
+            ("B.swift", "fileprivate protocol Drawable { func render() }\n"
+                + "struct Square: Drawable { func render() {} }"),
         ]
         let realizes = format == .nomnoml ? "--:>" : "<|.."
-        #expect(try supertypeEdges(from: "Square", otherFile, format, mode) == [])
+        #expect(try supertypeEdges(from: "Square", otherFile, format, mode).isEmpty)
         #expect(try supertypeEdges(from: "Circle", otherFile, format, mode) == ["Drawable \(realizes)"])
     }
 
@@ -141,10 +152,10 @@ struct SupertypeEdgeEndTests {
     func outsideTypeBesideABoxOfItsName(format: DiagramFormat) throws {
         let files = [
             ("X.swift", "fileprivate protocol Identifiable { func own() }"),
-            ("Y.swift", "struct User: Identifiable { var id: Int }")
+            ("Y.swift", "struct User: Identifiable { var id: Int }"),
         ]
-        #expect(try supertypeEdges(from: "User", files, format, access: Self.everyAccessLevel) == [])
-        #expect(try svgEndMembers(from: "User", files, access: Self.everyAccessLevel) == [])
+        #expect(try supertypeEdges(from: "User", files, format, access: Self.everyAccessLevel).isEmpty)
+        #expect(try svgEndMembers(from: "User", files, access: Self.everyAccessLevel).isEmpty)
     }
 
     /// With extensions hidden, no box is named `P`, so the edge is written to a node of its own,
@@ -163,7 +174,7 @@ struct SupertypeEdgeEndTests {
     func mergedConformanceToAnotherFilesProtocol(format: DiagramFormat) throws {
         let files = [
             ("A.swift", "fileprivate protocol P { func fromA() }\nstruct Foo: P { func fromA() {} }"),
-            ("B.swift", "fileprivate protocol P { func fromB() }\nextension Foo: P { func fromB() {} }")
+            ("B.swift", "fileprivate protocol P { func fromB() }\nextension Foo: P { func fromB() {} }"),
         ]
         let realizes = format == .nomnoml ? "--:>" : "<|.."
         #expect(try supertypeEdges(from: "Foo", files, format, .merged, access: Self.everyAccessLevel)
@@ -175,16 +186,18 @@ struct SupertypeEdgeEndTests {
     /// Both `#if` clauses conform `Foo` to `P`, one through an alias, so its box draws one edge.
     @Test("a merged conformance repeated through a typealias is drawn once", arguments: textFormats)
     func mergedConformanceRepeatedThroughAlias(format: DiagramFormat) throws {
-        let files = [("A.swift", """
-            protocol P {}
-            typealias Q = P
-            struct Foo {}
-            #if DEBUG
-            extension Foo: P {}
-            #else
-            extension Foo: Q {}
-            #endif
-            """)]
+        let files = [
+            ("A.swift", """
+                protocol P {}
+                typealias Q = P
+                struct Foo {}
+                #if DEBUG
+                extension Foo: P {}
+                #else
+                extension Foo: Q {}
+                #endif
+                """),
+        ]
         let realizes = format == .nomnoml ? "--:>" : "<|.."
         #expect(try supertypeEdges(from: "Foo", files, format, .merged) == ["P \(realizes)"])
     }

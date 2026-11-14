@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 @Suite("A Nomnoml dependency graph draws its cycle's own boxes with the warning style")
 struct DepsNomnomlCycleHighlightTests {
@@ -19,7 +19,8 @@ struct DepsNomnomlCycleHighlightTests {
         try FileManager.default.createDirectory(at: targetDir, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: root) }
         try Self.source.write(
-            to: targetDir.appendingPathComponent("Shape.swift"), atomically: true, encoding: .utf8)
+            to: targetDir.appendingPathComponent("Shape.swift"), atomically: true, encoding: .utf8
+        )
 
         var config = Configuration.default
         config.format = .nomnoml
@@ -28,8 +29,10 @@ struct DepsNomnomlCycleHighlightTests {
                 .generateScript(for: [targetDir.path], mode: .types, with: config).text
         }
         let description = SPMPackageDescription(name: "Shapes", targets: [
-            SPMTargetDescription(name: "Geometry", kind: .library, path: "Sources/Geometry",
-                                 sources: ["Shape.swift"], dependencies: [])
+            SPMTargetDescription(
+                name: "Geometry", kind: .library, path: "Sources/Geometry",
+                sources: ["Shape.swift"], dependencies: []
+            ),
         ])
         return DependencyGraphGenerator().generateScript(
             forPackage: description, packageRoot: root, mode: .types, with: config
@@ -68,7 +71,7 @@ struct DepsNomnomlCycleHighlightTests {
         let (graph, text) = try graph([
             DependencyEdge(from: "Alpha", toNode: "Beta", kind: .imports),
             DependencyEdge(from: "Beta", toNode: "Alpha", kind: .imports),
-            DependencyEdge(from: "App", toNode: "Alpha", kind: .imports)
+            DependencyEdge(from: "App", toNode: "Alpha", kind: .imports),
         ])
         let types = Dictionary(uniqueKeysWithValues: graph.nodes.map { ($0.id, $0.type) })
         #expect(types == ["Alpha": "warning", "Beta": "warning", "App": "class"], "\(text)")
@@ -78,7 +81,7 @@ struct DepsNomnomlCycleHighlightTests {
     func stereotypedModulesCycle() throws {
         let (graph, text) = try graph([
             DependencyEdge(from: "Core", toNode: "UI", kind: .imports),
-            DependencyEdge(from: "UI", toNode: "Core", kind: .imports)
+            DependencyEdge(from: "UI", toNode: "Core", kind: .imports),
         ], targetKinds: ["Core": .library, "UI": .executable])
         let types = Dictionary(uniqueKeysWithValues: graph.nodes.map { ($0.id, $0.type) })
         #expect(types == ["Core «library»": "warning", "UI «executable»": "warning"], "\(text)")
@@ -88,7 +91,7 @@ struct DepsNomnomlCycleHighlightTests {
     func selfLoop() throws {
         let (graph, text) = try graph([
             DependencyEdge(from: "Node", toNode: "Node", kind: .inherits),
-            DependencyEdge(from: "Leaf", toNode: "Node", kind: .inherits)
+            DependencyEdge(from: "Leaf", toNode: "Node", kind: .inherits),
         ])
         let types = Dictionary(uniqueKeysWithValues: graph.nodes.map { ($0.id, $0.type) })
         #expect(types == ["Node": "warning", "Leaf": "class"], "\(text)")
@@ -98,7 +101,7 @@ struct DepsNomnomlCycleHighlightTests {
     func escapedName() throws {
         let (graph, text) = try graph([
             DependencyEdge(from: "Box<T>", toNode: "Wrap|Of", kind: .inherits),
-            DependencyEdge(from: "Wrap|Of", toNode: "Box<T>", kind: .conforms)
+            DependencyEdge(from: "Wrap|Of", toNode: "Box<T>", kind: .conforms),
         ])
         #expect(graph.nodes.count == 2, "\(graph.nodes)\n\(text)")
         #expect(graph.nodes.allSatisfy { $0.type == "warning" }, "\(graph.nodes)\n\(text)")
@@ -109,7 +112,7 @@ struct DepsNomnomlCycleHighlightTests {
         let (_, text) = try graph([
             DependencyEdge(from: "Alpha", toNode: "Beta", kind: .imports),
             DependencyEdge(from: "Beta", toNode: "Gamma", kind: .imports),
-            DependencyEdge(from: "Gamma", toNode: "Alpha", kind: .imports)
+            DependencyEdge(from: "Gamma", toNode: "Alpha", kind: .imports),
         ])
         let directives = text.components(separatedBy: "\n")
             .filter { $0 == "#.warning: fill=#ffcccc stroke=#cc0000" }

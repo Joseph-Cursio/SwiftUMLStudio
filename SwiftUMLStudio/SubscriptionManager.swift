@@ -36,6 +36,7 @@ final class SubscriptionManager {
 
     // MARK: - Public
 
+    // swiftlint:disable:next unused_declaration - SubscriptionProviding witness, called through PaywallView's Manager
     func purchase(_ product: Product) async {
         purchaseError = nil
         do {
@@ -45,10 +46,13 @@ final class SubscriptionManager {
                 let transaction = try Self.checkVerified(verification)
                 await transaction.finish()
                 await checkEntitlement()
+
             case .userCancelled:
                 break
+
             case .pending:
                 break
+
             @unknown default:
                 break
             }
@@ -57,6 +61,7 @@ final class SubscriptionManager {
         }
     }
 
+    // swiftlint:disable:next unused_declaration - SubscriptionProviding witness, called through PaywallView's Manager
     func restorePurchases() async {
         try? await AppStore.sync()
         await checkEntitlement()
@@ -116,6 +121,7 @@ final class SubscriptionManager {
         switch result {
         case .verified(let payload):
             return payload
+
         case .unverified(_, let error):
             throw error
         }

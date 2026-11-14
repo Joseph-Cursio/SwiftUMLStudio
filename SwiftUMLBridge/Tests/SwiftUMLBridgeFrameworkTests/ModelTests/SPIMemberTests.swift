@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 // Without a module, a member of `Foo` every module sees goes before an extension's `Foo.X` in
 // another directory (`ExtensionMemberRankTests.bodyBeforeExtension`, #253). One of `Foo`'s body
@@ -22,7 +22,7 @@ struct SPIMemberTests {
 
     /// Core's `Foo`, with `member` in its body or `extension` in its file; `Login`'s public `X`
     /// in a sibling directory; and `writer` in `Profile`.
-    private static func files(body member: String = "", extension: String = "", writer: String) -> [Fixture.File] {
+    private static func files(writer: String, body member: String = "", extension: String = "") -> [Fixture.File] {
         [
             ("/r/Sources/Core/Foo.swift", """
             public struct Foo { \(member) public init() {} }
@@ -31,7 +31,7 @@ struct SPIMemberTests {
             """),
             ("/r/Sources/Features/Login/E.swift",
              "extension Foo { public typealias X = RLogin }\nopen class RLogin { public init() {} }"),
-            ("/r/Sources/Features/Profile/W.swift", writer)
+            ("/r/Sources/Features/Profile/W.swift", writer),
         ]
     }
 
@@ -43,8 +43,8 @@ struct SPIMemberTests {
     func plainImport(inBody: Bool) throws {
         let writer = "import Core\nimport Login\nclass W: Foo.X {}"
         let files = inBody
-            ? Self.files(body: Self.bodyMember, writer: writer)
-            : Self.files(extension: Self.extensionMember, writer: writer)
+            ? Self.files(writer: writer, body: Self.bodyMember)
+            : Self.files(writer: writer, extension: Self.extensionMember)
         for mode in [ExtensionVisualization.all, .merged, .hidden] {
             let lines = try Fixture.lines(files, .plantuml, ElementOptions(showExtensions: mode))
             #expect(supertypeLines(in: lines) == ["RLogin <|-- W : inherits"], "\(mode)")
@@ -57,7 +57,7 @@ struct SPIMemberTests {
             "@_spi(T) import Core\nclass W: Foo.X {}", "@_spi(T) import Core\nextension Foo { class W: X {} }"
         ]
         for writer in writers {
-            let files = Self.files(body: Self.bodyMember, writer: writer)
+            let files = Self.files(writer: writer, body: Self.bodyMember)
             let lines = supertypeLines(in: try Fixture.lines(files, .plantuml))
             #expect(lines.count == 1 && lines.allSatisfy { $0.hasPrefix("RCore <|-- ") }, "\(lines)")
         }
@@ -68,7 +68,7 @@ struct SPIMemberTests {
     @Test("an @_spi member an extension in the type's file adds does not beat a sibling directory's")
     func extensionMemberWithSPIImport() throws {
         let writer = "import Core\nimport Login\n@_spi(T) import Helper\nclass W: Foo.X {}"
-        let files = Self.files(extension: Self.extensionMember, writer: writer)
+        let files = Self.files(writer: writer, extension: Self.extensionMember)
             + [("/r/Sources/Helper/H.swift", "@_spi(T) public struct HelperThing {}")]
         #expect(supertypeLines(in: try Fixture.lines(files, .plantuml)) == ["RLogin <|-- W : inherits"])
     }
@@ -79,7 +79,7 @@ struct SPIMemberTests {
     /// `import Login` would show `Login`'s `X` to `W1` too, and `W1` would not compile.
     @Test("writers in one directory that differ in importing with @_spi each get their own answer")
     func writersApart() throws {
-        var files = Self.files(body: Self.bodyMember, writer: "@_spi(T) import Core\nclass W1: Foo.X {}")
+        var files = Self.files(writer: "@_spi(T) import Core\nclass W1: Foo.X {}", body: Self.bodyMember)
         files.append(("/r/Sources/Features/Profile/W2.swift", "import Core\nimport Login\nclass W2: Foo.X {}"))
         for ordered in [files, files.reversed()] {
             #expect(supertypeLines(in: try Fixture.lines(ordered, .plantuml)) == [

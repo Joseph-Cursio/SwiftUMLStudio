@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// A nested type's edge names a parent the diagram does not draw by its qualified name, so it
 /// never hangs off a drawn type that shares the parent's short name (#67).
@@ -10,8 +10,10 @@ struct NestedEdgeHiddenParentTests {
         of source: String, _ format: DiagramFormat = .plantuml, elements: ElementOptions = ElementOptions()
     ) -> [String] {
         let marker = format == .plantuml ? "+--" : "+-"
-        return ClassDiagramIds.lines(of: ClassDiagramIds.script(for: source, format: format, elements: elements),
-                                     containing: marker)
+        return ClassDiagramIds.lines(
+            of: ClassDiagramIds.script(for: source, format: format, elements: elements),
+            containing: marker
+        )
     }
 
     // MARK: - Hidden Type Parents

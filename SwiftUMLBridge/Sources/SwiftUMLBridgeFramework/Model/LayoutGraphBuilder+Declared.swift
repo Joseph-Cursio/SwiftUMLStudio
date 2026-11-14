@@ -1,5 +1,3 @@
-import Foundation
-
 // MARK: - Declarations
 
 /// What `TypeLookup` knows of each declaration it records, kept apart so the lookup stays a
@@ -64,7 +62,10 @@ extension LayoutGraphBuilder {
         /// a typealias is never flattened out of its type's members. `rankedAs` overrides
         /// `rankScope`.
         init(
-            _ item: SyntaxStructure, kind: ElementKind, nodeId: String?, in container: SyntaxStructure? = nil,
+            _ item: SyntaxStructure,
+            kind: ElementKind,
+            nodeId: String?,
+            in container: SyntaxStructure? = nil,
             rankedAs: Scope? = nil
         ) {
             self.nodeId = nodeId
@@ -83,10 +84,10 @@ extension LayoutGraphBuilder {
             let declared = chain.prefix { $0.kind != .extension }
             var levels = declared.map { $0.accessibility.flatMap { $0 == .other ? nil : $0 } ?? .internal }
             let enclosingExtension = chain.first { $0.kind == .extension }
-            isSPI = declared.contains { $0.isSPI } || enclosingExtension?.isSPI == true
-            isSPIInEveryBuild = declared.contains { $0.isSPIInEveryBuild }
+            isSPI = declared.contains(where: \.isSPI) || enclosingExtension?.isSPI == true
+            isSPIInEveryBuild = declared.contains(where: \.isSPIInEveryBuild)
                 || enclosingExtension?.isSPIInEveryBuild == true
-            isConditional = declared.contains { $0.isConditional } || enclosingExtension?.isConditional == true
+            isConditional = declared.contains(where: \.isConditional) || enclosingExtension?.isConditional == true
             if let enclosing = enclosingExtension, !levels.isEmpty,
                let modifier = enclosing.accessibility {
                 // `private extension` and `fileprivate extension` cap what they hold; `public` and

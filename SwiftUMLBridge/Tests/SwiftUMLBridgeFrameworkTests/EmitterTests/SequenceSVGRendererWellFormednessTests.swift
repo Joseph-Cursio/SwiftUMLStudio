@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// Parses `SequenceSVGRenderer` output as XML. The other `SequenceSVGRenderer` tests check
 /// substrings, which a malformed document can still contain (#80).
@@ -25,7 +25,7 @@ struct SequenceSVGRendererWellFormednessTests {
             CallEdge(
                 callerType: "Service", callerMethod: label, calleeType: nil, calleeMethod: label,
                 isAsync: false, isUnresolved: true
-            )
+            ),
         ]
         let svg = SequenceSVGRenderer.render(traversedEdges: edges, entryType: label, entryMethod: "run")
         let escaped = label.xmlEscaped

@@ -1,77 +1,6 @@
 import SwiftUI
 import SwiftUMLBridgeFramework
 
-struct ProjectDashboardView: View {
-    let summary: ProjectSummary?
-    let insights: [Insight]
-    let suggestions: [DiagramSuggestion]
-    let architectureDiff: ArchitectureDiff?
-    let isProUnlocked: Bool
-    let onSuggestionTap: (DiagramSuggestion) -> Void
-
-    var body: some View {
-        if let summary {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
-                    statsBar(summary: summary)
-                    if isProUnlocked, let diff = architectureDiff {
-                        ArchitectureDiffView(diff: diff)
-                    }
-                    TypeBreakdownGrid(summary: summary)
-                    if !summary.moduleBreakdown.isEmpty {
-                        ModuleBreakdownSection(modules: summary.moduleBreakdown)
-                    }
-                    if !insights.isEmpty {
-                        InsightsSection(insights: insights)
-                    }
-                    if !suggestions.isEmpty {
-                        suggestionsSection
-                    }
-                }
-                .padding(24)
-            }
-            .accessibilityIdentifier("dashboardContent")
-        } else {
-            ContentUnavailableView(
-                "No project loaded",
-                systemImage: "folder",
-                description: Text("Open a folder or Swift files to see project insights.")
-            )
-            .accessibilityIdentifier("dashboardEmpty")
-        }
-    }
-
-    // MARK: - Stats Bar
-
-    private func statsBar(summary: ProjectSummary) -> some View {
-        HStack(spacing: 16) {
-            StatCardView(value: summary.totalFiles, label: "Files", icon: "doc.text")
-            StatCardView(value: summary.totalTypes, label: "Types", icon: "rectangle.3.group")
-            StatCardView(value: summary.totalRelationships, label: "Relationships", icon: "arrow.triangle.branch")
-            StatCardView(value: summary.entryPoints.count, label: "Methods", icon: "function")
-            StatCardView(
-                value: summary.stateMachines.count,
-                label: "State Machines",
-                icon: "arrow.triangle.2.circlepath"
-            )
-        }
-    }
-
-    // MARK: - Suggestions
-
-    private var suggestionsSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Suggested Diagrams")
-                .font(.headline)
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 200))], spacing: 12) {
-                ForEach(suggestions) { suggestion in
-                    SuggestionCardView(suggestion: suggestion, onTap: onSuggestionTap)
-                }
-            }
-        }
-    }
-}
-
 // MARK: - Extracted Subviews
 
 /// The insights list.
@@ -123,7 +52,7 @@ struct TypeBreakdownGrid: View {
             Text("Type Breakdown")
                 .font(.headline)
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 100))], spacing: 8) {
-                ForEach(summary.typeBreakdown.sorted(by: { $0.value > $1.value }), id: \.key) { kind, count in
+                ForEach(summary.typeBreakdown.sorted { $0.value > $1.value }, id: \.key) { kind, count in
                     HStack {
                         Text(kind)
                             .font(.caption)
@@ -237,7 +166,7 @@ struct InsightRowView: View {
     }
 
     private var insightColor: SwiftUI.Color {
-        InsightRowView.color(for: insight.severity)
+        Self.color(for: insight.severity)
     }
 
     /// Maps an `Insight.Severity` to its dashboard row color.
@@ -289,5 +218,76 @@ struct SuggestionCardView: View {
             .background(.quaternary.opacity(0.3), in: RoundedRectangle(cornerRadius: 8))
         }
         .buttonStyle(.plain)
+    }
+}
+
+struct ProjectDashboardView: View {
+    let summary: ProjectSummary?
+    let insights: [Insight]
+    let suggestions: [DiagramSuggestion]
+    let architectureDiff: ArchitectureDiff?
+    let isProUnlocked: Bool
+    let onSuggestionTap: (DiagramSuggestion) -> Void
+
+    var body: some View {
+        if let summary {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 24) {
+                    statsBar(summary: summary)
+                    if isProUnlocked, let diff = architectureDiff {
+                        ArchitectureDiffView(diff: diff)
+                    }
+                    TypeBreakdownGrid(summary: summary)
+                    if !summary.moduleBreakdown.isEmpty {
+                        ModuleBreakdownSection(modules: summary.moduleBreakdown)
+                    }
+                    if !insights.isEmpty {
+                        InsightsSection(insights: insights)
+                    }
+                    if !suggestions.isEmpty {
+                        suggestionsSection
+                    }
+                }
+                .padding(24)
+            }
+            .accessibilityIdentifier("dashboardContent")
+        } else {
+            ContentUnavailableView(
+                "No project loaded",
+                systemImage: "folder",
+                description: Text("Open a folder or Swift files to see project insights.")
+            )
+            .accessibilityIdentifier("dashboardEmpty")
+        }
+    }
+
+    // MARK: - Stats Bar
+
+    private func statsBar(summary: ProjectSummary) -> some View {
+        HStack(spacing: 16) {
+            StatCardView(value: summary.totalFiles, label: "Files", icon: "doc.text")
+            StatCardView(value: summary.totalTypes, label: "Types", icon: "rectangle.3.group")
+            StatCardView(value: summary.totalRelationships, label: "Relationships", icon: "arrow.triangle.branch")
+            StatCardView(value: summary.entryPoints.count, label: "Methods", icon: "function")
+            StatCardView(
+                value: summary.stateMachines.count,
+                label: "State Machines",
+                icon: "arrow.triangle.2.circlepath"
+            )
+        }
+    }
+
+    // MARK: - Suggestions
+
+    private var suggestionsSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Suggested Diagrams")
+                .font(.headline)
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 200))], spacing: 12) {
+                ForEach(suggestions) { suggestion in
+                    SuggestionCardView(suggestion: suggestion, onTap: onSuggestionTap)
+                }
+            }
+        }
     }
 }

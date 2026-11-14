@@ -1,3 +1,4 @@
+// swiftlint:disable:next unused_import - clock_gettime_nsec_np is Darwin's, which Foundation re-exports
 import Foundation
 @testable import SwiftUMLBridgeFramework
 

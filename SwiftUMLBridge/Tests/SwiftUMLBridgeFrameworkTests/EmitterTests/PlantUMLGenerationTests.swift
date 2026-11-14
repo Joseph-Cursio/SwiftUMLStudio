@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 @Suite("PlantUML Generation")
 struct PlantUMLGenerationTests {
@@ -229,10 +229,12 @@ struct PlantUMLGenerationTests {
             elements: ElementOptions(showMembersWithAccessLevel: [.public])
         )
         // internal var hidden should be filtered; public var visible should appear
-        let items = [SyntaxStructure(kind: .class, name: "Foo", substructure: [
-            SyntaxStructure(accessibility: .internal, kind: .varInstance, name: "hidden", typename: "Int"),
-            SyntaxStructure(accessibility: .public, kind: .varInstance, name: "visible", typename: "String")
-        ])]
+        let items = [
+            SyntaxStructure(kind: .class, name: "Foo", substructure: [
+                SyntaxStructure(accessibility: .internal, kind: .varInstance, name: "hidden", typename: "Int"),
+                SyntaxStructure(accessibility: .public, kind: .varInstance, name: "visible", typename: "String"),
+            ]),
+        ]
         let script = DiagramScript(items: items, configuration: config)
         #expect(script.text.contains("visible"))
         #expect(script.text.contains("hidden") == false)

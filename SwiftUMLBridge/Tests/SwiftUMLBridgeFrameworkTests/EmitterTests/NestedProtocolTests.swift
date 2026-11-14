@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// A protocol nested in a type (SE-0404, Swift 5.10), `enum Outer { protocol Shape {} }`, is a
 /// nested type like any other: it gets a box of its own under the id `Outer.Shape`, it hangs off
@@ -35,11 +35,13 @@ struct NestedProtocolTests {
         switch drawn.format {
         case .svg:
             return drawn.layoutGraph?.nodes.filter { $0.stereotype == "protocol" }.map(\.id) ?? []
+
         case .plantuml:
             // `class "Shape" as Outer.Shape << (P, goldenRod) protocol >> {`
             return lines.filter { $0.hasPrefix("class ") && $0.contains(" protocol >>") }.compactMap { line in
                 line.components(separatedBy: " as ").last?.split(separator: " ").first.map(String.init)
             }
+
         case .mermaid:
             // `class Outer.Shape["Shape"] {`, then `<<protocol>>` on the next line.
             return zip(lines, lines.dropFirst()).compactMap { header, next in
@@ -47,6 +49,7 @@ struct NestedProtocolTests {
                       let open = header.firstIndex(of: "[") else { return nil }
                 return String(header[header.index(header.startIndex, offsetBy: 6)..<open])
             }
+
         case .nomnoml:
             // `[<interface id=Outer.Shape> Shape]`
             let prefix = "[<interface id="
@@ -64,8 +67,10 @@ struct NestedProtocolTests {
             return drawn.layoutGraph?.edges.contains {
                 $0.sourceId == child && $0.targetId == protocolId && $0.style != .composition
             } ?? false
+
         case .nomnoml:
             return lines(drawn).contains("[\(child)] --:> conforms to [\(protocolId)]")
+
         default:
             return lines(drawn).contains("\(protocolId) <|.. \(child) : conforms to")
         }
@@ -78,8 +83,10 @@ struct NestedProtocolTests {
             return drawn.layoutGraph?.edges.contains {
                 $0.sourceId == parent && $0.targetId == child && $0.style == .composition
             } ?? false
+
         case .nomnoml:
             return lines(drawn).contains("[\(parent)] +- [\(child)]")
+
         default:
             return lines(drawn).contains("\(parent) +-- \(child)")
         }
@@ -87,7 +94,7 @@ struct NestedProtocolTests {
 
     /// Each format and extension mode, as `"<format> <mode>"`, for which `check` fails.
     private func misses(
-        formats: [DiagramFormat] = NestedProtocolTests.formats, _ check: (DiagramFormat, ExtensionVisualization) -> Bool
+        formats: [DiagramFormat] = Self.formats, _ check: (DiagramFormat, ExtensionVisualization) -> Bool
     ) -> [String] {
         formats.flatMap { format in
             Self.modes.compactMap { mode in check(format, mode) ? nil : "\(format) \(mode)" }
@@ -97,15 +104,15 @@ struct NestedProtocolTests {
     @Test("is declared under its qualified name: in an enum, in an extension, and two levels down", arguments: [
         (shapes, "Outer.Shape"),
         ("enum Outer {}\nextension Outer {\n    protocol Drawable {}\n}", "Outer.Drawable"),
-        ("enum A {\n    enum B {\n        protocol Deep {}\n    }\n}", "A.B.Deep")
+        ("enum A {\n    enum B {\n        protocol Deep {}\n    }\n}", "A.B.Deep"),
     ])
     func declared(source: String, id: String) {
-        #expect(misses { protocolIds(classDiagram(source, $0, $1)) == [id] } == [])
+        #expect(misses { protocolIds(classDiagram(source, $0, $1)) == [id] }.isEmpty)
     }
 
     @Test("a conformance written in full ends on its box, with the conformance arrow")
     func conformanceInFull() {
-        #expect(misses { conforms("Square", to: "Outer.Shape", in: classDiagram(Self.shapes, $0, $1)) } == [])
+        #expect(misses { conforms("Square", to: "Outer.Shape", in: classDiagram(Self.shapes, $0, $1)) }.isEmpty)
     }
 
     @Test("hangs off the type it is nested in")
@@ -114,7 +121,7 @@ struct NestedProtocolTests {
         #expect(misses(formats: [.plantuml, .nomnoml, .svg]) {
             nests("Outer.Shape", in: "Outer", classDiagram(Self.shapes, $0, $1))
                 && nests("A.B.Deep", in: "A.B", classDiagram(deep, $0, $1))
-        } == [])
+        }.isEmpty)
     }
 
     @Test("lists its requirements and draws its own supertype as a top-level protocol does", arguments: formats)
@@ -130,7 +137,7 @@ struct NestedProtocolTests {
             return
         }
         // The edge to `AnyObject`, which neither diagram declares, with the id swapped.
-        let edge = { (drawn: DiagramScript) in self.lines(drawn).filter { $0.contains("AnyObject") } }
+        let edge = { (drawn: DiagramScript) in lines(drawn).filter { $0.contains("AnyObject") } }
         let expected = edge(topLevel).map {
             $0.replacingOccurrences(of: "[Delegate]", with: "[TableView.Delegate]")
                 .replacingOccurrences(of: " Delegate", with: " TableView.Delegate")
@@ -165,11 +172,11 @@ struct NestedProtocolTests {
     @Test("a fileprivate one is hidden by default, as a fileprivate protocol at top level is")
     func hiddenByAccessLevel() {
         let source = "enum Outer {\n    fileprivate protocol Secret {}\n}\nfileprivate protocol TopSecret {}"
-        #expect(misses { protocolIds(classDiagram(source, $0, $1)) == [] } == [])
+        #expect(misses { protocolIds(classDiagram(source, $0, $1)).isEmpty }.isEmpty)
     }
 
     @Test("showNestedTypes: false leaves it out, as it leaves out every nested type")
     func nestedTypesOff() {
-        #expect(misses { protocolIds(classDiagram(Self.shapes, $0, $1, nestedTypes: false)) == [] } == [])
+        #expect(misses { protocolIds(classDiagram(Self.shapes, $0, $1, nestedTypes: false)).isEmpty }.isEmpty)
     }
 }

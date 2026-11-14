@@ -1,5 +1,4 @@
 import SwiftUI
-import SwiftUMLBridgeFramework
 
 struct ExplorerSidebar: View {
     @Bindable var viewModel: DiagramViewModel
@@ -11,7 +10,10 @@ struct ExplorerSidebar: View {
     var body: some View {
         List {
             projectSections
-            proSections
+
+            if subscriptionManager.isProUnlocked {
+                proSections
+            }
 
             Section("History") {
                 HistoryListContent(viewModel: viewModel)
@@ -22,9 +24,9 @@ struct ExplorerSidebar: View {
         .onReceive(inspection.notice) { inspection.visit(self, $0) }
     }
 
-    /// Insights and suggested diagrams, or a prompt to open a project when there are neither.
+    /// The insights and suggested diagrams for the open project, or a prompt to open one.
     @ViewBuilder private var projectSections: some View {
-        if viewModel.insights.isEmpty && viewModel.suggestions.isEmpty {
+        if viewModel.insights.isEmpty, viewModel.suggestions.isEmpty {
             Section {
                 ContentUnavailableView(
                     "Open a project",
@@ -54,36 +56,34 @@ struct ExplorerSidebar: View {
         }
     }
 
-    /// Snapshots and review reminders, shown only with Pro.
+    /// The Pro-only sections: saved architecture snapshots and review reminders.
     @ViewBuilder private var proSections: some View {
-        if subscriptionManager.isProUnlocked {
-            if !viewModel.snapshots.isEmpty {
-                Section("Architecture Snapshots") {
-                    ForEach(viewModel.snapshots) { snapshot in
-                        SnapshotRowView(snapshot: snapshot)
-                            .contextMenu {
-                                Button("Delete", role: .destructive) {
-                                    viewModel.deleteSnapshot(snapshot)
-                                }
+        if !viewModel.snapshots.isEmpty {
+            Section("Architecture Snapshots") {
+                ForEach(viewModel.snapshots) { snapshot in
+                    SnapshotRowView(snapshot: snapshot)
+                        .contextMenu {
+                            Button("Delete", role: .destructive) {
+                                viewModel.deleteSnapshot(snapshot)
                             }
-                    }
+                        }
                 }
             }
+        }
 
-            Section("Review Reminders") {
-                Toggle("Remind me to review", isOn: $reminderEnabled)
-                    .onChange(of: reminderEnabled) {
-                        if reminderEnabled {
-                            ReviewReminderManager.enableReminder()
-                        } else {
-                            ReviewReminderManager.disableReminder()
-                        }
+        Section("Review Reminders") {
+            Toggle("Remind me to review", isOn: $reminderEnabled)
+                .onChange(of: reminderEnabled) {
+                    if reminderEnabled {
+                        ReviewReminderManager.enableReminder()
+                    } else {
+                        ReviewReminderManager.disableReminder()
                     }
-                if reminderEnabled {
-                    Text("You'll be reminded every 2 weeks if you haven't reviewed.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
                 }
+            if reminderEnabled {
+                Text("You'll be reminded every 2 weeks if you haven't reviewed.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
         }
     }

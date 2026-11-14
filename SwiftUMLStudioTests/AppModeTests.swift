@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLStudio
+import Testing
 
 struct AppModeTests {
 

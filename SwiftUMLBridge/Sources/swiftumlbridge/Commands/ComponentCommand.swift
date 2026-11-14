@@ -1,5 +1,4 @@
 import ArgumentParser
-import Foundation
 import SwiftUMLBridgeFramework
 
 extension SwiftUMLBridgeCLI {
@@ -30,8 +29,8 @@ extension SwiftUMLBridgeCLI {
         mutating func run() async throws {
             let (packageRoot, description) = try package.loadedPackage()
 
-            var configuration = Configuration.default
-            if let format { configuration.format = format }
+            var diagramConfiguration = Configuration.default
+            if let format { diagramConfiguration.format = format }
 
             let model = ComponentExtractor.extract(
                 package: description,
@@ -41,7 +40,7 @@ extension SwiftUMLBridgeCLI {
             guard !model.isEmpty else {
                 throw CLIError.componentModelNotFound
             }
-            let script = ComponentScript(model: model, configuration: configuration)
+            let script = ComponentScript(model: model, configuration: diagramConfiguration)
 
             await output.present(script)
         }

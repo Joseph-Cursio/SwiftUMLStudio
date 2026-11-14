@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// After `typealias Alias = Real`, a method declared in `extension Alias` is `Real`'s, and
 /// `Alias.make()` calls into `Real`. Sequence and activity diagrams filed such a method under
@@ -81,7 +81,7 @@ struct TypealiasCallGraphTests {
     func receiverWrittenWithTheAlias() throws {
         let root = try directory([
             "Alias.swift": "struct Real { static func make() { Baz.hit() } }\ntypealias Alias = Real",
-            "Caller.swift": "struct Caller { func go() { Alias.make() } }\nstruct Baz { static func hit() {} }"
+            "Caller.swift": "struct Caller { func go() { Alias.make() } }\nstruct Baz { static func hit() {} }",
         ])
         defer { try? FileManager.default.removeItem(at: root) }
         let text = sequence(root, "Caller", "go")
@@ -91,14 +91,16 @@ struct TypealiasCallGraphTests {
 
     @Test("a nested alias and an alias chain are followed")
     func nestedAliasAndChain() throws {
-        let root = try directory(["Real.swift": """
-            struct Real { func start() { helper(); other() } }
-            struct Container { typealias Element = Real }
-            extension Container.Element { func helper() {} }
-            typealias A1 = A2
-            typealias A2 = Real
-            extension A1 { func other() {} }
-            """])
+        let root = try directory([
+            "Real.swift": """
+                struct Real { func start() { helper(); other() } }
+                struct Container { typealias Element = Real }
+                extension Container.Element { func helper() {} }
+                typealias A1 = A2
+                typealias A2 = Real
+                extension A1 { func other() {} }
+                """,
+        ])
         defer { try? FileManager.default.removeItem(at: root) }
         let entries = SequenceDiagramGenerator().findEntryPoints(for: [root.path])
         #expect(entries == ["Real.helper", "Real.other", "Real.start"])
@@ -109,7 +111,7 @@ struct TypealiasCallGraphTests {
     func fileprivateAliasInAnotherFile() throws {
         let root = try directory([
             "A.swift": "struct Real {}\nfileprivate typealias Alias = Real\nextension Alias { func here() {} }",
-            "B.swift": "extension Alias { func there() {} }"
+            "B.swift": "extension Alias { func there() {} }",
         ])
         defer { try? FileManager.default.removeItem(at: root) }
         let entries = SequenceDiagramGenerator().findEntryPoints(for: [root.path])
@@ -118,11 +120,13 @@ struct TypealiasCallGraphTests {
 
     @Test("controls: without a typealias, names are as written")
     func controls() throws {
-        let root = try directory(["Real.swift": """
-            struct Real { func start() { helper() } }
-            extension Real { func helper() { finish() }; func finish() {} }
-            extension Other { func lone() {} }
-            """])
+        let root = try directory([
+            "Real.swift": """
+                struct Real { func start() { helper() } }
+                extension Real { func helper() { finish() }; func finish() {} }
+                extension Other { func lone() {} }
+                """,
+        ])
         defer { try? FileManager.default.removeItem(at: root) }
         #expect(sequence(root, "Real", "start").contains("Real->>Real: finish()"))
         let entries = SequenceDiagramGenerator().findEntryPoints(for: [root.path])

@@ -4,7 +4,10 @@ import Foundation
 public struct ClassDiagramGenerator: ClassDiagramGenerating, Sendable {
     private let fileCollector = FileCollector()
 
-    public init() {}
+    public init() {
+        // Public because a struct's implicit initializer is internal; every stored property
+        // has its default.
+    }
 
     /// Generate diagram from Swift file(s)
     public func generate(

@@ -1,5 +1,56 @@
 import SwiftUI
 
+// MARK: - Reusable Components
+
+struct DeltaChip: View {
+    let label: String
+    let delta: Int
+
+    var body: some View {
+        VStack(spacing: 2) {
+            DeltaLabel(delta: delta)
+            Text(label)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(8)
+        .background(chipBackground, in: RoundedRectangle(cornerRadius: 6))
+    }
+
+    private var chipBackground: some ShapeStyle {
+        if delta > 0 {
+            return AnyShapeStyle(.green.opacity(0.1))
+        }
+        if delta < 0 {
+            return AnyShapeStyle(.red.opacity(0.1))
+        }
+        return AnyShapeStyle(.quaternary.opacity(0.3))
+    }
+}
+
+struct DeltaLabel: View {
+    let delta: Int
+
+    var body: some View {
+        Text(deltaText)
+            .font(.body.bold().monospacedDigit())
+            .foregroundStyle(deltaColor)
+    }
+
+    private var deltaText: String {
+        if delta > 0 { return "+\(delta)" }
+        if delta < 0 { return "\(delta)" }
+        return "0"
+    }
+
+    private var deltaColor: Color {
+        if delta > 0 { return .green }
+        if delta < 0 { return .red }
+        return .secondary
+    }
+}
+
 struct ArchitectureDiffView: View {
     let diff: ArchitectureDiff
 
@@ -42,7 +93,7 @@ struct ArchitectureDiffView: View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Type Breakdown Changes")
                 .font(.subheadline.bold())
-            ForEach(diff.typeBreakdownDeltas.sorted(by: { abs($0.value) > abs($1.value) }), id: \.key) { kind, delta in
+            ForEach(diff.typeBreakdownDeltas.sorted { abs($0.value) > abs($1.value) }, id: \.key) { kind, delta in
                 HStack {
                     Text(kind)
                         .font(.caption)
@@ -73,56 +124,5 @@ struct ArchitectureDiffView: View {
                 }
             }
         }
-    }
-}
-
-// MARK: - Reusable Components
-
-struct DeltaChip: View {
-    let label: String
-    let delta: Int
-
-    var body: some View {
-        VStack(spacing: 2) {
-            DeltaLabel(delta: delta)
-            Text(label)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(8)
-        .background(chipBackground, in: RoundedRectangle(cornerRadius: 6))
-    }
-
-    private var chipBackground: some ShapeStyle {
-        if delta > 0 {
-            return AnyShapeStyle(.green.opacity(0.1))
-        } else if delta < 0 {
-            return AnyShapeStyle(.red.opacity(0.1))
-        } else {
-            return AnyShapeStyle(.quaternary.opacity(0.3))
-        }
-    }
-}
-
-struct DeltaLabel: View {
-    let delta: Int
-
-    var body: some View {
-        Text(deltaText)
-            .font(.body.bold().monospacedDigit())
-            .foregroundStyle(deltaColor)
-    }
-
-    private var deltaText: String {
-        if delta > 0 { return "+\(delta)" }
-        if delta < 0 { return "\(delta)" }
-        return "0"
-    }
-
-    private var deltaColor: Color {
-        if delta > 0 { return .green }
-        if delta < 0 { return .red }
-        return .secondary
     }
 }

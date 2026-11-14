@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// `T.method` names a member of `T` that can be named from outside it. A function local to a body has
 /// `T`'s name around it and is not one, and a type local to a body cannot be named from outside.
@@ -14,13 +14,13 @@ struct EntryMemberTests {
         "deinit { func run() { inner() }\n    run() }",
         "var value: Int { func run() { inner() }\n    run()\n    return 1 }",
         "subscript(index: Int) -> Int { func run() { inner() }\n    run()\n    return index }",
-        "let handler: () -> Void = { func run() { print(1) }\n    run() }"
+        "let handler: () -> Void = { func run() { print(1) }\n    run() }",
     ])
     func localToAnyBody(host: String) throws {
         let (root, paths) = try EntryFixture.written([
             ("PkgB/Alias.swift", "final class RealB { \(host)\n    func inner() {} }\ntypealias Svc = RealB"),
             ("PkgA/Alias.swift", "struct RealA {}\ntypealias Svc = RealA"),
-            ("PkgA/Ext.swift", "extension Svc {\n    func run() { step() }\n    func step() {}\n}")
+            ("PkgA/Ext.swift", "extension Svc {\n    func run() { step() }\n    func step() {}\n}"),
         ])
         defer { try? FileManager.default.removeItem(at: root) }
         for text in EntryFixture.both(paths, "Svc", "run") {
@@ -36,7 +36,7 @@ struct EntryMemberTests {
                 "Pkg/Alias.swift",
                 "struct RealB { func other() { func run() { inner() }\n    run() }\n    func inner() {} }\n"
                     + "typealias Svc = RealB"
-            )
+            ),
         ])
         defer { try? FileManager.default.removeItem(at: root) }
         for text in EntryFixture.both(paths, "Svc", "run") {
@@ -52,7 +52,7 @@ struct EntryMemberTests {
                 "Pkg/Real.swift",
                 "struct Real { init() { func run() { inLocal() }\n    run() }\n    func run() { inMember() }\n"
                     + "    func inLocal() {}\n    func inMember() {} }"
-            )
+            ),
         ])
         defer { try? FileManager.default.removeItem(at: root) }
         let text = EntryFixture.activity(paths, "Real", "run")
@@ -71,7 +71,7 @@ struct EntryMemberTests {
                 "struct Xen {}\ntypealias Local = Xen\nstruct Host { func make() { struct Local {\n"
                     + "    func run() { step() }\n    func step() { last() }\n    func last() {} }\n"
                     + "    Local().run() } }"
-            )
+            ),
         ])
         defer { try? FileManager.default.removeItem(at: root) }
         #expect(!SequenceDiagramGenerator().findEntryPoints(for: paths).contains("Local.\(method)"))
@@ -89,7 +89,7 @@ struct EntryMemberTests {
     func namedTypeAfterLocalType() throws {
         let (root, paths) = try EntryFixture.written([
             ("Pkg/A.swift", Self.localState),
-            ("Pkg/B.swift", "struct State { func advance() { inMember() }\n    func inMember() {} }")
+            ("Pkg/B.swift", "struct State { func advance() { inMember() }\n    func inMember() {} }"),
         ])
         defer { try? FileManager.default.removeItem(at: root) }
         let text = EntryFixture.activity(paths, "State", "advance")
@@ -105,7 +105,7 @@ struct EntryMemberTests {
         "let made: () -> Void = { \(localLoc) }",
         "var made: Int { \(localLoc)\n    return 1 }",
         "if true { \(localLoc) }",
-        "switch 1 { case 1: \(localLoc)\n    default: break }"
+        "switch 1 { case 1: \(localLoc)\n    default: break }",
     ]
 
     /// `Svc` is the top-level `Loc`, which has no `run`, as Swift says of `Svc().run()`.
@@ -113,7 +113,7 @@ struct EntryMemberTests {
     func localTypeBesideLaterBody(host: String) throws {
         let (root, paths) = try EntryFixture.written([
             ("PkgB/Alias.swift", "struct Loc {}\ntypealias Svc = Loc\n\(host)"),
-            EntryFixture.withRun("C")
+            EntryFixture.withRun("C"),
         ])
         defer { try? FileManager.default.removeItem(at: root) }
         for text in EntryFixture.both(paths, "Svc", "run") {

@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// `SyntaxStructure.clonedForest(of:)` gives class-diagram preparation a private copy to edit (#73).
 @Suite("SyntaxStructure — cloned forest")
@@ -12,7 +12,7 @@ struct SyntaxStructureCloneTests {
         "runtimename", "substructure", "typename", "memberSuffix", "parent", "sourceLocation", "module",
         "imports", "loadedModules", "reexportedModules", "mergedInto", "carriedSupertypes", "mergedExtensions",
         "standsInFor",
-        "boundGenericArguments", "isSugared", "isSPI", "isSPIInEveryBuild", "isConditional", "unavailability"
+        "boundGenericArguments", "isSugared", "isSPI", "isSPIInEveryBuild", "isConditional", "unavailability",
     ]
 
     /// A structure with every stored property set.

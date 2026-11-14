@@ -1,5 +1,3 @@
-import Foundation
-
 /// Descriptive texts you can add around your diagram
 public struct PageTexts: Codable, Sendable {
     internal init(
@@ -21,9 +19,7 @@ public struct PageTexts: Codable, Sendable {
     public var legend: String?
     public var caption: String?
     public var footer: String?
-}
 
-extension PageTexts {
     func plantuml() -> String? {
         if header == nil, title == nil, legend == nil, caption == nil, footer == nil {
             return nil

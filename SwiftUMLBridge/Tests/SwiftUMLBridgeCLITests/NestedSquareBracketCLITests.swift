@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import swiftumlbridge
+import Testing
 
 /// A chain of `[` nested past the parsers' limit is read with its deepest brackets as spaces, so
 /// the parse ends; the CLI says so on stderr, naming the file, whatever the subcommand (#148).
@@ -22,7 +22,7 @@ struct NestedSquareBracketCLITests {
 
     @Test("each subcommand reads the file and warns once, naming it", arguments: [
         ["classdiagram", ".", "--format", "plantuml"], ["deps", ".", "--types"], ["deps", ".", "--modules"],
-        ["sequence", ".", "--entry", "S.run"], ["activity", ".", "--entry", "S.run"], ["state", ".", "--list"]
+        ["sequence", ".", "--entry", "S.run"], ["activity", ".", "--entry", "S.run"], ["state", ".", "--list"],
     ])
     func warns(arguments: [String]) throws {
         try withSourceDirectory { directory, file in

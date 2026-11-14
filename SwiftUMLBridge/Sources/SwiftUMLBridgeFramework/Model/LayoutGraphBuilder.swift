@@ -1,5 +1,3 @@
-import Foundation
-
 /// Builds a `LayoutGraph` from parsed `SyntaxStructure` items for class diagrams,
 /// or from a `DependencyGraphModel` for dependency graphs.
 enum LayoutGraphBuilder {
@@ -69,6 +67,7 @@ enum LayoutGraphBuilder {
             switch pending.role {
             case .other:
                 return edge
+
             case .extendedType:
                 // As `DrawnEdgeEnds.extendedType(of:)` and `DiagramContext.addExtensionEdge` keep
                 // the text formats' `ext` edge: a hidden type, or none, resolves to the extension
@@ -76,9 +75,11 @@ enum LayoutGraphBuilder {
                 guard let type = ends.itemForNodeId[edge.targetId], type.kind != .extension,
                       type.isExcluded(byPatterns: ends.dependencyExclude) == false else { return nil }
                 return edge
+
             case .supertype:
                 supertypeEnds.insert([edge.sourceId, edge.targetId])
                 return edge
+
             case .carriedSupertype:
                 return supertypeEnds.insert([edge.sourceId, edge.targetId]).inserted ? edge : nil
             }
@@ -114,7 +115,10 @@ enum LayoutGraphBuilder {
     }
 
     private static func buildEdges(
-        from item: SyntaxStructure, nodeId: String, kind: ElementKind, relationships: RelationshipOptions,
+        from item: SyntaxStructure,
+        nodeId: String,
+        kind: ElementKind,
+        relationships: RelationshipOptions,
         aliases: TypeAliasResolver
     ) -> [PendingEdge] {
         var edges: [PendingEdge] = []
@@ -225,7 +229,7 @@ enum LayoutGraphBuilder {
         }
     }
 
-    private static func edgeStyleForInheritance(parentName: String, itemKind: ElementKind) -> EdgeStyle {
+    private static func edgeStyleForInheritance(parentName _: String, itemKind: ElementKind) -> EdgeStyle {
         itemKind == .extension ? .dependency : .inheritance
     }
 
@@ -258,21 +262,28 @@ enum LayoutGraphBuilder {
     }
 
     private static func classifyMember(
-        _ element: SyntaxStructure, prefix: String,
-        properties: inout [String], methods: inout [String]
+        _ element: SyntaxStructure,
+        prefix: String,
+        properties: inout [String],
+        methods: inout [String]
     ) {
         guard let kind = element.kind, let memberName = element.name else { return }
         switch kind {
         case .functionMethodInstance:
             methods.append("\(prefix)\(memberName)()")
+
         case .functionMethodStatic:
             methods.append("\(prefix)static \(memberName)()")
+
         case .varInstance:
             properties.append("\(prefix)\(memberName)\(element.typename.map { ": \($0)" } ?? "")")
+
         case .varStatic:
             properties.append("\(prefix)static \(memberName)\(element.typename.map { ": \($0)" } ?? "")")
+
         case .enumelement:
             properties.append(memberName)
+
         default:
             break
         }

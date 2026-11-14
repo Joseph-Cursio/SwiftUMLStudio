@@ -1,9 +1,6 @@
-import Foundation
-import SwiftUI
+@testable import SwiftUMLStudio
 import Testing
 import ViewInspector
-import SwiftUMLBridgeFramework
-@testable import SwiftUMLStudio
 
 @Suite("ActivityControlsView — body")
 @MainActor
@@ -48,7 +45,8 @@ struct ActivityControlsViewTests {
     @Test("menu shows 'No entry points found' when the list is empty")
     func emptyEntryPointsMessage() throws {
         let view = ActivityControlsView(viewModel: makeViewModel(availableEntryPoints: []))
-        let strings = try view.inspect().findAll(ViewType.Text.self)
+        let strings = try view.inspect()
+            .findAll(ViewType.Text.self)
             .compactMap { try? $0.string() }
         #expect(strings.contains("No entry points found"))
     }

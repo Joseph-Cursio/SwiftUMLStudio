@@ -1,5 +1,4 @@
 import ArgumentParser
-import Foundation
 import SwiftUMLBridgeFramework
 
 enum CLIError: Error, CustomStringConvertible {
@@ -16,18 +15,24 @@ enum CLIError: Error, CustomStringConvertible {
         case .invalidEntry:
             return "Entry must be in the form 'TypeName.methodName', a nested type by its whole name "
                 + "('Outer.Inner.methodName')"
+
         case .stateCandidateNotFound(let identifier):
             return "No state machine candidate '\(identifier)' was found in the sources."
+
         case .erModelNotFound:
             return "No persisted models (SwiftData @Model, Core Data, GRDB, SQLite.swift) were found in the sources."
+
         case .componentModelNotFound:
             return "No components were extracted from the SPM package. "
                 + "Make sure `swift package describe` succeeds in the package directory."
+
         case .noSwiftFiles:
             return "No Swift files were found in the given paths, "
                 + "or the files.include / files.exclude (--exclude) filters left none."
+
         case .packageDirectoryNotFound(let path):
             return "--package \(path): no such directory"
+
         case let .invalidConfiguration(path, reason):
             return "--config \(path): \(reason)"
         }
@@ -53,6 +58,7 @@ extension SwiftUMLBridgeCLI {
         var depth: Int = 3
 
         @Option(help: "Reserved: accepted and ignored")
+        // swiftlint:disable:next unused_declaration - declared so `--sdk` parses; it is ignored
         var sdk: String?
 
         @OptionGroup var common: CommonDiagramOptions

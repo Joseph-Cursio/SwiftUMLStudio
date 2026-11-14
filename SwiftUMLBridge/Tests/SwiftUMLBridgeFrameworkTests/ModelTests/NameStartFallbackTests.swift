@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// Where reading a dotted name's first component through the file's imports needs more than the
 /// imports: a tie Swift settles by shadowing, a typealias on the way, an extension the lookup cannot
@@ -34,25 +34,25 @@ struct NameStartFallbackTests {
     static let cases: [Case] = [
         Case(name: "a first component a scoped import shadows keeps a member the whole import's lacks", files: [
             plainFoo, fooWithV(in: "ModB"),
-            File(module: "ModC", source: "import ModA\nimport struct ModB.Foo\n\nfinal class C: Foo.V {}\n")
+            File(module: "ModC", source: "import ModA\nimport struct ModB.Foo\n\nfinal class C: Foo.V {}\n"),
         ], member: "vOnly", hiddenLabel: "Foo.V"),
         Case(name: "a scoped import shadows a first component a whole import shows, both with the member", files: [
             fooWithV(in: "ModA", member: "aOnly"), fooWithV(in: "ModB"),
-            File(module: "ModC", source: "import ModA\nimport struct ModB.Foo\n\nfinal class C: Foo.V {}\n")
+            File(module: "ModC", source: "import ModA\nimport struct ModB.Foo\n\nfinal class C: Foo.V {}\n"),
         ], member: "vOnly", hiddenLabel: "Foo.V"),
         Case(name: "a module's own type shadows the one it re-exports, its member kept", files: [
             plainFoo, fooWithV(in: "ModX", imports: "@_exported import ModA\n\n"),
-            File(module: "ModC", source: "import ModX\n\nfinal class C: Foo.V {}\n")
+            File(module: "ModC", source: "import ModX\n\nfinal class C: Foo.V {}\n"),
         ], member: "vOnly", hiddenLabel: "Foo.V"),
         Case(name: "an available type shadows an unavailable one, its member kept", files: [
             File(module: "ModA", source: "@available(*, unavailable, renamed: \"NewFoo\")\n" + plainFoo.source),
             fooWithV(in: "ModB"),
-            File(module: "ModC", source: "import ModA\nimport ModB\n\nfinal class C: Foo.V {}\n")
+            File(module: "ModC", source: "import ModA\nimport ModB\n\nfinal class C: Foo.V {}\n"),
         ], member: "vOnly", hiddenLabel: "Foo.V"),
         Case(name: "a scoped import shadows a bare name a whole import shows", files: [
             File(module: "ModA", source: "open class Base {\n    public init() {}\n    public func aOnly() {}\n}\n"),
             File(module: "ModB", source: "open class Base {\n    public init() {}\n    public func bOnly() {}\n}\n"),
-            File(module: "ModC", source: "import ModA\nimport class ModB.Base\n\nfinal class C: Base {}\n")
+            File(module: "ModC", source: "import ModA\nimport class ModB.Base\n\nfinal class C: Base {}\n"),
         ], member: "bOnly", hiddenLabel: nil),
         Case(name: "a typealias declared in an extension of a nested type is a member of that type", files: [
             File(module: "ModA", source: """
@@ -71,7 +71,7 @@ struct NameStartFallbackTests {
                     public typealias V = Base
                 }
                 """),
-            File(module: "ModA", source: "final class C: Foo.Inner.V {}\n")
+            File(module: "ModA", source: "final class C: Foo.Inner.V {}\n"),
         ], member: "baseOnly", hiddenLabel: nil),
         Case(name: "a member typealias on the way leads to the type it aliases", files: [
             File(module: "ModA", source: """
@@ -90,7 +90,7 @@ struct NameStartFallbackTests {
                     }
                 }
                 """),
-            File(module: "ModA", source: "final class C: Foo.Inner.W {}\n")
+            File(module: "ModA", source: "final class C: Foo.Inner.W {}\n"),
         ], member: "wOnly", hiddenLabel: "Foo.Inner.W"),
         Case(name: "an extension spelled through another module's typealias keeps its member", files: [
             File(module: "ModA", source: """
@@ -107,7 +107,7 @@ struct NameStartFallbackTests {
                     }
                 }
                 """),
-            File(module: "App", source: "import ModA\n\nfinal class C: Alias.V.Z {}\n")
+            File(module: "App", source: "import ModA\n\nfinal class C: Alias.V.Z {}\n"),
         ], member: "zOnly", hiddenLabel: "Foo.V.Z"),
         Case(name: "a first component the writer module aliases to another type means that type's member", files: [
             File(module: "ModA", source: """
@@ -128,8 +128,8 @@ struct NameStartFallbackTests {
                 }
                 """),
             File(module: "ModC", source: "import ModA\n\ntypealias Foo = ModA.Bar\n"),
-            File(module: "ModC", source: "import ModA\n\nfinal class C: Foo.V {}\n")
-        ], member: "barOnly", hiddenLabel: "Bar.V")
+            File(module: "ModC", source: "import ModA\n\nfinal class C: Foo.V {}\n"),
+        ], member: "barOnly", hiddenLabel: "Bar.V"),
     ]
 
     @Test("a name means the member Swift finds", arguments: cases, [false, true])
@@ -147,7 +147,7 @@ struct NameStartFallbackTests {
             ("ModB", "import ModA\n\nprivate extension ModA.Foo {\n    class V {\n        func onlyX() {}\n    }\n}\n"
                 + "\nprivate class CX: Foo.V {}\n"),
             ("ModB", "import ModA\n\nprivate extension ModA.Foo {\n    class V {\n        func onlyY() {}\n    }\n}\n"
-                + "\nprivate class CY: Foo.V {}\n")
+                + "\nprivate class CY: Foo.V {}\n"),
         ]
         let files = reversed ? [given[0], given[2], given[1]] : given
         for mode in [ExtensionVisualization.all, .merged] {
@@ -193,7 +193,7 @@ struct NameStartFallbackTests {
                 private typealias Foo = ModA.Bar
 
                 private final class CP: Foo.V {}
-                """)
+                """),
         ]
         let files = (reversed ? given.reversed() : given).map { (module: Optional($0.module), source: $0.source) }
         for mode in [ExtensionVisualization.all, .merged] {
@@ -216,7 +216,7 @@ struct NameStartFallbackTests {
             ("ModA", "public protocol Observable {\n    func onlyA()\n}\n"),
             ("ModA", "import Observation\n\n@Observable final class OwnModel {}\n"),
             ("ModB", "import Observation\n\n@Observable final class Model {}\n\nfinal class Explicit: Observable {}\n"),
-            ("ModC", "import Observation\nimport ModA\n\n@Observable final class BothModel {}\n")
+            ("ModC", "import Observation\nimport ModA\n\n@Observable final class BothModel {}\n"),
         ]
         let text = DiagramScript(items: try moduleQualifiedItems(files), configuration: Configuration()).text
         for writer in ["Model", "Explicit", "OwnModel", "BothModel"] {
@@ -239,7 +239,7 @@ struct NameStartFallbackTests {
                     }
                 }
                 """),
-            ("ModC", "extension Unicode.Scalar {\n    func mine() -> Any { value }\n}\n")
+            ("ModC", "extension Unicode.Scalar {\n    func mine() -> Any { value }\n}\n"),
         ]
         for mode in [ExtensionVisualization.all, .merged] {
             let graph = LayoutGraphBuilder.buildClassDiagram(

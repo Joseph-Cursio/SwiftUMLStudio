@@ -1,7 +1,7 @@
 import SwiftParser
 import SwiftSyntax
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// In `var a, b: Int` the syntax gives only `b` a type annotation, and SourceKit's structure gives
 /// both names the shared type. `a`'s type came from the SourceKit typename supplement until the
@@ -36,11 +36,12 @@ struct TypenameSupplementTests {
         "\u{FEFF}// caf\u{E9} \u{1F600} \u{4E2D}\u{6587}\r\nlet s = \"\u{1F600}\"\r\n"
             + "struct S {\r\n    var a, b: Int\r\n}\r\n",
         "struct Option {\n    var `default`, fallback: Int\n}\n",
-        "struct Point {}\nextension Point {\n    struct Delta { var dx, dy: Int }\n}\n"
+        "struct Point {}\nextension Point {\n    struct Delta { var dx, dy: Int }\n}\n",
     ])
     func keysAreNameOffsets(source: String) {
         let map = SyntaxStructure.buildTypenameMap(from: source, sdkPath: nil)
-        let names = Parser.parse(source: source).tokens(viewMode: .sourceAccurate)
+        let names = Parser.parse(source: source)
+            .tokens(viewMode: .sourceAccurate)
             .filter { $0.parent?.is(IdentifierPatternSyntax.self) == true && $0.text != "s" }
         #expect(names.count == 2)
         for name in names {

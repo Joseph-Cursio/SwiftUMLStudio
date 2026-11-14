@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 @Suite("SequenceScript — PlantUML")
 struct SequencePlantUMLTests {
@@ -7,17 +7,17 @@ struct SequencePlantUMLTests {
     private func makeEdges() -> [CallEdge] {
         [
             CallEdge(
-                callerType: "Foo", callerMethod: "run", calleeType: "Bar", calleeMethod: "process",
-                isAsync: false, isUnresolved: false
+                callerType: "Foo", callerMethod: "run",
+                calleeType: "Bar", calleeMethod: "process", isAsync: false, isUnresolved: false
             ),
             CallEdge(
-                callerType: "Foo", callerMethod: "run", calleeType: "Bar", calleeMethod: "finish",
-                isAsync: true, isUnresolved: false
+                callerType: "Foo", callerMethod: "run",
+                calleeType: "Bar", calleeMethod: "finish", isAsync: true, isUnresolved: false
             ),
             CallEdge(
-                callerType: "Foo", callerMethod: "run", calleeType: nil, calleeMethod: "unknownClosure",
-                isAsync: false, isUnresolved: true
-            )
+                callerType: "Foo", callerMethod: "run",
+                calleeType: nil, calleeMethod: "unknownClosure", isAsync: false, isUnresolved: true
+            ),
         ]
     }
 
@@ -41,7 +41,7 @@ struct SequencePlantUMLTests {
     @Test("ends with @enduml")
     func endsWithEnduml() {
         let script = makeScript(edges: makeEdges())
-        let lastLine = script.text.components(separatedBy: "\n").last(where: { !$0.isEmpty })
+        let lastLine = script.text.components(separatedBy: "\n").last { !$0.isEmpty }
         #expect(lastLine == "@enduml")
     }
 

@@ -1,5 +1,3 @@
-import Foundation
-
 /// Represents a single call relationship between a caller method and a callee method.
 public struct CallEdge: Sendable, Hashable {
     /// The type that contains the calling method.

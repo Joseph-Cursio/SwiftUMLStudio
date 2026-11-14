@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// `deps --package` labels each node with the module that declares it (`--types`) or with its
 /// target kind (`--modules`) in PlantUML, Mermaid and Nomnoml. The SVG document, and Studio's
@@ -15,22 +15,28 @@ struct DepsPackageSVGModuleTests {
         defer { try? FileManager.default.removeItem(at: root) }
         let files = [
             ("Sources/Core/Repo.swift", "public protocol Repo {}\npublic struct UserRepo: Repo { public init() {} }\n"),
-            ("Sources/App/main.swift", "import Core\nstruct AppRepo: Repo, Sendable {}\nprint(UserRepo())\n")
+            ("Sources/App/main.swift", "import Core\nstruct AppRepo: Repo, Sendable {}\nprint(UserRepo())\n"),
         ]
         for (path, source) in files {
             let url = root.appendingPathComponent(path)
             try FileManager.default.createDirectory(
-                at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+                at: url.deletingLastPathComponent(), withIntermediateDirectories: true
+            )
             try source.write(to: url, atomically: true, encoding: .utf8)
         }
         let description = SPMPackageDescription(name: "Demo", targets: [
-            SPMTargetDescription(name: "Core", kind: .library, path: "Sources/Core",
-                                 sources: ["Repo.swift"], dependencies: []),
-            SPMTargetDescription(name: "App", kind: .executable, path: "Sources/App",
-                                 sources: ["main.swift"], dependencies: ["Core"])
+            SPMTargetDescription(
+                name: "Core", kind: .library, path: "Sources/Core",
+                sources: ["Repo.swift"], dependencies: []
+            ),
+            SPMTargetDescription(
+                name: "App", kind: .executable, path: "Sources/App",
+                sources: ["main.swift"], dependencies: ["Core"]
+            ),
         ])
         return DependencyGraphGenerator().generateScript(
-            forPackage: description, packageRoot: root, mode: mode, with: Configuration(format: format))
+            forPackage: description, packageRoot: root, mode: mode, with: Configuration(format: format)
+        )
     }
 
     /// What the text formats label each node with (see the tests below).
@@ -105,7 +111,7 @@ struct DepsPackageSVGModuleTests {
     func cycleNodeKeepsWarning() throws {
         let model = DependencyGraphModel(edges: [
             DependencyEdge(from: "CA", toNode: "CB", kind: .conforms, fromModule: "Core", toModule: "Core"),
-            DependencyEdge(from: "CB", toNode: "CA", kind: .inherits, fromModule: "Core", toModule: "Core")
+            DependencyEdge(from: "CB", toNode: "CA", kind: .inherits, fromModule: "Core", toModule: "Core"),
         ])
         let graph = try #require(DepsScript(model: model, configuration: Configuration(format: .svg)).layoutGraph)
         #expect(graph.nodes.map(\.stereotype) == ["warning", "warning"])

@@ -25,7 +25,7 @@ struct KeywordEntryPointTests {
 
     @Test("sequence and activity draw the same diagram for either spelling", arguments: [
         ("sequence", "default", "helper()"), ("sequence", "import", "load()"),
-        ("activity", "default", "helper()"), ("activity", "import", "load()")
+        ("activity", "default", "helper()"), ("activity", "import", "load()"),
     ])
     func eitherSpelling(command: String, method: String, callee: String) throws {
         try withSourceDirectory { directory in

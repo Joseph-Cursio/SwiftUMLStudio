@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 // What a member an extension adds ranks by when no file has a module (#230): the extension's own
 // file, not the extended type's. Ranked in the type's file, every such `Foo.X` was as near as any
@@ -32,7 +32,7 @@ struct ExtensionMemberRankTests {
         "/r/Sources/D/D.swift", "extension Crate { typealias Dee = RealD }\nclass RealD {}"
     )
 
-    private func crate(_ writers: [Fixture.File] = [], reversed: Bool) -> [Fixture.File] {
+    private func crate(reversed: Bool, with writers: [Fixture.File] = []) -> [Fixture.File] {
         [Self.outer] + (reversed ? [Self.extensionD, Self.extensionC] : [Self.extensionC, Self.extensionD]) + writers
     }
 
@@ -65,9 +65,9 @@ struct ExtensionMemberRankTests {
     func sameDirectory(reversed: Bool) throws {
         let writers: [Fixture.File] = [
             ("/r/Sources/C/WC.swift", "class WC: Outer.Dee {}"),
-            ("/r/Sources/D/WD.swift", "class WD: Outer.Dee {}")
+            ("/r/Sources/D/WD.swift", "class WD: Outer.Dee {}"),
         ]
-        let files = crate(reversed ? writers.reversed() : writers, reversed: reversed)
+        let files = crate(reversed: reversed, with: reversed ? writers.reversed() : writers)
         for elements in [ElementOptions(), Self.merged] {
             #expect(supertypeLines(in: try Fixture.lines(files, .plantuml, elements)) == [
                 "RealC <|-- WC : inherits", "RealD <|-- WD : inherits"
@@ -91,7 +91,7 @@ struct ExtensionMemberRankTests {
             }
         }
         let every = writers("C") + writers("D")
-        let files = crate(reversed ? every.reversed() : every, reversed: reversed)
+        let files = crate(reversed: reversed, with: reversed ? every.reversed() : every)
         let expected = Set((1...3).flatMap { index in
             [
                 "RealC <|-- Outer.W\(index)C : inherits", "RealD <|-- Outer.W\(index)D : inherits"
@@ -124,7 +124,7 @@ struct ExtensionMemberRankTests {
             extension FA { typealias X = RC }
             class RC {}
             class WC: Foo.X {}
-            """)
+            """),
         ]
         let files: [Fixture.File] = [("/r/Sources/ModA/Foo.swift", "public struct Foo { public init() {} }")]
             + (reversed ? writers.reversed() : writers)
@@ -142,11 +142,11 @@ struct ExtensionMemberRankTests {
     func membersAndEdgeShareABox(spelling: String, reversed: Bool) throws {
         let extensions: [Fixture.File] = [
             ("/r/Sources/C/C.swift", "extension \(spelling) { typealias Dee = RealC }\nclass RealC {}"),
-            ("/r/Sources/D/D.swift", "extension \(spelling) { typealias Dee = RealD }\nclass RealD {}")
+            ("/r/Sources/D/D.swift", "extension \(spelling) { typealias Dee = RealD }\nclass RealD {}"),
         ]
         let files = [Self.outer] + (reversed ? extensions.reversed() : extensions) + [
             ("/r/Sources/D/Added.swift", "extension Outer.Dee { func added() {} }"),
-            ("/r/Sources/D/W.swift", "class W: Outer.Dee {}")
+            ("/r/Sources/D/W.swift", "class W: Outer.Dee {}"),
         ]
         let graph = LayoutGraphBuilder.buildClassDiagram(
             from: try Fixture.parsed(files), configuration: Configuration(elements: Self.merged, format: .svg)
@@ -168,7 +168,7 @@ struct ExtensionMemberRankTests {
         let targets: [Fixture.File] = [
             ("/r/Sources/A/Foo.swift", "public struct Foo { public init() {} }\npublic typealias AF = Foo"),
             ("/r/Sources/B/Foo.swift", "struct Foo { typealias X = RB }\nclass RB {}"),
-            ("/r/Sources/B/E.swift", "extension AF { typealias X = RE }\nclass RE {}\nclass W: Foo.X {}")
+            ("/r/Sources/B/E.swift", "extension AF { typealias X = RE }\nclass RE {}\nclass W: Foo.X {}"),
         ]
         let files = reversed ? targets.reversed() : targets
         #expect(supertypeLines(in: try Fixture.lines(files, .plantuml, ElementOptions(showExtensions: mode))) == [
@@ -188,7 +188,7 @@ struct ExtensionMemberRankTests {
             open class RCore { public init() {} }
             """),
             ("/r/Sources/Features/Login/E.swift", "extension \(spelling) { typealias X = RLogin }\nclass RLogin {}"),
-            ("/r/Sources/Features/Profile/W.swift", "class W: Foo.X {}")
+            ("/r/Sources/Features/Profile/W.swift", "class W: Foo.X {}"),
         ]
         #expect(supertypeLines(in: try Fixture.lines(files, .plantuml, ElementOptions(showExtensions: mode))) == [
             "RCore <|-- W : inherits"
@@ -202,7 +202,7 @@ struct ExtensionMemberRankTests {
     func internalBodyMember(mode: ExtensionVisualization) throws {
         let files: [Fixture.File] = [
             ("/r/Sources/A/Foo.swift", "public struct Foo { typealias X = RA; public init() {} }\nclass RA {}"),
-            ("/r/Sources/B/B.swift", "extension Foo { typealias X = RB }\nclass RB {}\nclass W: Foo.X {}")
+            ("/r/Sources/B/B.swift", "extension Foo { typealias X = RB }\nclass RB {}\nclass W: Foo.X {}"),
         ]
         #expect(supertypeLines(in: try Fixture.lines(files, .plantuml, ElementOptions(showExtensions: mode))) == [
             "RB <|-- W : inherits"
@@ -217,7 +217,7 @@ struct ExtensionMemberRankTests {
     func unrelatedTypeReadFirst(mode: ExtensionVisualization, reversed: Bool) throws {
         let targets: [Fixture.File] = [
             ("/r/Sources/Zed/Foo.swift", "public struct Foo { public typealias X = RZed }\npublic class RZed {}"),
-            ("/r/Sources/Lib/Foo.swift", "public struct Foo { public init() {} }")
+            ("/r/Sources/Lib/Foo.swift", "public struct Foo { public init() {} }"),
         ]
         let files = (reversed ? targets.reversed() : targets) + [
             ("/r/Sources/App/App.swift", "extension Foo { typealias X = RApp }\nclass RApp {}\nclass W: Foo.X {}")
@@ -259,7 +259,7 @@ struct ExtensionMemberRankTests {
             open class Base { public init() {} }
             class WA: Foo.V {}
             """),
-            ("/r/Sources/B/Ext.swift", "extension Foo { class V {} }")
+            ("/r/Sources/B/Ext.swift", "extension Foo { class V {} }"),
         ]
         let elements = ElementOptions(showNestedTypes: false, showExtensions: .merged)
         let ordered = reversed ? files.reversed() : files
@@ -274,7 +274,7 @@ struct ExtensionMemberRankTests {
         let files: [Fixture.File] = [
             ("/r/Sources/A/Foo.swift", "public struct Foo { public init() {} }"),
             ("/r/Sources/B/B.swift", "extension Foo { class V {} }\nclass W: Foo.V {}"),
-            ("/r/Sources/C/C.swift", "extension Foo { typealias V = RC }\nclass RC {}")
+            ("/r/Sources/C/C.swift", "extension Foo { typealias V = RC }\nclass RC {}"),
         ]
         let elements = ElementOptions(showNestedTypes: false, showExtensions: .merged)
         #expect(supertypeLines(in: try Fixture.lines(files, .plantuml, elements)) == ["Foo.V <|-- W : inherits"])

@@ -1,5 +1,3 @@
-import Foundation
-
 // MARK: - Edge End Ids
 
 /// Where `buildClassDiagram` ends each edge, kept apart so the type lookup stays a readable size.
@@ -70,7 +68,8 @@ extension LayoutGraphBuilder {
             switch end {
             case .node(let nodeId):
                 return nodeId
-            case .named(let written, let scope):
+
+            case let .named(written, scope):
                 let name = lookup.qualifiedName(ofWritten: written, from: scope)
                 guard let type = lookup.type(name, from: scope) else {
                     return fallback(
@@ -80,7 +79,8 @@ extension LayoutGraphBuilder {
                     )
                 }
                 return node(for: type, named: name.name)
-            case .declaration(let declaration, let name, let scope):
+
+            case let .declaration(declaration, name, scope):
                 if let nodeId = idForDeclaration[declaration] { return nodeId }
                 if hiddenDeclarations.contains(declaration) { return standIn(for: declaration, named: name) }
                 guard let type = lookup.type(named: name, from: scope) else {
@@ -88,7 +88,8 @@ extension LayoutGraphBuilder {
                     return fallback(named: name, resolving: lookup.sureResolvedName(of: written, from: scope))
                 }
                 return node(for: type, named: name)
-            case .extended(let declaration, let name, let scope, let isSugared):
+
+            case let .extended(declaration, name, scope, isSugared):
                 // With no type of that name visible there, the extension stands for itself.
                 guard let type = lookup.extendedType(named: name, from: scope, isSugared: isSugared) else {
                     if let nodeId = idForDeclaration[declaration] { return nodeId }
@@ -150,7 +151,9 @@ extension LayoutGraphBuilder {
         /// declared inside a type that the lookup records under that type's name, starts at one
         /// too (`startingAtAlias`, `TypeLookup.startsAtTypealias(_:from:)`).
         private func fallback(
-            named name: String, resolving resolved: @autoclosure () -> String?, throughInheritedAlias: Bool = false,
+            named name: String,
+            resolving resolve: @autoclosure () -> String?,
+            throughInheritedAlias: Bool = false,
             startingAtAlias: Bool = false
         ) -> String? {
             let spelled = extensionEnds.ends(named: name, in: lookup)
@@ -161,7 +164,7 @@ extension LayoutGraphBuilder {
             guard startsAtAlias || lookup.mayReadModule(name) else {
                 return extensionEnds.aliasSpelled(in: lookup).fallbacks[name]
             }
-            guard let resolved = resolved() else {
+            guard let resolved = resolve() else {
                 if isAlias { return spelled.unsureFallback }
                 return spelled.fallback ?? extensionEnds.aliasSpelled(in: lookup).fallbacks[name]
             }

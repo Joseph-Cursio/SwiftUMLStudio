@@ -1,14 +1,14 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 @Suite("ConsolePresenter")
 struct ConsolePresenterTests {
 
     @Test("present() completes without error")
-    func presentCompletes() async {
+    func presentCompletes() {
         let presenter = ConsolePresenter()
         let script = DiagramScript(items: [], configuration: .default)
-        await presenter.present(script: script)
+        presenter.present(script: script)
         #expect(Bool(true))
     }
 
@@ -19,11 +19,11 @@ struct ConsolePresenterTests {
     }
 
     @Test("present() does not throw")
-    func presentDoesNotThrow() async {
+    func presentDoesNotThrow() {
         let presenter = ConsolePresenter()
         let generator = ClassDiagramGenerator()
         let script = generator.generateScript(for: "struct Foo {}")
-        await presenter.present(script: script)
+        presenter.present(script: script)
         #expect(Bool(true))
     }
 }

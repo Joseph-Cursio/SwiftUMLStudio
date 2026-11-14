@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// The parser splits a composition `P & Q` into its parts on the syntax tree (#160), so an `&`
 /// left in a supertype's name belongs to that one type: a generic argument, as in
@@ -22,7 +22,7 @@ struct AmpersandInSupertypeNameTests {
     func textEdges(format: DiagramFormat) {
         #expect(edgeLines(classDiagram(Self.source, format).text) == [
             "Base <|-- Sub : inherits",
-            "`Read & Write` <|.. File : conforms to"
+            "`Read & Write` <|.. File : conforms to",
         ])
     }
 
@@ -31,7 +31,7 @@ struct AmpersandInSupertypeNameTests {
     func nomnomlEdges() {
         #expect(edgeLines(classDiagram(Self.source, .nomnoml).text) == [
             "[Sub] -:> inherits [Base]",
-            "[File] --:> conforms to [`Read\u{00A0}&\u{00A0}Write`]"
+            "[File] --:> conforms to [`Read\u{00A0}&\u{00A0}Write`]",
         ])
     }
 

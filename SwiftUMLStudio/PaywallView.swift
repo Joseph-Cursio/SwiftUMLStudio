@@ -12,28 +12,76 @@ nonisolated struct PaywallFeature: Identifiable, Hashable {
     /// diagram" is — the rest of that mode describes what you'll see rather than
     /// naming the artefact (see `SuggestionEngine`). Developer mode still uses
     /// the precise terms via `DiagramMode.rawValue`.
-    static let all: [PaywallFeature] = [
-        PaywallFeature(
+    static let all: [Self] = [
+        Self(
             title: "Execution Flows",
             description: "Trace how your code runs, step by step"
         ),
-        PaywallFeature(
+        Self(
             title: "Dependency Maps",
             description: "See how your modules depend on each other"
         ),
-        PaywallFeature(
+        Self(
             title: "Share Your Diagrams",
             description: "Copy or save your diagrams to use elsewhere"
         ),
-        PaywallFeature(
+        Self(
             title: "Choose How Diagrams Look",
             description: "Pick the diagram style that suits you"
         ),
-        PaywallFeature(
+        Self(
             title: "Unlimited Projects",
             description: "Explore as many codebases as you want"
-        )
+        ),
     ]
+}
+
+// MARK: - Subviews
+
+/// The star, the title and the strapline.
+///
+/// Reads nothing, so it is skipped on every update the purchase flow drives — products arriving,
+/// a purchase failing, the restore link reporting.
+private struct PaywallHeader: View {
+    var body: some View {
+        VStack(spacing: 8) {
+            Image(systemName: "star.circle.fill")
+                .font(.system(size: 48))
+                .foregroundStyle(.yellow)
+                .accessibilityHidden(true)
+            Text("Upgrade to Pro")
+                .font(.title.bold())
+            Text("Unlock the full power of SwiftUML Studio")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+        }
+    }
+}
+
+/// One button per product, or a loading line while the store is fetching them.
+private struct PaywallPurchaseButtons<Manager: SubscriptionProviding>: View {
+    let subscriptionManager: Manager
+
+    var body: some View {
+        VStack(spacing: 8) {
+            ForEach(subscriptionManager.products, id: \.id) { product in
+                Button {
+                    Task { await subscriptionManager.purchase(product) }
+                } label: {
+                    Text("\(product.displayName) — \(product.displayPrice)")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+            }
+            if subscriptionManager.products.isEmpty {
+                Text("Loading plans…")
+                    .foregroundStyle(.secondary)
+                    .font(.caption)
+            }
+        }
+    }
 }
 
 struct PaywallView<Manager: SubscriptionProviding>: View {
@@ -96,54 +144,6 @@ struct PaywallView<Manager: SubscriptionProviding>: View {
             Button("Not Now") { dismiss() }
                 .buttonStyle(.link)
                 .font(.caption)
-        }
-    }
-}
-
-// MARK: - Subviews
-
-/// The star, the title and the strapline.
-///
-/// Reads nothing, so it is skipped on every update the purchase flow drives — products arriving,
-/// a purchase failing, the restore link reporting.
-private struct PaywallHeader: View {
-    var body: some View {
-        VStack(spacing: 8) {
-            Image(systemName: "star.circle.fill")
-                .font(.system(size: 48))
-                .foregroundStyle(.yellow)
-                .accessibilityHidden(true)
-            Text("Upgrade to Pro")
-                .font(.title.bold())
-            Text("Unlock the full power of SwiftUML Studio")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-        }
-    }
-}
-
-/// One button per product, or a loading line while the store is fetching them.
-private struct PaywallPurchaseButtons<Manager: SubscriptionProviding>: View {
-    let subscriptionManager: Manager
-
-    var body: some View {
-        VStack(spacing: 8) {
-            ForEach(subscriptionManager.products, id: \.id) { product in
-                Button {
-                    Task { await subscriptionManager.purchase(product) }
-                } label: {
-                    Text("\(product.displayName) — \(product.displayPrice)")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
-            }
-            if subscriptionManager.products.isEmpty {
-                Text("Loading plans…")
-                    .foregroundStyle(.secondary)
-                    .font(.caption)
-            }
         }
     }
 }

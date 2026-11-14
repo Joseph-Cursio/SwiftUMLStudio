@@ -1,5 +1,3 @@
-import Foundation
-
 /// Swift type representing a diagram script (PlantUML or Mermaid)
 ///
 /// - Concurrency safety: `@unchecked` is load-bearing here, unlike on the
@@ -35,10 +33,13 @@ public struct DiagramScript: @unchecked Sendable {
         switch format {
         case .plantuml:
             text = buildPlantUMLText(configuration: configuration, definitions: definitions)
+
         case .mermaid:
             text = buildMermaidText(configuration: configuration, definitions: definitions)
+
         case .nomnoml:
             text = buildNomnomlText(configuration: configuration, definitions: definitions)
+
         case .svg:
             text = buildSVGText(items: items, configuration: configuration)
         }
@@ -124,14 +125,13 @@ public struct DiagramScript: @unchecked Sendable {
 
         if hideShowCommands.isEmpty, skinparamCommands.isEmpty {
             return ""
-        } else {
-            return """
+        }
+        return """
             ' STYLE START
             \(hideShowCommands.joined(separator: "\n"))
             \(skinparamCommands.joined(separator: "\n"))
             ' STYLE END
             """
-        }
     }
 
     func processStructureItem(item: SyntaxStructure, index _: Int) -> String? {
@@ -139,10 +139,13 @@ public struct DiagramScript: @unchecked Sendable {
         switch format {
         case .plantuml:
             return item.plantuml(context: context)
+
         case .mermaid:
             return item.mermaid(context: context)
+
         case .nomnoml:
             return item.nomnoml(context: context)
+
         case .svg:
             // SVG uses LayoutGraphBuilder directly; skip per-item text emission
             return nil

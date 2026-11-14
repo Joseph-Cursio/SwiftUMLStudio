@@ -1,6 +1,5 @@
-import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// A step along a chain of typealiases no longer uses up the lookup's depth (#248), so what ends a
 /// cycle of them is the chain coming back to an alias it followed (`AliasChain`), and what ends a
@@ -67,7 +66,7 @@ struct AliasCycleTerminationTests {
                     class W: M.V {}
                 }
             }
-            """)
+            """),
     ]
 
     @Test("the diagram is drawn", arguments: sources.map(\.name), [false, true])

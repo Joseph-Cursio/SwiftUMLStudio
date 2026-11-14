@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// When a class diagram does not draw a nested type's parent, PlantUML and Nomnoml end its edge
 /// where SVG does (`LayoutGraphBuilder.EdgeEndIds`): on a drawn extension that stands in for the
@@ -11,8 +11,12 @@ struct NestedEdgeStandInTests {
 
     /// A hand-built declaration in `file`, in `module`.
     private func declared(
-        _ kind: ElementKind, _ name: String, in file: String, module: String? = nil,
-        access: ElementAccessibility? = nil, members: [SyntaxStructure] = []
+        _ kind: ElementKind,
+        _ name: String,
+        in file: String,
+        module: String? = nil,
+        access: ElementAccessibility? = nil,
+        members: [SyntaxStructure] = []
     ) -> SyntaxStructure {
         let item = SyntaxStructure(
             accessibility: access, kind: kind, name: name, substructure: members.isEmpty ? nil : members
@@ -24,8 +28,10 @@ struct NestedEdgeStandInTests {
 
     /// `fileprivate struct Foo { struct Inner {} }` in A.swift; `fileprivate` is hidden by default.
     private func hiddenFoo() -> SyntaxStructure {
-        declared(.struct, "Foo", in: "A.swift", access: .fileprivate,
-                 members: [declared(.struct, "Inner", in: "A.swift")])
+        declared(
+            .struct, "Foo", in: "A.swift", access: .fileprivate,
+            members: [declared(.struct, "Inner", in: "A.swift")]
+        )
     }
 
     /// `extension Foo { func bar() {} }` in `file`.
@@ -72,7 +78,7 @@ struct NestedEdgeStandInTests {
     /// stand-in is A's in either order, never B's, which extends another `Foo`.
     @Test("the stand-in is the extension that sees the hidden type, whichever comes first", arguments: [
         (["B.swift", "A.swift"], "Foo0", "Foo_1"),
-        (["A.swift", "B.swift"], "Foo", "Foo")
+        (["A.swift", "B.swift"], "Foo", "Foo"),
     ])
     func standInIsTheExtensionThatSeesIt(files: [String], plantUMLId: String, svgId: String) {
         let items = [hiddenFoo()] + files.map(fooExtension(in:))
@@ -83,12 +89,16 @@ struct NestedEdgeStandInTests {
     /// The stand-in is found by the hidden type's qualified name, `Outer.Foo`, not its short name.
     @Test("an extension stands in for a hidden nested type")
     func standInForHiddenNestedType() {
-        let hiddenNested = declared(.struct, "Foo", in: "A.swift", access: .fileprivate,
-                                    members: [declared(.struct, "Inner", in: "A.swift")])
+        let hiddenNested = declared(
+            .struct, "Foo", in: "A.swift", access: .fileprivate,
+            members: [declared(.struct, "Inner", in: "A.swift")]
+        )
         let items = [
             declared(.struct, "Outer", in: "A.swift", members: [hiddenNested]),
-            declared(.extension, "Outer.Foo", in: "A.swift",
-                     members: [SyntaxStructure(kind: .functionMethodInstance, name: "bar")])
+            declared(
+                .extension, "Outer.Foo", in: "A.swift",
+                members: [SyntaxStructure(kind: .functionMethodInstance, name: "bar")]
+            ),
         ]
         #expect(edges(items, .plantuml) == ["Outer.Foo +-- Outer.Foo.Inner"])
         #expect(edges(items, .svg) == ["Outer.Foo -> Outer.Foo.Inner"])
@@ -130,8 +140,10 @@ struct NestedEdgeStandInTests {
         let items = [
             declared(.struct, "Foo", in: "A.swift", module: "ModA", access: .public),
             declared(.struct, "Foo", in: "B.swift", module: "ModB", access: .public),
-            declared(.extension, "Foo", in: "B.swift", module: "ModB",
-                     members: [declared(.struct, "Inner", in: "B.swift", module: "ModB")])
+            declared(
+                .extension, "Foo", in: "B.swift", module: "ModB",
+                members: [declared(.struct, "Inner", in: "B.swift", module: "ModB")]
+            ),
         ]
         #expect(edges(items, .plantuml, .hidden) == ["Foo0 +-- Foo.Inner"])
         #expect(edges(items, .nomnoml, .hidden) == ["[Foo0] +- [Foo.Inner]"])

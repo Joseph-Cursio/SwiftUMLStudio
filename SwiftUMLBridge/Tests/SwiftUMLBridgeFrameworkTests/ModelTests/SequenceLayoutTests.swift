@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 @Suite("SequenceLayout Tests")
 struct SequenceLayoutTests {

@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 // What a name written inside a type means when that type has no member of the name, but another
 // same-named type does (#252): `class W: X` inside `extension Foo`, where only another module's
@@ -15,7 +15,7 @@ enum ModuleFixture {
     typealias File = (module: String?, source: String)
 
     static func inheritsLines(
-        _ files: [File], mode: ExtensionVisualization = .all, reversed: Bool
+        _ files: [File], reversed: Bool, mode: ExtensionVisualization = .all
     ) throws -> Set<String> {
         let items = try moduleQualifiedItems(reversed ? files.reversed() : files)
         let configuration = Configuration(elements: ElementOptions(showExtensions: mode))
@@ -26,8 +26,10 @@ enum ModuleFixture {
     static func writerEdges(_ files: [File], mode: ExtensionVisualization, reversed: Bool) throws -> [String] {
         let items = try moduleQualifiedItems(reversed ? files.reversed() : files)
         let configuration = Configuration(elements: ElementOptions(showExtensions: mode), format: .svg)
-        return LayoutGraphBuilder.buildClassDiagram(from: items, configuration: configuration).edges
-            .map { "\($0.sourceId) -> \($0.targetId)" }.filter { $0.contains("W ->") }
+        return LayoutGraphBuilder.buildClassDiagram(from: items, configuration: configuration)
+            .edges
+            .map { "\($0.sourceId) -> \($0.targetId)" }
+            .filter { $0.contains("W ->") }
     }
 }
 
@@ -51,9 +53,9 @@ struct EnclosingTypeMissingMemberTests {
             extension AF { typealias X = RE }
             class RE {}
             extension Foo { class W: X {} }
-            """)
+            """),
         ]
-        #expect(try ModuleFixture.inheritsLines(files, mode: mode, reversed: reversed) == ["X <|-- Foo.W : inherits"])
+        #expect(try ModuleFixture.inheritsLines(files, reversed: reversed, mode: mode) == ["X <|-- Foo.W : inherits"])
         #expect(try ModuleFixture.writerEdges(files, mode: mode, reversed: reversed) == ["Foo.W -> X"])
     }
 
@@ -68,9 +70,9 @@ struct EnclosingTypeMissingMemberTests {
             open class RA { public init() {} }
             """),
             ("B", "import A\nstruct Foo {}\nclass X {}"),
-            ("B", "import A\nextension Foo { class W: X {} }")
+            ("B", "import A\nextension Foo { class W: X {} }"),
         ]
-        #expect(try ModuleFixture.inheritsLines(files, mode: mode, reversed: reversed) == ["X <|-- Foo.W : inherits"])
+        #expect(try ModuleFixture.inheritsLines(files, reversed: reversed, mode: mode) == ["X <|-- Foo.W : inherits"])
         #expect(try ModuleFixture.writerEdges(files, mode: mode, reversed: reversed) == ["Foo.W -> X"])
     }
 
@@ -86,9 +88,9 @@ struct EnclosingTypeMissingMemberTests {
             class RE {}
             struct Foo { class W: X {} }
             class X {}
-            """)
+            """),
         ]
-        #expect(try ModuleFixture.inheritsLines(files, mode: mode, reversed: reversed) == ["X <|-- Foo.W : inherits"])
+        #expect(try ModuleFixture.inheritsLines(files, reversed: reversed, mode: mode) == ["X <|-- Foo.W : inherits"])
         #expect(try ModuleFixture.writerEdges(files, mode: mode, reversed: reversed) == ["Foo.W -> X"])
     }
 
@@ -105,9 +107,9 @@ struct EnclosingTypeMissingMemberTests {
             extension AF { typealias X = RE }
             class RE {}
             extension Foo { struct Inner { class W: X {} } }
-            """)
+            """),
         ]
-        #expect(try ModuleFixture.inheritsLines(files, mode: mode, reversed: reversed)
+        #expect(try ModuleFixture.inheritsLines(files, reversed: reversed, mode: mode)
             == ["X <|-- Foo.Inner.W : inherits"])
         #expect(try ModuleFixture.writerEdges(files, mode: mode, reversed: reversed) == ["Foo.Inner.W -> X"])
     }
@@ -125,9 +127,9 @@ struct EnclosingTypeMissingMemberTests {
             extension AF { typealias X = RE }
             class RE {}
             extension Foo { class W: X {} }
-            """)
+            """),
         ]
-        #expect(try ModuleFixture.inheritsLines(files, mode: mode, reversed: reversed) == ["X <|-- Foo.W : inherits"])
+        #expect(try ModuleFixture.inheritsLines(files, reversed: reversed, mode: mode) == ["X <|-- Foo.W : inherits"])
         #expect(try ModuleFixture.writerEdges(files, mode: mode, reversed: reversed).isEmpty)
     }
 
@@ -141,9 +143,9 @@ struct EnclosingTypeMissingMemberTests {
         let files: [ModuleFixture.File] = [
             ("A", "public struct Foo { public init() {} }"),
             ("A", "extension Foo { public typealias X = RA }\nopen class RA { public init() {} }"),
-            ("B", "import A\nclass X {}\nextension Foo { class W: X {} }")
+            ("B", "import A\nclass X {}\nextension Foo { class W: X {} }"),
         ]
-        #expect(try ModuleFixture.inheritsLines(files, mode: mode, reversed: reversed) == ["RA <|-- Foo.W : inherits"])
+        #expect(try ModuleFixture.inheritsLines(files, reversed: reversed, mode: mode) == ["RA <|-- Foo.W : inherits"])
         #expect(try ModuleFixture.writerEdges(files, mode: mode, reversed: reversed) == ["Foo.W -> RA"])
     }
 
@@ -159,9 +161,9 @@ struct EnclosingTypeMissingMemberTests {
             public typealias AF = Foo
             """),
             ("B", "import A\nstruct Foo {}\nclass X {}"),
-            ("B", "import A\nextension AF { class W: X {} }")
+            ("B", "import A\nextension AF { class W: X {} }"),
         ]
-        let lines = try ModuleFixture.inheritsLines(files, mode: mode, reversed: reversed)
+        let lines = try ModuleFixture.inheritsLines(files, reversed: reversed, mode: mode)
         #expect(lines.count == 1 && lines.allSatisfy { $0.hasPrefix("RA <|-- ") }, "\(lines)")
     }
 
@@ -183,7 +185,7 @@ struct EnclosingTypeMissingMemberTests {
             class RC {}
             class X {}
             extension Foo { class W: X {} }
-            """)
+            """),
         ]
         let lines = try ModuleFixture.inheritsLines(files, reversed: reversed)
         #expect(lines.count == 1 && !lines.contains("X <|-- Foo.W : inherits"), "\(lines)")
@@ -206,7 +208,7 @@ struct EnclosingTypeMissingMemberTests {
             extension AF { typealias X = RE }
             class RE {}
             extension Foo { class W: X {} }
-            """)
+            """),
         ]
         let lines = try NearestDirectoryFixture.lines(reversed ? files.reversed() : files, .plantuml)
         withKnownIssue("without --package, the type around the writer is not told from another") {

@@ -32,16 +32,22 @@ struct DiagramInspectorStrip: View {
         switch viewModel.diagramMode {
         case .sequenceDiagram:
             SequenceControlsView(viewModel: viewModel)
+
         case .activityDiagram:
             ActivityControlsView(viewModel: viewModel)
+
         case .dependencyGraph:
             depsPicker
+
         case .stateMachine:
             stateMachinePicker
+
         case .classDiagram:
             EmptyView()
+
         case .erDiagram:
             EmptyView()
+
         case .componentDiagram:
             EmptyView()
         }

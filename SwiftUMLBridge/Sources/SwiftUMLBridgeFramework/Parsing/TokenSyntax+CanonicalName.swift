@@ -1,6 +1,14 @@
 import SwiftParser
 import SwiftSyntax
 
+/// Writes each identifier token as its `canonicalName`, leaving its trivia alone.
+private final class CanonicalNameRewriter: SyntaxRewriter {
+    override func visit(_ token: TokenSyntax) -> TokenSyntax {
+        let name = token.canonicalName
+        return name == token.text ? token : token.detached.with(\.tokenKind, .identifier(name))
+    }
+}
+
 extension TokenSyntax {
     /// The name as Swift reads it: `` `Plain` `` is `Plain`, one identifier spelt two ways. A name
     /// that needs its backticks where it is declared keeps them, so it still matches itself: a
@@ -119,13 +127,5 @@ private extension String {
     var isBareKeywordMember: Bool {
         !isEmpty && !contains("`") && !isValidSwiftIdentifier(for: .variableName)
             && isValidSwiftIdentifier(for: .memberAccess)
-    }
-}
-
-/// Writes each identifier token as its `canonicalName`, leaving its trivia alone.
-private final class CanonicalNameRewriter: SyntaxRewriter {
-    override func visit(_ token: TokenSyntax) -> TokenSyntax {
-        let name = token.canonicalName
-        return name == token.text ? token : token.detached.with(\.tokenKind, .identifier(name))
     }
 }

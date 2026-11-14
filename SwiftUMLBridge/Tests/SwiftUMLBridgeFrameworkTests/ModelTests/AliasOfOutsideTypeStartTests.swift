@@ -1,6 +1,5 @@
-import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// A dotted name's first component that is a typealias of a type outside the diagram starts the
 /// name at that type: after `typealias Array = Date`, `Array.V` is `Date.V`. The lookup knew only
@@ -44,14 +43,14 @@ struct AliasOfOutsideTypeStartTests {
                 import Foundation
                 enum E { typealias Array = Date; struct W1: Array.V {} }
                 enum F { typealias Array = Data; struct W2: Array.V {} }
-                """
+                """,
         ], expected: ["P2 <|.. E.W1 : conforms to", "P3 <|.. F.W2 : conforms to"]),
         Case(name: "two enclosing types, with no member recorded under the name as written", files: [
             protocols + "\nextension Date { typealias V = P2 }\nextension Data { typealias V = P3 }", """
                 import Foundation
                 enum E { typealias Array = Date; struct W1: Array.V {} }
                 enum F { typealias Array = Data; struct W2: Array.V {} }
-                """
+                """,
         ], expected: ["P2 <|.. E.W1 : conforms to", "P3 <|.. F.W2 : conforms to"]),
         Case(name: "an alias of sugar", files: [
             members, "enum E2 { typealias Arr = [Int]; struct W2: Arr.V {} }"
@@ -61,7 +60,7 @@ struct AliasOfOutsideTypeStartTests {
         ], expected: ["P2 <|.. E.W : conforms to"]),
         Case(name: "control: the outside type itself", files: [
             members, "struct W0: Array.V {}"
-        ], expected: ["P1 <|.. W0 : conforms to"])
+        ], expected: ["P1 <|.. W0 : conforms to"]),
     ]
 
     /// Each case is read with its files in the order given and reversed, so no answer comes from

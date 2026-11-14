@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// A `{…}` group in an include or exclude entry expands the entry into one entry per option, so
 /// a brace entry means exactly the list of its expansions (#58). Groups used to become a regex
@@ -18,7 +18,7 @@ struct GlobBraceOptionTests {
             "Bar.swift", "BarKit.swift",
             "Mock.swift", "MockNetwork.swift", "Stub.swift",
             "Sub/Foo.swift", "Sub/BarKit.swift", "Sub/Deep/Foo.swift",
-            "Src/C.swift", "Src/A/B.swift"
+            "Src/C.swift", "Src/A/B.swift",
         ]
 
         let root: URL
@@ -95,7 +95,7 @@ struct GlobBraceOptionTests {
         BraceCase(pattern: "Foo*.swift", expected: [
             "Foo.a.swift", "Foo.swift", "FooKit.swift", "FooTests.swift", "FooXa.swift"
         ]),
-        BraceCase(pattern: "{Foo,Bar}.swift", expected: ["Bar.swift", "Foo.swift"])
+        BraceCase(pattern: "{Foo,Bar}.swift", expected: ["Bar.swift", "Foo.swift"]),
     ]
 
     @Test("a brace option selects what the same glob selects outside braces", arguments: braceCases)
@@ -114,7 +114,7 @@ struct GlobBraceOptionTests {
         ("Mock*", "*Tests", ".swift"),
         ("Src/**", "Sub", "/*.swift"),
         ("**", "Sub", "/Foo.swift"),
-        ("Foo", "Bar", ".swift")
+        ("Foo", "Bar", ".swift"),
     ])
     func braceExpansionDistributes(left: String, right: String, rest: String) throws {
         let fixture = try Fixture()
@@ -168,7 +168,7 @@ struct GlobBraceOptionTests {
         #expect(fixture.collected(honoring: options) == [
             "Bar.swift", "Foo.a.swift", "Foo.swift", "FooTests.swift", "FooXa.swift",
             "Src/A/B.swift", "Src/C.swift", "Stub.swift", "Sub/Deep/Foo.swift", "Sub/Foo.swift",
-            "a$b.swift", "a^b.swift", "c.swift"
+            "a$b.swift", "a^b.swift", "c.swift",
         ])
     }
 
@@ -216,7 +216,7 @@ struct GlobBraceOptionTests {
         ("<<<9>>>{a,b}.swift", "<<<9>>>a.swift,<<<9>>>b.swift"),
         ("Sources/<<<0>>>.swift,{Foo,Bar}.swift", "Sources/<<<0>>>.swift,Foo.swift,Bar.swift"),
         // No path holds a NUL; a list with one is left alone.
-        ("a\u{0}{b,c}", "a\u{0}{b,c}")
+        ("a\u{0}{b,c}", "a\u{0}{b,c}"),
     ])
     func expandingBracesExpands(paths: String, expected: String) {
         #expect(expandingBraces(in: paths) == expected)

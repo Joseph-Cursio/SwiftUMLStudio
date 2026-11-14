@@ -1,9 +1,7 @@
-import Foundation
-
 /// Stereotypes for entity types
 public struct Stereotypes: Codable, Sendable {
-    public static var `default`: Stereotypes {
-        Stereotypes(
+    public static var `default`: Self {
+        Self(
             classStereotype: Stereotype.class,
             structStereotype: Stereotype.struct,
             extensionStereotype: Stereotype.extension,
@@ -33,6 +31,14 @@ public struct Stereotypes: Codable, Sendable {
     public var `protocol`: Stereotype?
 }
 
+/// Spotted character with background color
+public struct Spot: Codable, Sendable {
+    /// The single character drawn inside the stereotype spot (e.g. `C` for class).
+    public var character: Character
+    /// The spot's background color.
+    public var color: Color
+}
+
 /// Spotted character with background color and optional name for a stereotype.
 ///
 /// PlantUML only. The spot — a single character and a colour — is PlantUML
@@ -52,32 +58,24 @@ public struct Stereotype: Codable, Sendable {
         return "<< (\(spot.character), \(spot.color.rawValue)) \(name) >>"
     }
 
-    public static let `class` = Stereotype(
+    public static let `class` = Self(
         spot: Spot(character: "C", color: .darkSeaGreen)
     )
-    public static let `struct` = Stereotype(
+    public static let `struct` = Self(
         name: "struct", spot: Spot(character: "S", color: .skyBlue)
     )
-    public static let `extension` = Stereotype(
+    public static let `extension` = Self(
         name: "extension", spot: Spot(character: "X", color: .orchid)
     )
-    public static let `enum` = Stereotype(
+    public static let `enum` = Self(
         name: "enum", spot: Spot(character: "E", color: .lightSteelBlue)
     )
-    public static let `protocol` = Stereotype(
+    public static let `protocol` = Self(
         name: "protocol", spot: Spot(character: "P", color: .goldenRod)
     )
-    public static let actor = Stereotype(
+    public static let actor = Self(
         name: "actor", spot: Spot(character: "A", color: .cadetBlue)
     )
-}
-
-/// Spotted character with background color
-public struct Spot: Codable, Sendable {
-    /// The single character drawn inside the stereotype spot (e.g. `C` for class).
-    public var character: Character
-    /// The spot's background color.
-    public var color: Color
 }
 
 extension Character: @retroactive Codable {

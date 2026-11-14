@@ -1,4 +1,3 @@
-import Foundation
 import SwiftSyntax
 
 /// Control-flow walkers for `ActivityGraphBuilder`: if/guard/switch, `#if`, loops,
@@ -52,6 +51,7 @@ extension ActivityGraphBuilder {
         switch elseBody {
         case .ifExpr(let elseIf):
             wireBranch(walkIfExpr(elseIf), from: decisionId, to: mergeId, label: "false")
+
         case .codeBlock(let elseBlock):
             wireBranch(walkBlock(elseBlock.statements), from: decisionId, to: mergeId, label: "false")
         }
@@ -89,6 +89,7 @@ extension ActivityGraphBuilder {
             switch element {
             case .switchCase(let switchCase):
                 return [switchCase]
+
             case .ifConfigDecl(let ifConfig):
                 return ifConfig.clauses.flatMap { clause -> [SwitchCaseSyntax] in
                     guard case .switchCases(let nested)? = clause.elements else { return [] }

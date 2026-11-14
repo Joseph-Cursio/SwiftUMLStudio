@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// After `typealias Alias = Real`, `extension Alias {}` extends `Real`: its members merge into
 /// `Real`, its `ext` edge ends on `Real`, and a type nested in it hangs off `Real`. The parser
@@ -156,7 +156,8 @@ struct TypealiasExtensionTests {
             """, file: "B.swift", module: "ModB")
         let merged = Configuration(elements: ElementOptions(showExtensions: .merged), format: .plantuml)
         let text = DiagramScript(items: modA + modB, configuration: merged).text
-        let importedBox = text.components(separatedBy: "class \"Inner\" as Inner ").dropFirst().first?
+        let importedBox = text.components(separatedBy: "class \"Inner\" as Inner ")
+            .dropFirst().first?
             .prefix { $0 != "}" } ?? ""
         #expect(!importedBox.contains("fromB"))
         let nestedBox = text.components(separatedBy: "as Outer.Inner ").dropFirst().first?.prefix { $0 != "}" } ?? ""

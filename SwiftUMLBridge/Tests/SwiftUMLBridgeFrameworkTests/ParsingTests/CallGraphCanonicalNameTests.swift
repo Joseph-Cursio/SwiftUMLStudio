@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// `` `Plain` `` and `Plain` are one identifier, so sequence and activity diagrams file a method,
 /// and the calls to it, under one name however each is spelt, and an entry point typed with
@@ -220,7 +220,7 @@ struct CallGraphCanonicalNameTests {
     func neededBackticks() {
         #expect(CallGraphExtractor.extract(from: Self.needed).methods == [
             "Keyed.`class`", "Keyed.`default`", "Keyed.start",
-            "`Foo Bar`.deep", "`Foo Bar`.helper", "`Foo Bar`.start"
+            "`Foo Bar`.deep", "`Foo Bar`.helper", "`Foo Bar`.start",
         ])
         #expect(traversed(Self.needed, from: "`Foo Bar`", "start") == [
             "`Foo Bar`.start->`Foo Bar`.helper", "`Foo Bar`.helper->`Foo Bar`.deep"

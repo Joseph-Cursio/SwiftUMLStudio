@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// What a name written inside an extension means once `--merge-extensions` moves the extension's
 /// members into its type, and inside an extension spelled through typealiases. Merging must not
@@ -153,7 +153,7 @@ struct MergedExtensionScopeTests {
           arguments: [
             ("typealias Day = Date\nextension Date { struct Box {} }", "Day.Box"),
             ("struct Outer { struct Inner {} }\ntypealias Crate = Outer\nextension Crate { typealias Alias = Inner }",
-             "Crate.Alias")
+             "Crate.Alias"),
           ])
     func projectTypeSpelledThroughAliasesMerges(declarations: String, extended: String) {
         let source = """

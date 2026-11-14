@@ -1,6 +1,3 @@
-import Foundation
-import SwiftUMLBridgeFramework
-
 /// Pure logic shared by every `handleSuggestion` dispatcher.
 ///
 /// Extracted from `DetailPaneViews`, `ExplorerSidebar`, and `ExplorerDetailView`
@@ -24,11 +21,14 @@ enum SuggestionDispatcher {
         switch suggestion.action {
         case .sequenceDiagram(let entryPoint), .activityDiagram(let entryPoint):
             viewModel.entryPoint = entryPoint
+
         case .dependencyGraph(let mode):
             viewModel.depsMode = mode
+
         case .stateMachine(let identifier):
             viewModel.refreshStateMachines()
             viewModel.stateIdentifier = identifier
+
         case .classDiagram, .erDiagram, .componentDiagram:
             break
         }

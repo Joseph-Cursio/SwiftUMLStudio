@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// A type written across lines is the type written on one line: `Swift` then `.Equatable` on the
 /// next line is `Swift.Equatable`. The builder named it `"Swift\n    .Equatable"`, which split the
@@ -111,7 +111,7 @@ struct MultilineTypeNameTests {
         let control = supertypes(Self.oneLine)
         #expect(control == [
             "Circle: Swift.Equatable", "Circle: Shape", "Square: Swift.Hashable", "Sub: Outer.Base",
-            "Concrete: Generic<Int>", "Pair: Equatable", "Pair: Sendable", "Box: Swift.Equatable"
+            "Concrete: Generic<Int>", "Pair: Equatable", "Pair: Sendable", "Box: Swift.Equatable",
         ])
         #expect(supertypes(Self.split) == control)
     }
@@ -169,7 +169,7 @@ struct MultilineTypeNameTests {
         ("(\n    Int,\n    String\n) -> Void", "(Int, String) -> Void"),
         ("[\n    String: Int\n]", "[String: Int]"),
         ("Equatable\n    & Sendable", "Equatable & Sendable"),
-        ("Swift\n    .`Equatable`", "Swift.Equatable")
+        ("Swift\n    .`Equatable`", "Swift.Equatable"),
     ])
     func joins(written: String, read: String) {
         #expect(written.singleLineTypeName == read)
@@ -178,7 +178,7 @@ struct MultilineTypeNameTests {
     @Test("a comment in a break goes with it; a comment within a line stays", arguments: [
         ("Swift // the standard library's\n    .Equatable", "Swift.Equatable"),
         ("Swift /* the\n standard library */ .Equatable", "Swift.Equatable"),
-        ("Swift /* stdlib */ .Hashable", "Swift /* stdlib */ .Hashable")
+        ("Swift /* stdlib */ .Hashable", "Swift /* stdlib */ .Hashable"),
     ])
     func comments(written: String, read: String) {
         #expect(written.singleLineTypeName == read)

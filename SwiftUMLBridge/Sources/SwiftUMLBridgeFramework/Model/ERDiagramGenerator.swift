@@ -8,7 +8,9 @@ import Foundation
 /// the same merged `ERModel` so a project that mixes the two stacks renders
 /// a single diagram. GRDB schemas are deferred to a follow-up commit.
 public struct ERDiagramGenerator: ERDiagramGenerating, Sendable {
-    public init() {}
+    public init() {
+        // Public because a struct's implicit initializer is internal; there is no state to set.
+    }
 
     public func generateScript(
         for paths: [String],
@@ -24,8 +26,10 @@ public struct ERDiagramGenerator: ERDiagramGenerating, Sendable {
 
         for bundle in coreDataBundles {
             guard let model = try? CoreDataModelExtractor.extract(from: bundle) else { continue }
-            mergeIn(model, entities: &entities, relationships: &relationships,
-                    seenEntity: &seenEntity, seenRelationship: &seenRelationship)
+            mergeIn(
+                model, entities: &entities, relationships: &relationships,
+                seenEntity: &seenEntity, seenRelationship: &seenRelationship
+            )
         }
 
         // Step 2 — fall through to Swift-source parsing. Each file is
@@ -41,12 +45,16 @@ public struct ERDiagramGenerator: ERDiagramGenerating, Sendable {
             for file in files {
                 guard let source = try? String(contentsOf: file, encoding: .utf8) else { continue }
                 let swiftDataModel = ERModelExtractor.extract(from: source, file: file)
-                mergeIn(swiftDataModel, entities: &entities, relationships: &relationships,
-                        seenEntity: &seenEntity, seenRelationship: &seenRelationship)
+                mergeIn(
+                    swiftDataModel, entities: &entities, relationships: &relationships,
+                    seenEntity: &seenEntity, seenRelationship: &seenRelationship
+                )
 
                 let grdbModel = PersistenceSchemaExtractor.extract(from: source, file: file)
-                mergeIn(grdbModel, entities: &entities, relationships: &relationships,
-                        seenEntity: &seenEntity, seenRelationship: &seenRelationship)
+                mergeIn(
+                    grdbModel, entities: &entities, relationships: &relationships,
+                    seenEntity: &seenEntity, seenRelationship: &seenRelationship
+                )
             }
         }
 

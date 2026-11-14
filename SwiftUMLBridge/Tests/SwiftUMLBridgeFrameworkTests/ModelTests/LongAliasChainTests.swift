@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// Swift follows a chain of typealiases to its end, however long, and rejects only a cycle. Each
 /// alias step of the lookup used up a level of the depth guard of 8 that ends its cycles, so a
@@ -40,44 +40,54 @@ struct LongAliasChainTests {
 
     static let cases: [Case] = [8, 9, 10, 20, 64, 1_000].map { chain($0) } + [
         chain(20, module: nil),
-        Case(name: "each link in its own file", files: [File(module: "App", source: "protocol P1 {}")]
-            + (1...12).map { File(module: "App", source: links($0...$0)) }
-            + [File(module: "App", source: "struct W: A12 {}")],
-             expected: ["P1 <|.. W : conforms to"], svgEdges: ["W -> P1"]),
+        Case(
+            name: "each link in its own file", files: [File(module: "App", source: "protocol P1 {}")]
+                + (1...12).map { File(module: "App", source: links($0...$0)) }
+                + [File(module: "App", source: "struct W: A12 {}")],
+            expected: ["P1 <|.. W : conforms to"], svgEdges: ["W -> P1"]
+        ),
         Case(name: "the chain across two modules", files: [
             File(module: "ModA", source: "public protocol P1 {}\n" + links(1...6, access: "public ")),
-            File(module: "ModB", source: "import ModA\n\(links(7...12))\nstruct W: A12 {}")
+            File(module: "ModB", source: "import ModA\n\(links(7...12))\nstruct W: A12 {}"),
         ], expected: ["P1 <|.. W : conforms to"], svgEdges: ["W -> P1"]),
         Case(name: "the chain in an enclosing type", files: [
             File(module: "App", source: "protocol P1 {}\nenum E {\n\(links(1...12))\nstruct W: A12 {}\n}")
         ], expected: ["P1 <|.. E.W : conforms to"], svgEdges: ["E.W -> P1"]),
         Case(name: "a dotted name through the chain", files: [
             File(module: "App", source: "protocol P1 {}\nenum NS { typealias V = P1 }\n\(links(1...12, base: "NS"))\n"
-                + "struct W: A12.V {}")
+                + "struct W: A12.V {}"),
         ], expected: ["P1 <|.. W : conforms to"], svgEdges: ["W -> P1"]),
-        Case(name: "an extension spelled through the chain", files: [extended],
-             expected: ["P1 <|.. A12 : conforms to", "W <.. A12 : ext"], svgEdges: ["A12 -> P1", "A12 -> W"]),
-        Case(name: "an extension spelled through the chain, merged", files: [extended],
-             expected: ["P1 <|.. W : conforms to"], svgEdges: ["W -> P1"], extensions: .merged),
+        Case(
+            name: "an extension spelled through the chain", files: [extended],
+            expected: ["P1 <|.. A12 : conforms to", "W <.. A12 : ext"], svgEdges: ["A12 -> P1", "A12 -> W"]
+        ),
+        Case(
+            name: "an extension spelled through the chain, merged", files: [extended],
+            expected: ["P1 <|.. W : conforms to"], svgEdges: ["W -> P1"], extensions: .merged
+        ),
         Case(name: "a link spelled through its module", files: [
             File(module: "ModA", source: "public protocol P1 {}\n" + links(1...6, access: "public ")),
-            File(module: "ModB", source: "import ModA\ntypealias A7 = ModA.A6\n\(links(8...12))\nstruct W: A12 {}")
+            File(module: "ModB", source: "import ModA\ntypealias A7 = ModA.A6\n\(links(8...12))\nstruct W: A12 {}"),
         ], expected: ["P1 <|.. W : conforms to"], svgEdges: ["W -> P1"]),
         Case(name: "a chain from sugar", files: [
             File(module: "App", source: "protocol P1 {}\nextension [Int] { typealias Box = P1 }\n"
-                + "\(links(1...12, base: "[Int].Box"))\nstruct W: A12 {}")
+                + "\(links(1...12, base: "[Int].Box"))\nstruct W: A12 {}"),
         ], expected: ["P1 <|.. W : conforms to"], svgEdges: ["W -> P1"]),
         // Without a module, `A1.Inner` reads no member an extension adds even at one link, as no
         // start is worked out, so only the run with a module shows the chain.
         Case(name: "a member an extension adds to the chain's type", files: [
             File(module: "App", source: "protocol P1 {}\nstruct S1 {}\nextension S1 { typealias Inner = P1 }\n"
-                + "\(links(1...12, base: "S1"))\nstruct X: A12.Inner {}")
-        ], expected: ["P1 <|.. X : conforms to"], svgEdges: ["X -> P1"], extensions: .merged)
+                + "\(links(1...12, base: "S1"))\nstruct X: A12.Inner {}"),
+        ], expected: ["P1 <|.. X : conforms to"], svgEdges: ["X -> P1"], extensions: .merged),
     ] + (["App", nil] as [String?]).map { module in
-        Case(name: "a type nested in an extension spelled through the chain\(module == nil ? ", no module" : "")",
-             files: [File(module: module, source: "protocol P1 {}\nstruct S1 { typealias Q = P1 }\n"
-                + "\(links(1...12, base: "S1"))\nextension A12 { struct Y: Q {} }")],
-             expected: ["P1 <|.. A12.Y : conforms to", "S1 <.. A12 : ext"], svgEdges: ["A12.Y -> P1"])
+        Case(
+            name: "a type nested in an extension spelled through the chain\(module == nil ? ", no module" : "")",
+            files: [
+               File(module: module, source: "protocol P1 {}\nstruct S1 { typealias Q = P1 }\n"
+                   + "\(links(1...12, base: "S1"))\nextension A12 { struct Y: Q {} }"),
+            ],
+            expected: ["P1 <|.. A12.Y : conforms to", "S1 <.. A12 : ext"], svgEdges: ["A12.Y -> P1"]
+        )
     }
 
     static let extended = File(
@@ -118,7 +128,7 @@ struct LongAliasChainTests {
         let lines = ["<|", " : ext"].flatMap { ClassDiagramIds.lines(of: text, containing: $0) }
         #expect(Set(lines) == [
             "P1 <|.. A1000 : conforms to", "S1 <.. A1000 : ext", "P1 <|.. A1000.Y : conforms to",
-            "P1 <|.. X : conforms to"
+            "P1 <|.. X : conforms to",
         ])
         let svgItems = try moduleQualifiedItems([(module: "App", source: source)])
         let graph = LayoutGraphBuilder.buildClassDiagram(from: svgItems, configuration: Configuration(format: .svg))

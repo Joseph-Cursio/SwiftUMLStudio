@@ -1,6 +1,5 @@
 import Foundation
 import Testing
-@testable import SwiftUMLBridgeFramework
 
 /// `--entry` follows a chain of typealiases to its end, however long, as Swift does (#248): a
 /// plain chain stopped after 9 links, and a chain whose every link reads one more first part,
@@ -48,7 +47,7 @@ struct LongAliasChainEntryTests {
     /// Swift rejects both; the entry must still come back.
     @Test("a cycle of aliases ends", arguments: [
         "typealias A = B\ntypealias B = A\n",
-        "typealias A = B.X\ntypealias B = A.Y\n"
+        "typealias A = B.X\ntypealias B = A.Y\n",
     ])
     func cycleEnds(aliases: String) throws {
         let texts = try Self.both([("Pkg/A.swift", Self.real + aliases)], "A", "run")

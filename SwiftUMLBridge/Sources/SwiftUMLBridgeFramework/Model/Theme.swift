@@ -2,9 +2,9 @@ import Foundation
 
 /// Built-in themes for PlantUML diagrams
 public enum Theme: Codable, Sendable {
-    public static let preferred: [Theme] = [
+    public static let preferred: [Self] = [
         .amiga, .carbonGray, .cloudscapeDesign, .mars, .minty,
-        .plain, .reddressDarkblue, .sketchy, .sketchyOutline, .toy
+        .plain, .reddressDarkblue, .sketchy, .sketchyOutline, .toy,
     ]
 
     case amiga, awsOrange, blackKnight, bluegray, blueprint
@@ -19,7 +19,7 @@ public enum Theme: Codable, Sendable {
 
     /// Every case above but `directive`, which carries a value and so keeps `Theme` from being
     /// `CaseIterable`. A case added above goes here too; `ThemeTests` pins the count.
-    static let builtIn: [Theme] = [
+    static let builtIn: [Self] = [
         .amiga, .awsOrange, .blackKnight, .bluegray, .blueprint,
         .carbonGray, .ceruleanOutline, .cerulean, .cloudscapeDesign, .crtAmber,
         .crtGreen, .cyborgOutline, .cyborg, .hacker, .lightgray,
@@ -27,7 +27,7 @@ public enum Theme: Codable, Sendable {
         .minty, .plain, .reddressDarkblue, .reddressDarkgreen, .reddressDarkorange,
         .reddressDarkred, .reddressLightblue, .reddressLightgreen, .reddressLightorange, .reddressLightred,
         .sandstone, .silver, .sketchyOutline, .sketchy, .spacelab,
-        .spacelabWhite, .superheroOutline, .superhero, .toy, .united, .vibrant
+        .spacelabWhite, .superheroOutline, .superhero, .toy, .united, .vibrant,
     ]
 
     /// The theme a config file's `theme:` value names: the built-in theme whose case name it
@@ -42,6 +42,7 @@ public enum Theme: Codable, Sendable {
         switch self {
         case let .directive(name):
             return "\(name)"
+
         default:
             return String(describing: self).camelCaseToKebapCase()
         }

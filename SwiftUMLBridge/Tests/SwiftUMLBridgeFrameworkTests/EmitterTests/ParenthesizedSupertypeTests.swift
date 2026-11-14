@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// Swift reads `struct Foo: (P)` as `struct Foo: P`, and `(P & Q)` and `(P) & Q` as `P & Q`. Every
 /// reader should too.
@@ -30,7 +30,7 @@ struct ParenthesizedSupertypeTests {
         ("enum Foo: (Int) { case one }", "enum Foo: Int { case one }"),
         ("struct Token: (~Copyable) {}", "struct Token: ~Copyable {}"),
         ("protocol P {}\n@MainActor final class Foo: @MainActor ((P)) {}",
-         "protocol P {}\n@MainActor final class Foo: P {}")
+         "protocol P {}\n@MainActor final class Foo: P {}"),
     ]
 
     static let shapes = """
@@ -84,7 +84,7 @@ struct ParenthesizedSupertypeTests {
             "Shape <|.. Square : conforms to",
             "Named <|.. Square : conforms to",
             "Named <|.. Label0 : conforms to",
-            "Label <.. Label0 : ext"
+            "Label <.. Label0 : ext",
         ])
         #expect(Self.svgEdges(Self.shapes).count == 6)
     }

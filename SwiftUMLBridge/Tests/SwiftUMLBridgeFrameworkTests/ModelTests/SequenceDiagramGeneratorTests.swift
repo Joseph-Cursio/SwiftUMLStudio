@@ -1,6 +1,6 @@
-import Testing
-@testable import SwiftUMLBridgeFramework
 import Foundation
+@testable import SwiftUMLBridgeFramework
+import Testing
 
 @Suite("SequenceDiagramGenerator - Entry Points and Resolution")
 struct SequenceDiagramGeneratorTests {

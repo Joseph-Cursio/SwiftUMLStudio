@@ -1,7 +1,7 @@
 import Foundation
-import Testing
 import SwiftUMLBridgeFramework
 @testable import SwiftUMLStudio
+import Testing
 
 @Suite("DiagramViewModel ER generation with .xcdatamodeld input")
 @MainActor

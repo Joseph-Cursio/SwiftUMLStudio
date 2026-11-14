@@ -14,10 +14,9 @@
 //
 
 import Foundation
-import SwiftData
-import Testing
 @testable import SwiftUMLBridgeFramework
 @testable import SwiftUMLStudio
+import Testing
 
 // MARK: - Mock Generators
 
@@ -41,7 +40,7 @@ final class MockClassGenerator: ClassDiagramGenerating, @unchecked Sendable {
     func generateScript(
         for paths: [String],
         with configuration: Configuration,
-        sdkPath: String?
+        sdkPath _: String?
     ) -> DiagramScript {
         generateCallCount += 1
         lastPaths = paths
@@ -155,7 +154,7 @@ final class MockDepsGenerator: DependencyGraphGenerating, @unchecked Sendable {
         packageRoot: URL,
         mode: DepsMode,
         with configuration: Configuration,
-        sdkPath: String?
+        sdkPath _: String?
     ) -> DepsScript {
         packageCallCount += 1
         lastDescription = description
@@ -320,7 +319,7 @@ struct DiagramViewModelMockTests {
                 SPMTargetDescription(
                     name: "Demo", kind: .library,
                     path: "Sources/Demo", sources: ["Foo.swift"], dependencies: []
-                )
+                ),
             ]
         )
         viewModel.selectedPaths = ["/tmp/demo-package/Sources/Demo/Foo.swift"]

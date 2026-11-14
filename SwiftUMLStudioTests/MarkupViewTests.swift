@@ -1,9 +1,8 @@
 import Foundation
-import SwiftUI
-import Testing
-import ViewInspector
 import SwiftUMLBridgeFramework
 @testable import SwiftUMLStudio
+import Testing
+import ViewInspector
 
 @Suite("MarkupView")
 @MainActor
@@ -14,7 +13,8 @@ struct MarkupViewTests {
         let viewModel = DiagramViewModel(persistenceController: .init(inMemory: true))
         let view = MarkupView(viewModel: viewModel)
         // ContentUnavailableView has a title we can find by text lookup.
-        let strings = try view.inspect().findAll(ViewType.Text.self)
+        let strings = try view.inspect()
+            .findAll(ViewType.Text.self)
             .compactMap { try? $0.string() }
         #expect(strings.contains("No diagram generated"))
     }

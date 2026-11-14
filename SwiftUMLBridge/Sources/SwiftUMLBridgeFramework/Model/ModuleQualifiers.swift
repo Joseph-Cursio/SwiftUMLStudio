@@ -1,5 +1,3 @@
-import Foundation
-
 /// The modules a class diagram's declarations belong to, under every name Swift code can write
 /// one by, so `TypeLookup` can read `ModA.Foo` as the type `Foo` in module ModA (#124). In package
 /// mode a declaration's module is its target's name, and Swift code names the module by the

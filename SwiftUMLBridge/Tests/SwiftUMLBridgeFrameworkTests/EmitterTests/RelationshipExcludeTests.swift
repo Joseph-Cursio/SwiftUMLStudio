@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// `relationships.realize.exclude` and `relationships.dependency.exclude` were decoded but never
 /// read, so the documented `realize.exclude: [Codable, Sendable]` hid nothing (#113).
@@ -43,7 +43,8 @@ struct RelationshipExcludeTests {
         let arrows = configuration.format == .nomnoml
             ? ["] -:> ", "] --:> ", "] --> "]
             : [" <|-- ", " <|.. ", " <.. "]
-        return script(source, configuration).split(separator: "\n").map(String.init)
+        return script(source, configuration).split(separator: "\n")
+            .map(String.init)
             .filter { line in arrows.contains { line.contains($0) } }
     }
 
@@ -56,7 +57,7 @@ struct RelationshipExcludeTests {
             "Base <|-- Circle : inherits",
             "Shape <|.. Circle : conforms to",
             "Shape <|.. Point : conforms to",
-            "Point <.. Point0 : ext"
+            "Point <.. Point0 : ext",
         ])
     }
 
@@ -67,7 +68,7 @@ struct RelationshipExcludeTests {
             "[Circle] -:> inherits [Base]",
             "[Circle] --:> conforms to [Shape]",
             "[Point] --:> conforms to [Shape]",
-            "[Point0] --> ext [Point]"
+            "[Point0] --> ext [Point]",
         ])
     }
 
@@ -77,7 +78,7 @@ struct RelationshipExcludeTests {
             "Base <|-- Circle : inherits",
             "Codable <|-- Circle : inherits",
             "Sendable <|-- Point : inherits",
-            "Point <.. Point0 : ext"
+            "Point <.. Point0 : ext",
         ])
     }
 
@@ -90,7 +91,7 @@ struct RelationshipExcludeTests {
         #expect(edges(Self.model, config) == [
             "Codable <|-- Circle : inherits",
             "Sendable <|-- Point : inherits",
-            "Point <.. Point0 : ext"
+            "Point <.. Point0 : ext",
         ])
     }
 
@@ -161,7 +162,7 @@ struct RelationshipExcludeTests {
         #expect(edges(Self.model, configuration(inheritance: ["Shape", "Codable"])) == [
             "Base <|-- Circle : inherits",
             "Sendable <|-- Point : inherits",
-            "Point <.. Point0 : ext"
+            "Point <.. Point0 : ext",
         ])
     }
 }

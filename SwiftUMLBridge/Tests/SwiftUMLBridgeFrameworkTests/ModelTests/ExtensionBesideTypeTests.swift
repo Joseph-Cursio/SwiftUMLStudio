@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 // Without a module, what a public member an extension in the type's own file adds weighs against
 // another extension's in a sibling directory (#253). The file is compiled wherever the type is, so
@@ -24,7 +24,8 @@ struct ExtensionBesideTypeTests {
     /// `Features`, where `Login` adds its own `X` and `Profile`, which imports only `Core`, writes
     /// `Foo.X`. `coreMember` is the line Core's extension declares, and `coreFile` its file.
     private static func grouped(
-        spelling: String, coreMember: String = "extension Foo { public typealias X = RCore }",
+        spelling: String,
+        coreMember: String = "extension Foo { public typealias X = RCore }",
         coreFile: String = "/r/Sources/Core/Foo.swift"
     ) -> [Fixture.File] {
         let foo = "public struct Foo { public init() {} }\npublic typealias Crate = Foo"
@@ -36,7 +37,7 @@ struct ExtensionBesideTypeTests {
         return declarations + [
             ("/r/Sources/Features/Login/E.swift",
              "extension \(spelling) { public typealias X = RLogin }\nopen class RLogin {}"),
-            ("/r/Sources/Features/Profile/W.swift", "class W: Foo.X {}")
+            ("/r/Sources/Features/Profile/W.swift", "class W: Foo.X {}"),
         ]
     }
 
@@ -123,7 +124,7 @@ struct ExtensionBesideTypeTests {
             "@_spi(Testing) extension Foo { public typealias X = RCore }",
             "extension Foo {\n#if DEBUG\n@_spi(Testing)\n#endif\npublic typealias X = RCore\n}",
             "#if os(iOS)\nextension Foo { public typealias X = RCore }\n#endif",
-            "extension Foo {\n#if os(iOS)\npublic typealias X = RCore\n#endif\n}"
+            "extension Foo {\n#if os(iOS)\npublic typealias X = RCore\n#endif\n}",
           ])
     func notSeenEverywhere(coreMember: String) throws {
         let files = Self.grouped(spelling: "Foo", coreMember: coreMember)
@@ -144,7 +145,7 @@ struct ExtensionBesideTypeTests {
             open class RLogin { public init() {} }
             extension Foo { public enum Inner { public typealias X = RLogin } }
             """),
-            ("/r/Sources/Features/Profile/W.swift", "class V: Foo.Inner.X {}\nextension Foo.Inner { class W: X {} }")
+            ("/r/Sources/Features/Profile/W.swift", "class V: Foo.Inner.X {}\nextension Foo.Inner { class W: X {} }"),
         ]
         #expect(supertypeLines(in: try Fixture.lines(files, .plantuml)) == [
             "RLogin <|-- V : inherits", "RLogin <|-- Foo.Inner.W : inherits"
@@ -164,12 +165,12 @@ struct ExtensionBesideTypeTests {
             extension Foo { public typealias X = RCore }
             open class RCore { public init() {} }
             """),
-            (otherFoo, "public struct Foo { public init() {} }")
+            (otherFoo, "public struct Foo { public init() {} }"),
         ]
         let files = (reversed ? types.reversed() : types) + [
             ("/r/Sources/Features/Login/E.swift",
              "extension Foo { public typealias X = RLogin }\nopen class RLogin {}"),
-            ("/r/Sources/Features/Profile/W.swift", "class W: Foo.X {}")
+            ("/r/Sources/Features/Profile/W.swift", "class W: Foo.X {}"),
         ]
         #expect(supertypeLines(in: try Fixture.lines(files, .plantuml)) == ["RLogin <|-- W : inherits"])
     }
@@ -187,11 +188,11 @@ struct ExtensionBesideTypeTests {
             extension Foo { public typealias X = RZed }
             public class RZed {}
             """),
-            ("/r/Sources/Lib/Foo.swift", "public struct Foo { public init() {} }")
+            ("/r/Sources/Lib/Foo.swift", "public struct Foo { public init() {} }"),
         ]
         let files = (reversed ? targets.reversed() : targets) + [
             ("/r/Sources/App/App.swift", "extension Foo { typealias X = RApp }\nclass RApp {}"),
-            ("/r/Sources/App/W.swift", "class W: Foo.X {}")
+            ("/r/Sources/App/W.swift", "class W: Foo.X {}"),
         ]
         #expect(supertypeLines(in: try Fixture.lines(files, .plantuml, ElementOptions(showExtensions: mode))) == [
             "RApp <|-- W : inherits"

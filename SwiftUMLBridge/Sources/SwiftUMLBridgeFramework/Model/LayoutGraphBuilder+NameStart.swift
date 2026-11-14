@@ -1,5 +1,3 @@
-import Foundation
-
 // MARK: - Name Starts
 
 /// Which type a dotted name as written starts at, read through the writer file's imports, kept
@@ -112,8 +110,10 @@ extension LayoutGraphBuilder.TypeLookup {
     /// through, hides it, and the name is fitted as without a start
     /// (`fallbackCandidates(_:for:from:depth:)`).
     func members(
-        of start: LayoutGraphBuilder.NameStart, among candidates: [LayoutGraphBuilder.Declared],
-        from scope: LayoutGraphBuilder.Scope, depth: Int
+        of start: LayoutGraphBuilder.NameStart,
+        among candidates: [LayoutGraphBuilder.Declared],
+        from scope: LayoutGraphBuilder.Scope,
+        depth: Int
     ) -> [LayoutGraphBuilder.Declared]? {
         let members = loaded(candidates.filter { starts($0, at: start, depth: depth) }, from: scope, depth: depth)
         if case .outsideType = start { return members }
@@ -127,8 +127,10 @@ extension LayoutGraphBuilder.TypeLookup {
     /// gathered under the start's other spellings (`spellings(of:)`) are its members or nothing,
     /// so after `typealias Foo = ModA.Bar`, `Foo.V` never falls to another target's `Bar.V`.
     func fallbackCandidates(
-        _ candidates: [LayoutGraphBuilder.Declared], for name: LayoutGraphBuilder.QualifiedName,
-        from scope: LayoutGraphBuilder.Scope, depth: Int
+        _ candidates: [LayoutGraphBuilder.Declared],
+        for name: LayoutGraphBuilder.QualifiedName,
+        from scope: LayoutGraphBuilder.Scope,
+        depth: Int
     ) -> [LayoutGraphBuilder.Declared] {
         let written = Set(((typesForName[name.name] ?? []) + (unlistedMembers[name.name] ?? [])).map(\.declaration))
         let seen = candidates.filter { candidate in
@@ -173,13 +175,16 @@ extension LayoutGraphBuilder.TypeLookup {
         // none of those it can drop nothing: sources read without their package skip them all.
         guard seen.count > 1,
               seen.contains(where: { $0.scope.module.map { $0 != scope.module } ?? false }) else { return seen }
-        // Whether a scoped import names an imported candidate; `nil` for one of the file's own
-        // module or of no known module, which ranks as before.
-        func isScoped(_ candidate: LayoutGraphBuilder.Declared) -> Bool? {
-            guard let module = candidate.scope.module, module != scope.module else { return nil }
-            return seesAlone(name, in: module, from: scope)
+        // Whether a scoped import names an imported candidate. A candidate of the file's own
+        // module or of no known module is neither, and ranks as before.
+        enum ScopedImport { case names, doesNotName, ownOrUnknownModule }
+        func scopedImport(of candidate: LayoutGraphBuilder.Declared) -> ScopedImport {
+            guard let module = candidate.scope.module, module != scope.module else { return .ownOrUnknownModule }
+            return seesAlone(name, in: module, from: scope) ? .names : .doesNotName
         }
-        let unscoped = seen.contains { isScoped($0) == true } ? seen.filter { isScoped($0) != false } : seen
+        let unscoped = seen.contains { scopedImport(of: $0) == .names }
+            ? seen.filter { scopedImport(of: $0) != .doesNotName }
+            : seen
         let opened = withoutUnopenedSPI(unscoped, from: scope)
         return availableOverUnavailable(unshadowedByReexport(opened, named: name, from: scope), from: scope)
     }
@@ -368,8 +373,8 @@ extension LayoutGraphBuilder.TypeLookup {
     /// is recorded under the name as written is another type's: after `typealias Array = Date`,
     /// `Date.V`, and not the `Array.V` that `extension [Int]` declares.
     func spellings(of name: LayoutGraphBuilder.QualifiedName) -> [String] {
-        if case .outsideType(let spelled?) = name.start { return [spelled + name.name.drop { $0 != "." }] }
-        guard case .projectType(let owner?, let renamed) = name.start, let module = owner.module else {
+        if case let .outsideType(spelled?) = name.start { return [spelled + name.name.drop { $0 != "." }] }
+        guard case let .projectType(owner?, renamed) = name.start, let module = owner.module else {
             return [name.name]
         }
         let qualifiers = Set([module, modules.writtenName(of: module)]).sorted()

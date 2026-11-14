@@ -1,7 +1,7 @@
 import Foundation
 import JavaScriptCore
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// Names that reach the JavaScript `DagreLayoutEngine` runs on JavaScriptCore:
 /// node ids, edge ends and module names must come back from dagre unchanged.
@@ -30,7 +30,7 @@ struct DagreLayoutEngineNameTests {
         "Carriage\rReturn",
         "Say \"hi\"",
         "Line\u{2028}Separator",
-        "Paragraph\u{2029}Separator"
+        "Paragraph\u{2029}Separator",
     ]
 
     /// Asserts `graph` came from dagre, not from `fallbackLayout`: the two
@@ -69,7 +69,7 @@ struct DagreLayoutEngineNameTests {
     func jsSignificantNodeId(name: String) throws {
         let nodes = [
             LayoutNode(id: name, label: name),
-            LayoutNode(id: "Foundation", label: "Foundation")
+            LayoutNode(id: "Foundation", label: "Foundation"),
         ]
         let edges = [LayoutEdge(sourceId: name, targetId: "Foundation", style: .dependency)]
         let result = DagreLayoutEngine.layout(LayoutGraph(nodes: nodes, edges: edges))
@@ -81,7 +81,7 @@ struct DagreLayoutEngineNameTests {
     func jsSignificantModuleName(module: String) throws {
         let nodes = [
             LayoutNode(id: "Client", label: "Client", module: module),
-            LayoutNode(id: "Session", label: "Session", module: module)
+            LayoutNode(id: "Session", label: "Session", module: module),
         ]
         let edges = [LayoutEdge(sourceId: "Client", targetId: "Session", style: .dependency)]
         let result = DagreLayoutEngine.layout(LayoutGraph(nodes: nodes, edges: edges))
@@ -105,7 +105,7 @@ struct DagreLayoutEngineNameTests {
         "\u{FE0F}Kit",
         "\u{200D}Net",
         "\u{1F3FB}Tools",
-        "\u{301}"
+        "\u{301}",
     ]
 
     @Test("a module whose name starts with a grapheme extender keeps its first scalar",
@@ -113,7 +113,7 @@ struct DagreLayoutEngineNameTests {
     func graphemeExtendingModuleName(module: String) throws {
         let nodes = [
             LayoutNode(id: "Client", label: "Client", module: module),
-            LayoutNode(id: "Session", label: "Session", module: module)
+            LayoutNode(id: "Session", label: "Session", module: module),
         ]
         let edges = [LayoutEdge(sourceId: "Client", targetId: "Session", style: .dependency)]
         let result = DagreLayoutEngine.layout(LayoutGraph(nodes: nodes, edges: edges))
@@ -149,7 +149,7 @@ struct DagreLayoutEngineNameTests {
     func clusterPrefixedNodeId(name: String) throws {
         let nodes = [
             LayoutNode(id: name, label: name),
-            LayoutNode(id: "Foundation", label: "Foundation")
+            LayoutNode(id: "Foundation", label: "Foundation"),
         ]
         let edges = [LayoutEdge(sourceId: name, targetId: "Foundation", style: .dependency)]
         let result = DagreLayoutEngine.layout(LayoutGraph(nodes: nodes, edges: edges))
@@ -161,7 +161,7 @@ struct DagreLayoutEngineNameTests {
     func nodeNamedLikeOwnCluster() throws {
         let nodes = [
             LayoutNode(id: "cluster:Core", label: "cluster:Core", module: "Core"),
-            LayoutNode(id: "Store", label: "Store", module: "Core")
+            LayoutNode(id: "Store", label: "Store", module: "Core"),
         ]
         let edges = [LayoutEdge(sourceId: "cluster:Core", targetId: "Store", style: .dependency)]
         let result = DagreLayoutEngine.layout(LayoutGraph(nodes: nodes, edges: edges))
@@ -176,7 +176,7 @@ struct DagreLayoutEngineNameTests {
     func nodeNamedLikeOtherCluster() throws {
         let nodes = [
             LayoutNode(id: "cluster:Net", label: "cluster:Net", module: "App"),
-            LayoutNode(id: "Client", label: "Client", module: "Net")
+            LayoutNode(id: "Client", label: "Client", module: "Net"),
         ]
         let edges = [LayoutEdge(sourceId: "cluster:Net", targetId: "Client", style: .dependency)]
         let result = DagreLayoutEngine.layout(LayoutGraph(nodes: nodes, edges: edges))

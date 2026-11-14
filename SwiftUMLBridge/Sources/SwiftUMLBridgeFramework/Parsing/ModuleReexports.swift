@@ -1,5 +1,3 @@
-import Foundation
-
 /// The modules each module of a package re-exports with `@_exported import`, so a declaration's
 /// `imports` can name every module whose declarations its file sees, as `TypeLookup` reads them
 /// (#124). Swift lets an `@_exported import Core` in any file of Analytics show Core's types to
@@ -58,14 +56,14 @@ struct ModuleReexports {
         var widenedFor: [Set<String>: [String?: Set<String>]] = [:]
         func wider(_ imports: Set<String>, in module: String?) -> Set<String> {
             if let known = widenedFor[imports]?[module] { return known }
-            var wider = widened(imports, in: module)
+            var result = widened(imports, in: module)
             let reexported = widened([], in: module)
                 .union(imports.flatMap { widened([$0], in: nil).subtracting([$0]) })
             for imported in imports where !imported.contains(".") && reexported.contains(imported) {
-                wider.insert(Self.directImportPrefix + imported)
+                result.insert(Self.directImportPrefix + imported)
             }
-            widenedFor[imports, default: [:]][module] = wider
-            return wider
+            widenedFor[imports, default: [:]][module] = result
+            return result
         }
         func widen(_ item: SyntaxStructure) {
             if let imports = item.imports { item.imports = wider(imports, in: item.module) }

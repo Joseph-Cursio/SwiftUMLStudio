@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 @Suite("SequenceSVGRenderer - computeLayout")
 struct SequenceSVGRendererTests {
@@ -40,7 +40,7 @@ struct SequenceSVGRendererTests {
         let edges = [
             makeEdge(calleeType: "ServiceA", calleeMethod: "run"),
             makeEdge(calleeType: "ServiceB", calleeMethod: "run"),
-            makeEdge(calleeType: "ServiceA", calleeMethod: "again")
+            makeEdge(calleeType: "ServiceA", calleeMethod: "again"),
         ]
         let layout = SequenceSVGRenderer.computeLayout(
             traversedEdges: edges, entryType: "Controller", entryMethod: "handle"
@@ -76,7 +76,7 @@ struct SequenceSVGRendererTests {
     func messageCount() {
         let edges = [
             makeEdge(calleeMethod: "aaa"),
-            makeEdge(calleeMethod: "bbb")
+            makeEdge(calleeMethod: "bbb"),
         ]
         let layout = SequenceSVGRenderer.computeLayout(
             traversedEdges: edges, entryType: "Controller", entryMethod: "handle"
@@ -124,7 +124,7 @@ struct SequenceSVGRendererTests {
         )
         let edges = [
             makeEdge(calleeType: "ServiceA", calleeMethod: "run"),
-            makeEdge(calleeType: "ServiceB", calleeMethod: "run")
+            makeEdge(calleeType: "ServiceB", calleeMethod: "run"),
         ]
         let multiLayout = SequenceSVGRenderer.computeLayout(
             traversedEdges: edges, entryType: "App", entryMethod: "run"
@@ -140,7 +140,7 @@ struct SequenceSVGRendererTests {
             makeEdge(calleeMethod: "bbb"),
             makeEdge(calleeMethod: "ccc"),
             makeEdge(calleeMethod: "ddd"),
-            makeEdge(calleeMethod: "eee")
+            makeEdge(calleeMethod: "eee"),
         ]
         let fewLayout = SequenceSVGRenderer.computeLayout(
             traversedEdges: fewEdges, entryType: "Ctrl", entryMethod: "run"
@@ -168,68 +168,12 @@ struct SequenceSVGRendererTests {
                 callerType: "Service",
                 calleeType: "Service",
                 calleeMethod: "retry"
-            )
+            ),
         ]
         let layout = SequenceSVGRenderer.computeLayout(
             traversedEdges: edges, entryType: "Service", entryMethod: "run"
         )
         let msg = layout.messages[0]
         #expect(msg.fromX == msg.toX)
-    }
-}
-
-@Suite("SequenceSVGRenderer - participant sourceLocation")
-struct SequenceSVGParticipantLocationTests {
-
-    private typealias FrameworkLocation = SwiftUMLBridgeFramework.SourceLocation
-
-    private func edge(callerType: String, calleeType: String) -> CallEdge {
-        CallEdge(
-            callerType: callerType, callerMethod: "run",
-            calleeType: calleeType, calleeMethod: "doWork",
-            isAsync: false, isUnresolved: false
-        )
-    }
-
-    @Test("participants without a typeLocations entry have nil sourceLocation")
-    func emptyMapMeansNilLocations() {
-        let layout = SequenceSVGRenderer.computeLayout(
-            traversedEdges: [edge(callerType: "Service", calleeType: "Worker")],
-            entryType: "Service", entryMethod: "run"
-        )
-        for participant in layout.participants {
-            #expect(participant.sourceLocation == nil)
-        }
-    }
-
-    @Test("typeLocations entries are stamped onto matching participants")
-    func mapStampsLocations() throws {
-        let map: [String: FrameworkLocation] = [
-            "Service": FrameworkLocation(filePath: "/Service.swift", line: 4, column: 7),
-            "Worker": FrameworkLocation(filePath: "/Worker.swift", line: 11, column: 8)
-        ]
-        let layout = SequenceSVGRenderer.computeLayout(
-            traversedEdges: [edge(callerType: "Service", calleeType: "Worker")],
-            entryType: "Service", entryMethod: "run",
-            typeLocations: map
-        )
-        let service = try #require(layout.participants.first { $0.name == "Service" })
-        let worker = try #require(layout.participants.first { $0.name == "Worker" })
-        #expect(service.sourceLocation == map["Service"])
-        #expect(worker.sourceLocation == map["Worker"])
-    }
-
-    @Test("participants without a matching map entry stay nil")
-    func unmappedStaysNil() throws {
-        let map: [String: FrameworkLocation] = [
-            "Service": FrameworkLocation(filePath: "/Service.swift", line: 4, column: 7)
-        ]
-        let layout = SequenceSVGRenderer.computeLayout(
-            traversedEdges: [edge(callerType: "Service", calleeType: "Worker")],
-            entryType: "Service", entryMethod: "run",
-            typeLocations: map
-        )
-        let worker = try #require(layout.participants.first { $0.name == "Worker" })
-        #expect(worker.sourceLocation == nil)
     }
 }

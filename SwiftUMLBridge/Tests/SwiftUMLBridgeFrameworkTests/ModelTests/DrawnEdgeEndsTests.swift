@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// `DrawnEdgeEnds.extendedType(of:)` is what an extension's `ext` edge ends on (#72), so its `nil`
 /// must not rest on the order in which `uniqName` records aliases.

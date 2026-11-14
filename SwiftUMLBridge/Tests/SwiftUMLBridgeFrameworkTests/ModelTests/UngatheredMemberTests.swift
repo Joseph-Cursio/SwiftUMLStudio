@@ -1,6 +1,5 @@
-import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// A dotted name whose member Swift means is one the lookup does not gather, as one an extension
 /// adds through a typealias, or one a superclass declares, which it now does (#250), and one the
@@ -25,7 +24,7 @@ struct UngatheredMemberTests {
             open class Bar: Base {}
             """),
         StartedFallbackTests.barWithV(in: "Aaa", member: "zOnly"), StartedFallbackTests.aliasOfBar,
-        File(module: "ModC", source: "import ModA\n\nfinal class C: Foo.V {}\n")
+        File(module: "ModC", source: "import ModA\n\nfinal class C: Foo.V {}\n"),
     ]
     /// `inheritedMember` with ModC's own `Bar.V` in another file, which the alias does not name.
     private static let inheritedBesideOwnBar = inheritedMember + [
@@ -35,7 +34,7 @@ struct UngatheredMemberTests {
                     func cOnly() {}
                 }
             }
-            """)
+            """),
     ]
 
     /// `Foo.V` is the `V` ModB adds through `FooAlias`, beside Mod0's, which App never loads.
@@ -67,7 +66,7 @@ struct UngatheredMemberTests {
                 }
             }
             """),
-        File(module: "App", source: "import ModA\nimport ModB\n\nfinal class C: Foo.V {}\n")
+        File(module: "App", source: "import ModA\nimport ModB\n\nfinal class C: Foo.V {}\n"),
     ]
 
     /// Where Swift's member is one the lookup cannot gather, added through a typealias
@@ -136,7 +135,7 @@ struct UngatheredMemberTests {
                 }
                 """),
             ("ModC", "import ModA\n\ntypealias Foo = ModA.Bar\n"),
-            ("ModC", "import ModA\n\nfinal class C: Foo.V {}\n\nfinal class Impl: Bar.V {}\n")
+            ("ModC", "import ModA\n\nfinal class C: Foo.V {}\n\nfinal class Impl: Bar.V {}\n"),
         ]
         let hidden = ElementOptions(showNestedTypes: false)
         let graph = LayoutGraphBuilder.buildClassDiagram(

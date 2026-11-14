@@ -5,7 +5,6 @@ import SwiftUMLBridgeFramework
 /// PNG / SVG / source options based on what the current script supports.
 struct DiagramExportMenu: View {
     let viewModel: DiagramViewModel
-    let viewport: DiagramViewport
 
     @State private var lastError: String?
     let inspection = Inspection<Self>()
@@ -84,8 +83,10 @@ struct DiagramExportMenu: View {
         switch kind {
         case .pdf, .png:
             exportRaster(kind)
+
         case .svg:
             exportSVG()
+
         case .source:
             exportSource()
         }
@@ -192,8 +193,10 @@ struct DiagramExportMenu: View {
         switch kind {
         case .pdf:
             return DiagramExporter.renderPDF(view, size: size)
+
         case .png:
             return DiagramExporter.renderPNG(view, size: size)
+
         default:
             return nil
         }

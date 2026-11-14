@@ -1,4 +1,3 @@
-import Foundation
 import SwiftSyntax
 
 /// Concurrency walkers for `ActivityGraphBuilder`:
@@ -141,7 +140,7 @@ extension ActivityGraphBuilder {
 
 private let taskGroupCallNames: Set<String> = [
     "withTaskGroup", "withThrowingTaskGroup",
-    "withDiscardingTaskGroup", "withThrowingDiscardingTaskGroup"
+    "withDiscardingTaskGroup", "withThrowingDiscardingTaskGroup",
 ]
 
 private let addTaskCallNames: Set<String> = [

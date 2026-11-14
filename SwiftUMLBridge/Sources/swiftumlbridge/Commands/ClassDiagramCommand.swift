@@ -2,6 +2,12 @@ import ArgumentParser
 import Foundation
 import SwiftUMLBridgeFramework
 
+enum ExtensionVisualizationFlag: EnumerableFlag {
+    case hideExtensions
+    case mergeExtensions
+    case showExtensions
+}
+
 extension SwiftUMLBridgeCLI {
     struct ClassDiagramCommand: AsyncParsableCommand {
         static let configuration = CommandConfiguration(
@@ -10,10 +16,12 @@ extension SwiftUMLBridgeCLI {
             helpNames: [.short, .long]
         )
 
-        @Option(help: """
-            Path to custom configuration file \
-            (otherwise searches for '.swiftumlbridge.yml' in current directory)
-            """)
+        @Option(
+            help: """
+                Path to custom configuration file \
+                (otherwise searches for '.swiftumlbridge.yml' in current directory)
+                """
+        )
         var config: String?
 
         @Option(help: "Paths to source files to exclude. Takes precedence over arguments.")
@@ -63,10 +71,13 @@ extension SwiftUMLBridgeCLI {
             switch extensionVisualization {
             case .hideExtensions:
                 bridgeConfig.elements.showExtensions = ExtensionVisualization.hidden
+
             case .mergeExtensions:
                 bridgeConfig.elements.showExtensions = .merged
+
             case .showExtensions:
                 bridgeConfig.elements.showExtensions = .all
+
             case nil:
                 break
             }
@@ -107,10 +118,5 @@ extension SwiftUMLBridgeCLI {
 }
 
 extension ClassDiagramOutput: ExpressibleByArgument {}
-extension DiagramFormat: ExpressibleByArgument {}
 
-enum ExtensionVisualizationFlag: EnumerableFlag {
-    case hideExtensions
-    case mergeExtensions
-    case showExtensions
-}
+extension DiagramFormat: ExpressibleByArgument {}

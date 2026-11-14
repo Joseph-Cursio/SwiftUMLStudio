@@ -1,6 +1,5 @@
-import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 // When a name written inside a type falls back past that type for want of a member (#252), and
 // when it must not, with modules known. A member the type inherits is its own, even from a
@@ -27,7 +26,7 @@ struct EnclosingTypeMayHaveMemberTests {
     func sameNamedSuperclass(superclass: String, reversed: Bool) throws {
         let files: [ModuleFixture.File] = [
             ("Core", Self.core),
-            ("App", "import Core\nclass Foo: \(superclass) {}\nclass X {}\nextension Foo { class W: X {} }")
+            ("App", "import Core\nclass Foo: \(superclass) {}\nclass X {}\nextension Foo { class W: X {} }"),
         ]
         #expect(try ModuleFixture.inheritsLines(files, reversed: reversed) == ["Foo.X <|-- Foo.W : inherits"])
     }
@@ -43,7 +42,7 @@ struct EnclosingTypeMayHaveMemberTests {
             open class RD { public init() {} }
             """),
             ("Z", "public struct Foo { public init() {} }"),
-            ("B", "import Z\nclass X {}\nextension Foo { class W: X {} }")
+            ("B", "import Z\nclass X {}\nextension Foo { class W: X {} }"),
         ]
         #expect(try ModuleFixture.inheritsLines(files, reversed: reversed) == ["X <|-- Foo.W : inherits"])
     }
@@ -57,7 +56,7 @@ struct EnclosingTypeMayHaveMemberTests {
             public struct Foo { public typealias X = RO; public init() {} }
             open class RO { public init() {} }
             """),
-            ("App", "import Other\nimport Ext\nclass Foo: Ext.Foo {}\nclass X {}\nextension Foo { class W: X {} }")
+            ("App", "import Other\nimport Ext\nclass Foo: Ext.Foo {}\nclass X {}\nextension Foo { class W: X {} }"),
         ]
         #expect(try ModuleFixture.inheritsLines(files, reversed: reversed) == ["X <|-- Foo.W : inherits"])
     }
@@ -76,11 +75,11 @@ struct EnclosingTypeMayHaveMemberTests {
             extension Sub { class W1: Inner.Leaf {} }
             extension Sub { struct Nest { class W2: Inner.Leaf {} } }
             class Sub2: Base { class W3: Inner.Leaf {} }
-            """)
+            """),
         ]
         #expect(try ModuleFixture.inheritsLines(files, reversed: reversed) == [
             "Base.Inner.Leaf <|-- Sub.W1 : inherits", "Base.Inner.Leaf <|-- Sub.Nest.W2 : inherits",
-            "Base.Inner.Leaf <|-- Sub2.W3 : inherits"
+            "Base.Inner.Leaf <|-- Sub2.W3 : inherits",
         ])
     }
 
@@ -100,7 +99,7 @@ struct EnclosingTypeMayHaveMemberTests {
             public struct Foo { public typealias X = RU; public init() {} }
             open class RU { public init() {} }
             """),
-            ("App", "import Umbrella\nclass X { init() {} }\nextension Foo { class W: X {} }")
+            ("App", "import Umbrella\nclass X { init() {} }\nextension Foo { class W: X {} }"),
         ]
         #expect(try ModuleFixture.inheritsLines(files, reversed: reversed) == ["RU <|-- Foo.W : inherits"])
     }
@@ -115,7 +114,7 @@ struct EnclosingTypeMayHaveMemberTests {
             public struct Foo { public typealias X = RD; public init() {} }
             open class RD { public init() {} }
             """),
-            ("B", "import struct A.Foo\nimport D\nclass X {}\nextension Foo { class W: X {} }")
+            ("B", "import struct A.Foo\nimport D\nclass X {}\nextension Foo { class W: X {} }"),
         ]
         #expect(try ModuleFixture.inheritsLines(files, reversed: reversed) == ["X <|-- Foo.W : inherits"])
     }
@@ -133,7 +132,7 @@ struct EnclosingTypeMayHaveMemberTests {
             """),
             ("B", "public struct Foo { public init() {} }\nclass X {}"),
             ("B", "import D\nextension Foo { class W: X {} }"),
-            ("C", "import B\nextension Foo { public typealias X = RC }\nopen class RC { public init() {} }")
+            ("C", "import B\nextension Foo { public typealias X = RC }\nopen class RC { public init() {} }"),
         ]
         #expect(try ModuleFixture.inheritsLines(files, reversed: reversed) == ["X <|-- Foo.W : inherits"])
     }
@@ -145,7 +144,7 @@ struct EnclosingTypeMayHaveMemberTests {
         let files: [ModuleFixture.File] = [
             ("A", "public struct Foo { public init() {} }"),
             ("B", "import A\nclass X {}\nextension Foo { class W: X {} }"),
-            ("C", "import A\nimport B\nextension Foo { public typealias X = RC }\nopen class RC { public init() {} }")
+            ("C", "import A\nimport B\nextension Foo { public typealias X = RC }\nopen class RC { public init() {} }"),
         ]
         #expect(try ModuleFixture.inheritsLines(files, reversed: reversed) == ["X <|-- Foo.W : inherits"])
     }
@@ -162,7 +161,7 @@ struct EnclosingTypeMayHaveMemberTests {
             open class RA { public init() {} }
             extension Foo { class W1: X {} }
             """),
-            ("B", "struct Foo {}\nclass X {}\nextension Foo { class W2: X {} }")
+            ("B", "struct Foo {}\nclass X {}\nextension Foo { class W2: X {} }"),
         ]
         #expect(try ModuleFixture.inheritsLines(files, reversed: reversed) == [
             "RA <|-- Foo.W1 : inherits", "X <|-- Foo.W2 : inherits"

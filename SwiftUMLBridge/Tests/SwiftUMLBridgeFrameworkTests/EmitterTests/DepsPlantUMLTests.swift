@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 @Suite("DepsScript — PlantUML")
 struct DepsPlantUMLTests {
@@ -59,7 +59,7 @@ struct DepsPlantUMLTests {
         let edges = [
             DependencyEdge(from: "A", toNode: "B", kind: .conforms),
             DependencyEdge(from: "B", toNode: "C", kind: .inherits),
-            DependencyEdge(from: "C", toNode: "D", kind: .imports)
+            DependencyEdge(from: "C", toNode: "D", kind: .imports),
         ]
         let script = makeScript(edges: edges)
         #expect(script.text.contains("A --> B"))
@@ -73,7 +73,7 @@ struct DepsPlantUMLTests {
     func cyclicNodesAnnotated() {
         let edges = [
             DependencyEdge(from: "Alpha", toNode: "Beta", kind: .imports),
-            DependencyEdge(from: "Beta", toNode: "Alpha", kind: .imports)
+            DependencyEdge(from: "Beta", toNode: "Alpha", kind: .imports),
         ]
         let script = makeScript(edges: edges)
         #expect(script.text.contains("CyclicDependencies"))

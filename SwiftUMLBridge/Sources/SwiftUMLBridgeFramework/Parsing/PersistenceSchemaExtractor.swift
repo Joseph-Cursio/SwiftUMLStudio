@@ -26,7 +26,7 @@ public enum PersistenceSchemaExtractor {
         "PersistableRecord",
         "MutablePersistableRecord",
         "EncodableRecord",
-        "TableRecord"
+        "TableRecord",
     ]
 
     static let grdbAssociationFunctions: Set<String> = [
@@ -50,23 +50,29 @@ public enum PersistenceSchemaExtractor {
         private(set) var relationships: [ERRelationship] = []
 
         override func visit(_ node: ClassDeclSyntax) -> SyntaxVisitorContinueKind {
-            handleType(name: node.name.canonicalName,
-                       inheritance: node.inheritanceClause,
-                       members: node.memberBlock.members)
+            handleType(
+                name: node.name.canonicalName,
+                inheritance: node.inheritanceClause,
+                members: node.memberBlock.members
+            )
             return .skipChildren
         }
 
         override func visit(_ node: StructDeclSyntax) -> SyntaxVisitorContinueKind {
-            handleType(name: node.name.canonicalName,
-                       inheritance: node.inheritanceClause,
-                       members: node.memberBlock.members)
+            handleType(
+                name: node.name.canonicalName,
+                inheritance: node.inheritanceClause,
+                members: node.memberBlock.members
+            )
             return .skipChildren
         }
 
         override func visit(_ node: ActorDeclSyntax) -> SyntaxVisitorContinueKind {
-            handleType(name: node.name.canonicalName,
-                       inheritance: node.inheritanceClause,
-                       members: node.memberBlock.members)
+            handleType(
+                name: node.name.canonicalName,
+                inheritance: node.inheritanceClause,
+                members: node.memberBlock.members
+            )
             return .skipChildren
         }
 
@@ -294,10 +300,13 @@ public enum PersistenceSchemaExtractor {
             switch functionName {
             case "belongsTo":
                 return (.zeroOrMany, .exactlyOne)
+
             case "hasMany", "hasManyThrough":
                 return (.exactlyOne, .zeroOrMany)
+
             case "hasOne":
                 return (.exactlyOne, .zeroOrOne)
+
             default:
                 return (.zeroOrMany, .zeroOrMany)
             }

@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 @Suite("SyntaxStructure")
 struct SyntaxStructureTests {
@@ -237,7 +237,7 @@ struct SyntaxStructureTests {
         let inner = SyntaxStructure(kind: .struct, name: "Inner")
         let outer = SyntaxStructure(kind: .class, name: "Outer", substructure: [inner])
         let result = [outer].populateNestedTypes()
-        let innerFound = result.first(where: { $0.name == "Inner" })
+        let innerFound = result.first { $0.name == "Inner" }
         #expect(innerFound?.parent?.name == "Outer")
     }
 
@@ -245,7 +245,7 @@ struct SyntaxStructureTests {
     func populateNestedTypesTopLevelNoParent() {
         let topLevel = SyntaxStructure(kind: .class, name: "TopLevel")
         let result = [topLevel].populateNestedTypes()
-        #expect(result.first(where: { $0.name == "TopLevel" })?.parent == nil)
+        #expect(result.first { $0.name == "TopLevel" }?.parent == nil)
     }
 
     // MARK: - UnknownCaseRepresentable

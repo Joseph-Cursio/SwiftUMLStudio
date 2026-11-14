@@ -5,14 +5,15 @@ public struct SVGRenderer: Sendable {
 
     // MARK: - Colors
 
+    private static let classHeaderFill = "#4A90D9"
     private static let headerFill: [String: String] = [
-        "class": "#4A90D9",
+        "class": classHeaderFill,
         "struct": "#7B68EE",
         "enum": "#E8A838",
         "protocol": "#50C878",
         "actor": "#E06666",
         "extension": "#999999",
-        "macro": "#CC66CC"
+        "macro": "#CC66CC",
     ]
     private static let bodyFill = "#FAFAFA"
     private static let strokeColor = "#333333"
@@ -90,7 +91,7 @@ public struct SVGRenderer: Sendable {
         let leftX = node.posX - node.width / 2
         let topY = node.posY - node.height / 2
         let stereotype = node.stereotype ?? "class"
-        let fill = headerFill[stereotype] ?? headerFill["class"]!
+        let fill = headerFill[stereotype] ?? classHeaderFill
 
         // The label appears only in the <text> elements. It is not copied into an XML comment,
         // because a comment cannot contain `--` and no escaping makes it legal there (#56).
@@ -196,15 +197,19 @@ public struct SVGRenderer: Sendable {
         case .inheritance:
             markerId = "arrow-inheritance"
             dashArray = ""
+
         case .realization:
             markerId = "arrow-realization"
             dashArray = " stroke-dasharray=\"6,3\""
+
         case .dependency:
             markerId = "arrow-dependency"
             dashArray = " stroke-dasharray=\"4,3\""
+
         case .association:
             markerId = ""
             dashArray = ""
+
         case .composition:
             markerId = "arrow-composition"
             dashArray = ""

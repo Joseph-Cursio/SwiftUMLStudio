@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 typealias EntryFile = (path: String, contents: String)
 
@@ -69,13 +69,13 @@ struct EntryThroughLaterDeclarationTests {
         [
             ("PkgB/Alias.swift", "struct RealB {}\ntypealias Svc = RealB"),
             ("PkgA/Alias.swift", "struct RealA {}\ntypealias Svc = RealA"),
-            extensionInA
+            extensionInA,
         ],
         // A type of that name, which a typed name means first, beside the typealias.
         [
             ("PkgB/Svc.swift", "struct Svc {}"),
             ("PkgA/Alias.swift", "struct RealA {}\ntypealias Svc = RealA"),
-            extensionInA
+            extensionInA,
         ],
         // `private` typealiases, each named only in its own file.
         [
@@ -84,19 +84,19 @@ struct EntryThroughLaterDeclarationTests {
                 "PkgA/Alias.swift",
                 "struct RealA {}\nprivate typealias Svc = RealA\n"
                     + "extension Svc {\n    func run() { step() }\n    func step() {}\n}"
-            )
+            ),
         ],
         // A protocol of that name, which only requires the method.
         [
             ("PkgB/Svc.swift", "protocol Svc { func run() }"),
             ("PkgA/Alias.swift", "struct RealA {}\ntypealias Svc = RealA"),
-            extensionInA
+            extensionInA,
         ],
         // A typealias of a protocol that only requires it.
         [
             ("PkgB/Alias.swift", "protocol Proto { func run() }\ntypealias Svc = Proto"),
             ("PkgA/Alias.swift", "struct RealA {}\ntypealias Svc = RealA"),
-            extensionInA
+            extensionInA,
         ],
         // A local function of that name, which is no member of the type around it.
         [
@@ -106,8 +106,8 @@ struct EntryThroughLaterDeclarationTests {
                     + "typealias Svc = RealB"
             ),
             ("PkgA/Alias.swift", "struct RealA {}\ntypealias Svc = RealA"),
-            extensionInA
-        ]
+            extensionInA,
+        ],
     ]
 
     @Test("a sequence finds the method through a declaration read later, or read first",
@@ -135,7 +135,7 @@ struct EntryThroughLaterDeclarationTests {
         let files: [EntryFile] = [
             ("PkgB/NS.swift", "struct RealB {}\nenum NS { typealias Svc = RealB }"),
             ("PkgA/NS.swift", "struct RealA {}\nenum NS { typealias Svc = RealA }"),
-            ("PkgA/Ext.swift", "extension NS.Svc {\n    func run() { step() }\n    func step() {}\n}")
+            ("PkgA/Ext.swift", "extension NS.Svc {\n    func run() { step() }\n    func step() {}\n}"),
         ]
         let (root, paths) = try EntryFixture.written(reversed ? files.reversed() : files)
         defer { try? FileManager.default.removeItem(at: root) }
@@ -151,7 +151,7 @@ struct EntryThroughLaterDeclarationTests {
     func firstDeclaringWithNoCalls() throws {
         let (root, paths) = try EntryFixture.written([
             ("PkgB/Alias.swift", "struct RealB { func run() {} }\ntypealias Svc = RealB"),
-            EntryFixture.withRun("A")
+            EntryFixture.withRun("A"),
         ])
         defer { try? FileManager.default.removeItem(at: root) }
         for text in EntryFixture.both(paths, "Svc", "run") {
@@ -203,7 +203,7 @@ struct EntryThroughLaterDeclarationTests {
         let (root, paths) = try EntryFixture.written([
             ("Impl/RealA.swift", "struct RealA { func run() { inA() }\n    func inA() {} }"),
             EntryFixture.withRun("B"),
-            ("A/Alias.swift", "typealias Svc = RealA")
+            ("A/Alias.swift", "typealias Svc = RealA"),
         ])
         defer { try? FileManager.default.removeItem(at: root) }
         for text in EntryFixture.both(paths, "Svc", "run") {
@@ -216,7 +216,7 @@ struct EntryThroughLaterDeclarationTests {
     func typeBeforeTypealias(reversed: Bool) throws {
         let files: [EntryFile] = [
             EntryFixture.withRun("A"),
-            ("T/Svc.swift", "struct Svc { func run() { inType() }\n    func inType() {} }")
+            ("T/Svc.swift", "struct Svc { func run() { inType() }\n    func inType() {} }"),
         ]
         let (root, paths) = try EntryFixture.written(reversed ? files.reversed() : files)
         defer { try? FileManager.default.removeItem(at: root) }
@@ -249,7 +249,7 @@ struct EntryThroughLaterDeclarationTests {
         let resolver = TypeAliasResolver(items: try [
             ("/r/B/Alias.swift", "typealias Svc = RealB"),
             ("/r/A/Alias.swift", "typealias Svc = RealA"),
-            ("/r/C/Alias.swift", "typealias Svc = RealA")
+            ("/r/C/Alias.swift", "typealias Svc = RealA"),
         ].flatMap { path, source in
             try #require(
                 SyntaxStructure.declarations(in: source, file: URL(fileURLWithPath: path))?.substructure

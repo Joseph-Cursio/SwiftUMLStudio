@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// `@Attribute`'s options and `@Relationship`'s `inverse:` are read from the syntax rather than
 /// searched for in the arguments' text, so a comment or a string that mentions `.unique` or a key
@@ -20,14 +20,15 @@ struct ERAttributeArgumentTests {
         ("@Attribute(.externalStorage)", false),
         ("@Attribute(.spotlight)", false),
         ("@Attribute(.allowsCloudEncryption, .ephemeral)", false),
-        ("@Attribute", false)
+        ("@Attribute", false),
     ])
     func uniqueOption(attribute: String, isUnique: Bool) {
         let attributes = ERModelExtractor.extract(from: """
             @Model final class Item {
                 \(attribute) var code: String = ""
             }
-            """).entities.flatMap(\.attributes)
+            """).entities
+                .flatMap(\.attributes)
         #expect(attributes.map(\.isUnique) == [isUnique])
     }
 
@@ -46,7 +47,7 @@ struct ERAttributeArgumentTests {
          ["Author.books -> Book", "Book.author -> Author"]),
         ("@Relationship(deleteRule: /* inverse: \\Book.writer */ .cascade)",
          ["Author.books -> Book", "Book.author -> Author", "Book.writer -> Author"]),
-        ("@Relationship", ["Author.books -> Book", "Book.author -> Author", "Book.writer -> Author"])
+        ("@Relationship", ["Author.books -> Book", "Book.author -> Author", "Book.writer -> Author"]),
     ])
     func inverseKeyPath(attribute: String, relationships: [String]) {
         let model = ERModelExtractor.extract(from: """

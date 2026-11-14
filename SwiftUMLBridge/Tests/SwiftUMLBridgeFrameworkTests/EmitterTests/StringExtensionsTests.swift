@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 @Suite("String+Extensions")
 struct StringExtensionsTests {
@@ -213,7 +213,7 @@ struct StringExtensionsTests {
         arguments: [
             (ElementAccessibility.public, "+"),
             (ElementAccessibility.internal, "~"),
-            (ElementAccessibility.private, "-")
+            (ElementAccessibility.private, "-"),
         ]
     )
     func addAccessLevelSymbol(accessibility: ElementAccessibility, expected: String) {

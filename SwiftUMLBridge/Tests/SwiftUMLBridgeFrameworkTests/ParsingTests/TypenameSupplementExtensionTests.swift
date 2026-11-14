@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// In `var a, b: T` only `b` has a type annotation in the syntax; `a` shares it. These check that
 /// `a` gets `T` in an extension and in a type nested in one, for a name in backticks, and that no
@@ -50,7 +50,7 @@ struct TypenameSupplementExtensionTests {
         (file("", "Swift.String"), "Swift.String.Deep"),
         (file("struct `Plain` {}", "`Plain`"), "Plain.Deep"),
         (file("actor Job {}", "Job", "final class Deep { var a, b: Int; init() { a = 0; b = 0 } }"), "Job.Deep"),
-        (file("struct Map {}", "Map", "enum Layer { struct Deep { var a, b: Int } }"), "Map.Layer.Deep")
+        (file("struct Map {}", "Map", "enum Layer { struct Deep { var a, b: Int } }"), "Map.Layer.Deep"),
     ])
     func extendedTypeForms(source: String, alias: String) {
         #expect(members(of: alias, in: source) == ["~a : Int", "~b : Int"])

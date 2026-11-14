@@ -28,9 +28,9 @@ enum SnapshotManager {
     static func saveSnapshot(
         from summary: ProjectSummary,
         paths: [String],
+        modelContext: ModelContext,
         bookmarks: [Data?] = [],
-        at savedAt: Date = Date(),
-        modelContext: ModelContext
+        at savedAt: Date = Date()
     ) throws {
         // `identifier` is not passed: `ProjectSnapshot.init` already defaults it to a fresh UUID,
         // so the argument that used to be here minted a second one and threw the first away.
@@ -97,13 +97,11 @@ enum SnapshotManager {
 
         let previousTopTypes = snapshot.decodedTopConnectedTypes
         let previousByName = Dictionary(
-            previousTopTypes.map { ($0.name, $0.connectionCount) },
-            uniquingKeysWith: { first, _ in first }
-        )
+            previousTopTypes.map { ($0.name, $0.connectionCount) }
+        ) { first, _ in first }
         let currentByName = Dictionary(
-            summary.topConnectedTypes.map { ($0.name, $0.connectionCount) },
-            uniquingKeysWith: { first, _ in first }
-        )
+            summary.topConnectedTypes.map { ($0.name, $0.connectionCount) }
+        ) { first, _ in first }
         let allTypeNames = Set(previousByName.keys).union(currentByName.keys)
         let complexityChanges: [(name: String, delta: Int)] = allTypeNames.compactMap { name in
             let current = currentByName[name] ?? 0
@@ -111,7 +109,8 @@ enum SnapshotManager {
             let delta = current - previous
             guard delta != 0 else { return nil }
             return (name: name, delta: delta)
-        }.sorted { abs($0.delta) > abs($1.delta) }
+        }
+            .sorted { abs($0.delta) > abs($1.delta) }
 
         return ArchitectureDiff(
             previousTimestamp: snapshot.timestamp ?? Date.distantPast,

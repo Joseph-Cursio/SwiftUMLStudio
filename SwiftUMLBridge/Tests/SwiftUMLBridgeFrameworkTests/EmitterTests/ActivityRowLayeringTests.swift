@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 @Suite("ActivitySVGRenderer — longest-path rows on extracted graphs")
 struct ActivityRowLayeringTests {
@@ -79,13 +79,13 @@ struct ActivityRowLayeringTests {
             ActivityEdge(fromId: 1, toId: 2),
             ActivityEdge(fromId: 2, toId: 1),
             ActivityEdge(fromId: 1, toId: 3),
-            ActivityEdge(fromId: 4, toId: 3)
+            ActivityEdge(fromId: 4, toId: 3),
         ]
         let forward = ActivitySVGRenderer.forwardEdges(from: 0, in: edges)
         #expect(forward == [
             ActivityEdge(fromId: 0, toId: 1),
             ActivityEdge(fromId: 1, toId: 2),
-            ActivityEdge(fromId: 1, toId: 3)
+            ActivityEdge(fromId: 1, toId: 3),
         ])
     }
 }

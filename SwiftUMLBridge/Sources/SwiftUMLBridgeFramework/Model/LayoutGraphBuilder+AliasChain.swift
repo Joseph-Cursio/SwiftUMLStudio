@@ -24,8 +24,6 @@ extension LayoutGraphBuilder {
     struct AliasChain {
         private var followed: Set<ObjectIdentifier> = []
 
-        init() {}
-
         /// Adds `alias` to the chain, `false` when it already was. In place, so a step costs no
         /// copy of the aliases before it.
         mutating func follow(_ alias: Declared) -> Bool {
@@ -80,11 +78,13 @@ extension LayoutGraphBuilder.TypeLookup {
     /// to an alias (`AliasChain`) with nothing; the depth guard ends the lookups made inside
     /// the steps (#248). What each alias comes to is kept (`AliasWalks`).
     func aliased(
-        _ declared: Declared, depth: Int, readingModules: Bool = true,
-        chain: LayoutGraphBuilder.AliasChain = LayoutGraphBuilder.AliasChain()
+        _ declared: Declared,
+        depth: Int,
+        readingModules startsReadingModules: Bool = true,
+        chain startingChain: LayoutGraphBuilder.AliasChain = LayoutGraphBuilder.AliasChain()
     ) -> Declared? {
         // A loop rather than a call a step, so a long chain takes no more stack than a short one.
-        var (current, chain, readingModules) = (declared, chain, readingModules)
+        var (current, chain, readingModules) = (declared, startingChain, startsReadingModules)
         var followed: [(alias: Declared, readingModules: Bool)] = []
         var found: Declared?
         while true {

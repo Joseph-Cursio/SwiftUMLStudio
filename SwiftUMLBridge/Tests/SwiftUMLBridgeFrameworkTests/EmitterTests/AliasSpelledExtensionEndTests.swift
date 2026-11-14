@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// An extension written through a typealias, `extension Describable` after
 /// `typealias Describable = CustomStringConvertible`, extends the type the alias names, and
@@ -81,12 +81,14 @@ struct AliasSpelledExtensionEndTests {
         case .svg:
             return drawn.layoutGraph?.edges.filter { $0.style == .composition }
                 .map { "\($0.sourceId) -> \($0.targetId)" } ?? []
+
         case .nomnoml:
             return drawn.text.split(separator: "\n").compactMap { line -> String? in
                 let parts = line.components(separatedBy: "] +- [")
                 guard parts.count == 2 else { return nil }
                 return "\(parts[0].dropFirst()) -> \(parts[1].dropLast())"
             }
+
         default:
             return drawn.text.split(separator: "\n").compactMap { line -> String? in
                 let parts = line.components(separatedBy: " +-- ")
@@ -198,9 +200,9 @@ struct AliasSpelledExtensionEndTests {
     func memberAliasOfAliasSpelledExtension(format: DiagramFormat, mode: ExtensionVisualization) {
         let box = format == .svg ? "~ viaAlias()" : "Crate.Desc"
         #expect(supertypeEdgeEnds(from: "T", Self.memberOfAliasSpelled, format, mode) == [box])
-        let bothSpelled = Self.memberOfAliasSpelled + "\nextension CustomStringConvertible { func direct() {} }"
+        let bothSpelledSource = Self.memberOfAliasSpelled + "\nextension CustomStringConvertible { func direct() {} }"
         let merged = format == .svg ? "~ viaAlias()~ direct()" : "Crate.Desc"
-        #expect(supertypeEdgeEnds(from: "T", bothSpelled, format, .merged) == [merged])
+        #expect(supertypeEdgeEnds(from: "T", bothSpelledSource, format, .merged) == [merged])
     }
 
     @Test("so is one declared in an extension of a nested type spelled through an alias", arguments: formats)

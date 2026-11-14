@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// Regression cover for the subprocess plumbing in
 /// `SPMPackageReader.describe(at:)`, which shells out to

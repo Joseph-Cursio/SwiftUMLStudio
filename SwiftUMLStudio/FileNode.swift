@@ -12,31 +12,31 @@ struct FileNode: Identifiable, Hashable {
     let name: String
     let url: URL
     let isDirectory: Bool
-    var children: [FileNode]?
+    var children: [Self]?
 
     func hash(into hasher: inout Hasher) {
         hasher.combine(url)
     }
 
-    static func == (lhs: FileNode, rhs: FileNode) -> Bool {
+    static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.url == rhs.url
     }
 
     /// Build a file tree from a flat list of paths (files and/or directories).
     /// Only `.swift` files are included; empty directories are pruned.
-    static func buildTree(from paths: [String]) -> [FileNode] {
+    static func buildTree(from paths: [String]) -> [Self] {
         let fileManager = FileManager.default
         var swiftURLs: [URL] = []
 
         for path in paths {
-            let url = URL(fileURLWithPath: path)
+            let fileURL = URL(fileURLWithPath: path)
             var isDir: ObjCBool = false
             guard fileManager.fileExists(atPath: path, isDirectory: &isDir) else { continue }
 
             if isDir.boolValue {
-                collectSwiftFiles(in: url, fileManager: fileManager, into: &swiftURLs)
-            } else if url.pathExtension == "swift" {
-                swiftURLs.append(url)
+                collectSwiftFiles(in: fileURL, fileManager: fileManager, into: &swiftURLs)
+            } else if fileURL.pathExtension == "swift" {
+                swiftURLs.append(fileURL)
             }
         }
 
@@ -68,11 +68,11 @@ struct FileNode: Identifiable, Hashable {
         guard let first = urls.first else { return URL(fileURLWithPath: "/") }
 
         var commonComponents = first.deletingLastPathComponent().pathComponents
-        for url in urls.dropFirst() {
-            let dirComponents = url.deletingLastPathComponent().pathComponents
+        for nextURL in urls.dropFirst() {
+            let dirComponents = nextURL.deletingLastPathComponent().pathComponents
             let minCount = min(commonComponents.count, dirComponents.count)
             let matchCount = zip(commonComponents.prefix(minCount), dirComponents.prefix(minCount))
-                .prefix(while: { $0 == $1 })
+                .prefix { $0 == $1 }
                 .count
             commonComponents = Array(commonComponents.prefix(matchCount))
         }
@@ -95,7 +95,7 @@ struct FileNode: Identifiable, Hashable {
     }
 
     /// Build a nested tree of FileNodes from flat file URLs, relative to a base directory.
-    private static func buildNodes(from urls: [URL], relativeTo base: URL) -> [FileNode] {
+    private static func buildNodes(from urls: [URL], relativeTo base: URL) -> [Self] {
         let baseComponents = base.pathComponents
         let entries: [Entry] = urls.map { url in
             let components = url.pathComponents
@@ -106,7 +106,7 @@ struct FileNode: Identifiable, Hashable {
         return buildLevel(entries: entries, depth: 0, basePath: base)
     }
 
-    private static func buildLevel(entries: [Entry], depth: Int, basePath: URL) -> [FileNode] {
+    private static func buildLevel(entries: [Entry], depth: Int, basePath: URL) -> [Self] {
         // Group entries by the component at the current depth
         var groups: [String: [Entry]] = [:]
         for entry in entries {
@@ -115,9 +115,9 @@ struct FileNode: Identifiable, Hashable {
             groups[key, default: []].append(entry)
         }
 
-        var nodes: [FileNode] = []
-        for (name, groupEntries) in groups {
-            let dirURL = basePath.appendingPathComponent(name, isDirectory: true)
+        var nodes: [Self] = []
+        for (groupName, groupEntries) in groups {
+            let dirURL = basePath.appendingPathComponent(groupName, isDirectory: true)
 
             // Leaf files: entries where this is the last component
             let leaves = groupEntries.filter { $0.relativeComponents.count == depth + 1 }
@@ -128,23 +128,25 @@ struct FileNode: Identifiable, Hashable {
                 // This is a directory
                 let childNodes = buildLevel(entries: deeper, depth: depth + 1, basePath: dirURL)
                 let leafNodes = leaves.map { entry in
-                    FileNode(id: entry.url, name: entry.url.lastPathComponent,
-                             url: entry.url, isDirectory: false, children: nil)
+                    Self(
+                        id: entry.url, name: entry.url.lastPathComponent,
+                        url: entry.url, isDirectory: false, children: nil
+                    )
                 }
                 // If the directory has only subdirectory children (no leaf files at this level),
                 // just add the child nodes. Otherwise combine.
                 let allChildren = (childNodes + leafNodes).sorted {
                     $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
                 }
-                nodes.append(FileNode(
-                    id: dirURL, name: name, url: dirURL,
+                nodes.append(Self(
+                    id: dirURL, name: groupName, url: dirURL,
                     isDirectory: true, children: allChildren
                 ))
             } else {
                 // All entries are leaf files
                 for entry in leaves {
-                    nodes.append(FileNode(
-                        id: entry.url, name: name,
+                    nodes.append(Self(
+                        id: entry.url, name: groupName,
                         url: entry.url, isDirectory: false, children: nil
                     ))
                 }
@@ -159,11 +161,11 @@ struct FileNode: Identifiable, Hashable {
     }
 
     /// Collect all leaf (non-directory) URLs from a tree.
-    static func allLeafURLs(from nodes: [FileNode]) -> [URL] {
+    static func allLeafURLs(from nodes: [Self]) -> [URL] {
         var result: [URL] = []
         for node in nodes {
-            if let children = node.children {
-                result.append(contentsOf: allLeafURLs(from: children))
+            if let nodeChildren = node.children {
+                result.append(contentsOf: allLeafURLs(from: nodeChildren))
             } else {
                 result.append(node.url)
             }

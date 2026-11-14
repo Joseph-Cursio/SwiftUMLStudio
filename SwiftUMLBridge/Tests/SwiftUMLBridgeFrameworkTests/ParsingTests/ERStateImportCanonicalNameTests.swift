@@ -1,5 +1,157 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
+
+/// Sources that escape a name on one side only. Each compiles: the GRDB and SQLite.swift ones
+/// against stubs of the protocols, functions and types they name.
+private enum Witnesses {
+    static let ownerAndPet = """
+    import SwiftData
+
+    @Model final class Owner {
+        var pets: [Pet] = []
+        init() {}
+    }
+
+    @Model final class `Pet` {
+        var name: String = ""
+        var owner: Owner?
+        init() {}
+    }
+    """
+
+    static let swiftData = [
+        ownerAndPet,
+        """
+        import SwiftData
+
+        @Model final class Owner {
+            var pets: [`Pet`] = []
+            init() {}
+        }
+
+        @Model final class Pet {
+            var `name`: String = ""
+            var owner: `Owner`?
+            init() {}
+        }
+        """,
+        """
+        import Foundation
+        import SwiftData
+
+        @`Model` final class Author {
+            @`Relationship`(inverse: \\Book.`author`) var books: [Book] = []
+            @`Attribute`(.unique) var code: String = ""
+            @`Transient` var draft: Bool = false
+            var `tag` = `UUID`()
+            init() {}
+        }
+
+        @Model final class Book {
+            var author: Author?
+            init() {}
+        }
+        """,
+        """
+        import SwiftData
+
+        @Model final class Author {
+            @Relationship(inverse: \\`Book`.author) var books: [Book] = []
+            init() {}
+        }
+
+        @Model final class Book {
+            var `author`: Author?
+            init() {}
+        }
+        """,
+    ]
+
+    static let stateMachines = [
+        """
+        enum `Light` { case red, green }
+
+        final class Lamp {
+            var state: Light = .red
+
+            func toggle() {
+                switch self.state {
+                case .red: self.state = .green
+                case .green: self.state = .red
+                }
+            }
+        }
+        """,
+        """
+        enum Light { case red, green }
+
+        final class Lamp {
+            var state: `Light` = .red
+
+            func toggle() {
+                switch self.state {
+                case .red: self.state = .green
+                case .green: self.state = .red
+                }
+            }
+        }
+
+        final class Torch {
+            var state = `Light`.green
+
+            func toggle() {
+                switch state {
+                case .red: state = .green
+                case .green: state = .red
+                }
+            }
+        }
+        """,
+        """
+        enum Light { case `red`, green, done }
+
+        final class Lamp {
+            var `state`: Light = .red
+
+            func `toggle`() {
+                switch self.state {
+                case .red: self.`state` = .green
+                case .`green`: `state` = .`red`
+                case .done: break
+                }
+            }
+
+            func finish() { state = .`done` }
+        }
+        """,
+    ]
+
+    static let persistence = [
+        """
+        struct Team: TableRecord {
+            var id: Int64?
+            static let players = hasMany(Player.self)
+        }
+
+        struct `Player`: FetchableRecord, TableRecord {
+            var `id`: `Int64`?
+            var name: String
+            static let team = `belongsTo`(`Team`.self)
+        }
+
+        struct Score: `PersistableRecord` {
+            var points: Int
+        }
+        """,
+        """
+        enum Schema {
+            static let users = `Table`("users")
+            static let id = Expression<`Int64`>("id")
+            static let name = `Expression`<String>("name")
+        }
+        """,
+    ]
+}
 
 /// `` `Pet` `` and `Pet` are one identifier, so a name escaped where it is declared and not where it
 /// is used, or the other way round, is still one name to the ER, state-machine, GRDB / SQLite.swift
@@ -152,156 +304,4 @@ struct ERStateImportCanonicalNameTests {
         let modules = ImportExtractor.extract(from: source, sourceModule: "App").map(\.importedModule)
         #expect(modules == ["Foundation", "`My Module`"])
     }
-}
-
-/// Sources that escape a name on one side only. Each compiles: the GRDB and SQLite.swift ones
-/// against stubs of the protocols, functions and types they name.
-private enum Witnesses {
-    static let ownerAndPet = """
-    import SwiftData
-
-    @Model final class Owner {
-        var pets: [Pet] = []
-        init() {}
-    }
-
-    @Model final class `Pet` {
-        var name: String = ""
-        var owner: Owner?
-        init() {}
-    }
-    """
-
-    static let swiftData = [
-        ownerAndPet,
-        """
-        import SwiftData
-
-        @Model final class Owner {
-            var pets: [`Pet`] = []
-            init() {}
-        }
-
-        @Model final class Pet {
-            var `name`: String = ""
-            var owner: `Owner`?
-            init() {}
-        }
-        """,
-        """
-        import Foundation
-        import SwiftData
-
-        @`Model` final class Author {
-            @`Relationship`(inverse: \\Book.`author`) var books: [Book] = []
-            @`Attribute`(.unique) var code: String = ""
-            @`Transient` var draft: Bool = false
-            var `tag` = `UUID`()
-            init() {}
-        }
-
-        @Model final class Book {
-            var author: Author?
-            init() {}
-        }
-        """,
-        """
-        import SwiftData
-
-        @Model final class Author {
-            @Relationship(inverse: \\`Book`.author) var books: [Book] = []
-            init() {}
-        }
-
-        @Model final class Book {
-            var `author`: Author?
-            init() {}
-        }
-        """
-    ]
-
-    static let stateMachines = [
-        """
-        enum `Light` { case red, green }
-
-        final class Lamp {
-            var state: Light = .red
-
-            func toggle() {
-                switch self.state {
-                case .red: self.state = .green
-                case .green: self.state = .red
-                }
-            }
-        }
-        """,
-        """
-        enum Light { case red, green }
-
-        final class Lamp {
-            var state: `Light` = .red
-
-            func toggle() {
-                switch self.state {
-                case .red: self.state = .green
-                case .green: self.state = .red
-                }
-            }
-        }
-
-        final class Torch {
-            var state = `Light`.green
-
-            func toggle() {
-                switch state {
-                case .red: state = .green
-                case .green: state = .red
-                }
-            }
-        }
-        """,
-        """
-        enum Light { case `red`, green, done }
-
-        final class Lamp {
-            var `state`: Light = .red
-
-            func `toggle`() {
-                switch self.state {
-                case .red: self.`state` = .green
-                case .`green`: `state` = .`red`
-                case .done: break
-                }
-            }
-
-            func finish() { state = .`done` }
-        }
-        """
-    ]
-
-    static let persistence = [
-        """
-        struct Team: TableRecord {
-            var id: Int64?
-            static let players = hasMany(Player.self)
-        }
-
-        struct `Player`: FetchableRecord, TableRecord {
-            var `id`: `Int64`?
-            var name: String
-            static let team = `belongsTo`(`Team`.self)
-        }
-
-        struct Score: `PersistableRecord` {
-            var points: Int
-        }
-        """,
-        """
-        enum Schema {
-            static let users = `Table`("users")
-            static let id = Expression<`Int64`>("id")
-            static let name = `Expression`<String>("name")
-        }
-        """
-    ]
 }

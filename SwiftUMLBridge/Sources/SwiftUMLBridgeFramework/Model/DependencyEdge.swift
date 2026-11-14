@@ -1,5 +1,3 @@
-import Foundation
-
 /// The kind of relationship a dependency edge represents.
 public enum DependencyEdgeKind: String, Sendable, CaseIterable {
     case inherits

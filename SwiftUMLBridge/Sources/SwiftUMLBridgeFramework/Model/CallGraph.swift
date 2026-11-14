@@ -1,5 +1,3 @@
-import Foundation
-
 /// A graph of static call edges extracted from Swift source.
 public struct CallGraph: Sendable {
     /// All edges in the graph.
@@ -74,8 +72,10 @@ public struct CallGraph: Sendable {
     /// The edges reached from `start`, breadth first, to `maxDepth` calls deep. `outgoing` gives
     /// the edges of what a key names, and `callees` the keys a resolved edge's call is followed to.
     private func breadthFirst(
-        from start: String, maxDepth: Int,
-        outgoing: (String) -> [CallEdge], callees: (CallEdge) -> [String]
+        from start: String,
+        maxDepth: Int,
+        outgoing: (String) -> [CallEdge],
+        callees: (CallEdge) -> [String]
     ) -> [CallEdge] {
         var result: [CallEdge] = []
         var visited = Set<String>()

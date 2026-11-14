@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 @Suite("LayoutGraphBuilder — dependency graph and advanced class-diagram cases")
 struct LayoutGraphBuilderDepsTests {
@@ -30,7 +30,7 @@ struct LayoutGraphBuilderDepsTests {
         let model = DependencyGraphModel(edges: [
             DependencyEdge(from: "aaa", toNode: "bbb", kind: .inherits),
             DependencyEdge(from: "ccc", toNode: "ddd", kind: .conforms),
-            DependencyEdge(from: "eee", toNode: "fff", kind: .imports)
+            DependencyEdge(from: "eee", toNode: "fff", kind: .imports),
         ])
         let graph = LayoutGraphBuilder.buildDependencyGraph(from: model)
         #expect(graph.edges[0].style == .inheritance)
@@ -42,7 +42,7 @@ struct LayoutGraphBuilderDepsTests {
     func depGraphCycleDetection() {
         let model = DependencyGraphModel(edges: [
             DependencyEdge(from: "aaa", toNode: "bbb", kind: .imports),
-            DependencyEdge(from: "bbb", toNode: "aaa", kind: .imports)
+            DependencyEdge(from: "bbb", toNode: "aaa", kind: .imports),
         ])
         let graph = LayoutGraphBuilder.buildDependencyGraph(from: model)
         let cycleNodes = graph.nodes.filter { $0.stereotype == "warning" }
@@ -65,7 +65,7 @@ struct LayoutGraphBuilderDepsTests {
         let model = DependencyGraphModel(edges: [
             DependencyEdge(from: "aaa", toNode: "bbb", kind: .imports),
             DependencyEdge(from: "bbb", toNode: "ccc", kind: .imports),
-            DependencyEdge(from: "aaa", toNode: "ccc", kind: .conforms)
+            DependencyEdge(from: "aaa", toNode: "ccc", kind: .conforms),
         ])
         let graph = LayoutGraphBuilder.buildDependencyGraph(from: model)
         #expect(graph.nodes.count == 3)
@@ -144,7 +144,7 @@ struct LayoutGraphBuilderDepsTests {
         let items = [
             SyntaxStructure(kind: .class, name: "Foo"),
             SyntaxStructure(kind: .struct, name: "Foo"),
-            SyntaxStructure(kind: .enum, name: "Foo")
+            SyntaxStructure(kind: .enum, name: "Foo"),
         ]
         let graph = LayoutGraphBuilder.buildClassDiagram(from: items, configuration: .default)
         #expect(graph.nodes.count == 3)

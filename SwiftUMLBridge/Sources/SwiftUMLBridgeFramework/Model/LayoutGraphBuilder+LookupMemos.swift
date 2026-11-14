@@ -1,4 +1,3 @@
-import Foundation
 import Synchronization
 
 // MARK: - Lookup Memos
@@ -146,6 +145,10 @@ extension LayoutGraphBuilder {
         let depth: Int
     }
 
+    /// Whether every candidate of a shared lookup comes to a protocol, once a writer has worked
+    /// it out (`SharedLookup.everyComesToProtocol`).
+    enum ProtocolVerdict { case unknown, every, notEvery }
+
     /// What the writers of one `SharedLookupKey` share: the candidates, and whether every one comes
     /// to a protocol, each candidate coming to what it does from its own scope. Which candidate a
     /// writer with no module means goes by its directory too (`DeclarationScope.rankingDirectory`),
@@ -154,7 +157,7 @@ extension LayoutGraphBuilder {
     /// or the others would take what only it can see.
     final class SharedLookup {
         let found: [Declared]
-        var everyComesToProtocol: Bool?
+        var everyComesToProtocol = ProtocolVerdict.unknown
         var answerInDirectory: [[UInt8]?: (type: Declared?, kindIsSure: Bool)] = [:]
 
         init(found: [Declared]) {

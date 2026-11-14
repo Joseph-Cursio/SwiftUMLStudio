@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// Mermaid reads a class-body line as an annotation only when the whole line is `<<…>>`, so a
 /// generic clause after `<<struct>>` made a member or a garbled annotation. Every `<<` line must be
@@ -30,7 +30,8 @@ struct MermaidGenericHeaderTests {
         let elements = ElementOptions(showGenerics: generics, showExtensions: mode)
         let configuration = Configuration(elements: elements, format: .mermaid)
         return ClassDiagramGenerator().generateScript(for: source, with: configuration).text
-            .split(separator: "\n").map { $0.trimmingCharacters(in: .whitespaces) }
+            .split(separator: "\n")
+            .map { $0.trimmingCharacters(in: .whitespaces) }
     }
 
     /// A `<<` line that Mermaid would not read as one annotation with a plain name.
@@ -42,7 +43,7 @@ struct MermaidGenericHeaderTests {
 
     @Test("every line that starts with `<<` is one whole annotation", arguments: modes)
     func annotationLines(mode: ExtensionVisualization) {
-        #expect(Self.lines(mode).filter(Self.isPartialAnnotation) == [])
+        #expect(!Self.lines(mode).contains(where: Self.isPartialAnnotation))
     }
 
     @Test("each generic type keeps its kind")
@@ -50,7 +51,7 @@ struct MermaidGenericHeaderTests {
         let kinds = Self.lines(.all).filter { $0.hasPrefix("<<") }
         #expect(kinds == [
             "<<protocol>>", "<<struct>>", "<<class>>", "<<enum>>", "<<actor>>", "<<struct>>", "<<struct>>",
-            "<<struct>>", "<<struct>>", "<<struct>>", "<<class>>", "<<MainActor>>", "<<extension>>"
+            "<<struct>>", "<<struct>>", "<<struct>>", "<<class>>", "<<MainActor>>", "<<extension>>",
         ])
     }
 
@@ -68,7 +69,7 @@ struct MermaidGenericHeaderTests {
             "class Outer[\"Outer&lt;T&gt;\"] {",
             "class Outer.Inner[\"Inner&lt;U&gt;\"] {",
             "class Loader[\"Loader&lt;Item&gt;\"] {",
-            "class Stack0[\"Stack&lt;Int&gt;\"] {"
+            "class Stack0[\"Stack&lt;Int&gt;\"] {",
         ])
     }
 
@@ -77,6 +78,6 @@ struct MermaidGenericHeaderTests {
     @Test("with showGenerics off, no label or line carries a generic clause", arguments: modes)
     func genericsOff(mode: ExtensionVisualization) {
         let lines = Self.lines(mode, generics: false)
-        #expect(lines.filter { $0.contains("&lt;") || Self.isPartialAnnotation($0) } == [])
+        #expect(!lines.contains { $0.contains("&lt;") || Self.isPartialAnnotation($0) })
     }
 }

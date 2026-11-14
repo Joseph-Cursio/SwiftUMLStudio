@@ -1,5 +1,3 @@
-import Foundation
-
 /// A single attribute on an ER entity (e.g., a stored property on a SwiftData `@Model` class).
 public struct ERAttribute: Sendable, Hashable {
     public let name: String

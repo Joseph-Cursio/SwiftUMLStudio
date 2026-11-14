@@ -1,6 +1,5 @@
-import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// What a dotted name means when the type its first component means has none of the members
 /// recorded under it: the fallback reads only the name as written, among types of modules the
@@ -42,7 +41,7 @@ struct StartedFallbackTests {
                 }
 
                 final class C: Foo.V {}
-                """)
+                """),
         ], member: "barOnly", hiddenLabel: "Bar.V"),
         Case(name: "a start misread by a re-export falls back past a member its module does not load", files: [
             File(module: "ModA", source: "public struct Foo {\n    public init() {}\n}\n"),
@@ -67,7 +66,7 @@ struct StartedFallbackTests {
                     }
                 }
                 """),
-            File(module: "ModC", source: "import ModX\n\nfinal class C: Foo.V {}\n")
+            File(module: "ModC", source: "import ModX\n\nfinal class C: Foo.V {}\n"),
         ], member: "vOnly", hiddenLabel: "Foo.V"),
         Case(name: "the fallback reads no type of a module the file does not import", files: [
             File(module: "Seen", source: """
@@ -94,7 +93,7 @@ struct StartedFallbackTests {
                     }
                 }
                 """),
-            File(module: "App", source: "import Seen\n\nfinal class C: Foo.Inner.W {}\n")
+            File(module: "App", source: "import Seen\n\nfinal class C: Foo.Inner.W {}\n"),
         ], member: "wOnly", hiddenLabel: "Foo.Inner.W"),
         Case(name: "the fallback reads no member gathered under the start's own name", files: [
             File(module: "ModA", source: """
@@ -123,8 +122,8 @@ struct StartedFallbackTests {
                     }
                 }
                 """),
-            File(module: "ModC", source: "import ModA\n\nfinal class C: Foo.Mid.V {}\n")
-        ], member: "aOtherOnly", hiddenLabel: nil)
+            File(module: "ModC", source: "import ModA\n\nfinal class C: Foo.Mid.V {}\n"),
+        ], member: "aOtherOnly", hiddenLabel: nil),
     ]
 
     @Test("a name means the member Swift finds", arguments: cases, [false, true])
@@ -158,7 +157,7 @@ struct StartedFallbackTests {
                 }
                 """),
             ("ModC", "import ModA\n\ntypealias Foo = ModA.Outer.Bar\n"),
-            ("ModC", "import ModA\n\nfinal class C: Foo.V {}\n")
+            ("ModC", "import ModA\n\nfinal class C: Foo.V {}\n"),
         ]
         let files = reversed ? given.reversed() : given
         for mode in [ExtensionVisualization.all, .merged] {

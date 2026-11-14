@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// A typealias whose dotted target starts with another name for a type, as `typealias Svc = O.In`
 /// after `typealias O = Real`, or with the writer's own module, as `typealias Svc = Main.Real`,
@@ -23,7 +23,7 @@ struct AliasTargetPrefixTests {
     @Test("a target whose first part is a typealias reaches the type's own body", arguments: [
         "typealias O = Real\ntypealias Svc = O.In\n",
         "typealias P = Real\ntypealias O = P\ntypealias Svc = O.In\n",
-        "typealias Svc = O.In\ntypealias O = Real\n"
+        "typealias Svc = O.In\ntypealias O = Real\n",
     ])
     func throughTypealias(aliases: String) throws {
         for text in try Self.both([("Pkg/Svc.swift", Self.nested + aliases)], "Svc", "run") {
@@ -35,7 +35,7 @@ struct AliasTargetPrefixTests {
     func acrossFiles() throws {
         let files: [EntryFile] = [
             ("Pkg/Real.swift", Self.nested), ("Pkg/O.swift", "typealias O = Real\n"),
-            ("Pkg/Svc.swift", "typealias Svc = O.In\n")
+            ("Pkg/Svc.swift", "typealias Svc = O.In\n"),
         ]
         for text in try Self.both(files, "Svc", "run") {
             #expect(text.contains("step()"), "\(text)")
@@ -66,7 +66,7 @@ struct AliasTargetPrefixTests {
         (plain, "typealias Svc = Main.Real\n"),
         (nested, "typealias Svc = Main.Real.In\n"),
         (nested, "typealias O = Main.Real\ntypealias Svc = O.In\n"),
-        (plain, "import Foundation\ntypealias Svc = Main.Real\n")
+        (plain, "import Foundation\ntypealias Svc = Main.Real\n"),
     ])
     func throughOwnModule(type: String, aliases: String) throws {
         for text in try Self.both([("Pkg/Svc.swift", type + aliases)], "Svc", "run") {

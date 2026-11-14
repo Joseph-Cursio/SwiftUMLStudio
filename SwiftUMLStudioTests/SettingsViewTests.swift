@@ -1,8 +1,6 @@
-import Foundation
-import SwiftUI
+@testable import SwiftUMLStudio
 import Testing
 import ViewInspector
-@testable import SwiftUMLStudio
 
 @Suite("SettingsView")
 @MainActor
@@ -10,7 +8,8 @@ struct SettingsViewTests {
 
     private func consentToggle(_ consent: PlantUMLConsent) throws -> InspectableView<ViewType.Toggle> {
         try SettingsView(consent: consent).inspect()
-            .find(viewWithAccessibilityIdentifier: "plantUMLConsentToggle").toggle()
+            .find(viewWithAccessibilityIdentifier: "plantUMLConsentToggle")
+            .toggle()
     }
 
     @Test("the PlantUML toggle is on only for a grant", arguments: PlantUMLConsent.Decision.allCases)

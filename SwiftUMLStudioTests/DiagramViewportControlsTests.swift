@@ -1,7 +1,6 @@
-import SwiftUI
+@testable import SwiftUMLStudio
 import Testing
 import ViewInspector
-@testable import SwiftUMLStudio
 
 @Suite("DiagramViewportControls")
 @MainActor
@@ -15,7 +14,7 @@ struct DiagramViewportControlsTests {
             ("viewportZoomIn", "Zoom In"),
             ("viewportFit", "Fit to Window"),
             ("viewportActualSize", "Actual Size"),
-            ("viewportReset", "Reset Zoom and Pan")
+            ("viewportReset", "Reset Zoom and Pan"),
         ]
     )
     func buttonNames(identifier: String, title: String) throws {

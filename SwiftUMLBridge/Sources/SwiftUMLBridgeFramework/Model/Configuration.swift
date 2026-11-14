@@ -1,5 +1,3 @@
-import Foundation
-
 // Parallel List Drift pairs this with `ElementAccessibility` (SourceKit-raw-valued visibility)
 // and the `defaultAccessLevels` subset; both are distinct/intentional, not one drifted list.
 // swiftprojectlint:disable:next parallel-list-drift
@@ -41,40 +39,24 @@ public struct Configuration: Codable, Sendable {
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        if let files = try container.decodeIfPresent(FileOptions.self, forKey: .files) {
-            self.files = files
+        files = try container.decodeIfPresent(FileOptions.self, forKey: .files) ?? files
+        elements = try container.decodeIfPresent(ElementOptions.self, forKey: .elements) ?? elements
+        hideShowCommands = try container.decodeIfPresent([String].self, forKey: .hideShowCommands) ?? hideShowCommands
+        skinparamCommands = try container.decodeIfPresent(
+            [String].self, forKey: .skinparamCommands
+        ) ?? skinparamCommands
+        includeRemoteURL = try container.decodeIfPresent(String.self, forKey: .includeRemoteURL) ?? includeRemoteURL
+        if let themeName = try container.decodeIfPresent(String.self, forKey: .theme) {
+            theme = Theme(configValue: themeName)
         }
-        if let elements = try container.decodeIfPresent(ElementOptions.self, forKey: .elements) {
-            self.elements = elements
-        }
-        if let hideShowCommands = try container.decodeIfPresent([String].self, forKey: .hideShowCommands) {
-            self.hideShowCommands = hideShowCommands
-        }
-        if let skinparamCommands = try container.decodeIfPresent([String].self, forKey: .skinparamCommands) {
-            self.skinparamCommands = skinparamCommands
-        }
-        if let includeRemoteURL = try container.decodeIfPresent(String.self, forKey: .includeRemoteURL) {
-            self.includeRemoteURL = includeRemoteURL
-        }
-        if let theme = try container.decodeIfPresent(String.self, forKey: .theme) {
-            self.theme = Theme(configValue: theme)
-        }
-        if let relationships = try container.decodeIfPresent(RelationshipOptions.self, forKey: .relationships) {
-            self.relationships = relationships
-        }
-        if let stereotypes = try container.decodeIfPresent(Stereotypes.self, forKey: .stereotypes) {
-            self.stereotypes = stereotypes
-        }
-        if let texts = try container.decodeIfPresent(PageTexts.self, forKey: .texts) {
-            self.texts = texts
-        }
-        if let format = try container.decodeIfPresent(DiagramFormat.self, forKey: .format) {
-            self.format = format
-        }
+        relationships = try container.decodeIfPresent(RelationshipOptions.self, forKey: .relationships) ?? relationships
+        stereotypes = try container.decodeIfPresent(Stereotypes.self, forKey: .stereotypes) ?? stereotypes
+        texts = try container.decodeIfPresent(PageTexts.self, forKey: .texts) ?? texts
+        format = try container.decodeIfPresent(DiagramFormat.self, forKey: .format) ?? format
     }
 
     /// A configuration using the defaults for every option.
-    public static let `default` = Configuration()
+    public static let `default` = Self()
 
     /// Which source files are included in generation (globs and excludes).
     public var files = FileOptions()

@@ -1,4 +1,3 @@
-import Foundation
 import os.log
 import Synchronization
 
@@ -12,7 +11,9 @@ public final class BridgeLogger: Sendable {
     /// stderr (#138). `nil` until `echo(to:)` sets one.
     private let sink = Mutex<(@Sendable (String) -> Void)?>(nil)
 
-    private init() {}
+    private init() {
+        // Private so that `shared` is the only logger; both properties have their defaults.
+    }
 
     /// Also hands every message from here on to `sink`, prefixed with its level; `nil` stops.
     public func echo(to sink: (@Sendable (String) -> Void)?) {
@@ -23,27 +24,27 @@ public final class BridgeLogger: Sendable {
         sink.withLock { $0 }?("\(level): \(message)")
     }
 
-    public func error(_ message: String, _ file: String = #file, _ function: String = #function, _ line: Int = #line) {
+    public func error(_ message: String, _: String = #file, _: String = #function, _: Int = #line) {
         logger.error("\(message, privacy: .public)")
         echo("error", message)
     }
 
     public func warning(
         _ message: String,
-        _ file: String = #file,
-        _ function: String = #function,
-        _ line: Int = #line
+        _: String = #file,
+        _: String = #function,
+        _: Int = #line
     ) {
         logger.warning("\(message, privacy: .public)")
         echo("warning", message)
     }
 
-    public func info(_ message: String, _ file: String = #file, _ function: String = #function, _ line: Int = #line) {
+    public func info(_ message: String, _: String = #file, _: String = #function, _: Int = #line) {
         logger.info("\(message, privacy: .public)")
         echo("info", message)
     }
 
-    public func debug(_ message: String, _ file: String = #file, _ function: String = #function, _ line: Int = #line) {
+    public func debug(_ message: String, _: String = #file, _: String = #function, _: Int = #line) {
         logger.debug("\(message, privacy: .public)")
         echo("debug", message)
     }

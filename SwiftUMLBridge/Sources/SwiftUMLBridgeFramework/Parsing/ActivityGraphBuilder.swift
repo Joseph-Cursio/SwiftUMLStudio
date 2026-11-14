@@ -103,8 +103,10 @@ struct ActivityGraphBuilder {
         switch item.item {
         case .stmt(let stmt):
             return walkStmt(stmt)
+
         case .expr(let expr):
             return walkExpression(expr)
+
         case .decl(let decl):
             return walkDecl(decl)
         }
@@ -219,6 +221,7 @@ struct ActivityGraphBuilder {
         switch label {
         case .case(let caseLabel):
             return compactText(caseLabel.caseItems.trimmedDescription)
+
         case .default:
             return "default"
         }

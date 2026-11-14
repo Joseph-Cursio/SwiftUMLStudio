@@ -1,5 +1,3 @@
-import Foundation
-
 /// The `Type.method` a sequence or activity diagram starts from, read from what was typed or
 /// picked. The method is what follows the last dot, and the type everything before it, so a
 /// method of a nested type, as `extension NS.Real { func run() }`, is `NS.Real.run`, the name
@@ -17,8 +15,8 @@ public struct EntryPointName: Equatable, Sendable {
     /// or with a part left empty by a leading, trailing or doubled dot.
     public init?(_ written: String) {
         let parts = written.split(separator: ".", omittingEmptySubsequences: false)
-        guard parts.count >= 2, !parts.contains(where: \.isEmpty), let method = parts.last else { return nil }
+        guard parts.count >= 2, !parts.contains(where: \.isEmpty), let last = parts.last else { return nil }
         self.type = parts.dropLast().joined(separator: ".")
-        self.method = String(method)
+        self.method = String(last)
     }
 }

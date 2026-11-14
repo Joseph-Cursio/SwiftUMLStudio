@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// Parses `ActivitySVGRenderer` output as XML. The other `ActivitySVGRenderer` tests check
 /// substrings, which a malformed document can still contain (#80).
@@ -21,14 +21,14 @@ struct ActivitySVGRendererWellFormednessTests {
                 ActivityNode(id: 1, kind: .action, label: label),
                 ActivityNode(id: 2, kind: .loopStart, label: label),
                 ActivityNode(id: 3, kind: .action, label: "body"),
-                ActivityNode(id: 4, kind: .end, label: "")
+                ActivityNode(id: 4, kind: .end, label: ""),
             ],
             edges: [
                 ActivityEdge(fromId: 0, toId: 1),
                 ActivityEdge(fromId: 1, toId: 2),
                 ActivityEdge(fromId: 2, toId: 3, label: label),
                 ActivityEdge(fromId: 3, toId: 2, label: label),
-                ActivityEdge(fromId: 2, toId: 4, label: "done")
+                ActivityEdge(fromId: 2, toId: 4, label: "done"),
             ],
             entryType: label, entryMethod: "run"
         )

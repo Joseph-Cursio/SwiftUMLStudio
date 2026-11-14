@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// An attribute or specifier in an inheritance clause says how a type conforms (`@MainActor P`,
 /// `@unchecked Sendable`, `nonisolated P`), not what it conforms to. These check that every diagram
@@ -44,7 +44,7 @@ struct AttributedSupertypeTests {
         ("protocol P {}\n@MainActor final class Foo: @unsafe nonisolated P {}",
          "protocol P {}\n@MainActor final class Foo: P {}"),
         ("protocol P {}\n@MainActor final class Foo: @MainActor(unsafe) P {}",
-         "protocol P {}\n@MainActor final class Foo: P {}")
+         "protocol P {}\n@MainActor final class Foo: P {}"),
     ]
 
     /// In Swift 6 mode only, a space ends a custom attribute, so `@MainActor (P)` applies it to `(P)`.
@@ -61,7 +61,7 @@ struct AttributedSupertypeTests {
         ("@globalActor actor Worker { static let shared = Worker() }\n"
             + "protocol P {}\n@Worker final class Foo: @Worker (P) {}",
          "@globalActor actor Worker { static let shared = Worker() }\n"
-            + "protocol P {}\n@Worker final class Foo: (P) {}")
+            + "protocol P {}\n@Worker final class Foo: (P) {}"),
     ]
 
     /// An isolated conformance to a protocol the file declares, and a checked-by-hand `Sendable`.
@@ -181,7 +181,7 @@ struct AttributedSupertypeTests {
     /// (#159). `SuppressedConformanceTests` covers the other formats.
     @Test("a suppressed conformance draws no edge")
     func suppressedConformanceDropped() {
-        #expect(edgeLines(classDiagram("struct Token: ~Copyable {}", .plantuml).text) == [])
+        #expect(edgeLines(classDiagram("struct Token: ~Copyable {}", .plantuml).text).isEmpty)
     }
 
     // MARK: - deps, ER and TypeInfo

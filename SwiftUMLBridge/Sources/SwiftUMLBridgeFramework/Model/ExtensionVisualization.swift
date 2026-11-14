@@ -1,5 +1,3 @@
-import Foundation
-
 /// Options which and how extensions shall be considered for class diagram generation
 public enum ExtensionVisualization: String, Codable, Sendable {
     case all
@@ -8,11 +6,11 @@ public enum ExtensionVisualization: String, Codable, Sendable {
     /// `ExtensionVisualization?` means nil, the default, which draws every extension.
     case hidden = "none"
 
-    static func from(_ showExtensions: Bool) -> ExtensionVisualization {
+    static func from(_ showExtensions: Bool) -> Self {
         showExtensions ? .all : .hidden
     }
 
-    public static var `default`: ExtensionVisualization { .all }
+    public static var `default`: Self { .all }
 }
 
 extension Optional where Wrapped == ExtensionVisualization {

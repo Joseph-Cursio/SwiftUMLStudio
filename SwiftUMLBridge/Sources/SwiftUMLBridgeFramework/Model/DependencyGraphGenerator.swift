@@ -10,7 +10,9 @@ public enum DepsMode: String, CaseIterable, Sendable {
 
 /// Generates dependency graph scripts from Swift source files.
 public struct DependencyGraphGenerator: DependencyGraphGenerating, Sendable {
-    public init() {}
+    public init() {
+        // Public because a struct's implicit initializer is internal; there is no state to set.
+    }
 
     /// Generate a `DepsScript` from Swift files at the given paths.
     ///
@@ -30,6 +32,7 @@ public struct DependencyGraphGenerator: DependencyGraphGenerating, Sendable {
         switch mode {
         case .types:
             edges = extractTypeEdges(from: files, configuration: configuration)
+
         case .modules:
             edges = extractModuleEdges(from: files, configuration: configuration)
         }
@@ -48,6 +51,7 @@ public struct DependencyGraphGenerator: DependencyGraphGenerating, Sendable {
         switch mode {
         case .types:
             return extractTypeEdges(from: files, configuration: configuration)
+
         case .modules:
             return extractModuleEdges(from: files, configuration: configuration)
         }
@@ -81,6 +85,7 @@ public struct DependencyGraphGenerator: DependencyGraphGenerating, Sendable {
                     .filter { $0.kind != .test && !shouldExclude(name: $0.name, configuration: configuration) }
                     .map { ($0.name, $0.kind) }
             )
+
         case .types:
             edges = extractTypeEdges(
                 forPackage: description,
@@ -136,7 +141,9 @@ public struct DependencyGraphGenerator: DependencyGraphGenerating, Sendable {
     /// `item` writes it, so `struct S: Q` after `typealias Q = Proto` ends on `Proto` (#125).
     /// `nil` when the name as written, or the type it comes to, is excluded.
     private func supertypeName(
-        of parent: SyntaxStructure, in item: SyntaxStructure, aliases: TypeAliasResolver,
+        of parent: SyntaxStructure,
+        in item: SyntaxStructure,
+        aliases: TypeAliasResolver,
         configuration: Configuration
     ) -> String? {
         guard let written = parent.name, !shouldExclude(name: written, configuration: configuration) else {
@@ -273,6 +280,6 @@ public struct DependencyGraphGenerator: DependencyGraphGenerating, Sendable {
     func shouldExclude(name: String, configuration: Configuration) -> Bool {
         guard let excludePatterns = configuration.elements.exclude else { return false }
         // Names are read as Swift reads them (#123), so a pattern is too: `` `Base` `` is `Base`.
-        return excludePatterns.contains(where: { name.isMatching(searchPattern: $0.canonicalDottedName) })
+        return excludePatterns.contains { name.isMatching(searchPattern: $0.canonicalDottedName) }
     }
 }

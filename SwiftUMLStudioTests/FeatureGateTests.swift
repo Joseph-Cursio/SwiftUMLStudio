@@ -1,6 +1,5 @@
-import Foundation
-import Testing
 @testable import SwiftUMLStudio
+import Testing
 
 // MARK: - ProFeature Tests
 

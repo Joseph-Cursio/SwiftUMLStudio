@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// With an SDK path, the SourceKit typename supplement gives a stored property with no written
 /// type the type Swift infers for it. Without one, it knows only the written types. Until #147,
@@ -87,7 +87,7 @@ struct InferredTypenameTests {
                 extension Store {
                     static let shared = Store()
                 }
-                """
+                """,
         ], sdkPath: Self.sdkPath)
         #expect(members.contains("~items : [String]"), "\(members)")
         #expect(members.contains("~depth : Double"), "\(members)")
@@ -98,7 +98,7 @@ struct InferredTypenameTests {
     func unresolvedIsLeftOut() async throws {
         let members = try await members([
             "Store.swift": "struct Store { var cache = Cache() }",
-            "Cache.swift": "struct Cache { var hits = 0 }"
+            "Cache.swift": "struct Cache { var hits = 0 }",
         ], sdkPath: Self.sdkPath)
         #expect(members.contains("~cache"), "\(members)")
         #expect(members.contains("~hits : Int"), "\(members)")
@@ -130,7 +130,7 @@ struct InferredTypenameTests {
         let description = SPMPackageDescription(name: "Demo", targets: [
             SPMTargetDescription(
                 name: "Core", kind: .library, path: "Sources/Core", sources: ["S.swift"], dependencies: []
-            )
+            ),
         ])
         let text = await Self.offCooperativePool {
             ClassDiagramGenerator().generateScript(

@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// A subclass has its superclass's nested types and typealiases as members, so after
 /// `class Parent { typealias P = R }` and `class Outer: Parent {}`, `Outer.P` means `R`, and so does
@@ -92,7 +92,7 @@ struct InheritedMemberTests {
         "class Parent {}\nextension Parent {\n    typealias P = R\n}\nclass Outer: Parent {}\nstruct W: Outer.P {}",
         "class Parent {\n    typealias P = R\n}\nclass Outer: Parent {}\ntypealias Alias = Outer\nstruct W: Alias.P {}",
         "class Parent<T> {\n    typealias P = R\n}\nclass Outer: Parent<Int> {}\nstruct W: Outer.P {}",
-        "class Parent {\n    typealias P = R\n}\ntypealias Base = Parent\nclass Outer: Base {}\nstruct W: Outer.P {}"
+        "class Parent {\n    typealias P = R\n}\ntypealias Base = Parent\nclass Outer: Base {}\nstruct W: Outer.P {}",
     ])
     func eachWayToTheMember(source: String) throws {
         let files: [(module: String?, source: String)] = [("Main", "protocol R {}\n" + source)]
@@ -104,7 +104,7 @@ struct InheritedMemberTests {
     /// declares it.
     @Test("a class's own member comes before an inherited one", arguments: [
         "class Outer: Parent {\n    typealias P = S\n}",
-        "class Outer: Parent {}\nextension Outer {\n    typealias P = S\n}"
+        "class Outer: Parent {}\nextension Outer {\n    typealias P = S\n}",
     ])
     func ownMemberFirst(outer: String) throws {
         let parent = "protocol R {}\nprotocol S {}\nclass Parent {\n    typealias P = R\n}\n"
@@ -161,7 +161,7 @@ struct InheritedMemberTests {
             + "enum E {\n    typealias P = S\n    class Sub: Parent {\n        struct W: P {}\n    }\n}",
          "E.Sub.W -> S"),
         ("protocol S {}\nclass Parent {\n    typealias P = R\n}\n"
-            + "class Outer: Parent {\n    private typealias P = S\n}\nstruct W: Outer.P {}", "W -> R")
+            + "class Outer: Parent {\n    private typealias P = S\n}\nstruct W: Outer.P {}", "W -> R"),
     ])
     func privateMemberIsNotInherited(source: String, edge: String) throws {
         let files: [(module: String?, source: String)] = [("Main", "protocol R {}\n" + source)]
@@ -231,7 +231,7 @@ struct InheritedMemberTests {
         let files: [NearestDirectoryFixture.File] = [
             ("Probe/Sources/Dir0/Outer.swift", Self.rival),
             ("Probe/Sources/Main/Outer.swift",
-             "class Parent {\n    class P {}\n}\nclass Outer: Parent {}\nclass W: Outer.P {}\n")
+             "class Parent {\n    class P {}\n}\nclass Outer: Parent {}\nclass W: Outer.P {}\n"),
         ]
         let hidden = ElementOptions(showNestedTypes: false)
         #expect(!(try NearestDirectoryFixture.edges(files, hidden)).contains("W -> Q"))
@@ -261,7 +261,7 @@ struct InheritedMemberTests {
         "class Parent {\n    private typealias P = R\n    class Sub: Parent {}\n}\n"
             + "extension Parent.Sub {\n    struct W: P {}\n}",
         "class Parent {\n    private typealias P = R\n}\ntypealias PA = Parent\nclass Outer: Parent {}\n"
-            + "extension PA {\n    struct W: Outer.P {}\n}"
+            + "extension PA {\n    struct W: Outer.P {}\n}",
     ])
     func privateMemberSeenInExtension(source: String) throws {
         let files: [(module: String?, source: String)] = [("Main", "protocol P {}\nprotocol R {}\n" + source)]
@@ -277,7 +277,7 @@ struct InheritedMemberTests {
             + "class W: Int.Sub.X {}", "W -> Base.X"),
         ("class Root {\n    class Handler {}\n}\n"
             + "extension Int {\n    class Mid: Root {\n        class Handler {}\n    }\n}\n"
-            + "class Leaf: Int.Mid {}\nclass H: Leaf.Handler {}", "H -> Root.Handler")
+            + "class Leaf: Int.Mid {}\nclass H: Leaf.Handler {}", "H -> Root.Handler"),
     ])
     func classInOutsideExtension(source: String, wrong: String) throws {
         #expect(!svgEdges(try moduleQualifiedItems([("Main", source)])).contains(wrong))
@@ -305,7 +305,7 @@ struct InheritedMemberTests {
     /// for every type merged after it: that cost grew with the square of the types.
     @Test("hidden nested types are recorded once each")
     func hiddenNestedTypesCostOnce() throws {
-        let source = (0..<3000).map { "struct T\($0) {\n    struct N\($0) {}\n}" }.joined(separator: "\n")
+        let source = (0..<3_000).map { "struct T\($0) {\n    struct N\($0) {}\n}" }.joined(separator: "\n")
         let items = try #require(SyntaxStructure.create(from: source)?.substructure)
         let configuration = Configuration(elements: ElementOptions(showNestedTypes: false), format: .plantuml)
         let seconds = ThreadCPUClock.seconds { _ = DiagramScript(items: items, configuration: configuration) }

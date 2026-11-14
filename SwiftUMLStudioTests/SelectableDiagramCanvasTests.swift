@@ -1,6 +1,6 @@
 import SwiftUI
-import Testing
 @testable import SwiftUMLStudio
+import Testing
 
 /// The selection handlers themselves are tested through each canvas, in NativeDiagramViewTests
 /// and NativeSequenceDiagramViewTests. This pins the key each arrow direction listens for, which
@@ -12,7 +12,7 @@ struct SelectableDiagramCanvasTests {
         (NativeDiagramGeometry.NavigationDirection.upward, KeyEquivalent.upArrow),
         (.down, .downArrow),
         (.left, .leftArrow),
-        (.right, .rightArrow)
+        (.right, .rightArrow),
     ])
     func arrowKey(direction: NativeDiagramGeometry.NavigationDirection, key: KeyEquivalent) {
         #expect(direction.key == key)

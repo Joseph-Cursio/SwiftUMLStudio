@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// How `TypeLookup` reads a module qualifier (#124): which modules a qualifier names, which
 /// declarations a module owns, when a type keeps a qualifier from being read as a module, which
@@ -35,7 +35,7 @@ struct ModuleQualifiedLookupTests {
     /// The names `swift package describe --type json` reports as each target's `c99name`.
     @Test("a target's module name is derived as SwiftPM derives it", arguments: [
         ("my-lib", "my_lib"), ("2D", "_D"), ("1st-party", "_st_party"), ("9", "_"), ("a b.c", "a_b_c"),
-        ("Plain", "Plain")
+        ("Plain", "Plain"),
     ])
     func c99Name(target: String, module: String) {
         #expect(ModuleQualifiers.c99Name(of: target) == module)
@@ -61,7 +61,7 @@ struct ModuleQualifiedLookupTests {
     /// qualifier finds `Foo`, and `Nested` is a member of that `Foo` wherever it was declared.
     @Test("a type another module nests in a module's type is reached through that module")
     func nestedByAnotherModule() throws {
-        let modA = "public struct Foo {\n    public init() {}\n}"
+        let moduleASource = "public struct Foo {\n    public init() {}\n}"
         let modB = """
             import ModA
 
@@ -81,7 +81,7 @@ struct ModuleQualifiedLookupTests {
                 func fromC() {}
             }
             """
-        let graph = try graph([("ModA", modA), ("ModB", modB), ("ModC", modC)])
+        let graph = try graph([("ModA", moduleASource), ("ModB", modB), ("ModC", modC)])
         #expect(graph.owner(of: "fromC") == "Foo.Nested")
     }
 
@@ -90,7 +90,7 @@ struct ModuleQualifiedLookupTests {
     /// `extension Foo.Nested` extends it.
     @Test("a type nested in a module-qualified extension is reached through its type's own name")
     func nestedInQualifiedExtension() throws {
-        let modA = "public struct Foo {\n    public init() {}\n}"
+        let moduleASource = "public struct Foo {\n    public init() {}\n}"
         let modB = """
             import ModA
 
@@ -108,7 +108,7 @@ struct ModuleQualifiedLookupTests {
                 func fromC() {}
             }
             """
-        let graph = try graph([("ModA", modA), ("ModB", modB), ("ModC", modC)])
+        let graph = try graph([("ModA", moduleASource), ("ModB", modB), ("ModC", modC)])
         #expect(graph.owner(of: "fromC") == "ModA.Foo.Nested")
     }
 
@@ -249,7 +249,7 @@ struct ModuleQualifiedLookupTests {
         let sources = [
             "ModA": Self.modA.replacingOccurrences(of: "public struct Inner", with: "struct Inner")
                 + "\nextension Foo {\n    func fromA() {}\n}\n",
-            "ModB": "import ModA\n\nextension ModA.Foo {\n    func fromB() {}\n}\n"
+            "ModB": "import ModA\n\nextension ModA.Foo {\n    func fromB() {}\n}\n",
         ]
         let files = order.map { (module: Optional($0), source: sources[$0] ?? "") }
         let internalOnly = ElementOptions(havingAccessLevel: [.internal])
@@ -259,10 +259,10 @@ struct ModuleQualifiedLookupTests {
             == ["\(standIn) +-- Foo.Inner"])
 
         let mergedInternal = ElementOptions(havingAccessLevel: [.internal], showExtensions: .merged)
-        let merged = try graph(files, Configuration(elements: mergedInternal, format: .svg))
-        #expect(merged.owner(of: "fromA") == standIn)
-        #expect(merged.owner(of: "fromB") == standIn)
-        #expect(merged.edgeEnds == ["\(standIn) -> Foo.Inner"])
+        let mergedGraph = try graph(files, Configuration(elements: mergedInternal, format: .svg))
+        #expect(mergedGraph.owner(of: "fromA") == standIn)
+        #expect(mergedGraph.owner(of: "fromB") == standIn)
+        #expect(mergedGraph.edgeEnds == ["\(standIn) -> Foo.Inner"])
     }
 
     /// Only public declarations are drawn, so the internal `Real` is hidden and `extension Alias`

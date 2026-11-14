@@ -77,20 +77,25 @@ extension SyntaxStructure {
         switch kind {
         case .functionMethodInstance:
             return "\(name)()"
+
         case .functionMethodStatic:
             return "\(name)()$"
+
         case .varInstance:
             if let typename = element.typename {
                 return "\(typename) \(name)"
             }
             return "\(name)"
+
         case .varStatic:
             if let typename = element.typename {
                 return "\(typename) \(name)$"
             }
             return "\(name)$"
+
         case .enumelement:
             return "\(name)"
+
         default:
             return ""
         }

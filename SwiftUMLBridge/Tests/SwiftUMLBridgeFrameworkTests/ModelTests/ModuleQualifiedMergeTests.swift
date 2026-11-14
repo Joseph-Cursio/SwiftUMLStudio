@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// What `--merge-extensions` and the lookup do with members of an extension spelled through a
 /// module (#124): a typealias it declares, a type nested in it, an extension `elements.exclude`
@@ -73,7 +73,8 @@ struct ModuleQualifiedMergeTests {
         let files: [(module: String?, source: String)] = [("ModA", modA), ("ModB", modB)]
         let edges = ClassDiagramIds.lines(
             of: try text(files, Configuration(elements: Self.merged)), containing: "Inner"
-        ).filter { $0.contains("<|") }
+        )
+            .filter { $0.contains("<|") }
         #expect(edges == ["Real <|.. ModA.Foo.Inner : conforms to"])
         #expect(try graph(files, Configuration(elements: Self.merged, format: .svg)).edgeEnds
             .contains("ModA.Foo.Inner -> Real"))

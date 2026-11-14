@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 @Suite("ActivitySVGRenderer — layout and rendering")
 struct ActivitySVGRendererTests {
@@ -10,12 +10,12 @@ struct ActivitySVGRendererTests {
                 ActivityNode(id: 0, kind: .start, label: ""),
                 ActivityNode(id: 1, kind: .action, label: "step1"),
                 ActivityNode(id: 2, kind: .action, label: "step2"),
-                ActivityNode(id: 3, kind: .end, label: "")
+                ActivityNode(id: 3, kind: .end, label: ""),
             ],
             edges: [
                 ActivityEdge(fromId: 0, toId: 1),
                 ActivityEdge(fromId: 1, toId: 2),
-                ActivityEdge(fromId: 2, toId: 3)
+                ActivityEdge(fromId: 2, toId: 3),
             ],
             entryType: "Foo", entryMethod: "run"
         )
@@ -57,8 +57,8 @@ struct ActivitySVGRendererTests {
     @Test("positioned nodes preserve kind")
     func positionedNodesPreserveKind() {
         let layout = ActivitySVGRenderer.computeLayout(from: straightLineGraph())
-        #expect(layout.nodes.first(where: { $0.id == 0 })?.kind == .start)
-        #expect(layout.nodes.first(where: { $0.id == 3 })?.kind == .end)
+        #expect(layout.nodes.first { $0.id == 0 }?.kind == .start)
+        #expect(layout.nodes.first { $0.id == 3 }?.kind == .end)
     }
 
     @Test("back-edges at lower row do not increase target row")
@@ -68,13 +68,13 @@ struct ActivitySVGRendererTests {
                 ActivityNode(id: 0, kind: .start, label: ""),
                 ActivityNode(id: 1, kind: .loopStart, label: "while cond"),
                 ActivityNode(id: 2, kind: .action, label: "body"),
-                ActivityNode(id: 3, kind: .end, label: "")
+                ActivityNode(id: 3, kind: .end, label: ""),
             ],
             edges: [
                 ActivityEdge(fromId: 0, toId: 1),
                 ActivityEdge(fromId: 1, toId: 2, label: "true"),
                 ActivityEdge(fromId: 2, toId: 1),
-                ActivityEdge(fromId: 1, toId: 3)
+                ActivityEdge(fromId: 1, toId: 3),
             ],
             entryType: "Foo", entryMethod: "run"
         )
@@ -114,7 +114,7 @@ struct ActivitySVGRendererTests {
                 ActivityNode(id: 2, kind: .action, label: "then"),
                 ActivityNode(id: 3, kind: .action, label: "else"),
                 ActivityNode(id: 4, kind: .merge, label: ""),
-                ActivityNode(id: 5, kind: .end, label: "")
+                ActivityNode(id: 5, kind: .end, label: ""),
             ],
             edges: [
                 ActivityEdge(fromId: 0, toId: 1),
@@ -122,7 +122,7 @@ struct ActivitySVGRendererTests {
                 ActivityEdge(fromId: 1, toId: 3, label: "false"),
                 ActivityEdge(fromId: 2, toId: 4),
                 ActivityEdge(fromId: 3, toId: 4),
-                ActivityEdge(fromId: 4, toId: 5)
+                ActivityEdge(fromId: 4, toId: 5),
             ],
             entryType: "Foo", entryMethod: "run"
         )
@@ -156,7 +156,7 @@ struct ActivitySVGRendererTests {
                 ActivityNode(id: 2, kind: .action, label: "task1", isAsync: true),
                 ActivityNode(id: 3, kind: .action, label: "task2", isAsync: true),
                 ActivityNode(id: 4, kind: .join, label: ""),
-                ActivityNode(id: 5, kind: .end, label: "")
+                ActivityNode(id: 5, kind: .end, label: ""),
             ],
             edges: [
                 ActivityEdge(fromId: 0, toId: 1),
@@ -164,7 +164,7 @@ struct ActivitySVGRendererTests {
                 ActivityEdge(fromId: 1, toId: 3),
                 ActivityEdge(fromId: 2, toId: 4),
                 ActivityEdge(fromId: 3, toId: 4),
-                ActivityEdge(fromId: 4, toId: 5)
+                ActivityEdge(fromId: 4, toId: 5),
             ],
             entryType: "Foo", entryMethod: "run"
         )
@@ -192,13 +192,13 @@ struct ActivitySVGRendererTests {
                 ActivityNode(id: 0, kind: .start, label: ""),
                 ActivityNode(id: 1, kind: .loopStart, label: "while cond"),
                 ActivityNode(id: 2, kind: .action, label: "body"),
-                ActivityNode(id: 3, kind: .end, label: "")
+                ActivityNode(id: 3, kind: .end, label: ""),
             ],
             edges: [
                 ActivityEdge(fromId: 0, toId: 1),
                 ActivityEdge(fromId: 1, toId: 2, label: "true"),
                 ActivityEdge(fromId: 2, toId: 1),
-                ActivityEdge(fromId: 1, toId: 3)
+                ActivityEdge(fromId: 1, toId: 3),
             ],
             entryType: "Foo", entryMethod: "run"
         )

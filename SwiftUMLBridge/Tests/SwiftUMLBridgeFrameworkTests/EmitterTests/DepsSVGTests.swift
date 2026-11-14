@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 @Suite("DepsScript — SVG")
 struct DepsSVGTests {
@@ -48,7 +48,7 @@ struct DepsSVGTests {
     func layoutGraphHasExpectedEdges() {
         let edges = [
             DependencyEdge(from: "Alpha", toNode: "Beta", kind: .conforms),
-            DependencyEdge(from: "Beta", toNode: "Gamma", kind: .inherits)
+            DependencyEdge(from: "Beta", toNode: "Gamma", kind: .inherits),
         ]
         let script = makeScript(edges: edges)
         #expect(script.layoutGraph?.edges.count == 2)
@@ -88,7 +88,7 @@ struct DepsSVGTests {
         let edges = [
             DependencyEdge(from: "AppModel", toNode: "DataStore", kind: .imports),
             DependencyEdge(from: "DataStore", toNode: "Network", kind: .imports),
-            DependencyEdge(from: "Network", toNode: "Foundation", kind: .imports)
+            DependencyEdge(from: "Network", toNode: "Foundation", kind: .imports),
         ]
         let script = makeScript(edges: edges)
         #expect(script.text.contains("AppModel"))

@@ -1,8 +1,8 @@
 import Foundation
+@testable import swiftumlbridge
+import SwiftUMLBridgeFramework
 import Synchronization
 import Testing
-import SwiftUMLBridgeFramework
-@testable import swiftumlbridge
 
 /// A script holding `layoutGraph`, as a class diagram or deps graph in SVG does.
 private struct StubScript: DiagramOutputting {
@@ -15,7 +15,7 @@ private struct StubScript: DiagramOutputting {
 private final class Recorder: DiagramPresenting {
     let events = Mutex<[String]>([])
 
-    func present(script: any DiagramOutputting) async {
+    func present(script _: any DiagramOutputting) {
         events.withLock { $0.append("presented") }
     }
 

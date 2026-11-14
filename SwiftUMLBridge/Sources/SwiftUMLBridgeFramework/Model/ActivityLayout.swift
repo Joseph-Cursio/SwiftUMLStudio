@@ -1,5 +1,3 @@
-import Foundation
-
 // MARK: - Positioned Activity Node
 
 /// A positioned node in a laid-out activity diagram.
@@ -63,6 +61,6 @@ public struct ActivityLayout: Sendable {
 
     /// Returns positioned node by id, or nil.
     public func node(withId identifier: Int) -> PositionedActivityNode? {
-        nodes.first(where: { $0.id == identifier })
+        nodes.first { $0.id == identifier }
     }
 }

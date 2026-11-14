@@ -7,10 +7,9 @@
 //  saved from does.
 //
 
-import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
 @testable import SwiftUMLStudio
+import Testing
 
 @Suite("SimpleDiagramScript") @MainActor
 struct SimpleDiagramScriptTests {

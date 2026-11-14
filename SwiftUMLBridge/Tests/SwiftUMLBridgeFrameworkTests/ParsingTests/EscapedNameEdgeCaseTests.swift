@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// The places a name escaped on one side must still read as one name, beyond the issue's witnesses:
 /// a typed-in exclude pattern, `` `self` `` as a receiver, attribute arguments, member names after a

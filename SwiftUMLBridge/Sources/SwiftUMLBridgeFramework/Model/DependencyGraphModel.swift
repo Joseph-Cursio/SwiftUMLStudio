@@ -1,38 +1,3 @@
-import Foundation
-
-/// A directed graph of dependency edges between Swift types or modules.
-public struct DependencyGraphModel: Sendable {
-    /// All edges in the dependency graph.
-    public let edges: [DependencyEdge]
-
-    /// SPM target kind keyed by target name. Populated by the
-    /// `forPackage:` generator path in modules mode so emitters can render
-    /// `<<library>>` / `<<executable>>` / `<<test>>` stereotypes. Empty in
-    /// the path-based flow.
-    public let targetKinds: [String: SPMTargetDescription.Kind]
-
-    public init(
-        edges: [DependencyEdge],
-        targetKinds: [String: SPMTargetDescription.Kind] = [:]
-    ) {
-        self.edges = edges
-        self.targetKinds = targetKinds
-    }
-
-    /// Names of the nodes on at least one cycle: every node of a strongly connected component
-    /// with more than one node, and every node with an edge to itself. A node that only leads
-    /// into a cycle, or is only reached from one, is not on it.
-    ///
-    /// Found with Tarjan's algorithm, so the answer does not depend on where the search starts.
-    /// The search keeps its own stack instead of recursing: the CLI and Studio call this on a
-    /// cooperative thread, whose stack a recursive search overflowed on an inheritance chain
-    /// about 380 types long in a debug build and about 3,000 in a release one (#149).
-    public func detectCycles() -> Set<String> {
-        var search = CycleSearch(edges: edges)
-        return search.run()
-    }
-}
-
 /// Tarjan's strongly connected components over `DependencyGraphModel`'s edges, with the nodes
 /// numbered in the order the edges first name them, and an explicit search path in place of
 /// recursion.
@@ -133,5 +98,38 @@ private struct CycleSearch {
         for member in members {
             cycleNodes.insert(names[member])
         }
+    }
+}
+
+/// A directed graph of dependency edges between Swift types or modules.
+public struct DependencyGraphModel: Sendable {
+    /// All edges in the dependency graph.
+    public let edges: [DependencyEdge]
+
+    /// SPM target kind keyed by target name. Populated by the
+    /// `forPackage:` generator path in modules mode so emitters can render
+    /// `<<library>>` / `<<executable>>` / `<<test>>` stereotypes. Empty in
+    /// the path-based flow.
+    public let targetKinds: [String: SPMTargetDescription.Kind]
+
+    public init(
+        edges: [DependencyEdge],
+        targetKinds: [String: SPMTargetDescription.Kind] = [:]
+    ) {
+        self.edges = edges
+        self.targetKinds = targetKinds
+    }
+
+    /// Names of the nodes on at least one cycle: every node of a strongly connected component
+    /// with more than one node, and every node with an edge to itself. A node that only leads
+    /// into a cycle, or is only reached from one, is not on it.
+    ///
+    /// Found with Tarjan's algorithm, so the answer does not depend on where the search starts.
+    /// The search keeps its own stack instead of recursing: the CLI and Studio call this on a
+    /// cooperative thread, whose stack a recursive search overflowed on an inheritance chain
+    /// about 380 types long in a debug build and about 3,000 in a release one (#149).
+    public func detectCycles() -> Set<String> {
+        var search = CycleSearch(edges: edges)
+        return search.run()
     }
 }

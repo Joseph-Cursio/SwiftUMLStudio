@@ -41,15 +41,16 @@ public struct SequenceSVGRenderer: Sendable {
         let lifelinesEndY = messagesStartY + Double(traversedEdges.count) * messageSpacing + lifelineExtension
         let lifelineStartY = topMargin + participantHeight
 
-        var participantX: [String: Double] = [:]
-        for (idx, name) in participantNames.enumerated() {
-            participantX[name] = leftMargin + Double(idx) * participantSpacing + participantSpacing / 2
+        // `collectParticipants` lists each name once, the entry type first.
+        let centerXs = participantNames.indices.map {
+            leftMargin + Double($0) * participantSpacing + participantSpacing / 2
         }
+        let participantX = Dictionary(uniqueKeysWithValues: zip(participantNames, centerXs))
 
-        let participants = participantNames.map { name in
+        let participants = zip(participantNames, centerXs).map { name, centerX in
             SequenceParticipant(
                 name: name,
-                centerX: participantX[name]!,
+                centerX: centerX,
                 topY: topMargin,
                 width: participantWidth,
                 height: participantHeight,
@@ -57,8 +58,10 @@ public struct SequenceSVGRenderer: Sendable {
                 sourceLocation: typeLocations[name]
             )
         }
-        let messages = buildMessages(from: traversedEdges, participantX: participantX,
-                                     entryType: entryType, startY: messagesStartY)
+        let messages = buildMessages(
+            from: traversedEdges, participantX: participantX,
+            entryX: centerXs[0], startY: messagesStartY
+        )
 
         return SequenceLayout(
             participants: participants, messages: messages,
@@ -79,7 +82,7 @@ public struct SequenceSVGRenderer: Sendable {
     }
 
     private static func buildMessages(
-        from edges: [CallEdge], participantX: [String: Double], entryType: String, startY: Double
+        from edges: [CallEdge], participantX: [String: Double], entryX: Double, startY: Double
     ) -> [SequenceMessage] {
         var messages: [SequenceMessage] = []
         var currentY = startY
@@ -87,7 +90,7 @@ public struct SequenceSVGRenderer: Sendable {
             if edge.isUnresolved {
                 // Beside the type that made the call (#132). A traversed edge's caller is always a
                 // participant; a hand-built one may not be, and its note goes beside the entry type.
-                let noteX = participantX[edge.callerType] ?? participantX[entryType]!
+                let noteX = participantX[edge.callerType] ?? entryX
                 messages.append(SequenceMessage(
                     id: idx, label: "\(edge.calleeMethod)()", fromX: noteX, toX: noteX + 60,
                     posY: currentY, isUnresolved: true, noteText: "Unresolved: \(edge.calleeMethod)()"

@@ -1,9 +1,8 @@
 import Foundation
-import SwiftUI
 import SwiftUMLBridgeFramework
+@testable import SwiftUMLStudio
 import Testing
 import ViewInspector
-@testable import SwiftUMLStudio
 
 /// The entry list offered names the Studio could not draw (#234). Picking `NS.Real.run`, from
 /// `extension NS.Real`, generated nothing and set no error: the previous entry's diagram stayed up

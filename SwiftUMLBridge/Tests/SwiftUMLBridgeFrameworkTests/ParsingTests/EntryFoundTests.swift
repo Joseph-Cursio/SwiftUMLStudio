@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// An entry that comes to no method with a body draws an empty diagram, as one that calls or does
 /// nothing does. The scripts tell the two apart, so the CLI can say which (#239).
@@ -14,7 +14,7 @@ struct EntryFoundTests {
         defer { try? FileManager.default.removeItem(at: root) }
         return [
             SequenceDiagramGenerator().generateScript(for: paths, entryType: type, entryMethod: method).foundEntry,
-            ActivityDiagramGenerator().generateScript(for: paths, entryType: type, entryMethod: method).foundEntry
+            ActivityDiagramGenerator().generateScript(for: paths, entryType: type, entryMethod: method).foundEntry,
         ]
     }
 

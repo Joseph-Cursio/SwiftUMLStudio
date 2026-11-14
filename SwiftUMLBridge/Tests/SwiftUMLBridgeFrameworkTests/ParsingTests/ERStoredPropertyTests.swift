@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// SwiftData's `@Model` macro stores a class's stored instance properties, except `@Transient`
 /// ones. Of stacked attributes it reads only the first `@Attribute` and the first
@@ -12,7 +12,8 @@ struct ERStoredPropertyTests {
             @Model final class Country {
                 \(attributes) var \(name): String = ""
             }
-            """).entities.flatMap(\.attributes)
+            """).entities
+            .flatMap(\.attributes)
             .map { "\($0.name) unique=\($0.isUnique) pk=\($0.isPrimaryKey) transient=\($0.isTransient)" }
     }
 
@@ -53,14 +54,16 @@ struct ERStoredPropertyTests {
             @Model final class Owner {
                 @Transient var make: () -> Int = { 1 }
             }
-            """).entities.flatMap(\.attributes).map { "\($0.name) transient=\($0.isTransient)" }
+            """).entities
+                .flatMap(\.attributes)
+                .map { "\($0.name) transient=\($0.isTransient)" }
         #expect(listed == ["make transient=true"])
     }
 
     @Test("a @Transient property is not a relationship", arguments: [
         "@Transient",
         "@Transient @Relationship(deleteRule: .cascade)",
-        "@Relationship(deleteRule: .cascade) @Transient"
+        "@Relationship(deleteRule: .cascade) @Transient",
     ])
     func transientIsNotARelationship(attributes: String) {
         let model = ERModelExtractor.extract(from: """
@@ -73,13 +76,13 @@ struct ERStoredPropertyTests {
         let listed = model.entities.flatMap { entity in
             entity.attributes.map { "\(entity.name).\($0.name) transient=\($0.isTransient)" }
         }
-        #expect(relationships == [])
+        #expect(relationships.isEmpty)
         #expect(listed == ["Owner.recent transient=true"])
     }
 
     @Test("a @Transient property is not unique, whatever @Attribute says", arguments: [
         "@Transient @Attribute(.unique)",
-        "@Attribute(.unique) @Transient"
+        "@Attribute(.unique) @Transient",
     ])
     func transientIsNotUnique(attributes: String) {
         #expect(flags(attributes) == ["code unique=false pk=false transient=true"])
@@ -94,7 +97,7 @@ struct ERStoredPropertyTests {
     @Test("only the first @Attribute's options count", arguments: [
         ("@Attribute(.spotlight) @Attribute(.unique)", false),
         ("@Attribute(.unique) @Attribute(.spotlight)", true),
-        ("@Attribute(.spotlight, .unique)", true)
+        ("@Attribute(.spotlight, .unique)", true),
     ])
     func firstAttributeWins(attributes: String, unique: Bool) {
         #expect(flags(attributes) == ["code unique=\(unique) pk=\(unique) transient=false"])
@@ -107,7 +110,7 @@ struct ERStoredPropertyTests {
          ["Author.books -> Book", "Book.writer -> Author"]),
         ("@Relationship(inverse: \\Book.writer) @Relationship(deleteRule: .cascade)",
          ["Author.books -> Book"]),
-        ("@Relationship(deleteRule: .cascade)", ["Author.books -> Book", "Book.writer -> Author"])
+        ("@Relationship(deleteRule: .cascade)", ["Author.books -> Book", "Book.writer -> Author"]),
     ])
     func firstRelationshipWins(attributes: String, expected: [String]) {
         let relationships = ERModelExtractor.extract(from: """
@@ -117,7 +120,8 @@ struct ERStoredPropertyTests {
             @Model final class Book {
                 var writer: Author?
             }
-            """).relationships.map { "\($0.from).\($0.label) -> \($0.toEntity)" }
+            """).relationships
+                .map { "\($0.from).\($0.label) -> \($0.toEntity)" }
         #expect(relationships == expected)
     }
 }

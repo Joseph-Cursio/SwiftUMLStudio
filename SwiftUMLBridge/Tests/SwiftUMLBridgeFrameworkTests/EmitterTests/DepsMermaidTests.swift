@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 @Suite("DepsScript — Mermaid")
 struct DepsMermaidTests {
@@ -39,7 +39,7 @@ struct DepsMermaidTests {
     func eachNodeDeclaredOnce() {
         let edges = [
             DependencyEdge(from: "A", toNode: "B", kind: .conforms),
-            DependencyEdge(from: "A", toNode: "C", kind: .conforms)
+            DependencyEdge(from: "A", toNode: "C", kind: .conforms),
         ]
         let script = makeScript(edges: edges)
         let aCount = script.text.components(separatedBy: "\"A\"").count - 1
@@ -61,7 +61,7 @@ struct DepsMermaidTests {
     func multipleEdgesHaveArrows() {
         let edges = [
             DependencyEdge(from: "A", toNode: "B", kind: .conforms),
-            DependencyEdge(from: "B", toNode: "C", kind: .imports)
+            DependencyEdge(from: "B", toNode: "C", kind: .imports),
         ]
         let script = makeScript(edges: edges)
         let arrowLines = script.text.components(separatedBy: "\n").filter { $0.contains("-->") }
@@ -74,7 +74,7 @@ struct DepsMermaidTests {
     func cyclicNodesReceiveRedFill() {
         let edges = [
             DependencyEdge(from: "Alpha", toNode: "Beta", kind: .imports),
-            DependencyEdge(from: "Beta", toNode: "Alpha", kind: .imports)
+            DependencyEdge(from: "Beta", toNode: "Alpha", kind: .imports),
         ]
         let script = makeScript(edges: edges)
         #expect(script.text.contains("#ffcccc"))

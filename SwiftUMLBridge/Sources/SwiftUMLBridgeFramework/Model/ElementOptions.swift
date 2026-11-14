@@ -1,5 +1,3 @@
-import Foundation
-
 /// Options which and how elements shall be considered for class diagram generation
 public struct ElementOptions: Codable, Sendable {
     // Parallel List Drift pairs this against the full `AccessLevel` enum (it is missing
@@ -10,9 +8,9 @@ public struct ElementOptions: Codable, Sendable {
     /// were four identical `[.open, .public, .package, .internal, .private]` literals.
     public static let defaultAccessLevels: [AccessLevel] = [.open, .public, .package, .internal, .private]
     /// Only types declared at one of these access levels are drawn. `deps --public-only` sets it.
-    public var havingAccessLevel: [AccessLevel] = ElementOptions.defaultAccessLevels
+    public var havingAccessLevel: [AccessLevel] = Self.defaultAccessLevels
     /// Only members declared at one of these access levels are listed inside a type box.
-    public private(set) var showMembersWithAccessLevel: [AccessLevel] = ElementOptions.defaultAccessLevels
+    public private(set) var showMembersWithAccessLevel: [AccessLevel] = Self.defaultAccessLevels
     /// Whether nested types are drawn as their own boxes.
     public private(set) var showNestedTypes: Bool = true
     /// Whether generic parameter clauses are shown in type and member signatures.
@@ -32,43 +30,31 @@ public struct ElementOptions: Codable, Sendable {
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        if let havingAccessLevel = try container.decodeIfPresent([AccessLevel].self, forKey: .havingAccessLevel) {
-            self.havingAccessLevel = havingAccessLevel
-        }
-        if let showMembersWithAccessLevel = try container.decodeIfPresent(
+        havingAccessLevel = try container.decodeIfPresent(
+            [AccessLevel].self, forKey: .havingAccessLevel
+        ) ?? havingAccessLevel
+        showMembersWithAccessLevel = try container.decodeIfPresent(
             [AccessLevel].self, forKey: .showMembersWithAccessLevel
-        ) {
-            self.showMembersWithAccessLevel = showMembersWithAccessLevel
-        }
-        if let showNestedTypes = try container.decodeIfPresent(Bool.self, forKey: .showNestedTypes) {
-            self.showNestedTypes = showNestedTypes
-        }
-        if let showGenerics = try container.decodeIfPresent(Bool.self, forKey: .showGenerics) {
-            self.showGenerics = showGenerics
-        }
+        ) ?? showMembersWithAccessLevel
+        showNestedTypes = try container.decodeIfPresent(Bool.self, forKey: .showNestedTypes) ?? showNestedTypes
+        showGenerics = try container.decodeIfPresent(Bool.self, forKey: .showGenerics) ?? showGenerics
         if let visualization = try? container.decodeIfPresent(String.self, forKey: .showExtensions) {
             showExtensions = ExtensionVisualization(rawValue: visualization)
         } else if let showExtensionsBoolean = try? container.decodeIfPresent(Bool.self, forKey: .showExtensions) {
             showExtensions = ExtensionVisualization.from(showExtensionsBoolean)
         }
-        if let mergedExtensionMemberIndicator = try container.decodeIfPresent(
+        mergedExtensionMemberIndicator = try container.decodeIfPresent(
             String.self, forKey: .mergedExtensionMemberIndicator
-        ) {
-            self.mergedExtensionMemberIndicator = mergedExtensionMemberIndicator
-        }
-        if let showMemberAccessLevelAttribute = try container.decodeIfPresent(
+        ) ?? mergedExtensionMemberIndicator
+        showMemberAccessLevelAttribute = try container.decodeIfPresent(
             Bool.self, forKey: .showMemberAccessLevelAttribute
-        ) {
-            self.showMemberAccessLevelAttribute = showMemberAccessLevelAttribute
-        }
-        if let exclude = try container.decodeIfPresent([String].self, forKey: .exclude) {
-            self.exclude = exclude
-        }
+        ) ?? showMemberAccessLevelAttribute
+        exclude = try container.decodeIfPresent([String].self, forKey: .exclude) ?? exclude
     }
 
     public init(
-        havingAccessLevel: [AccessLevel] = ElementOptions.defaultAccessLevels,
-        showMembersWithAccessLevel: [AccessLevel] = ElementOptions.defaultAccessLevels,
+        havingAccessLevel: [AccessLevel] = Self.defaultAccessLevels,
+        showMembersWithAccessLevel: [AccessLevel] = Self.defaultAccessLevels,
         showNestedTypes: Bool = true,
         showGenerics: Bool = true,
         showExtensions: ExtensionVisualization? = nil,

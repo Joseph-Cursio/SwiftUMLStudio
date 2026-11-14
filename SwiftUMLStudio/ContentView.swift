@@ -1,6 +1,58 @@
 import SwiftUI
-import SwiftUMLBridgeFramework
 import UniformTypeIdentifiers
+
+/// View-modifier wrapper for the three string-backed notice alerts (generation
+/// errors, package-load errors, snapshot restore notices). Extracted from
+/// `ContentView.body` so the modifier chain stays inside the SwiftUI
+/// type-checker's budget.
+private struct NoticeAlerts: ViewModifier {
+    @Bindable var viewModel: DiagramViewModel
+
+    func body(content: Content) -> some View {
+        content
+            .alert(
+                "Couldn't generate diagram",
+                isPresented: binding(\.errorMessage)
+            ) {
+                Button("OK", role: .cancel) { viewModel.errorMessage = nil }
+            } message: {
+                Text(viewModel.errorMessage ?? "")
+            }
+            .alert(
+                "Couldn't open Swift Package",
+                isPresented: binding(\.packageLoadError)
+            ) {
+                Button("OK", role: .cancel) { viewModel.packageLoadError = nil }
+            } message: {
+                Text(viewModel.packageLoadError ?? "")
+            }
+            .alert(
+                "Snapshot partially restored",
+                isPresented: binding(\.restoreNotice)
+            ) {
+                Button("OK", role: .cancel) { viewModel.restoreNotice = nil }
+            } message: {
+                Text(viewModel.restoreNotice ?? "")
+            }
+            .alert(
+                "Couldn't save",
+                isPresented: binding(\.saveError)
+            ) {
+                Button("OK", role: .cancel) { viewModel.saveError = nil }
+            } message: {
+                Text(viewModel.saveError ?? "")
+            }
+    }
+
+    private func binding(
+        _ keyPath: ReferenceWritableKeyPath<DiagramViewModel, String?>
+    ) -> Binding<Bool> {
+        Binding(
+            get: { viewModel[keyPath: keyPath] != nil },
+            set: { if !$0 { viewModel[keyPath: keyPath] = nil } }
+        )
+    }
+}
 
 struct ContentView: View {
     @Environment(SubscriptionManager.self) private var subscriptionManager
@@ -8,9 +60,9 @@ struct ContentView: View {
     /// Applied here, before the first render, so the format's `onChange` never sees the switch:
     /// from `.task` it ran a generation with nothing selected, which Explorer showed as a spinner.
     @State private var viewModel: DiagramViewModel = {
-        let viewModel = DiagramViewModel()
-        viewModel.applyLaunchFormatPreference(consent: .shared)
-        return viewModel
+        let model = DiagramViewModel()
+        model.applyLaunchFormatPreference(consent: .shared)
+        return model
     }()
     @State private var showPaywall = false
     @AppStorage("appMode") private var appMode: AppMode = .explorer
@@ -61,8 +113,10 @@ struct ContentView: View {
         switch viewModel.diagramMode {
         case .sequenceDiagram, .activityDiagram:
             viewModel.refreshEntryPoints()
+
         case .stateMachine:
             viewModel.refreshStateMachines()
+
         default:
             break
         }
@@ -73,6 +127,7 @@ struct ContentView: View {
             switch appMode {
             case .explorer:
                 explorerLayout
+
             case .developer:
                 developerLayout
             }
@@ -142,7 +197,7 @@ struct ContentView: View {
         } detail: {
             DiagramDetailView(viewModel: viewModel)
         }
-        .frame(minWidth: 1200)
+        .frame(minWidth: 1_200)
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
                 Button("Open…", systemImage: "folder", action: openPanel)
@@ -186,7 +241,7 @@ struct ContentView: View {
         panel.canChooseFiles = true
         panel.canChooseDirectories = true
         panel.allowsMultipleSelection = true
-        panel.allowedContentTypes = [.swiftSource, .coreDataModelBundle].compactMap { $0 }
+        panel.allowedContentTypes = [.swiftSource, .coreDataModelBundle].compactMap(\.self)
         panel.canSelectHiddenExtension = true
         panel.message = "Select Swift sources, directories, or a Core Data .xcdatamodeld bundle"
 
@@ -214,59 +269,6 @@ struct ContentView: View {
         }
     }
     #endif
-}
-
-/// View-modifier wrapper for the three string-backed notice alerts (generation
-/// errors, package-load errors, snapshot restore notices). Extracted from
-/// `ContentView.body` so the modifier chain stays inside the SwiftUI
-/// type-checker's budget.
-private struct NoticeAlerts: ViewModifier {
-    @Bindable var viewModel: DiagramViewModel
-
-    func body(content: Content) -> some View {
-        content
-            .alert(
-                "Couldn't generate diagram",
-                isPresented: binding(\.errorMessage)
-            ) {
-                Button("OK", role: .cancel) { viewModel.errorMessage = nil }
-            } message: {
-                Text(viewModel.errorMessage ?? "")
-            }
-            .alert(
-                "Couldn't open Swift Package",
-                isPresented: binding(\.packageLoadError)
-            ) {
-                Button("OK", role: .cancel) { viewModel.packageLoadError = nil }
-            } message: {
-                Text(viewModel.packageLoadError ?? "")
-            }
-            .alert(
-                "Snapshot partially restored",
-                isPresented: binding(\.restoreNotice)
-            ) {
-                Button("OK", role: .cancel) { viewModel.restoreNotice = nil }
-            } message: {
-                Text(viewModel.restoreNotice ?? "")
-            }
-            .alert(
-                "Couldn't save",
-                isPresented: binding(\.saveError)
-            ) {
-                Button("OK", role: .cancel) { viewModel.saveError = nil }
-            } message: {
-                Text(viewModel.saveError ?? "")
-            }
-    }
-
-    private func binding(
-        _ keyPath: ReferenceWritableKeyPath<DiagramViewModel, String?>
-    ) -> Binding<Bool> {
-        Binding(
-            get: { viewModel[keyPath: keyPath] != nil },
-            set: { if !$0 { viewModel[keyPath: keyPath] = nil } }
-        )
-    }
 }
 
 extension Notification.Name {

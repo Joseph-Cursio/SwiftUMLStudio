@@ -1,19 +1,3 @@
-import Foundation
-
-/// IR for a Component diagram. One `Component` per SPM target, plus the
-/// directed `target_dependencies` edges between them.
-public struct ComponentModel: Sendable, Hashable {
-    public let components: [Component]
-    public let dependencies: [ComponentDependency]
-
-    public init(components: [Component] = [], dependencies: [ComponentDependency] = []) {
-        self.components = components
-        self.dependencies = dependencies
-    }
-
-    public var isEmpty: Bool { components.isEmpty }
-}
-
 /// One SPM target rendered as a UML component box. `providedInterfaces`
 /// lists the public Swift type / protocol names declared inside the target —
 /// what callers can reach from outside.
@@ -43,4 +27,18 @@ public struct ComponentDependency: Sendable, Hashable {
         self.from = from
         self.toComponent = toComponent
     }
+}
+
+/// IR for a Component diagram. One `Component` per SPM target, plus the
+/// directed `target_dependencies` edges between them.
+public struct ComponentModel: Sendable, Hashable {
+    public let components: [Component]
+    public let dependencies: [ComponentDependency]
+
+    public init(components: [Component] = [], dependencies: [ComponentDependency] = []) {
+        self.components = components
+        self.dependencies = dependencies
+    }
+
+    public var isEmpty: Bool { components.isEmpty }
 }

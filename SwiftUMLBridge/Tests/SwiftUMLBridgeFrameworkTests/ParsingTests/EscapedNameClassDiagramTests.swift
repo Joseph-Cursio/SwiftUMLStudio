@@ -1,7 +1,7 @@
 import SwiftParser
 import SwiftSyntax
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// `` `Plain` `` and `Plain` are one identifier, so a class diagram draws a name escaped in one place
 /// and not in another as one name. `SyntaxStructureBuilder` read each name as written, so
@@ -35,7 +35,7 @@ struct EscapedNameClassDiagramTests {
 
     static let witnesses = [
         extendedPlain, extendedTicked, extendedNested, boundArgument, supertypes, nestedInExtension, members,
-        generics, attribute
+        generics, attribute,
     ]
 
     private func lines(
@@ -53,9 +53,12 @@ struct EscapedNameClassDiagramTests {
         switch format {
         case .plantuml:
             return lines.filter { $0.hasPrefix("class \"") }.map { String($0.dropFirst(7).prefix { $0 != "\"" }) }
+
         case .mermaid:
-            return lines.filter { $0.hasPrefix("class ") }.compactMap { $0.split(separator: "\"").dropFirst().first }
+            return lines.filter { $0.hasPrefix("class ") }
+                .compactMap { $0.split(separator: "\"").dropFirst().first }
                 .map(String.init)
+
         case .nomnoml: return try NomnomlGraph(parsing: drawn.text).nodes.map(\.title)
         default: return drawn.layoutGraph?.nodes.map(\.label) ?? []
         }
@@ -124,16 +127,16 @@ struct EscapedNameClassDiagramTests {
 
     @Test("members, cases, generics and attributes are listed by name")
     func memberNames() {
-        let members = lines(Self.members, .plantuml)
-        #expect(members.contains("  ~count : [Plain]"))
-        #expect(members.contains("  ~helper async "))
-        #expect(members.contains("  ~first "))
-        let generics = lines(Self.generics, .plantuml)
-        #expect(generics.contains { $0.contains(" as Box<Element: Proto> ") })
-        #expect(generics.contains("  ~item : Element "))
-        let attribute = lines(Self.attribute, .plantuml)
-        #expect(attribute.contains { $0.contains(">> <<Observable>> {") })
-        #expect(attribute.contains("Observable <|-- Model : inherits"))
+        let memberLines = lines(Self.members, .plantuml)
+        #expect(memberLines.contains("  ~count : [Plain]"))
+        #expect(memberLines.contains("  ~helper async "))
+        #expect(memberLines.contains("  ~first "))
+        let genericLines = lines(Self.generics, .plantuml)
+        #expect(genericLines.contains { $0.contains(" as Box<Element: Proto> ") })
+        #expect(genericLines.contains("  ~item : Element "))
+        let attributeLines = lines(Self.attribute, .plantuml)
+        #expect(attributeLines.contains { $0.contains(">> <<Observable>> {") })
+        #expect(attributeLines.contains("Observable <|-- Model : inherits"))
         #expect(lines(Self.boundArgument, .plantuml).contains { $0.contains(" as Plain0<Int> ") })
     }
 
@@ -151,7 +154,7 @@ struct EscapedNameClassDiagramTests {
         ("`Outer`.`Inner`.make()", "Outer.Inner"),
         ("`Plain`<Int>.make()", "Plain"),
         ("Plain.make()", "Plain"),
-        ("Outer.Inner.make()", "Outer.Inner")
+        ("Outer.Inner.make()", "Outer.Inner"),
     ])
     func typeReference(source: String, expected: String) throws {
         #expect(try receiver(source).typeReferenceName == expected)
@@ -203,10 +206,10 @@ struct EscapedNameClassDiagramTests {
 
     @Test("controls: the witnesses' names written without backticks")
     func unescaped() throws {
-        let supertypes = "class Base {}\nclass Sub: Base {}\nprotocol Proto {}\nstruct Conformer: Proto {}"
-        #expect(lines(supertypes, .plantuml).filter { $0.contains("<|") }
+        let supertypeSource = "class Base {}\nclass Sub: Base {}\nprotocol Proto {}\nstruct Conformer: Proto {}"
+        #expect(lines(supertypeSource, .plantuml).filter { $0.contains("<|") }
             == ["Base <|-- Sub : inherits", "Proto <|.. Conformer : conforms to"])
-        #expect(svgGraph(supertypes)?.edgeEnds == ["Sub -> Base", "Conformer -> Proto"])
+        #expect(svgGraph(supertypeSource)?.edgeEnds == ["Sub -> Base", "Conformer -> Proto"])
         let plain = "struct Plain {}\nextension Plain { func get() -> Int { 0 } }"
         #expect(lines(plain, .plantuml).filter { $0.contains("<..") } == ["Plain <.. Plain0 : ext"])
         #expect(try titles(plain, .nomnoml, .merged) == ["Plain"])

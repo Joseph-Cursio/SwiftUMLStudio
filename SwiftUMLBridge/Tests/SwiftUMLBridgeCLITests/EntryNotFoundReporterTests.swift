@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import swiftumlbridge
+import Testing
 
 /// `sequence` and `activity` say on stderr when `--entry` came to no method with a body, where
 /// they drew an empty diagram with no word of why (#239).

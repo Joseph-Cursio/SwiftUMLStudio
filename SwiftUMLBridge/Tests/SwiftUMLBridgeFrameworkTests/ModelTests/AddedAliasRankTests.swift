@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// Where a typealias another module adds to a type ranks: ModB, which imports ModA, adds `X` to
 /// ModA's `Foo` through a typealias or a module, and ModA's own `extension Foo` declares an `X`
@@ -30,7 +30,7 @@ struct AddedAliasRankTests {
     @Test("does not take over the type's own module's member in the type's file", arguments: [
         "import ModA\n\ntypealias FA = Foo\n\nextension FA {\n    public typealias X = Other\n}\n",
         "import ModA\n\ntypealias FA = ModA.Foo\n\nextension FA {\n    public typealias X = Other\n}\n",
-        "import ModA\n\nextension ModA.Foo {\n    public typealias X = Other\n}\n"
+        "import ModA\n\nextension ModA.Foo {\n    public typealias X = Other\n}\n",
     ], [ExtensionVisualization.all, .merged])
     func ownModuleMemberFirst(modB: String, mode: ExtensionVisualization) throws {
         for modBFirst in [false, true] {
@@ -56,10 +56,10 @@ struct AddedAliasRankTests {
     /// ModB, `Foo` is ModB's own, so `Foo.X` is ModB's `X`, whichever file comes first.
     @Test("does not take over the extension's own module's member there", arguments: [
         "import ModA\n\nstruct Foo {\n    typealias X = ModA.Base\n}\n",
-        "import ModA\n\nstruct Foo {}\n\ntypealias MyFoo = Foo\n\nextension MyFoo {\n    typealias X = ModA.Base\n}\n"
+        "import ModA\n\nstruct Foo {}\n\ntypealias MyFoo = Foo\n\nextension MyFoo {\n    typealias X = ModA.Base\n}\n",
     ], [
         "import ModA\n\nextension ModA.Foo {\n    public typealias X = ModA.Other\n}\n",
-        "import ModA\n\ntypealias FA = ModA.Foo\n\nextension FA {\n    public typealias X = ModA.Other\n}\n"
+        "import ModA\n\ntypealias FA = ModA.Foo\n\nextension FA {\n    public typealias X = ModA.Other\n}\n",
     ])
     func extensionModuleMemberFirst(own: String, added: String) throws {
         let use = "import ModA\n\nfinal class UseB: Foo.X {}\n"

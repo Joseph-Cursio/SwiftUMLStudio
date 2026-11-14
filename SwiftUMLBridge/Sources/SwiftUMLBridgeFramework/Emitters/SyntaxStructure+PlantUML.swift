@@ -29,39 +29,46 @@ extension SyntaxStructure {
                 stereotype: stereotypes.class?.plantuml ?? Stereotype.class.plantuml,
                 generics: generics, context: context
             )
+
         case ElementKind.struct:
             return plantUMLClassNode(
                 relationship: "inherits",
                 stereotype: stereotypes.struct?.plantuml ?? Stereotype.struct.plantuml,
                 generics: generics, context: context
             )
+
         case ElementKind.extension:
             return plantUMLClassNode(
                 relationship: "ext",
                 stereotype: stereotypes.extension?.plantuml ?? Stereotype.extension.plantuml,
                 generics: generics, context: context
             )
+
         case ElementKind.enum:
             return plantUMLClassNode(
                 relationship: "",
                 stereotype: stereotypes.enum?.plantuml ?? Stereotype.enum.plantuml,
                 generics: generics, context: context
             )
+
         case ElementKind.protocol:
             return plantUMLClassNode(
                 relationship: "conforms to",
                 stereotype: stereotypes.protocol?.plantuml ?? Stereotype.protocol.plantuml,
                 generics: generics, context: context
             )
+
         case ElementKind.actor:
             return plantUMLClassNode(
                 relationship: "actor",
                 stereotype: Stereotype.actor.plantuml,
                 generics: generics, context: context
             )
+
         case ElementKind.macro:
             let macroName = context.uniqName(item: self, relationship: "macro")
             return "note as \(macroName)\n  <<macro>> \(displayName ?? "unknown")\nend note"
+
         default:
             BridgeLogger.shared.error("element kind not supported for PlantUML rendering: \(kind.rawValue)")
             return nil
@@ -171,25 +178,28 @@ extension SyntaxStructure {
             let asyncLabel = typeName.contains("async") ? " async" : ""
             let throwsLabel = typeName.contains("throws") ? " throws" : ""
             return "\(name)\(asyncLabel)\(throwsLabel)"
+
         case .functionMethodStatic:
             let typeName = element.typename ?? ""
             let asyncLabel = typeName.contains("async") ? " async" : ""
             let throwsLabel = typeName.contains("throws") ? " throws" : ""
             return "{static} \(name)\(asyncLabel)\(throwsLabel)"
+
         case .varInstance:
             if let typename = element.typename {
                 return "\(name) : \(typename)"
-            } else {
-                return "\(name)"
             }
+            return "\(name)"
+
         case .varStatic:
             if let typename = element.typename {
                 return "{static} \(name) : \(typename)"
-            } else {
-                return "{static} \(name)"
             }
+            return "{static} \(name)"
+
         case .enumelement:
             return "\(name)"
+
         default:
             return ""
         }

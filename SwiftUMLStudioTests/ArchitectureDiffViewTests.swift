@@ -1,13 +1,12 @@
 import Foundation
-import SwiftUI
+@testable import SwiftUMLStudio
 import Testing
 import ViewInspector
-@testable import SwiftUMLStudio
 
 // MARK: - Fixtures
 
 private func makeDiff(
-    previousTimestamp: Date = Date().addingTimeInterval(-3600),
+    previousTimestamp: Date = Date().addingTimeInterval(-3_600),
     typeDelta: Int = 0,
     relationshipDelta: Int = 0,
     moduleDelta: Int = 0,
@@ -117,7 +116,7 @@ struct ArchitectureDiffViewTests {
     func complexityCapsAtFive() throws {
         let changes: [(name: String, delta: Int)] = [
             ("Alpha", 7), ("Bravo", 6), ("Charlie", 5),
-            ("Delta", 4), ("Echo", 3), ("Foxtrot", 2), ("Golf", 1)
+            ("Delta", 4), ("Echo", 3), ("Foxtrot", 2), ("Golf", 1),
         ]
         let view = ArchitectureDiffView(diff: makeDiff(complexityChanges: changes))
         let strings = try view.inspect().findAll(ViewType.Text.self).compactMap { try? $0.string() }

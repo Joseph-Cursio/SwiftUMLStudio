@@ -1,8 +1,7 @@
-import Foundation
 import SwiftData
-import Testing
 import SwiftUMLBridgeFramework
 @testable import SwiftUMLStudio
+import Testing
 
 // MARK: - Test Helpers
 
@@ -14,7 +13,7 @@ private func makeTestSummary(
     moduleImports: [String] = ["Foundation", "UIKit"],
     topConnectedTypes: [(name: String, connectionCount: Int)] = [
         (name: "ViewModel", connectionCount: 4),
-        (name: "Service", connectionCount: 3)
+        (name: "Service", connectionCount: 3),
     ],
     cycleWarnings: [String] = [],
     entryPoints: [String] = ["App.main"],
@@ -46,7 +45,7 @@ struct ArchitectureDiffTests {
         // Previous state: 5 types, 8 relationships, 2 modules, 10 files
         let previousSummary = makeTestSummary()
         try SnapshotManager.saveSnapshot(from: previousSummary, paths: ["/test"], modelContext: modelContext)
-        let snapshot = SnapshotManager.fetchSnapshots(modelContext: modelContext).first!
+        let snapshot = try #require(SnapshotManager.fetchSnapshots(modelContext: modelContext).first)
 
         // Current state: 8 types, 15 relationships, 3 modules, 14 files
         let currentSummary = makeTestSummary(
@@ -72,7 +71,7 @@ struct ArchitectureDiffTests {
 
         let previousSummary = makeTestSummary(totalTypes: 10, totalRelationships: 20)
         try SnapshotManager.saveSnapshot(from: previousSummary, paths: ["/test"], modelContext: modelContext)
-        let snapshot = SnapshotManager.fetchSnapshots(modelContext: modelContext).first!
+        let snapshot = try #require(SnapshotManager.fetchSnapshots(modelContext: modelContext).first)
 
         let currentSummary = makeTestSummary(totalTypes: 7, totalRelationships: 12)
         let diff = SnapshotManager.computeDiff(current: currentSummary, previous: snapshot)
@@ -88,7 +87,7 @@ struct ArchitectureDiffTests {
 
         let previousSummary = makeTestSummary(typeBreakdown: ["Classes": 3, "Structs": 2])
         try SnapshotManager.saveSnapshot(from: previousSummary, paths: ["/test"], modelContext: modelContext)
-        let snapshot = SnapshotManager.fetchSnapshots(modelContext: modelContext).first!
+        let snapshot = try #require(SnapshotManager.fetchSnapshots(modelContext: modelContext).first)
 
         let currentSummary = makeTestSummary(
             typeBreakdown: ["Classes": 5, "Structs": 2, "Enums": 1]
@@ -109,7 +108,7 @@ struct ArchitectureDiffTests {
             topConnectedTypes: [(name: "ViewModel", connectionCount: 4)]
         )
         try SnapshotManager.saveSnapshot(from: previousSummary, paths: ["/test"], modelContext: modelContext)
-        let snapshot = SnapshotManager.fetchSnapshots(modelContext: modelContext).first!
+        let snapshot = try #require(SnapshotManager.fetchSnapshots(modelContext: modelContext).first)
 
         let currentSummary = makeTestSummary(
             topConnectedTypes: [(name: "ViewModel", connectionCount: 7)]
@@ -127,7 +126,7 @@ struct ArchitectureDiffTests {
 
         let summary = makeTestSummary()
         try SnapshotManager.saveSnapshot(from: summary, paths: ["/test"], modelContext: modelContext)
-        let snapshot = SnapshotManager.fetchSnapshots(modelContext: modelContext).first!
+        let snapshot = try #require(SnapshotManager.fetchSnapshots(modelContext: modelContext).first)
 
         let diff = SnapshotManager.computeDiff(current: summary, previous: snapshot)
 

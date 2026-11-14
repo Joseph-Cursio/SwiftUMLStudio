@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// `extension Foo<Int>` is shorthand for `extension Foo where T == Int` (SE-0361), and `[Int]`,
 /// `[String: Int]` and `Int?` for `Array`, `Dictionary` and `Optional` with the same kind of
@@ -16,7 +16,7 @@ struct BoundGenericExtensionCallGraphTests {
         ("struct Foo<T> {}\nextension Foo<Swift.Int> {", "struct Foo<T> {}\nextension Foo where T == Swift.Int {"),
         ("extension [Int] {", "extension Array where Element == Int {"),
         ("extension [String: Int] {", "extension Dictionary where Key == String, Value == Int {"),
-        ("extension Int? {", "extension Optional where Wrapped == Int {")
+        ("extension Int? {", "extension Optional where Wrapped == Int {"),
     ]
 
     static let body = "\n    func run() { Bar.go() }\n}\nstruct Bar { static func go() {} }"
@@ -105,7 +105,7 @@ struct BoundGenericExtensionCallGraphTests {
         ),
         Receiver(declarations: "", extended: "Int?", listed: "Optional"),
         Receiver(declarations: "", extended: "[Int]", listed: "Array"),
-        Receiver(declarations: "", extended: "[String: Int]", listed: "Dictionary")
+        Receiver(declarations: "", extended: "[String: Int]", listed: "Dictionary"),
     ]
 
     @Test("a call on a type written with generic arguments or sugar is followed into its extension",
@@ -136,7 +136,7 @@ struct BoundGenericExtensionCallGraphTests {
         ("self.helper()", "Caller"),
         ("foo?.bar()", nil),
         ("[foo].first()", nil),
-        ("[1].map()", nil)
+        ("[1].map()", nil),
     ] as [(String, String?)])
     func specialisedReceiver(call: String, calleeType: String?) {
         // The member call is the first edge; `Foo()` adds one of its own for the initialiser.

@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// A supertype written by its short name inside the type that declares it, `class Near: Base` in
 /// `enum Outer`, means `Outer.Base`: Swift looks the name up in each enclosing type first,
@@ -30,7 +30,10 @@ struct NestedSupertypeScopeTests {
 
     /// The ids the supertype edges drawn from `child` end on, in drawing order.
     private func ends(
-        from child: String, _ source: String, _ format: DiagramFormat, _ mode: ExtensionVisualization,
+        from child: String,
+        _ source: String,
+        _ format: DiagramFormat,
+        _ mode: ExtensionVisualization,
         relationships: RelationshipOptions = RelationshipOptions()
     ) -> [String] {
         let drawn = classDiagram(source, format, mode, relationships: relationships)
@@ -38,12 +41,14 @@ struct NestedSupertypeScopeTests {
         case .svg:
             return drawn.layoutGraph?.edges
                 .filter { $0.sourceId == child && $0.style != .composition }.map(\.targetId) ?? []
+
         case .nomnoml:
             // `[child] -:> label [parent]`; a nesting edge starts at the parent.
             return drawn.text.split(separator: "\n").compactMap { line -> String? in
                 guard line.hasPrefix("[\(child)] -"), let open = line.lastIndex(of: "[") else { return nil }
                 return String(line[line.index(after: open)...].dropLast())
             }
+
         default:
             // `parent <|-- child : label` and `parent <|.. child : label`.
             return drawn.text.split(separator: "\n").compactMap { line -> String? in
@@ -57,7 +62,9 @@ struct NestedSupertypeScopeTests {
     /// Each format and extension mode, as `"<format> <mode>: <ends>"`, whose supertype edges
     /// from `child` do not end on exactly `expected`.
     private func misses(
-        _ source: String, from child: String, expected: [String],
+        _ source: String,
+        from child: String,
+        expected: [String],
         relationships: RelationshipOptions = RelationshipOptions()
     ) -> [String] {
         Self.formats.flatMap { format in
@@ -72,10 +79,10 @@ struct NestedSupertypeScopeTests {
         nested,
         "enum Outer {\n    class Base {}\n}\nextension Outer {\n    class Near: Base {}\n}",
         "enum Outer {\n    class Base<Value> {}\n    class Near: Base<Int> {}\n}",
-        shadowed
+        shadowed,
     ])
     func oneLevelUp(source: String) {
-        #expect(misses(source, from: "Outer.Near", expected: ["Outer.Base"]) == [])
+        #expect(misses(source, from: "Outer.Near", expected: ["Outer.Base"]).isEmpty)
     }
 
     @Test("nomnoml draws no box of its own for the short name")
@@ -101,7 +108,7 @@ struct NestedSupertypeScopeTests {
                 }
             }
             """
-        #expect(misses(source, from: child, expected: [parent]) == [])
+        #expect(misses(source, from: child, expected: [parent]).isEmpty)
     }
 
     @Test("a type in an extension of a nested type sees that type's members", arguments: [
@@ -121,7 +128,7 @@ struct NestedSupertypeScopeTests {
                 }
             }
             """
-        #expect(misses(source, from: child, expected: ["Outer.Box.Helper"]) == [])
+        #expect(misses(source, from: child, expected: ["Outer.Box.Helper"]).isEmpty)
     }
 
     /// A nested protocol has had a box since #162, so a conformance to it by its short name can
@@ -135,8 +142,8 @@ struct NestedSupertypeScopeTests {
             }
             struct Square: Outer.Shape {}
             """
-        #expect(misses(source, from: "Outer.Circle", expected: ["Outer.Shape"]) == [])
-        #expect(misses(source, from: "Square", expected: ["Outer.Shape"]) == [])
+        #expect(misses(source, from: "Outer.Circle", expected: ["Outer.Shape"]).isEmpty)
+        #expect(misses(source, from: "Square", expected: ["Outer.Shape"]).isEmpty)
     }
 
     /// A typealias declared in a type reads its target as that type's members do, so `Root`
@@ -151,7 +158,7 @@ struct NestedSupertypeScopeTests {
                 class Near: Root {}
             }
             """
-        #expect(misses(source, from: "Outer.Near", expected: ["Outer.Base"]) == [])
+        #expect(misses(source, from: "Outer.Near", expected: ["Outer.Base"]).isEmpty)
     }
 
     /// A macro's conformance belongs to no type around the declaration, so a nested protocol of
@@ -174,21 +181,21 @@ struct NestedSupertypeScopeTests {
         let relationships = RelationshipOptions(
             inheritance: Relationship(label: "inherits", exclude: ["Outer.Base"])
         )
-        #expect(misses(Self.nested, from: "Outer.Near", expected: [], relationships: relationships) == [])
-        #expect(misses(Self.nested, from: "Far", expected: [], relationships: relationships) == [])
+        #expect(misses(Self.nested, from: "Outer.Near", expected: [], relationships: relationships).isEmpty)
+        #expect(misses(Self.nested, from: "Far", expected: [], relationships: relationships).isEmpty)
     }
 
     // MARK: - Guards: what was already right
 
     @Test("a qualified name, and a top-level name written outside the nesting type")
     func namesOutside() {
-        #expect(misses(Self.nested, from: "Far", expected: ["Outer.Base"]) == [])
-        #expect(misses(Self.shadowed, from: "Far", expected: ["Base"]) == [])
+        #expect(misses(Self.nested, from: "Far", expected: ["Outer.Base"]).isEmpty)
+        #expect(misses(Self.shadowed, from: "Far", expected: ["Base"]).isEmpty)
     }
 
     @Test("a nested class inheriting from the class it is nested in")
     func enclosingClass() {
-        #expect(misses("class Node {\n    final class Leaf: Node {}\n}", from: "Node.Leaf", expected: ["Node"]) == [])
+        #expect(misses("class Node {\n    final class Leaf: Node {}\n}", from: "Node.Leaf", expected: ["Node"]).isEmpty)
     }
 
     /// Swift reads an extension's inheritance clause at file scope, so `Shape` here is the
@@ -209,7 +216,7 @@ struct NestedSupertypeScopeTests {
     @Test("inheritance.exclude still matches the supertype as written")
     func excludeAsWritten() {
         let relationships = RelationshipOptions(inheritance: Relationship(label: "inherits", exclude: ["Base"]))
-        #expect(misses(Self.nested, from: "Outer.Near", expected: [], relationships: relationships) == [])
-        #expect(misses(Self.nested, from: "Far", expected: ["Outer.Base"], relationships: relationships) == [])
+        #expect(misses(Self.nested, from: "Outer.Near", expected: [], relationships: relationships).isEmpty)
+        #expect(misses(Self.nested, from: "Far", expected: ["Outer.Base"], relationships: relationships).isEmpty)
     }
 }

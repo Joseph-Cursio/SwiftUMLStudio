@@ -20,18 +20,19 @@ private final class AppDelegate: NSObject, NSApplicationDelegate {
 
     // Primary gate: returning false short-circuits _handleAEReopen entirely,
     // preventing showInitialWindows() → LazyView re-evaluation.
-    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+    func applicationShouldHandleReopen(_: NSApplication, hasVisibleWindows _: Bool) -> Bool {
         !isRunningTests
     }
 
     // Belt-and-suspenders: also suppress the open-untitled-file query.
-    func applicationShouldOpenUntitledFile(_ sender: NSApplication) -> Bool {
+    func applicationShouldOpenUntitledFile(_: NSApplication) -> Bool {
         !isRunningTests
     }
 }
 
 @main
 struct SwiftUMLStudioApp: App {
+    // swiftlint:disable:next unused_declaration - the property wrapper installs the app delegate; nothing reads it
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @State private var subscriptionManager = SubscriptionManager()
 
@@ -56,7 +57,7 @@ struct SwiftUMLStudioApp: App {
                     .environment(subscriptionManager)
             }
         }
-        .defaultSize(width: 1500, height: 700)
+        .defaultSize(width: 1_500, height: 700)
         .commands {
             CommandGroup(replacing: .newItem) {
                 Button("Open…") {

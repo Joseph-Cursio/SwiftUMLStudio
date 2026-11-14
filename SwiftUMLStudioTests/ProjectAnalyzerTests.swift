@@ -1,7 +1,7 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
 @testable import SwiftUMLStudio
+import Testing
 
 // MARK: - Test fixture helpers
 
@@ -40,7 +40,7 @@ struct ProjectAnalyzerTests {
         let dir = try createTestProject(files: [
             "TypeA.swift": "class TypeA {}",
             "TypeB.swift": "struct TypeB {}",
-            "TypeC.swift": "enum TypeC { case one }"
+            "TypeC.swift": "enum TypeC { case one }",
         ])
         defer { try? FileManager.default.removeItem(atPath: dir) }
         let summary = ProjectAnalyzer.analyze(paths: [dir])
@@ -67,7 +67,7 @@ struct ProjectAnalyzerTests {
             struct AnotherStruct {}
             enum MyEnum { case val }
             protocol MyProtocol {}
-            """
+            """,
         ])
         defer { try? FileManager.default.removeItem(atPath: dir) }
         let summary = ProjectAnalyzer.analyze(paths: [dir])
@@ -85,7 +85,7 @@ struct ProjectAnalyzerTests {
             protocol Drawable { func draw() }
             class Shape: Drawable { func draw() {} }
             class Circle: Shape {}
-            """
+            """,
         ])
         defer { try? FileManager.default.removeItem(atPath: dir) }
         let summary = ProjectAnalyzer.analyze(paths: [dir])
@@ -100,7 +100,7 @@ struct ProjectAnalyzerTests {
             import Foundation
             import SwiftUI
             class ViewModel {}
-            """
+            """,
         ])
         defer { try? FileManager.default.removeItem(atPath: dir) }
         let summary = ProjectAnalyzer.analyze(paths: [dir])
@@ -116,7 +116,7 @@ struct ProjectAnalyzerTests {
                 func fetchUser() {}
                 func saveUser() {}
             }
-            """
+            """,
         ])
         defer { try? FileManager.default.removeItem(atPath: dir) }
         let summary = ProjectAnalyzer.analyze(paths: [dir])
@@ -132,7 +132,7 @@ struct ProjectAnalyzerTests {
             class ServiceA: Hub {}
             class ServiceB: Hub {}
             class ServiceC: Hub {}
-            """
+            """,
         ])
         defer { try? FileManager.default.removeItem(atPath: dir) }
         let summary = ProjectAnalyzer.analyze(paths: [dir])
@@ -176,7 +176,7 @@ struct ProjectAnalyzerTests {
                 SPMTargetDescription(
                     name: "DemoTests", kind: .test, path: "Tests/DemoTests",
                     sources: [], dependencies: ["App"]
-                )
+                ),
             ]
         )
 
@@ -208,7 +208,7 @@ struct ProjectAnalyzerTests {
                     name: "Networking", kind: .library, path: "Sources/Networking",
                     sources: ["HTTPClient.swift"],
                     dependencies: ["Core", "Logging"]
-                )
+                ),
             ]
         )
 
@@ -228,61 +228,5 @@ struct ProjectAnalyzerTests {
         defer { try? FileManager.default.removeItem(atPath: dir) }
         let summary = ProjectAnalyzer.analyze(paths: [dir])
         #expect(summary.moduleBreakdown.isEmpty)
-    }
-}
-
-// MARK: - InsightEngine coverage gaps
-
-@MainActor
-struct InsightEngineCoverageTests {
-
-    @Test("generates module import insight when 2+ modules present")
-    func moduleImportInsight() {
-        let summary = ProjectSummary(
-            totalFiles: 5, totalTypes: 10,
-            typeBreakdown: ["Classes": 10],
-            totalRelationships: 3,
-            moduleImports: ["Foundation", "SwiftUI", "Combine"],
-            topConnectedTypes: [],
-            cycleWarnings: [],
-            entryPoints: [],
-            stateMachines: []
-        )
-        let insights = InsightEngine.generate(from: summary)
-        let moduleInsight = insights.first { $0.title.contains("modules imported") }
-        #expect(moduleInsight != nil, "Expected a module import insight")
-    }
-
-    @Test("generates no-relationships insight when types exist but no edges")
-    func noRelationshipsInsight() {
-        let summary = ProjectSummary(
-            totalFiles: 3, totalTypes: 5,
-            typeBreakdown: ["Structs": 5],
-            totalRelationships: 0,
-            moduleImports: [],
-            topConnectedTypes: [],
-            cycleWarnings: [],
-            entryPoints: [],
-            stateMachines: []
-        )
-        let insights = InsightEngine.generate(from: summary)
-        let noRels = insights.first { $0.title.contains("No type relationships") }
-        #expect(noRels != nil, "Expected a no-relationships insight")
-    }
-
-    @Test("no insights generated for empty project")
-    func emptyProjectInsights() {
-        let summary = ProjectSummary(
-            totalFiles: 0, totalTypes: 0,
-            typeBreakdown: [:],
-            totalRelationships: 0,
-            moduleImports: [],
-            topConnectedTypes: [],
-            cycleWarnings: [],
-            entryPoints: [],
-            stateMachines: []
-        )
-        let insights = InsightEngine.generate(from: summary)
-        #expect(insights.isEmpty)
     }
 }

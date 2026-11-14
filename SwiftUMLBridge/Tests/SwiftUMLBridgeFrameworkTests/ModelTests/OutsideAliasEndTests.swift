@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// Two extensions can share a spelling and extend different types outside the diagram, as each
 /// target has its own typealiases. An edge ended on the first drawn extension of that spelling,
@@ -108,12 +108,12 @@ struct OutsideAliasEndTests {
     /// With no extension of `NSObject` drawn, it is a node of its own, like any outside type.
     @Test("with no extension of the type its alias comes to, the edge is written to that type")
     func noOwnExtension() throws {
-        let modB = """
+        let modBSource = """
             import Foundation
             typealias Base = NSObject
             class U: Base {}
             """
-        let items = try moduleQualifiedItems([("ModA", Self.modA), ("ModB", modB)])
+        let items = try moduleQualifiedItems([("ModA", Self.modA), ("ModB", modBSource)])
         #expect(graph(items, .all).edges.isEmpty)
         #expect(ClassDiagramIds.lines(of: script(items, .plantuml), containing: "<|--")
             == ["NSObject <|-- U : inherits"])
@@ -122,17 +122,17 @@ struct OutsideAliasEndTests {
     /// `Real` is `Out`'s class in ModB, and spells ModA's alias of `NSException` only in ModA.
     @Test("an alias's target spelled like another target's alias does not end on that alias's extension")
     func targetSpelledLikeAnotherAlias() throws {
-        let modA = """
+        let modASource = """
             import Foundation
             typealias Real = NSException
             extension Real { func inA() {} }
             """
-        let modB = """
+        let modBSource = """
             import Out
             typealias Base = Real
             class U: Base {}
             """
-        let items = try moduleQualifiedItems([("ModA", modA), ("ModB", modB)])
+        let items = try moduleQualifiedItems([("ModA", modASource), ("ModB", modBSource)])
         #expect(graph(items, .all).edges.isEmpty)
         // Written to `Real` it would end on ModA's box, whose id that is, so it is left out.
         #expect(ClassDiagramIds.lines(of: script(items, .plantuml), containing: "<|--").isEmpty)
@@ -158,7 +158,7 @@ struct OutsideAliasEndTests {
                 typealias Foo = ModC.Baz
                 extension Foo.V { func inD() {} }
                 struct U: Foo.V {}
-                """)
+                """),
         ]
         let elements = ElementOptions(showNestedTypes: false, showExtensions: mode)
         let drawn = LayoutGraphBuilder.buildClassDiagram(
@@ -175,16 +175,16 @@ struct OutsideAliasEndTests {
     /// the lookup cannot see: never ModA's alias of `NSException`, which ModB does not import.
     @Test("a name that is not sure does not end on an extension of a sure type of that spelling")
     func unsureNameSkipsSureExtension() throws {
-        let modA = """
+        let modASource = """
             import Foundation
             typealias Sendable = NSException
             extension Sendable { func inA() {} }
             """
-        let modB = """
+        let modBSource = """
             import Foundation
             extension Date { struct Held: Sendable {} }
             """
-        let drawn = graph(try moduleQualifiedItems([("ModA", modA), ("ModB", modB)]), .all)
+        let drawn = graph(try moduleQualifiedItems([("ModA", modASource), ("ModB", modBSource)]), .all)
         let box = try #require(drawn.owner(of: "inA"))
         #expect(!drawn.edgeEnds.contains("Date.Held -> \(box)"))
     }

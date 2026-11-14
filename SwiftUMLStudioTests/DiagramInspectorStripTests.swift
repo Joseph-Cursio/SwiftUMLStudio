@@ -1,9 +1,7 @@
-import Foundation
-import SwiftUI
-import Testing
-import ViewInspector
 import SwiftUMLBridgeFramework
 @testable import SwiftUMLStudio
+import Testing
+import ViewInspector
 
 @Suite("DiagramInspectorStrip")
 @MainActor
@@ -93,7 +91,7 @@ struct DiagramInspectorStripTests {
         let viewModel = makeViewModel(mode: .stateMachine)
         viewModel.availableStateMachines = [
             stateMachine("Phase", confidence: .high),
-            stateMachine("Mode", confidence: .low)
+            stateMachine("Mode", confidence: .low),
         ]
         let labels = try picker("stateMachinePicker", in: viewModel)
             .findAll(ViewType.Text.self).map { try $0.string() }
@@ -106,7 +104,7 @@ struct DiagramInspectorStripTests {
         viewModel.availableStateMachines = [
             stateMachine("High", confidence: .high),
             stateMachine("Medium", confidence: .medium),
-            stateMachine("Low", confidence: .low)
+            stateMachine("Low", confidence: .low),
         ]
         let symbols = try picker("stateMachinePicker", in: viewModel)
             .findAll(ViewType.Image.self).compactMap { try? $0.actualImage().name() }

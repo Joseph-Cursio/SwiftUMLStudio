@@ -49,7 +49,7 @@ final class CallGraphExtractor: TypeStackVisitor {
         bodyStack.append(CallBody.identifier(file: file, offset: offset))
         return .visitChildren
     }
-    override func visitPost(_ node: FunctionDeclSyntax) {
+    override func visitPost(_: FunctionDeclSyntax) {
         methodStack.removeLast()
         bodyStack.removeLast()
     }
@@ -124,27 +124,29 @@ final class CallGraphExtractor: TypeStackVisitor {
                 memberAccess, callerType: callerType,
                 callerMethod: callerMethod, isAsync: isAsync
             )
-        } else if let declRef = calledExpr.as(DeclReferenceExprSyntax.self) {
+        }
+        if let declRef = calledExpr.as(DeclReferenceExprSyntax.self) {
             let methodName = declRef.baseName.canonicalName
             return CallEdge(
                 callerType: callerType, callerMethod: callerMethod,
                 calleeType: callerType, calleeMethod: methodName,
                 isAsync: isAsync, isUnresolved: false
             )
-        } else {
-            // Closure or other complex expression — unresolved
-            let rawDesc = calledExpr.singleLineDescription
-            return CallEdge(
-                callerType: callerType, callerMethod: callerMethod,
-                calleeType: nil, calleeMethod: rawDesc,
-                isAsync: isAsync, isUnresolved: true
-            )
         }
+        // Closure or other complex expression — unresolved
+        let rawDesc = calledExpr.singleLineDescription
+        return CallEdge(
+            callerType: callerType, callerMethod: callerMethod,
+            calleeType: nil, calleeMethod: rawDesc,
+            isAsync: isAsync, isUnresolved: true
+        )
     }
 
     private func resolveMemberAccess(
         _ memberAccess: MemberAccessExprSyntax,
-        callerType: String, callerMethod: String, isAsync: Bool
+        callerType: String,
+        callerMethod: String,
+        isAsync: Bool
     ) -> CallEdge {
         let methodName = memberAccess.declName.baseName.canonicalName
         guard let base = memberAccess.base else {

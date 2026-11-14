@@ -1,19 +1,19 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 // Fixtures and readers shared by the class-diagram suites, each of which used to declare a
 // private copy (#209).
 
-/// One file of a fixture that spans several files: its name, which tells declarations apart as a
-/// path on disk does, and its source.
-typealias SourceFile = (name: String, source: String)
-
 /// A class diagram of `source` in `format`. An option left at its default is the one a run with
 /// no config file uses.
 func classDiagram(
-    _ source: String, _ format: DiagramFormat, _ extensions: ExtensionVisualization = .all,
-    nestedTypes: Bool = true, access: [AccessLevel] = ElementOptions.defaultAccessLevels,
-    exclude: [String]? = nil, relationships: RelationshipOptions = RelationshipOptions()
+    _ source: String,
+    _ format: DiagramFormat,
+    _ extensions: ExtensionVisualization = .all,
+    nestedTypes: Bool = true,
+    access: [AccessLevel] = ElementOptions.defaultAccessLevels,
+    exclude: [String]? = nil,
+    relationships: RelationshipOptions = RelationshipOptions()
 ) -> DiagramScript {
     let elements = ElementOptions(
         havingAccessLevel: access, showNestedTypes: nestedTypes, showExtensions: extensions, exclude: exclude
@@ -38,7 +38,9 @@ func parsedFiles(_ files: [SourceFile]) throws -> [SyntaxStructure] {
 
 /// A class diagram of `files`, read as `parsedFiles(_:)` reads them.
 func classDiagram(
-    _ files: [SourceFile], _ format: DiagramFormat, _ extensions: ExtensionVisualization = .all,
+    _ files: [SourceFile],
+    _ format: DiagramFormat,
+    _ extensions: ExtensionVisualization = .all,
     access: [AccessLevel] = ElementOptions.defaultAccessLevels
 ) throws -> DiagramScript {
     let elements = ElementOptions(havingAccessLevel: access, showExtensions: extensions)
@@ -49,8 +51,11 @@ func classDiagram(
 /// Each supertype edge drawn from `child` in a diagram of `files`, as `end arrow`: `P <|--`,
 /// `P <|..`, or Nomnoml's `P -:>` and `P --:>`.
 func supertypeEdges(
-    from child: String, _ files: [SourceFile], _ format: DiagramFormat,
-    _ extensions: ExtensionVisualization = .all, access: [AccessLevel] = ElementOptions.defaultAccessLevels
+    from child: String,
+    _ files: [SourceFile],
+    _ format: DiagramFormat,
+    _ extensions: ExtensionVisualization = .all,
+    access: [AccessLevel] = ElementOptions.defaultAccessLevels
 ) throws -> [String] {
     let text = try classDiagram(files, format, extensions, access: access).text
     return text.split(separator: "\n").compactMap { line -> String? in
@@ -70,7 +75,10 @@ func supertypeEdges(
 /// The id each supertype edge from `child` ends on in a diagram of `source`, and in SVG the
 /// members of that node, which tell the boxes apart.
 func supertypeEdgeEnds(
-    from child: String, _ source: String, _ format: DiagramFormat, _ extensions: ExtensionVisualization,
+    from child: String,
+    _ source: String,
+    _ format: DiagramFormat,
+    _ extensions: ExtensionVisualization,
     nestedTypes: Bool = true
 ) -> [String] {
     let drawn = classDiagram(source, format, extensions, nestedTypes: nestedTypes)
@@ -80,11 +88,13 @@ func supertypeEdgeEnds(
         return graph?.edges.filter { $0.sourceId == child && $0.style != .composition }.map { edge in
             (graph?.nodes.first { $0.id == edge.targetId }?.compartments.flatMap(\.items) ?? []).joined()
         } ?? []
+
     case .nomnoml:
         return drawn.text.split(separator: "\n").compactMap { line -> String? in
             guard line.hasPrefix("[\(child)] -"), let open = line.lastIndex(of: "[") else { return nil }
             return String(line[line.index(after: open)...].dropLast())
         }
+
     default:
         return drawn.text.split(separator: "\n").compactMap { line -> String? in
             let words = line.split(separator: " ")

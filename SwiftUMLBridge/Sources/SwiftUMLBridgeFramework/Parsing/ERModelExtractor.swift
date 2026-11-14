@@ -117,8 +117,10 @@ final class ERModelExtractor: SyntaxVisitor {
         switch binding.accessorBlock?.accessors {
         case nil:
             return true
+
         case .getter:
             return false
+
         case .accessors(let accessors):
             return accessors.allSatisfy {
                 $0.accessorSpecifier.tokenKind == .keyword(.willSet)
@@ -283,6 +285,7 @@ final class ERModelExtractor: SyntaxVisitor {
         switch toCardinality {
         case .zeroOrMany, .oneOrMany:
             fromCardinality = .exactlyOne
+
         case .zeroOrOne, .exactlyOne:
             fromCardinality = .zeroOrMany
         }
@@ -325,7 +328,7 @@ final class ERModelExtractor: SyntaxVisitor {
         RelationshipWrapper(open: "[", close: "]", cardinality: .zeroOrMany),
         RelationshipWrapper(open: "Array<", close: ">", cardinality: .zeroOrMany),
         RelationshipWrapper(open: "Set<", close: ">", cardinality: .zeroOrMany),
-        RelationshipWrapper(open: "Optional<", close: ">", cardinality: .zeroOrOne)
+        RelationshipWrapper(open: "Optional<", close: ">", cardinality: .zeroOrOne),
     ]
 
     private struct RelationshipWrapper {

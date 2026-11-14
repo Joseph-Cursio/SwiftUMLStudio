@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 @Suite("LayoutGraph Tests")
 struct LayoutGraphTests {
@@ -183,7 +183,7 @@ struct LayoutGraphTests {
         var edge = LayoutEdge(sourceId: "aaa", targetId: "bbb")
         edge.points = [
             LayoutPoint(posX: 0, posY: 0),
-            LayoutPoint(posX: 100, posY: 100)
+            LayoutPoint(posX: 100, posY: 100),
         ]
         #expect(edge.points.count == 2)
         #expect(edge.points[1].posX == 100)

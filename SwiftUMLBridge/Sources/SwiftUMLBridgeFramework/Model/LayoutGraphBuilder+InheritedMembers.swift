@@ -2,6 +2,15 @@ import Foundation
 
 // MARK: - Inherited Members
 
+/// The members of one name a type declares (`TypeLookup.members(named:of:from:depth:)`): those
+/// recorded, and the nested types the items do not list.
+private struct InheritableMembers {
+    var recorded: [LayoutGraphBuilder.Declared] = []
+    var hidden: [LayoutGraphBuilder.Declared] = []
+
+    var isEmpty: Bool { recorded.isEmpty && hidden.isEmpty }
+}
+
 // How a name comes to a member a superclass declares, kept apart so the type lookup stays a
 // readable size. A subclass has its superclass's nested types and typealiases as members, so
 // after `class Parent { typealias P = R }` and `class Outer: Parent {}`, `Outer.P` means `R`, and
@@ -12,7 +21,9 @@ extension LayoutGraphBuilder.TypeLookup {
     /// (`inheritedLookup(_:from:depth:readingModules:)`), or `nil` when it means none, or one the
     /// items do not list.
     func inheritedMember(
-        _ name: LayoutGraphBuilder.QualifiedName, from scope: LayoutGraphBuilder.Scope, depth: Int,
+        _ name: LayoutGraphBuilder.QualifiedName,
+        from scope: LayoutGraphBuilder.Scope,
+        depth: Int,
         readingModules: Bool = true
     ) -> LayoutGraphBuilder.Declared? {
         guard case .member(let member)? = inheritedLookup(
@@ -34,7 +45,9 @@ extension LayoutGraphBuilder.TypeLookup {
     /// `ModA.P`, is no type. The names recorded (`InheritableNames`) rule out most names before
     /// any lookup.
     func inheritedLookup(
-        _ name: LayoutGraphBuilder.QualifiedName, from scope: LayoutGraphBuilder.Scope, depth: Int,
+        _ name: LayoutGraphBuilder.QualifiedName,
+        from scope: LayoutGraphBuilder.Scope,
+        depth: Int,
         readingModules: Bool = true
     ) -> LayoutGraphBuilder.InheritedLookup? {
         guard depth < 8, name.root != .outsideType, mayBeInherited(name.name),
@@ -55,9 +68,11 @@ extension LayoutGraphBuilder.TypeLookup {
         ) {
         case .hidden:
             return .hidden
+
         case .member(let inherited):
             type = aliased(inherited, depth: depth + 1, readingModules: readingModules)
             isInherited = true
+
         case nil:
             type = self.type(containerName, from: scope, depth: depth + 1, readingModules: readingModules)
         }
@@ -70,8 +85,11 @@ extension LayoutGraphBuilder.TypeLookup {
     /// `member` among the members `type`'s superclasses declare, nearest first, when `type` is a
     /// class with none of its own; with `takingOwn`, as for a type itself inherited, its own first.
     private func lookUp(
-        _ member: String, in type: LayoutGraphBuilder.Declared, takingOwn: Bool,
-        from scope: LayoutGraphBuilder.Scope, depth: Int
+        _ member: String,
+        in type: LayoutGraphBuilder.Declared,
+        takingOwn: Bool,
+        from scope: LayoutGraphBuilder.Scope,
+        depth: Int
     ) -> LayoutGraphBuilder.InheritedLookup? {
         // A class whose members cannot be told from another's ends the walk, as before it.
         guard let own = members(named: member, of: type, from: scope, depth: depth) else { return nil }
@@ -162,12 +180,12 @@ extension LayoutGraphBuilder.TypeLookup {
               let owner = owningDeclaration(of: type, depth: depth) else { return nil }
         let start = LayoutGraphBuilder.NameStart.projectType(owningType(of: type, depth: depth), renamedTo: nil)
         let name = LayoutGraphBuilder.QualifiedName(name: "\(recorded).\(member)", root: .asWritten, start: start)
-        var isInside: Bool?
+        // Worked out once, for the first private candidate.
+        lazy var isInside = isWithin(recorded, from: scope, depth: depth)
         let sees = { (candidate: LayoutGraphBuilder.Declared) -> Bool in
             guard self.isVisible(candidate, from: scope, depth: depth) else { return false }
             guard candidate.isPrivate else { return true }
-            if isInside == nil { isInside = self.isWithin(recorded, from: scope, depth: depth) }
-            return isInside == true
+            return isInside
         }
         let isOwn = { (candidate: LayoutGraphBuilder.Declared) in
             self.owningDeclaration(of: candidate, depth: depth).map { $0 == owner } == true && sees(candidate)
@@ -198,8 +216,11 @@ extension LayoutGraphBuilder.TypeLookup {
     /// name is looked up as before. With modules known, such an extension's type is found, or is
     /// outside the diagram, as `String.Index` is.
     private func membersRespelled(
-        named member: String, of type: LayoutGraphBuilder.Declared, besides found: Set<ObjectIdentifier>,
-        depth: Int, sees: (LayoutGraphBuilder.Declared) -> Bool
+        named member: String,
+        of type: LayoutGraphBuilder.Declared,
+        besides found: Set<ObjectIdentifier>,
+        depth: Int,
+        sees: (LayoutGraphBuilder.Declared) -> Bool
     ) -> (own: [LayoutGraphBuilder.Declared], unsure: [LayoutGraphBuilder.Declared]) {
         let recorded = recordedName(of: type.declaration) ?? ""
         var own: [LayoutGraphBuilder.Declared] = []
@@ -227,15 +248,6 @@ extension LayoutGraphBuilder {
         /// A nested type the items do not list, which the name means and no lookup goes past.
         case hidden
     }
-}
-
-/// The members of one name a type declares (`TypeLookup.members(named:of:from:depth:)`): those
-/// recorded, and the nested types the items do not list.
-private struct InheritableMembers {
-    var recorded: [LayoutGraphBuilder.Declared] = []
-    var hidden: [LayoutGraphBuilder.Declared] = []
-
-    var isEmpty: Bool { recorded.isEmpty && hidden.isEmpty }
 }
 
 extension LayoutGraphBuilder {

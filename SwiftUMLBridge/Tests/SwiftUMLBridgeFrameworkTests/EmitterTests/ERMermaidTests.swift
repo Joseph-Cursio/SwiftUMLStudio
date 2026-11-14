@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 @Suite("ERScript — Mermaid")
 struct ERMermaidTests {
@@ -26,8 +26,8 @@ struct ERMermaidTests {
         let model = ERModel(entities: [
             EREntity(name: "Author", attributes: [
                 ERAttribute(name: "identifier", type: "UUID", isPrimaryKey: true, isUnique: true),
-                ERAttribute(name: "name", type: "String")
-            ])
+                ERAttribute(name: "name", type: "String"),
+            ]),
         ])
         let script = makeScript(model: model)
         #expect(script.text.contains("Author {"))
@@ -41,8 +41,8 @@ struct ERMermaidTests {
         let model = ERModel(entities: [
             EREntity(name: "User", attributes: [
                 ERAttribute(name: "id", type: "UUID", isPrimaryKey: true),
-                ERAttribute(name: "handle", type: "String", isUnique: true)
-            ])
+                ERAttribute(name: "handle", type: "String", isUnique: true),
+            ]),
         ])
         let script = makeScript(model: model)
         #expect(script.text.contains("String handle UK"))
@@ -54,7 +54,7 @@ struct ERMermaidTests {
         let model = ERModel(entities: [
             EREntity(name: "Cached", attributes: [
                 ERAttribute(name: "preview", type: "String", isTransient: true)
-            ])
+            ]),
         ])
         let script = makeScript(model: model)
         #expect(script.text.contains("String preview \"transient\""))
@@ -65,7 +65,7 @@ struct ERMermaidTests {
         let model = ERModel(entities: [
             EREntity(name: "Thing", attributes: [
                 ERAttribute(name: "tags", type: "[String]")
-            ])
+            ]),
         ])
         let script = makeScript(model: model)
         // "[String]" has two non-alphanumerics; each becomes "_".
@@ -81,7 +81,7 @@ struct ERMermaidTests {
             (ERCardinality.zeroOrMany, ERCardinality.zeroOrOne, "}o--o|"),
             (ERCardinality.zeroOrMany, ERCardinality.zeroOrMany, "}o--o{"),
             (ERCardinality.exactlyOne, ERCardinality.exactlyOne, "||--||"),
-            (ERCardinality.exactlyOne, ERCardinality.oneOrMany, "||--|{")
+            (ERCardinality.exactlyOne, ERCardinality.oneOrMany, "||--|{"),
         ]
     )
     func cardinalityPairs(fromCardinality: ERCardinality, toCardinality: ERCardinality, expected: String) {
@@ -92,7 +92,7 @@ struct ERMermaidTests {
                     from: "A", toEntity: "B",
                     fromCardinality: fromCardinality, toCardinality: toCardinality,
                     label: "edge"
-                )
+                ),
             ]
         )
         let script = makeScript(model: model)
@@ -116,7 +116,7 @@ struct ERMermaidTests {
                     from: "A", toEntity: "B",
                     fromCardinality: .exactlyOne, toCardinality: .exactlyOne,
                     label: ""
-                )
+                ),
             ]
         )
         let script = makeScript(model: model)
@@ -128,9 +128,11 @@ struct ERMermaidTests {
     @Test("nomnoml format reuses the Mermaid emitter and reports mermaid")
     func nomnomlFormatFallsBackToMermaid() {
         let model = ERModel(
-            entities: [EREntity(name: "Note", attributes: [
-                ERAttribute(name: "title", type: "String")
-            ])]
+            entities: [
+                EREntity(name: "Note", attributes: [
+                    ERAttribute(name: "title", type: "String")
+                ]),
+            ]
         )
         let script = makeScript(model: model, format: .nomnoml)
         #expect(script.format == .mermaid)

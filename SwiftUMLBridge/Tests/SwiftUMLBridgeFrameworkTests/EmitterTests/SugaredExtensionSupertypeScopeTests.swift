@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// A type nested in an extension is recorded under the extended type's name, so `Array.Base` is
 /// both a `Base` nested in a project `struct Array` and one declared in `extension [Int]`, a member
@@ -17,7 +17,10 @@ struct SugaredExtensionSupertypeScopeTests {
 
     /// The ids the supertype edges drawn from `child` end on, in drawing order.
     private func ends(
-        from child: String, _ source: String, _ format: DiagramFormat, _ mode: ExtensionVisualization = .all,
+        from child: String,
+        _ source: String,
+        _ format: DiagramFormat,
+        _ mode: ExtensionVisualization = .all,
         relationships: RelationshipOptions = RelationshipOptions()
     ) -> [String] {
         let drawn = classDiagram(source, format, mode, relationships: relationships)
@@ -25,12 +28,14 @@ struct SugaredExtensionSupertypeScopeTests {
         case .svg:
             return drawn.layoutGraph?.edges
                 .filter { $0.sourceId == child && $0.style != .composition }.map(\.targetId) ?? []
+
         case .nomnoml:
             // `[child] -:> label [parent]`; a nesting edge starts at the parent.
             return drawn.text.split(separator: "\n").compactMap { line -> String? in
                 guard line.hasPrefix("[\(child)] -"), let open = line.lastIndex(of: "[") else { return nil }
                 return String(line[line.index(after: open)...].dropLast())
             }
+
         default:
             // `parent <|-- child : label`.
             return drawn.text.split(separator: "\n").compactMap { line -> String? in
@@ -191,7 +196,7 @@ struct SugaredExtensionSupertypeScopeTests {
     /// whichever is declared first.
     @Test("a written Array.Base is the project Array's member", arguments: [
         "struct Array { class Base { var local = 0 } }\nextension [Int] { class Base { var sugar = 0 } }",
-        "extension [Int] { class Base { var sugar = 0 } }\nstruct Array { class Base { var local = 0 } }"
+        "extension [Int] { class Base { var sugar = 0 } }\nstruct Array { class Base { var local = 0 } }",
     ])
     func writtenPathMeansProjectArray(declarations: String) {
         let sub = "class Sub: Array.Base { func f() -> Int { local } }"
@@ -207,7 +212,7 @@ struct SugaredExtensionSupertypeScopeTests {
         "struct Array { class Base { var local = 0 } }\nextension [Int] { class Base { var sugar = 0 } }"
             + "\nenum Outer {}\nextension Outer { typealias Array = [Int] }",
         "extension [Int] { class Base { var sugar = 0 } }\nstruct Array { class Base { var local = 0 } }"
-            + "\nenum Outer { typealias Array = Swift.Array<Int> }"
+            + "\nenum Outer { typealias Array = Swift.Array<Int> }",
     ], [ExtensionVisualization.all, .merged, .hidden])
     func writtenPathThroughEnclosingAlias(declarations: String, mode: ExtensionVisualization) {
         let source = declarations + "\nextension Outer { class Sub: Array.Base { func f() -> Int { sugar } } }"
@@ -265,7 +270,7 @@ struct SugaredExtensionSupertypeScopeTests {
             RelationshipOptions(inheritance: Relationship(label: "inherits", exclude: patterns))
         }
         #expect(ends(from: "Array.Sub", source, .plantuml, relationships: excluding(["Array.Base"])) == ["Base"])
-        #expect(ends(from: "Array.Sub", source, .plantuml, relationships: excluding(["Base"])) == [])
+        #expect(ends(from: "Array.Sub", source, .plantuml, relationships: excluding(["Base"])).isEmpty)
     }
 
     // MARK: - Controls

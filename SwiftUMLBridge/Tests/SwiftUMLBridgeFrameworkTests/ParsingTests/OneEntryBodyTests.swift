@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// Several bodies can be filed under one `Type.method`: overloads, same-named types, and a
 /// function or type local to a body. The sequence diagram drew every one and the activity diagram
@@ -40,7 +40,7 @@ struct OneEntryBodyTests {
     func topLevelBeforeNested() throws {
         let files: [EntryFile] = [
             ("PkgA/Nested.swift", "enum First { struct Real { func run() { fromNested() }; func fromNested() {} } }"),
-            ("PkgB/Real.swift", "struct Real { func run() { fromTop() }\n    func fromTop() {} }")
+            ("PkgB/Real.swift", "struct Real { func run() { fromTop() }\n    func fromTop() {} }"),
         ]
         for text in try Self.both(files, "Real", "run") {
             #expect(text.contains("fromTop()"), "\(text)")
@@ -137,7 +137,7 @@ struct OneEntryBodyTests {
     /// `Service().start()` reaches only the `load` with no arguments.
     @Test("a call reaches the overload its argument labels fit", arguments: [
         ("load()", "fromPlain()", "fromKeyed"), ("load(\"key\")", "fromKeyed()", "fromPlain"),
-        ("self.load(key: \"key\")", "fromLabeled()", "fromPlain")
+        ("self.load(key: \"key\")", "fromLabeled()", "fromPlain"),
     ])
     func overloadByLabels(call: String, reached: String, passed: String) throws {
         let source = "struct Service {\n    func start() { \(call) }\n    func load() { fromPlain() }\n"

@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLStudio
+import Testing
 
 // Each test keeps its store in memory, so they run in parallel and never touch
 // `UserDefaults.standard`, which in this app-hosted bundle is the developer's
@@ -50,9 +50,10 @@ struct PlantUMLConsentTests {
 
     @Test("recording a decision leaves the app's own defaults alone")
     func leavesStandardDefaultsAlone() {
-        func standardKeys() -> [Bool?] {
-            [PlantUMLConsent.grantedKey, PlantUMLConsent.declinedKey].map {
-                UserDefaults.standard.object(forKey: $0) as? Bool
+        // What .standard holds under each consent key, written out; `nil` where it holds nothing.
+        func standardKeys() -> [String?] {
+            [PlantUMLConsent.grantedKey, PlantUMLConsent.declinedKey].map { key in
+                UserDefaults.standard.object(forKey: key).map { "\($0)" }
             }
         }
         let before = standardKeys()

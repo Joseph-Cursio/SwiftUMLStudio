@@ -112,8 +112,10 @@ extension LayoutGraphBuilder.TypeLookup {
     /// (`fallbackCandidates(_:for:from:depth:)`). With no module, where an extension adds one of
     /// them, they are also that type's alone (`membersOfWrittenStart(_:named:from:depth:)`).
     func fitting(
-        _ candidates: [LayoutGraphBuilder.Declared], for name: LayoutGraphBuilder.QualifiedName,
-        from scope: LayoutGraphBuilder.Scope, depth: Int
+        _ candidates: [LayoutGraphBuilder.Declared],
+        for name: LayoutGraphBuilder.QualifiedName,
+        from scope: LayoutGraphBuilder.Scope,
+        depth: Int
     ) -> [LayoutGraphBuilder.Declared] {
         switch name.root {
         case .projectType:
@@ -124,28 +126,30 @@ extension LayoutGraphBuilder.TypeLookup {
             let fitted = seen.filter { !isInExtensionOfOutsideType($0, depth: depth) }
             guard fitted.count > 1, fitted.contains(where: { $0.extended != nil }) else { return fitted }
             return membersOfEnclosingType(fitted, from: scope, depth: depth)
+
         case .outsideType:
             return candidates.filter { isInExtensionOfOutsideType($0, depth: depth) }
+
         case .asWritten:
-            var candidates = seenWhenQualifierIsModule(candidates, named: name.name, from: scope, depth: depth)
-            guard name.name.contains(".") else { return seenAtFileScope(candidates, named: name.name, from: scope) }
+            var narrowed = seenWhenQualifierIsModule(candidates, named: name.name, from: scope, depth: depth)
+            guard name.name.contains(".") else { return seenAtFileScope(narrowed, named: name.name, from: scope) }
             if let start = name.start {
-                if let members = members(of: start, among: candidates, from: scope, depth: depth) { return members }
-                candidates = fallbackCandidates(candidates, for: name, from: scope, depth: depth)
+                if let members = members(of: start, among: narrowed, from: scope, depth: depth) { return members }
+                narrowed = fallbackCandidates(narrowed, for: name, from: scope, depth: depth)
             } else {
                 // A first component read as a module, `ModA` in `ModA.Foo.V`, sets no start, but
                 // the writer still sees only the extensions its module loads (#245).
-                candidates = loaded(candidates, from: scope, depth: depth)
+                narrowed = loaded(narrowed, from: scope, depth: depth)
             }
-            guard candidates.count > 1, candidates.contains(where: { $0.extended != nil }) else {
-                return candidates
+            guard narrowed.count > 1, narrowed.contains(where: { $0.extended != nil }) else {
+                return narrowed
             }
-            candidates = membersOfWrittenStart(candidates, named: name.name, from: scope, depth: depth)
-            guard candidates.count > 1 else { return candidates }
-            let isOutside = candidates.map { isInExtensionOfOutsideType($0, depth: depth) }
-            guard isOutside.contains(true), isOutside.contains(false) else { return candidates }
+            narrowed = membersOfWrittenStart(narrowed, named: name.name, from: scope, depth: depth)
+            guard narrowed.count > 1 else { return narrowed }
+            let isOutside = narrowed.map { isInExtensionOfOutsideType($0, depth: depth) }
+            guard isOutside.contains(true), isOutside.contains(false) else { return narrowed }
             let startsOutside = firstComponentType(of: name.name, from: scope, depth: depth) == nil
-            return zip(candidates, isOutside).filter { $0.1 == startsOutside }.map(\.0)
+            return zip(narrowed, isOutside).filter { $0.1 == startsOutside }.map(\.0)
         }
     }
 
@@ -153,8 +157,10 @@ extension LayoutGraphBuilder.TypeLookup {
     /// `candidates` of the dotted `name` that belong to the type its first component means from
     /// `scope` (`members(ownedBy:among:from:depth:)`, #230).
     private func membersOfWrittenStart(
-        _ candidates: [LayoutGraphBuilder.Declared], named name: String,
-        from scope: LayoutGraphBuilder.Scope, depth: Int
+        _ candidates: [LayoutGraphBuilder.Declared],
+        named name: String,
+        from scope: LayoutGraphBuilder.Scope,
+        depth: Int
     ) -> [LayoutGraphBuilder.Declared] {
         guard scope.module == nil, depth < 8,
               let start = firstComponentType(of: name, from: scope, depth: depth),
@@ -193,7 +199,9 @@ extension LayoutGraphBuilder.TypeLookup {
     /// scans the name's same-named types once rather than at each of its many lookups (#252). Any
     /// other name is looked up afresh, as before: its candidates cost no more.
     func enclosingCandidates(
-        _ name: LayoutGraphBuilder.QualifiedName, from scope: LayoutGraphBuilder.Scope, depth: Int,
+        _ name: LayoutGraphBuilder.QualifiedName,
+        from scope: LayoutGraphBuilder.Scope,
+        depth: Int,
         lookUp: () -> [LayoutGraphBuilder.Declared]
     ) -> [LayoutGraphBuilder.Declared] {
         guard name.root == .projectType, scope.module == nil, !fitsEachAlone(name, from: scope) else { return lookUp() }
@@ -241,8 +249,10 @@ extension LayoutGraphBuilder.TypeLookup {
     /// writer's directory stays, since there the `Foo` both read may be another target's
     /// unrelated one, first read of those equally near.
     private func members(
-        ownedBy owner: LayoutGraphBuilder.OwningDeclaration, among candidates: [LayoutGraphBuilder.Declared],
-        from scope: LayoutGraphBuilder.Scope, depth: Int
+        ownedBy owner: LayoutGraphBuilder.OwningDeclaration,
+        among candidates: [LayoutGraphBuilder.Declared],
+        from scope: LayoutGraphBuilder.Scope,
+        depth: Int
     ) -> [LayoutGraphBuilder.Declared] {
         let members = candidates.filter { candidate in
             owningDeclaration(of: candidate, depth: depth).map { $0 == owner } ?? false
@@ -272,8 +282,10 @@ extension LayoutGraphBuilder.TypeLookup {
     /// name: of two `Foo`s, the one the writer means is a guess, and the other's member would
     /// then drop the one the writer sees.
     private func seenWithType(
-        _ member: LayoutGraphBuilder.Declared, owner: LayoutGraphBuilder.OwningDeclaration,
-        from scope: LayoutGraphBuilder.Scope, depth: Int
+        _ member: LayoutGraphBuilder.Declared,
+        owner: LayoutGraphBuilder.OwningDeclaration,
+        from scope: LayoutGraphBuilder.Scope,
+        depth: Int
     ) -> Bool {
         guard member.extended != nil else {
             return member.ownAccess >= .package

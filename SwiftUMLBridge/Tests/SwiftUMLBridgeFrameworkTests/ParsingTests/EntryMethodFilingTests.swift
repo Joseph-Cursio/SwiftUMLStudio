@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// A method is filed under a name the entry's own declarations may not lead to: a nested type's
 /// under its innermost name, and one in `extension Name` under whatever `Name` means in that file,
@@ -27,7 +27,7 @@ struct EntryMethodFilingTests {
     func nestedTypeReadFirst() throws {
         let (root, paths) = try EntryFixture.written([
             ("PkgB/Alias.swift", Self.nestedBody + "typealias Svc = OB.IB"),
-            EntryFixture.withRun("A")
+            EntryFixture.withRun("A"),
         ])
         defer { try? FileManager.default.removeItem(at: root) }
         for text in EntryFixture.both(paths, "Svc", "run") {
@@ -40,7 +40,7 @@ struct EntryMethodFilingTests {
     func nestedTypeReadLater() throws {
         let (root, paths) = try EntryFixture.written([
             EntryFixture.plain("C"),
-            ("PkgB/Alias.swift", Self.nestedBody + "typealias Svc = OB.IB")
+            ("PkgB/Alias.swift", Self.nestedBody + "typealias Svc = OB.IB"),
         ])
         defer { try? FileManager.default.removeItem(at: root) }
         for text in EntryFixture.both(paths, "Svc", "run") {
@@ -56,7 +56,7 @@ struct EntryMethodFilingTests {
                 "Pkg/Types.swift",
                 "enum OB { struct IB {} }\nenum OC { struct IB { func run() { inOC() }\n    func inOC() {} } }\n"
                     + "typealias Svc = OB.IB"
-            )
+            ),
         ])
         defer { try? FileManager.default.removeItem(at: root) }
         for text in EntryFixture.both(paths, "Svc", "run") {
@@ -71,7 +71,7 @@ struct EntryMethodFilingTests {
     func privateTypealiasElsewhere() throws {
         let (root, paths) = try EntryFixture.written([
             ("PkgB/Alias.swift", "struct MyDate {}\nprivate typealias Date = MyDate"),
-            ("PkgA/Ext.swift", "import Foundation\nextension Date {\n    func run() { step() }\n    func step() {}\n}")
+            ("PkgA/Ext.swift", "import Foundation\nextension Date {\n    func run() { step() }\n    func step() {}\n}"),
         ])
         defer { try? FileManager.default.removeItem(at: root) }
         #expect(SequenceDiagramGenerator().findEntryPoints(for: paths).contains("Date.run"))
@@ -91,7 +91,7 @@ struct EntryMethodFilingTests {
                 "struct RealA {}\nstruct RealB {}\n#if os(iOS)\nprivate typealias Svc = RealB\n"
                     + "#else\ntypealias Svc = RealA\n#endif"
             ),
-            ("PkgC/Ext.swift", "extension Svc {\n    func run() { step() }\n    func step() {}\n}")
+            ("PkgC/Ext.swift", "extension Svc {\n    func run() { step() }\n    func step() {}\n}"),
         ])
         defer { try? FileManager.default.removeItem(at: root) }
         for text in EntryFixture.both(paths, "Svc", "run") {
@@ -108,7 +108,7 @@ struct EntryMethodFilingTests {
                 "enum Config { struct Logger { func run() { step() }\n    func step() { last() }\n"
                     + "    func last() {} } }"
             ),
-            ("PkgB/Alias.swift", "struct Lumber {}\ntypealias Logger = Lumber")
+            ("PkgB/Alias.swift", "struct Lumber {}\ntypealias Logger = Lumber"),
         ])
         defer { try? FileManager.default.removeItem(at: root) }
         #expect(SequenceDiagramGenerator().findEntryPoints(for: paths).contains("Logger.\(method)"))
@@ -129,7 +129,7 @@ struct EntryMethodFilingTests {
             (
                 "PkgA/Alias.swift",
                 "struct AppConfig { func load() { inAlias() }\n    func inAlias() {} }\ntypealias Config = AppConfig"
-            )
+            ),
         ])
         defer { try? FileManager.default.removeItem(at: root) }
         for text in EntryFixture.both(paths, "Config", "load") {
@@ -156,7 +156,7 @@ struct EntryMethodFilingTests {
         let (root, paths) = try EntryFixture.written([
             EntryFixture.plain("B"),
             ("PkgA/Alias.swift", "struct RealA {}\ntypealias Mid = RealA\ntypealias Svc = Mid"),
-            ("PkgA/Ext.swift", Self.extensionOfSvc)
+            ("PkgA/Ext.swift", Self.extensionOfSvc),
         ])
         defer { try? FileManager.default.removeItem(at: root) }
         for text in EntryFixture.both(paths, "Svc", "run") {
@@ -171,7 +171,7 @@ struct EntryMethodFilingTests {
         let (root, paths) = try EntryFixture.written([
             EntryFixture.plain("B"),
             ("PkgA/Alias.swift", "typealias Svc = [Int]\n" + Self.extensionOfSvc),
-            ("PkgC/Array.swift", "struct Other {}\ntypealias Array = Other")
+            ("PkgC/Array.swift", "struct Other {}\ntypealias Array = Other"),
         ])
         defer { try? FileManager.default.removeItem(at: root) }
         for text in EntryFixture.both(paths, "Svc", "run") {
@@ -186,7 +186,7 @@ struct EntryMethodFilingTests {
         let (root, paths) = try EntryFixture.written([
             ("PkgB/NS.swift", "struct RealB {}\nenum NS { typealias Svc = RealB }"),
             ("PkgA/NS.swift", "enum NS { struct Inner {}\n    typealias Svc = Inner }"),
-            ("PkgA/Ext.swift", "extension NS.Svc {\n    func run() { step() }\n    func step() {}\n}")
+            ("PkgA/Ext.swift", "extension NS.Svc {\n    func run() { step() }\n    func step() {}\n}"),
         ])
         defer { try? FileManager.default.removeItem(at: root) }
         for text in EntryFixture.both(paths, "NS.Svc", "run") {
@@ -198,7 +198,7 @@ struct EntryMethodFilingTests {
     /// `run(_:)` in the body and `run()` in the extension are overloads, which Swift allows.
     private static let nestedBodyAndExtension: [EntryFile] = [
         ("Pkg/Nested.swift", "enum OB { struct IB { func run(_ value: Int) { inBody() }\n    func inBody() {} } }"),
-        ("Pkg/Ext.swift", "extension OB.IB { func run() { inExt() }\n    func inExt() {} }\ntypealias Svc = OB.IB")
+        ("Pkg/Ext.swift", "extension OB.IB { func run() { inExt() }\n    func inExt() {} }\ntypealias Svc = OB.IB"),
     ]
 
     @Test("what is filed under the typealias's spelling wins, whichever file is read first", arguments: [false, true])

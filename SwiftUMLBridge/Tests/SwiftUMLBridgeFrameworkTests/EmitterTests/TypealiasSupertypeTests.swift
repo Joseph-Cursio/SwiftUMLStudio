@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// After `typealias Q = Proto`, `struct S: Q {}` conforms to `Proto`. PlantUML, Mermaid and
 /// Nomnoml wrote the edge to an undeclared `Q`, labelled `inherits`, and `deps --types` drew it
@@ -11,7 +11,9 @@ struct TypealiasSupertypeTests {
     static let formats: [DiagramFormat] = [.plantuml, .mermaid, .nomnoml]
 
     private func script(
-        _ source: String, _ format: DiagramFormat, relationships: RelationshipOptions? = nil,
+        _ source: String,
+        _ format: DiagramFormat,
+        relationships: RelationshipOptions? = nil,
         extensions: ExtensionVisualization = .all
     ) -> String {
         var configuration = Configuration(elements: ElementOptions(showExtensions: extensions), format: format)
@@ -94,7 +96,7 @@ struct TypealiasSupertypeTests {
     func fileprivateAliasInAnotherFile() throws {
         let root = try directory([
             "A.swift": "protocol Proto {}\nfileprivate typealias Q = Proto\nstruct Here: Q {}",
-            "B.swift": "struct There: Q {}"
+            "B.swift": "struct There: Q {}",
         ])
         defer { try? FileManager.default.removeItem(at: root) }
         let text = ClassDiagramGenerator().generateScript(
@@ -110,7 +112,7 @@ struct TypealiasSupertypeTests {
     func depsThroughAlias() throws {
         let root = try directory([
             "Proto.swift": "protocol Proto {}\nclass Base {}\ntypealias Alias2 = Proto\ntypealias BaseAlias = Base",
-            "User.swift": "struct User: Alias2 {}\nclass Sub: BaseAlias {}"
+            "User.swift": "struct User: Alias2 {}\nclass Sub: BaseAlias {}",
         ])
         defer { try? FileManager.default.removeItem(at: root) }
         let edges = DependencyGraphGenerator().extractEdges(for: [root.path], mode: .types)
@@ -141,14 +143,18 @@ struct TypealiasSupertypeTests {
 
                 public struct ViaPublic: PublicQ {}
                 public struct ViaInternal: InternalQ {}
-                """
+                """,
         ])
         defer { try? FileManager.default.removeItem(at: root) }
         let package = SPMPackageDescription(name: "Pkg", targets: [
-            SPMTargetDescription(name: "Core", kind: .library, path: "Sources/Core",
-                                 sources: ["Proto.swift"], dependencies: []),
-            SPMTargetDescription(name: "Networking", kind: .library, path: "Sources/Networking",
-                                 sources: ["Client.swift"], dependencies: ["Core"])
+            SPMTargetDescription(
+                name: "Core", kind: .library, path: "Sources/Core",
+                sources: ["Proto.swift"], dependencies: []
+            ),
+            SPMTargetDescription(
+                name: "Networking", kind: .library, path: "Sources/Networking",
+                sources: ["Client.swift"], dependencies: ["Core"]
+            ),
         ])
         let text = DependencyGraphGenerator().generateScript(
             forPackage: package, packageRoot: root, mode: .types, with: Configuration(format: .plantuml)

@@ -1,5 +1,3 @@
-import Foundation
-
 /// SVG shape and edge rendering helpers for `ActivitySVGRenderer`.
 extension ActivitySVGRenderer {
 
@@ -12,6 +10,7 @@ extension ActivitySVGRenderer {
                 centerX: node.centerX, centerY: node.centerY,
                 radius: node.width / 2, fill: terminalFill, stroke: strokeColor
             )
+
         case .end:
             return renderCircle(
                 centerX: node.centerX, centerY: node.centerY,
@@ -20,13 +19,17 @@ extension ActivitySVGRenderer {
                 centerX: node.centerX, centerY: node.centerY,
                 radius: node.width / 2 - 5, fill: terminalFill, stroke: terminalFill
             )
+
         case .action:
             let fill = node.isAsync ? asyncActionFill : actionFill
             return renderRoundedRect(node: node, fill: fill) + renderCenteredText(node: node)
+
         case .decision, .loopStart:
             return renderDiamond(node: node, fill: decisionFill) + renderCenteredText(node: node)
+
         case .merge, .loopEnd:
             return renderDiamond(node: node, fill: mergeFill)
+
         case .fork, .join:
             return renderBar(node: node, fill: forkJoinFill)
         }

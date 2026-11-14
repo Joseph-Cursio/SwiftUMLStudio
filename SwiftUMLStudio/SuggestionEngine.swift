@@ -36,7 +36,7 @@ enum SuggestionAction: Sendable {
 }
 
 nonisolated enum SuggestionEngine {
-    static func generate(from summary: ProjectSummary, isProUnlocked: Bool) -> [DiagramSuggestion] {
+    static func generate(from summary: ProjectSummary, isProUnlocked _: Bool) -> [DiagramSuggestion] {
         var suggestions: [DiagramSuggestion] = []
         if let classSuggestion = classDiagramSuggestion(from: summary) {
             suggestions.append(classSuggestion)
@@ -178,8 +178,10 @@ nonisolated enum SuggestionEngine {
         switch model.confidence {
         case .high:
             return "\(model.states.count) states, \(model.transitions.count) transitions."
+
         case .medium:
             return "\(model.states.count) states — type inferred from initializer."
+
         case .low:
             return "\(model.transitions.count) transitions — sources unknown."
         }

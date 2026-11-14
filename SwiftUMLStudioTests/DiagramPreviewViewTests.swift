@@ -1,9 +1,7 @@
-import Foundation
-import SwiftUI
-import Testing
-import ViewInspector
 import SwiftUMLBridgeFramework
 @testable import SwiftUMLStudio
+import Testing
+import ViewInspector
 
 @Suite("DiagramPreviewView")
 @MainActor
@@ -54,7 +52,7 @@ struct DiagramPreviewViewTests {
                 hostType: "H", enumType: "E",
                 states: [], transitions: [],
                 confidence: .low, notes: ["no switch"]
-            )
+            ),
         ]
         try await DiagramPreviewView(viewModel: viewModel).inspectHosted { view in
             _ = try view.find(viewWithAccessibilityIdentifier: "stateMachineConfidenceBanner")
@@ -71,7 +69,7 @@ struct DiagramPreviewViewTests {
                 hostType: "H", enumType: "E",
                 states: [], transitions: [],
                 confidence: .high, notes: []
-            )
+            ),
         ]
         try await DiagramPreviewView(viewModel: viewModel).inspectHosted { view in
             #expect(throws: InspectionError.self) {

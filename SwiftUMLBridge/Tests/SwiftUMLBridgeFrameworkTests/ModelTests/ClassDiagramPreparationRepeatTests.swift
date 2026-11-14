@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// Class-diagram preparation edits the structures it works on, and it used to edit the caller's
 /// parsed items: a second diagram from the same items saw the first one's merged members, parent
@@ -25,7 +25,10 @@ struct ClassDiagramPreparationRepeatTests {
     }
 
     private func declared(
-        _ kind: ElementKind, _ name: String, in file: String, module: String? = nil,
+        _ kind: ElementKind,
+        _ name: String,
+        in file: String,
+        module: String? = nil,
         members: [SyntaxStructure] = []
     ) -> SyntaxStructure {
         let item = SyntaxStructure(kind: kind, name: name, substructure: members.isEmpty ? nil : members)
@@ -154,7 +157,7 @@ struct ClassDiagramPreparationRepeatTests {
         let parsed = [
             declared(.struct, "Foo", in: "A.swift", module: "ModA", members: [count]),
             declared(.struct, "Foo", in: "B.swift", module: "ModB", members: [other]),
-            declared(.extension, "Foo", in: "B.swift", module: "ModB", members: [bar, inner])
+            declared(.extension, "Foo", in: "B.swift", module: "ModB", members: [bar, inner]),
         ]
         for _ in 1...2 {
             let laid = graph(parsed)

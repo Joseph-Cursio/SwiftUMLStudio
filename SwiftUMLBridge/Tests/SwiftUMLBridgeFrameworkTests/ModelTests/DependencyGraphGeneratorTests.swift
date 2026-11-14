@@ -1,6 +1,6 @@
-import Testing
-@testable import SwiftUMLBridgeFramework
 import Foundation
+@testable import SwiftUMLBridgeFramework
+import Testing
 
 @Suite("DependencyGraphGenerator")
 struct DependencyGraphGeneratorTests {
@@ -224,7 +224,7 @@ struct DependencyGraphGeneratorTests {
         // Test with DependencyGraphModel directly that annotation works
         let cycleEdges = [
             DependencyEdge(from: "A", toNode: "B", kind: .imports),
-            DependencyEdge(from: "B", toNode: "A", kind: .imports)
+            DependencyEdge(from: "B", toNode: "A", kind: .imports),
         ]
         let model = DependencyGraphModel(edges: cycleEdges)
         let script = DepsScript(model: model, configuration: .default)

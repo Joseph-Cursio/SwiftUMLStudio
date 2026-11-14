@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLStudio
+import Testing
 
 /// Which diagram modes are paid, stated once and checkable.
 ///
@@ -38,7 +38,8 @@ struct DiagramModeEntitlementTests {
     func mappingIsDeterministic() {
         for mode in DiagramMode.allCases {
             let first = mode.requiredFeature
-            #expect(mode.requiredFeature == first)
+            let second = mode.requiredFeature
+            #expect(first == second)
         }
     }
 }

@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// The SVG class diagram draws exactly the types the PlantUML, Mermaid and Nomnoml ones draw (#74).
 /// `LayoutGraphBuilder` kept every processable kind, so `showExtensions: .hidden`,
@@ -31,7 +31,7 @@ struct SVGClassDiagramFilterTests {
         let source = "protocol P {}\nstruct Foo {}\nextension Foo: P { func bar() {} }"
         let graph = svg(source, ElementOptions(showExtensions: ExtensionVisualization.hidden))
         #expect(graph?.nodes.map(\.id) == ["P", "Foo"])
-        #expect(graph?.edgeEnds == [])
+        #expect(graph?.edgeEnds.isEmpty == true)
     }
 
     @Test("elements.exclude drops the excluded type")
@@ -61,7 +61,7 @@ struct SVGClassDiagramFilterTests {
         let source = "class InternalCache {}\nclass PublicAPI: InternalCache {}"
         let graph = svg(source, ElementOptions(exclude: ["Internal*"]))
         #expect(graph?.nodes.map(\.id) == ["PublicAPI"])
-        #expect(graph?.edgeEnds == [])
+        #expect(graph?.edgeEnds.isEmpty == true)
     }
 
     /// A hidden type has no box to merge into, so its extension keeps its own and stands in for
@@ -118,7 +118,7 @@ struct SVGClassDiagramFilterTests {
         "public class Visible {}\nclass Hidden: Visible {}\nfileprivate struct Secret {}\nprivate class Private {}",
         "class InternalCache {}\nclass PublicAPI: InternalCache {}\nstruct InternalThing {}",
         "fileprivate struct Outer { struct Inner {} }\nextension Outer {}\npublic struct Box { struct Lid {} }",
-        "fileprivate class Base {}\nextension Base { func run() {} }\nclass Sub: Base {}"
+        "fileprivate class Base {}\nextension Base { func run() {} }\nclass Sub: Base {}",
     ]
 
     static let parityOptions: [ElementOptions] = [
@@ -127,7 +127,7 @@ struct SVGClassDiagramFilterTests {
         ElementOptions(showExtensions: .merged),
         ElementOptions(exclude: ["Internal*", "Lid"]),
         ElementOptions(havingAccessLevel: [.open, .public]),
-        ElementOptions(havingAccessLevel: [.open, .public, .internal, .fileprivate, .private])
+        ElementOptions(havingAccessLevel: [.open, .public, .internal, .fileprivate, .private]),
     ]
 
     @Test("SVG draws the types Mermaid declares", arguments: paritySources.indices, parityOptions.indices)

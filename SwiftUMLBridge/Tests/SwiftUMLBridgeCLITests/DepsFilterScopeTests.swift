@@ -66,7 +66,7 @@ struct DepsFilterScopeTests {
             label: "--modules, no filter",
             elements: nil, arguments: ["Mods", "--modules"],
             present: ["App --> Foundation", "App --> Dispatch", "Core --> Foundation"], absent: []
-        )
+        ),
     ]
 
     @Test("each filter reaches the graph", arguments: cases)

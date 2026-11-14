@@ -1,5 +1,3 @@
-import Foundation
-
 /// Where PlantUML and Nomnoml end the edge of a drawn nested type whose parent the class diagram
 /// does not draw. It is found as SVG finds it (`DrawnEdgeEnds`), so the formats agree on which box
 /// a hidden type's children hang off.
@@ -16,9 +14,10 @@ enum HiddenParentEnd {
     /// parent, and a drawn element already declares the parent's qualified name, so naming it
     /// would hang the type off that unrelated element.
     static func ends(
-        of drawn: [SyntaxStructure], through edgeEnds: DrawnEdgeEnds,
+        of drawn: [SyntaxStructure],
+        through edgeEnds: DrawnEdgeEnds,
         declaringIdentifier declares: (SyntaxStructure) -> Bool
-    ) -> [ObjectIdentifier: HiddenParentEnd] {
+    ) -> [ObjectIdentifier: Self] {
         let drawnItems = Set(drawn)
         // The first of a name keeps it as its alias.
         let declaredNames = Set(drawn.compactMap { item -> String? in
@@ -26,7 +25,7 @@ enum HiddenParentEnd {
             return item.fullName ?? item.name
         })
 
-        var ends: [ObjectIdentifier: HiddenParentEnd] = [:]
+        var ends: [ObjectIdentifier: Self] = [:]
         for item in drawn {
             guard let parent = item.nestingParent, !drawnItems.contains(parent),
                   let parentName = parent.fullName else { continue }

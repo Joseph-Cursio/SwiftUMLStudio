@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// An SVG class diagram draws an extension's box with an edge to the type it extends, as the text
 /// formats' `ext` edge does (#75), and draws none where they draw none.
@@ -7,7 +7,8 @@ import Testing
 struct SVGExtensionEdgeTests {
 
     private func svgEdges(
-        _ source: String, _ extensions: ExtensionVisualization = .all,
+        _ source: String,
+        _ extensions: ExtensionVisualization = .all,
         relationships: RelationshipOptions = RelationshipOptions()
     ) -> [String] {
         let graph = classDiagram(source, .svg, extensions, relationships: relationships).layoutGraph
@@ -33,7 +34,7 @@ struct SVGExtensionEdgeTests {
 
     @Test("an extension of a type outside the diagram gets no edge", arguments: [
         "extension String {}\nextension String {}",
-        "extension [Int] {}"
+        "extension [Int] {}",
     ])
     func noEdgeForUndeclaredType(source: String) {
         #expect(svgEdges(source).isEmpty)
@@ -69,7 +70,7 @@ struct SVGExtensionEdgeTests {
         "struct Foo<T> {}\nextension Foo<Int> {}",
         "struct Real {}\ntypealias Alias = Real\nextension Alias {}",
         "extension String {}\nextension String {}",
-        "fileprivate struct Foo {}\nextension Foo {}"
+        "fileprivate struct Foo {}\nextension Foo {}",
     ])
     func agreesWithMermaid(source: String) {
         let mermaid = classDiagram(source, .mermaid).text.split(separator: "\n").filter { $0.hasSuffix(" : ext") }

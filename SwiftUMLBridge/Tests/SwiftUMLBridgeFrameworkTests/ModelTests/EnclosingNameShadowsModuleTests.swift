@@ -1,6 +1,5 @@
-import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// Swift reads a dotted name's first component as a module only when no type of that name is in
 /// scope, and the members of the enclosing types come first. So in `enum E { typealias ModA = Other }`,
@@ -40,22 +39,22 @@ struct EnclosingNameShadowsModuleTests {
             protocols, File(module: "ModA", source: """
                 enum E2 { typealias ModA = Other; struct W: ModA.Foo {} }
                 enum E3 { typealias ModA = Third; struct W: ModA.Foo {} }
-                """)
+                """),
         ], expected: ["P2 <|.. E2.W : conforms to", "P3 <|.. E3.W : conforms to"]),
         Case(name: "the alias two enclosing types out", files: [
             protocols,
-            File(module: "ModA", source: "enum Deep { typealias ModA = Other; enum Inner { struct W: ModA.Foo {} } }")
+            File(module: "ModA", source: "enum Deep { typealias ModA = Other; enum Inner { struct W: ModA.Foo {} } }"),
         ], expected: ["P2 <|.. Deep.Inner.W : conforms to"]),
         Case(name: "the writer in an extension of the type with the alias", files: [
             protocols,
             File(module: "ModA", source: "enum Ext { typealias ModA = Other }"),
-            File(module: "ModA", source: "extension Ext { struct W: ModA.Foo {} }")
+            File(module: "ModA", source: "extension Ext { struct W: ModA.Foo {} }"),
         ], expected: ["P2 <|.. Ext.W : conforms to"]),
         Case(name: "control: at the top level beside it, the module", files: [
             protocols, File(module: "ModA", source: """
                 enum E { typealias ModA = Other; struct W: ModA.Foo {} }
                 struct W0: ModA.Foo {}
-                """)
+                """),
         ], expected: ["P2 <|.. E.W : conforms to", "P1 <|.. W0 : conforms to"]),
         Case(name: "control: an enclosing alias of another name", files: [
             protocols, File(module: "ModA", source: "enum E { typealias Q = Other; struct W: Q.Foo {} }")
@@ -68,7 +67,7 @@ struct EnclosingNameShadowsModuleTests {
                 enum Other { typealias Foo = P2 }
                 enum E { typealias ModA = Other; struct W: ModA.Foo {} }
                 struct W0: ModA.Foo {}
-                """)
+                """),
         ], expected: ["P2 <|.. E.W : conforms to", "P1 <|.. W0 : conforms to"]),
         // Writers of no module share a lookup by name, module and imports, which these two hold
         // alike, so the enclosing alias must keep each to its own answer. With no start worked out,
@@ -78,8 +77,8 @@ struct EnclosingNameShadowsModuleTests {
             File(module: "ModA", source: "public protocol P1 {}\npublic typealias Foo = P1"),
             File(module: nil, source: "import ModA\nprotocol P2 {}\nenum Other { typealias Foo = P2 }"),
             File(module: nil, source: "import ModA\nenum E { typealias ModA = Other; struct W: ModA.Foo {} }"),
-            File(module: nil, source: "import ModA\nstruct W0: ModA.Foo {}")
-        ], expected: ["ModA.Foo <|-- E.W : inherits", "P1 <|.. W0 : conforms to"])
+            File(module: nil, source: "import ModA\nstruct W0: ModA.Foo {}"),
+        ], expected: ["ModA.Foo <|-- E.W : inherits", "P1 <|.. W0 : conforms to"]),
     ]
 
     /// Each case is read with its files in the order given and reversed, so no answer comes from

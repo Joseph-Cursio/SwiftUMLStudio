@@ -1,7 +1,7 @@
 import Foundation
 
 /// A rendered activity diagram in PlantUML, Mermaid, or SVG format.
-public struct ActivityScript: Sendable {
+public struct ActivityScript: Sendable, DiagramOutputting {
     /// The diagram text.
     public let text: String
 
@@ -17,7 +17,7 @@ public struct ActivityScript: Sendable {
     public internal(set) var foundEntry = true
 
     /// An empty script (used when the entry point is not found).
-    public static let empty = ActivityScript(text: "", format: .plantuml)
+    public static let empty = Self(text: "", format: .plantuml)
 
     internal init(graph: ActivityGraph, configuration: Configuration) {
         let drawn = configuration.format.drawn(
@@ -39,141 +39,8 @@ public struct ActivityScript: Sendable {
         self.activityLayout = nil
         self.foundEntry = false
     }
-}
 
-// MARK: - PlantUML (state-diagram flavor)
-
-private extension ActivityScript {
-    static func buildPlantUMLText(from graph: ActivityGraph) -> String {
-        var lines: [String] = ["@startuml"]
-        if !graph.entryType.isEmpty {
-            lines.append("title \(graph.entryType).\(graph.entryMethod)")
-        }
-
-        if graph.nodes.isEmpty {
-            lines.append("@enduml")
-            return lines.joined(separator: "\n")
-        }
-
-        for node in graph.nodes {
-            if let line = plantUMLNodeLine(node) {
-                lines.append(line)
-            }
-        }
-
-        lines.append("")
-
-        for edge in graph.edges {
-            lines.append(plantUMLEdgeLine(edge, graph: graph))
-        }
-
-        lines.append("@enduml")
-        return lines.joined(separator: "\n")
-    }
-
-    /// Emit the PlantUML `state` declaration line for one node, or `nil` when
-    /// the node is represented by `[*]` in transitions (start/end pseudo-states).
-    static func plantUMLNodeLine(_ node: ActivityNode) -> String? {
-        switch node.kind {
-        case .start, .end:
-            return nil
-        case .action:
-            let prefix = node.isAsync ? "await " : ""
-            return "state \"\(plantUMLEscape(prefix + node.label))\" as N\(node.id)"
-        case .decision, .loopStart:
-            return "state \"\(plantUMLEscape(node.label))\" as N\(node.id) <<choice>>"
-        case .merge, .loopEnd:
-            return "state \" \" as N\(node.id) <<choice>>"
-        case .fork:
-            return "state \" \" as N\(node.id) <<fork>>"
-        case .join:
-            return "state \" \" as N\(node.id) <<join>>"
-        }
-    }
-
-    static func plantUMLEdgeLine(_ edge: ActivityEdge, graph: ActivityGraph) -> String {
-        let source = plantUMLRef(id: edge.fromId, graph: graph)
-        let target = plantUMLRef(id: edge.toId, graph: graph)
-        if let label = edge.label, !label.isEmpty {
-            return "\(source) --> \(target) : \(plantUMLEscape(label))"
-        }
-        return "\(source) --> \(target)"
-    }
-
-    static func plantUMLRef(id: Int, graph: ActivityGraph) -> String {
-        if let node = graph.node(withId: id), node.kind == .start || node.kind == .end {
-            return "[*]"
-        }
-        return "N\(id)"
-    }
-}
-
-// MARK: - Mermaid (flowchart flavor)
-
-private extension ActivityScript {
-    static func buildMermaidText(from graph: ActivityGraph) -> String {
-        var lines: [String] = ["flowchart TD"]
-        if !graph.entryType.isEmpty {
-            lines.append("%% title: \(graph.entryType).\(graph.entryMethod)")
-        }
-
-        if graph.nodes.isEmpty {
-            return lines.joined(separator: "\n")
-        }
-
-        for node in graph.nodes {
-            lines.append(contentsOf: mermaidNodeLines(node))
-        }
-
-        lines.append("classDef forkJoin fill:#333,stroke:#333,color:#fff,stroke-width:2px;")
-
-        for edge in graph.edges {
-            lines.append(mermaidEdgeLine(edge))
-        }
-
-        return lines.joined(separator: "\n")
-    }
-
-    /// Emit the Mermaid shape lines for one activity node.
-    static func mermaidNodeLines(_ node: ActivityNode) -> [String] {
-        let identifier = "N\(node.id)"
-        let label = mermaidEscape(node.label)
-        switch node.kind {
-        case .start:
-            return ["\(identifier)((\"start\"))"]
-        case .end:
-            return ["\(identifier)(((\"end\")))"]
-        case .action:
-            let prefix = node.isAsync ? mermaidEscape("await ") : ""
-            return ["\(identifier)[\"\(prefix)\(label)\"]"]
-        case .decision, .loopStart:
-            return ["\(identifier){\"\(label)\"}"]
-        case .merge, .loopEnd:
-            return ["\(identifier){\" \"}"]
-        case .fork, .join:
-            return [
-                "\(identifier):::forkJoin",
-                "\(identifier)[\" \"]"
-            ]
-        }
-    }
-
-    static func mermaidEdgeLine(_ edge: ActivityEdge) -> String {
-        let source = "N\(edge.fromId)"
-        let target = "N\(edge.toId)"
-        if let label = edge.label, !label.isEmpty {
-            // Quoted, since Mermaid rejects a `(` or `[` in a bare edge label and with it the whole
-            // diagram: `-->|.failure(let error)|` and `-->|#if os(iOS)|` did not parse.
-            return "\(source) -->|\"\(mermaidEscape(label))\"| \(target)"
-        }
-        return "\(source) --> \(target)"
-    }
-}
-
-extension ActivityScript: DiagramOutputting {}
-
-// Internal rather than private so a test can call them directly.
-extension ActivityScript {
+    // Internal rather than private so a test can call them directly.
     static func plantUMLEscape(_ text: String) -> String {
         text.replacingOccurrences(of: "\"", with: "\\\"")
     }

@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 // What `TypeLookup.typeWithSureKind` keeps among writers (`LayoutGraphBuilder.SharedLookup`) must not
 // carry one file's answer to a writer in another (#229). The memo's key holds no file, so each way a
@@ -58,12 +58,12 @@ struct SharedLookupFileTests {
             ("extension Foo {\n    fileprivate typealias V = P1\n    struct W1: V {}\n}",
              "extension Foo {\n    fileprivate typealias V = P2\n    struct W2: V {}\n}"),
             ("private extension Foo { typealias V = P1 }\nextension Foo { struct W1: V {} }",
-             "private extension Foo { typealias V = P2 }\nextension Foo { struct W2: V {} }")
+             "private extension Foo { typealias V = P2 }\nextension Foo { struct W2: V {} }"),
           ], [false, true])
     func mergedPrivateAlias(sources: (String, String), reversed: Bool) throws {
-        let writers = [sources.0, sources.1].map { (module: Optional("App"), source: $0) }
+        let writerFiles = [sources.0, sources.1].map { (module: Optional("App"), source: $0) }
         let files = [(module: Optional("App"), source: "struct Foo {}\nprotocol P1 {}\nprotocol P2 {}")]
-            + (reversed ? writers.reversed() : writers)
+            + (reversed ? writerFiles.reversed() : writerFiles)
         let elements = ElementOptions(showExtensions: .merged)
         let text = DiagramScript(
             items: try moduleQualifiedItems(files), configuration: Configuration(elements: elements)
@@ -79,11 +79,11 @@ struct SharedLookupFileTests {
     /// writers, and the answer comes from `Base`, the rest of the name, among what each can see.
     @Test("a name read through its module means what the writer's own file declares", arguments: [false, true])
     func moduleQualifiedPrivateType(reversed: Bool) throws {
-        let writers: [(module: String?, source: String)] = [
+        let writerFiles: [(module: String?, source: String)] = [
             ("ModA", "private class Base { func fromA() {} }\nprivate class W1: ModA.Base {}"),
-            ("ModA", "private class Base { func fromC() {} }\nprivate class W3: ModA.Base {}")
+            ("ModA", "private class Base { func fromC() {} }\nprivate class W3: ModA.Base {}"),
         ]
-        let files = reversed ? writers.reversed() : writers
+        let files = reversed ? writerFiles.reversed() : writerFiles
         let text = DiagramScript(items: try moduleQualifiedItems(files), configuration: Configuration()).text
         let expected = reversed ? ["Base <|-- W3 : inherits", "Base0 <|-- W1 : inherits"]
             : ["Base <|-- W1 : inherits", "Base0 <|-- W3 : inherits"]
@@ -93,11 +93,11 @@ struct SharedLookupFileTests {
 
     @Test("so does one nested past the module", arguments: [false, true])
     func moduleQualifiedPrivateNestedType(reversed: Bool) throws {
-        let writers: [(module: String?, source: String)] = [
+        let writerFiles: [(module: String?, source: String)] = [
             ("ModA", "private enum Outer { class Base {} }\nprivate class W1: ModA.Outer.Base {}"),
-            ("ModA", "private enum Outer { class Base {} }\nprivate class W3: ModA.Outer.Base {}")
+            ("ModA", "private enum Outer { class Base {} }\nprivate class W3: ModA.Outer.Base {}"),
         ]
-        let files = reversed ? writers.reversed() : writers
+        let files = reversed ? writerFiles.reversed() : writerFiles
         let text = DiagramScript(items: try moduleQualifiedItems(files), configuration: Configuration()).text
         let expected = reversed ? ["Outer.Base <|-- W3 : inherits", "Outer.Base1 <|-- W1 : inherits"]
             : ["Outer.Base <|-- W1 : inherits", "Outer.Base1 <|-- W3 : inherits"]
@@ -110,7 +110,7 @@ struct SharedLookupFileTests {
     /// as written, so `localNearest` finds none, and that file alone ranks this one first.
     @Test("a name read through its module means what ranks in the writer's own file", arguments: [false, true])
     func moduleQualifiedRankedInWritersFile(reversed: Bool) throws {
-        let writers: [(module: String?, source: String)] = [
+        let writerFiles: [(module: String?, source: String)] = [
             ("ModA", """
             struct Foo {}
             typealias Crate = Foo
@@ -118,13 +118,13 @@ struct SharedLookupFileTests {
             struct W1: ModA.Foo.V {}
             #endif
             """),
-            ("ModA", "#if FLAG\nstruct W2: ModA.Foo.V {}\n#endif")
+            ("ModA", "#if FLAG\nstruct W2: ModA.Foo.V {}\n#endif"),
         ]
         let files: [(module: String?, source: String)] = [
             ("ModA", "protocol P1 {}\nprotocol P2 {}"),
             ("ModA", "#if !FLAG\nextension Crate {\n    typealias V = P1\n}\n#endif"),
-            ("ModA", "#if FLAG\nextension Foo {\n    typealias V = P2\n}\n#endif")
-        ] + (reversed ? writers.reversed() : writers)
+            ("ModA", "#if FLAG\nextension Foo {\n    typealias V = P2\n}\n#endif"),
+        ] + (reversed ? writerFiles.reversed() : writerFiles)
         let text = DiagramScript(items: try moduleQualifiedItems(files), configuration: Configuration()).text
         #expect(
             Set(supertypeLines(in: text)) == ["P1 <|.. W1 : conforms to", "P2 <|.. W2 : conforms to"], "\(text)"
@@ -138,7 +138,7 @@ struct SharedLookupFileTests {
     @Test("a first component only the writer's file declares, in a name built on its extension",
           arguments: [false, true])
     func ownFirstComponentOfEnclosingExtension(reversed: Bool) throws {
-        let writers: [(module: String?, source: String)] = [
+        let writerFiles: [(module: String?, source: String)] = [
             ("App", """
             import Mod
             protocol V {}
@@ -149,7 +149,7 @@ struct SharedLookupFileTests {
                 struct W1: V {}
             }
             """),
-            ("App", "import Mod\nextension Mod.Inner {\n    struct W2: V {}\n}")
+            ("App", "import Mod\nextension Mod.Inner {\n    struct W2: V {}\n}"),
         ]
         let rivals: [(module: String?, source: String)] = [
             ("Mod", "public protocol PM {}\npublic struct Inner {\n    public typealias V = PM\n}"),
@@ -160,9 +160,9 @@ struct SharedLookupFileTests {
                     public typealias V = PX
                 }
             }
-            """)
+            """),
         ]
-        let files = rivals + (reversed ? writers.reversed() : writers)
+        let files = rivals + (reversed ? writerFiles.reversed() : writerFiles)
         let text = DiagramScript(items: try moduleQualifiedItems(files), configuration: Configuration()).text
         #expect(supertypeLines(in: text).contains("PM <|.. Mod.Inner.W2 : conforms to"), "\(text)")
         expectMemoChangesNoAnswer(try moduleQualifiedItems(files), ElementOptions())
@@ -175,18 +175,18 @@ struct SharedLookupFileTests {
     private static let firstComponentRivals: [NearestDirectoryFixture.File] = [
         ("sources/a.swift", "public struct Array {\n    public typealias V = Real2\n}"),
         ("sources/b.swift", "extension [Int] {\n    open class V {\n        public init() {}\n    }\n}"),
-        ("sources/c.swift", "open class Real2 {\n    public init() {}\n}")
+        ("sources/c.swift", "open class Real2 {\n    public init() {}\n}"),
     ]
 
     /// `Array` is the struct for `W1` and sugar for `W2`, read without a module, where no start
     /// tells them apart, and `V` is hidden, so what `W2` means shows only in `fitting`.
     @Test("a first component the writer's own file declares", arguments: [false, true])
     func ownFirstComponent(reversed: Bool) throws {
-        let writers: [NearestDirectoryFixture.File] = [
+        let writerFiles: [NearestDirectoryFixture.File] = [
             ("sources/w1.swift", "open class W1: Array.V {}"),
-            ("sources/w2.swift", "public typealias Array = [Int]\nopen class W2: Array.V {}")
+            ("sources/w2.swift", "public typealias Array = [Int]\nopen class W2: Array.V {}"),
         ]
-        let files = Self.firstComponentRivals + (reversed ? writers.reversed() : writers)
+        let files = Self.firstComponentRivals + (reversed ? writerFiles.reversed() : writerFiles)
         let text = try NearestDirectoryFixture.lines(files, .plantuml, Self.hiddenNestedTypes).joined(separator: "\n")
         #expect(Set(supertypeLines(in: text)) == ["Real2 <|-- W1 : inherits", "Array.V <|-- W2 : inherits"], "\(text)")
         expectMemoChangesNoAnswer(try NearestDirectoryFixture.parsed(files), Self.hiddenNestedTypes)
@@ -198,7 +198,7 @@ struct SharedLookupFileTests {
     /// one depth, which the key holds.
     @Test("a first component only a type around the writer declares", arguments: [false, true])
     func enclosingFirstComponent(reversed: Bool) throws {
-        let writers = [
+        let writerFiles = [
             "public typealias U = Array.V\nopen class W1: U {}",
             """
             public enum E {
@@ -206,9 +206,9 @@ struct SharedLookupFileTests {
                 public typealias T = Array.V
             }
             open class W2: E.T {}
-            """
+            """,
         ]
-        let source = (reversed ? writers.reversed() : writers).joined(separator: "\n")
+        let source = (reversed ? writerFiles.reversed() : writerFiles).joined(separator: "\n")
         let files = Self.firstComponentRivals + [("sources/w.swift", source)]
         let text = try NearestDirectoryFixture.lines(files, .plantuml, Self.hiddenNestedTypes).joined(separator: "\n")
         #expect(Set(supertypeLines(in: text)) == ["Real2 <|-- W1 : inherits", "Array.V <|-- W2 : inherits"], "\(text)")
@@ -219,11 +219,11 @@ struct SharedLookupFileTests {
     /// candidates themselves are fitted by what `Array` means to the writer.
     @Test("a first component that decides among recorded candidates", arguments: [false, true])
     func ownFirstComponentAmongRecorded(reversed: Bool) throws {
-        let writers: [NearestDirectoryFixture.File] = [
+        let writerFiles: [NearestDirectoryFixture.File] = [
             ("sources/w1.swift", "open class W1: Array.V {}"),
-            ("sources/w2.swift", "public typealias Array = [Int]\nopen class W2: Array.V {}")
+            ("sources/w2.swift", "public typealias Array = [Int]\nopen class W2: Array.V {}"),
         ]
-        let files = Self.firstComponentRivals + (reversed ? writers.reversed() : writers)
+        let files = Self.firstComponentRivals + (reversed ? writerFiles.reversed() : writerFiles)
         let text = try NearestDirectoryFixture.lines(files, .plantuml, ElementOptions()).joined(separator: "\n")
         #expect(Set(supertypeLines(in: text)) == ["Real2 <|-- W1 : inherits", "Array.V <|-- W2 : inherits"], "\(text)")
         expectMemoChangesNoAnswer(try NearestDirectoryFixture.parsed(files), ElementOptions())
@@ -236,13 +236,13 @@ struct SharedLookupFileTests {
     /// it shadows the typealias there alone, and `W2`, which can't see it, must still reach the typealias.
     @Test("a hidden nested type only the writer's own file sees", arguments: [false, true])
     func ownHiddenNestedType(reversed: Bool) throws {
-        let writers: [(module: String?, source: String)] = [
+        let writerFiles: [(module: String?, source: String)] = [
             ("App", "#if !FLAG\nstruct Foo {\n    fileprivate protocol V {}\n}\nstruct W1: Foo.V {}\n#endif"),
-            ("App", "#if FLAG\nstruct W2: Foo.V {}\n#endif")
+            ("App", "#if FLAG\nstruct W2: Foo.V {}\n#endif"),
         ]
         let files: [(module: String?, source: String)] = [
             ("App", "protocol P {}\n#if FLAG\nstruct Foo {\n    typealias V = P\n}\n#endif")
-        ] + (reversed ? writers.reversed() : writers)
+        ] + (reversed ? writerFiles.reversed() : writerFiles)
         let elements = Self.hiddenNestedTypes
         let text = DiagramScript(
             items: try moduleQualifiedItems(files), configuration: Configuration(elements: elements)
@@ -267,7 +267,7 @@ struct SharedLookupFileTests {
             class Outer: Parent {}
             struct W1: Outer.P {}
             struct W2: Outer.P {}
-            """)
+            """),
         ]
         let items = try moduleQualifiedItems(files)
         let lookup = LayoutGraphBuilder.TypeLookup(of: items)
@@ -288,7 +288,7 @@ struct SharedLookupFileTests {
             (module, "class Base {}"),
             (module, "class W1: Base {}"),
             (module, "class W2: Base {}"),
-            (module, "class W3: Base {}")
+            (module, "class W3: Base {}"),
         ]
         let items = try moduleQualifiedItems(files)
         let lookup = LayoutGraphBuilder.TypeLookup(of: items)

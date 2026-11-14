@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// `ElementKind.classNode` is the one table the Mermaid and Nomnoml emitters label nodes from (#209).
 @Suite("ElementKind.classNode")
@@ -18,7 +18,7 @@ struct ElementKindClassNodeTests {
         (.extension, "ext", "extension"),
         (.enum, "", "enum"),
         (.protocol, "conforms to", "protocol"),
-        (.actor, "actor", "actor")
+        (.actor, "actor", "actor"),
     ])
     func table(kind: ElementKind, relationship: String, stereotype: String) throws {
         let node = try #require(kind.classNode)

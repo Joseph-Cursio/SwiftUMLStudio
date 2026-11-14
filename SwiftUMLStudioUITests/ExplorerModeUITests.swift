@@ -56,7 +56,7 @@ final class ExplorerModeUITests: XCTestCase {
         // SwiftUI reports radio-button selection through AXValue (1 = selected)
         // and does not set AXSelected, so `isSelected` is false even for the
         // active option. Assert on the value instead.
-        let selection = (picker.radioButtons["Explorer"].value as? NSNumber)?.intValue
+        let selection = picker.radioButtons["Explorer"].value as? Int
         XCTAssertEqual(
             selection, 1,
             "Explorer should be the selected mode when launched with -appMode Explorer"

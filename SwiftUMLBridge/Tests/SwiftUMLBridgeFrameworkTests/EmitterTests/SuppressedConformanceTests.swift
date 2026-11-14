@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// `~Copyable` or `~Escapable` in an inheritance clause says a type does not conform to
 /// `Copyable` or `Escapable`. These check that no diagram draws it as a supertype, in any format
@@ -41,13 +41,14 @@ struct SuppressedConformanceTests {
         var found: [String] = []
         for format in Self.formats {
             for mode in Self.modes {
-                found += Self.script(format, mode).split(separator: "\n")
+                found += Self.script(format, mode)
+                    .split(separator: "\n")
                     .filter { $0.contains("~Copyable") || $0.contains("~Escapable") }
                     .filter { !$0.contains("Value: ~Copyable") }
                     .map { "\(format) \(mode): \($0.trimmingCharacters(in: .whitespaces))" }
             }
         }
-        #expect(found == [])
+        #expect(found.isEmpty)
     }
 
     @Test("deps --types draws no edge to a suppressed protocol")
@@ -70,13 +71,13 @@ struct SuppressedConformanceTests {
         "struct Par: P & (~Copyable) {}",
         "struct Par: P &\n    ~Copyable {}",
         "struct Par: @MainActor (~Copyable) {}",
-        "struct Par: P, ~Swift.Copyable {}"
+        "struct Par: P, ~Swift.Copyable {}",
     ])
     func unwrapped(declaration: String) {
         let configuration = Configuration(format: .plantuml)
         let text = ClassDiagramGenerator()
             .generateScript(for: "protocol P: ~Copyable {}\n" + declaration, with: configuration).text
-        #expect(text.split(separator: "\n").filter { $0.contains("~") } == [])
+        #expect(!text.split(separator: "\n").contains { $0.contains("~") })
     }
 
     // MARK: - Guards: these pass today, and a fix should keep them passing.
@@ -84,8 +85,10 @@ struct SuppressedConformanceTests {
     /// A raw identifier keeps its backticks, so a protocol named `` `~Foo` `` is still a supertype.
     @Test("a protocol whose raw name starts with a tilde is still drawn")
     func rawIdentifier() {
-        let source = "protocol `~Foo` {}\nstruct S: `~Foo` {}"
-        let text = ClassDiagramGenerator().generateScript(for: source, with: Configuration(format: .plantuml)).text
+        let escapedSource = "protocol `~Foo` {}\nstruct S: `~Foo` {}"
+        let text = ClassDiagramGenerator()
+            .generateScript(for: escapedSource, with: Configuration(format: .plantuml))
+            .text
         #expect(text.split(separator: "\n").contains("`~Foo` <|.. S : conforms to"))
     }
 

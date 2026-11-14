@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// graphre.js recurses once per rank (`initOrder`) and once per level of its spanning tree
 /// (`dfsAssignLowLim`), inside JavaScriptCore, which gives a script no more stack than the thread
@@ -25,8 +25,10 @@ struct DagreLayoutDepthTests {
         let protocols = (0...structs).map { LayoutNode(id: "P\($0)", label: "P\($0)") }
         let types = (0..<structs).map { LayoutNode(id: "S\($0)", label: "S\($0)") }
         let edges = (0..<structs).flatMap { index in
-            [LayoutEdge(sourceId: "S\(index)", targetId: "P\(index)", style: .realization),
-             LayoutEdge(sourceId: "S\(index)", targetId: "P\(index + 1)", style: .realization)]
+            [
+                LayoutEdge(sourceId: "S\(index)", targetId: "P\(index)", style: .realization),
+                LayoutEdge(sourceId: "S\(index)", targetId: "P\(index + 1)", style: .realization),
+            ]
         }
         return LayoutGraph(nodes: protocols + types, edges: edges)
     }

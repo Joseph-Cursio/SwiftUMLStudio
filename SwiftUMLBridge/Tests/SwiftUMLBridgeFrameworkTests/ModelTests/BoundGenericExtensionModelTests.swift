@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// The SVG class diagram and `deps --types` name `extension Foo<Int>` and `extension [Int]` after
 /// the type they extend, `Foo` and `Array`, as they name `extension Foo where T == Int` (#66).

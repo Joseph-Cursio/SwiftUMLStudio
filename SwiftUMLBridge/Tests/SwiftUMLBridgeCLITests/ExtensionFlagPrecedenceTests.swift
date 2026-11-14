@@ -25,20 +25,30 @@ struct ExtensionFlagPrecedenceTests {
     private static let mergedMember = "~bar <&bolt>"
 
     static let cases = [
-        FlagCase(showExtensions: "merged", flags: ["--show-extensions"],
-                 present: [extensionBox], absent: [mergedMember]),
+        FlagCase(
+            showExtensions: "merged", flags: ["--show-extensions"],
+            present: [extensionBox], absent: [mergedMember]
+        ),
         FlagCase(showExtensions: "merged", flags: ["--hide-extensions"], present: ["as Foo "], absent: ["bar"]),
-        FlagCase(showExtensions: "all", flags: ["--merge-extensions"],
-                 present: [mergedMember], absent: [extensionBox]),
-        FlagCase(showExtensions: nil, flags: ["--merge-extensions", "--show-extensions"],
-                 present: [extensionBox], absent: [mergedMember]),
-        FlagCase(showExtensions: nil, flags: ["--show-extensions", "--merge-extensions"],
-                 present: [mergedMember], absent: [extensionBox]),
-        FlagCase(showExtensions: nil, flags: ["--hide-extensions", "--show-extensions"],
-                 present: [extensionBox], absent: [mergedMember]),
+        FlagCase(
+            showExtensions: "all", flags: ["--merge-extensions"],
+            present: [mergedMember], absent: [extensionBox]
+        ),
+        FlagCase(
+            showExtensions: nil, flags: ["--merge-extensions", "--show-extensions"],
+            present: [extensionBox], absent: [mergedMember]
+        ),
+        FlagCase(
+            showExtensions: nil, flags: ["--show-extensions", "--merge-extensions"],
+            present: [mergedMember], absent: [extensionBox]
+        ),
+        FlagCase(
+            showExtensions: nil, flags: ["--hide-extensions", "--show-extensions"],
+            present: [extensionBox], absent: [mergedMember]
+        ),
         // With no flag, the config file decides, and without one, extensions get boxes.
         FlagCase(showExtensions: "merged", flags: [], present: [mergedMember], absent: [extensionBox]),
-        FlagCase(showExtensions: nil, flags: [], present: [extensionBox], absent: [mergedMember])
+        FlagCase(showExtensions: nil, flags: [], present: [extensionBox], absent: [mergedMember]),
     ]
 
     @Test("the flag decides", arguments: cases)

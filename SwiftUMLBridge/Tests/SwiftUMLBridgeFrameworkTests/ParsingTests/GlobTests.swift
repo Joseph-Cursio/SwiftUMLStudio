@@ -1,12 +1,14 @@
-import Testing
-@testable import SwiftUMLBridgeFramework
 import Foundation
+@testable import SwiftUMLBridgeFramework
+import Testing
 
 @Suite("Glob")
 struct GlobTests {
 
-    private var projectMockURL: URL {
-        Bundle.module.resourceURL!
+    private let projectMockURL: URL
+
+    init() throws {
+        projectMockURL = try #require(Bundle.module.resourceURL)
             .appendingPathComponent("TestData")
             .appendingPathComponent("ProjectMock")
     }
@@ -86,7 +88,7 @@ struct GlobTests {
     @Test("expandPath expands tilde to home directory")
     func expandPathTilde() {
         let url = expandPath("~/Documents", in: "/tmp")
-        let home = NSString(string: "~").expandingTildeInPath
+        let home = NSHomeDirectory()
         #expect(url.path.hasPrefix(home))
     }
 
@@ -106,6 +108,7 @@ struct GlobTests {
             switch glob {
             case .path:
                 #expect(Bool(true))
+
             case .regex:
                 break
             }
@@ -123,7 +126,7 @@ struct GlobTests {
     /// It now means exactly the list of its expansions.
     @Test("expandGlobs expands a brace entry into its options", arguments: [
         ("{Mock0,Mock1}File.swift", "Mock0File.swift,Mock1File.swift"),
-        ("{*Kit,?ar}.swift", "*Kit.swift,?ar.swift")
+        ("{*Kit,?ar}.swift", "*Kit.swift,?ar.swift"),
     ])
     func expandGlobsBraceExpansion(braced: String, listed: String) {
         let globs = expandGlobs(braced, in: projectMockURL.path)

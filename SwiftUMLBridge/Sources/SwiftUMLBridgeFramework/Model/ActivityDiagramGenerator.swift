@@ -1,8 +1,8 @@
-import Foundation
-
 /// Generates activity (control-flow) diagram scripts for a chosen entry function.
 public struct ActivityDiagramGenerator: ActivityDiagramGenerating, Sendable {
-    public init() {}
+    public init() {
+        // Public because a struct's implicit initializer is internal; there is no state to set.
+    }
 
     /// Find all potential entry points (`Type.method`) in the given source files.
     public func findEntryPoints(for paths: [String]) -> [String] {

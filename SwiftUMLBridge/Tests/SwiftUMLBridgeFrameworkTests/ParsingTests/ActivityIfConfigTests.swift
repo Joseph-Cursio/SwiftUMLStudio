@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// An `#if` among statements is a decision with a branch per clause, and a switch case inside
 /// `#if` is a branch of its switch. Code inside `#if` used to make no node at all (#135).
@@ -47,7 +47,7 @@ struct ActivityIfConfigTests {
             "log() -> merge",
             "trace() -> merge",
             "merge -> render()",
-            "render() -> end"
+            "render() -> end",
         ])
     }
 
@@ -68,7 +68,7 @@ struct ActivityIfConfigTests {
             "#if -#if DEBUG-> merge",
             "#if -#else-> trace()",
             "trace() -> merge",
-            "merge -> end"
+            "merge -> end",
         ])
     }
 
@@ -129,7 +129,7 @@ struct ActivityIfConfigTests {
             "switch phase -.idle-> start()",
             "switch phase -.running-> finish()",
             "switch phase -.paused-> resume()",
-            "switch phase -default-> break"
+            "switch phase -default-> break",
         ]))
     }
 

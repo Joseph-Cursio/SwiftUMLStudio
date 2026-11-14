@@ -9,9 +9,9 @@
 
 import Foundation
 import SwiftData
-import Testing
 @testable import SwiftUMLBridgeFramework
 @testable import SwiftUMLStudio
+import Testing
 
 @Suite("DiagramViewModel History — Fallback Formats") @MainActor
 struct DiagramViewModelHistoryFormatTests {
@@ -65,11 +65,13 @@ struct DiagramViewModelHistoryFormatTests {
         viewModel.diagramMode = .sequenceDiagram
         viewModel.diagramFormat = .nomnoml
         viewModel.entryPoint = "Foo.bar"
-        let edges = [CallEdge(
-            callerType: "Foo", callerMethod: "bar",
-            calleeType: "Baz", calleeMethod: "qux",
-            isAsync: false, isUnresolved: false
-        )]
+        let edges = [
+            CallEdge(
+                callerType: "Foo", callerMethod: "bar",
+                calleeType: "Baz", calleeMethod: "qux",
+                isAsync: false, isUnresolved: false
+            ),
+        ]
         // Nomnoml has no sequence syntax, so the Bridge emits Mermaid for it. The script is built
         // from a Mermaid configuration so this test covers what history persists, not how the
         // Bridge reports its fallback — the Bridge's own tests cover that.

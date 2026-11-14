@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// `extension Foo<Int>` is drawn as an extension of `Foo` (#66), with the arguments it binds shown
 /// beside the name while `showGenerics` is on, as a generic type's own parameters are. They are
@@ -66,7 +66,10 @@ struct BoundGenericArgumentDisplayTests {
             "extension [String: Int] {}", "as Dictionary<String, Int> ",
             "[\"Dictionary&lt;String, Int&gt;\"]", "[<extension id=Dictionary> Dictionary <String, Int>]"
         ),
-        ("extension [[Int]] {}", "as Array<[Int]> ", "[\"Array&lt;[Int]&gt;\"]", "[<extension id=Array> Array <(Int)>]")
+        (
+            "extension [[Int]] {}", "as Array<[Int]> ",
+            "[\"Array&lt;[Int]&gt;\"]", "[<extension id=Array> Array <(Int)>]"
+        ),
     ])
     func sugar(source: String, plantUML: String, mermaid: String, nomnoml: String) {
         #expect(ClassDiagramIds.script(for: source, format: .plantuml).contains(plantUML))
@@ -98,7 +101,7 @@ struct BoundGenericArgumentDisplayTests {
         ("extension Array<Int> { func one() {} }\nextension Array<String> {}", ["Array=Array"]),
         ("extension Array<Int> { func one() {} }\nextension Array<Int> { func two() {} }", ["Array=Array<Int>"]),
         ("extension Array<Int> { func one() {} }\nextension Array { func two() {} }", ["Array=Array"]),
-        ("struct Foo<T> {}\nextension Foo<Int> { func one() {} }", ["Foo=Foo"])
+        ("struct Foo<T> {}\nextension Foo<Int> { func one() {} }", ["Foo=Foo"]),
     ])
     func mergedLabel(source: String, labels: [String]) {
         #expect(svgLabels(source, ElementOptions(showExtensions: .merged)) == labels)

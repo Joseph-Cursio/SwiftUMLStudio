@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 @Suite("Mermaid Generation")
 struct MermaidGenerationTests {
@@ -223,9 +223,11 @@ struct MermaidGenerationTests {
 
     @Test("instance variable without typename shows only name in Mermaid output")
     func instanceVarWithoutTypename() {
-        let items = [SyntaxStructure(kind: .struct, name: "Container", substructure: [
-            SyntaxStructure(accessibility: .internal, kind: .varInstance, name: "value")
-        ])]
+        let items = [
+            SyntaxStructure(kind: .struct, name: "Container", substructure: [
+                SyntaxStructure(accessibility: .internal, kind: .varInstance, name: "value")
+            ]),
+        ]
         let script = DiagramScript(items: items, configuration: mermaidConfig)
         #expect(script.text.contains("value"))
         // No colon-separated type should appear
@@ -234,9 +236,11 @@ struct MermaidGenerationTests {
 
     @Test("static variable without typename shows name with $ in Mermaid output")
     func staticVarWithoutTypename() {
-        let items = [SyntaxStructure(kind: .class, name: "Config", substructure: [
-            SyntaxStructure(accessibility: .internal, kind: .varStatic, name: "shared")
-        ])]
+        let items = [
+            SyntaxStructure(kind: .class, name: "Config", substructure: [
+                SyntaxStructure(accessibility: .internal, kind: .varStatic, name: "shared")
+            ]),
+        ]
         let script = DiagramScript(items: items, configuration: mermaidConfig)
         #expect(script.text.contains("shared$"))
     }
@@ -249,10 +253,12 @@ struct MermaidGenerationTests {
             elements: ElementOptions(showMembersWithAccessLevel: [.public]),
             format: .mermaid
         )
-        let items = [SyntaxStructure(kind: .class, name: "Foo", substructure: [
-            SyntaxStructure(accessibility: .internal, kind: .varInstance, name: "hidden", typename: "Int"),
-            SyntaxStructure(accessibility: .public, kind: .varInstance, name: "visible", typename: "String")
-        ])]
+        let items = [
+            SyntaxStructure(kind: .class, name: "Foo", substructure: [
+                SyntaxStructure(accessibility: .internal, kind: .varInstance, name: "hidden", typename: "Int"),
+                SyntaxStructure(accessibility: .public, kind: .varInstance, name: "visible", typename: "String"),
+            ]),
+        ]
         let script = DiagramScript(items: items, configuration: config)
         #expect(script.text.contains("visible"))
         #expect(script.text.contains("hidden") == false)

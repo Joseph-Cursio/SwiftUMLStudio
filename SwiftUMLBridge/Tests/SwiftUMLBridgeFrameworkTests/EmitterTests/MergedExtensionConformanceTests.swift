@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// Under `showExtensions: .merged`, the supertypes an extension's inheritance clause names are
 /// drawn from the box its members are merged into, as that type's own supertypes are. Merging
@@ -94,7 +94,7 @@ struct MergedExtensionConformanceTests {
         ("struct Plain {}\nextension Plain: Codable {}", "struct Plain: Codable {}"),
         ("protocol P {}\nclass Plain {}\nextension Plain: P {}", "protocol P {}\nclass Plain: P {}"),
         ("enum Plain {}\nextension Plain: Sendable {}", "enum Plain: Sendable {}"),
-        ("protocol P {}\nactor Plain {}\nextension Plain: P {}", "protocol P {}\nactor Plain: P {}")
+        ("protocol P {}\nactor Plain {}\nextension Plain: P {}", "protocol P {}\nactor Plain: P {}"),
     ]
 
     @Test("a merged conformance is drawn exactly as the type's own clause draws it", arguments: textFormats)

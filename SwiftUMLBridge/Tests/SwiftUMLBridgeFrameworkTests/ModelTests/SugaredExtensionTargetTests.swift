@@ -1,5 +1,5 @@
-import Testing
 @testable import SwiftUMLBridgeFramework
+import Testing
 
 /// `[Int]`, `[String: Int]` and `Int?` always mean Swift's `Array`, `Dictionary` and `Optional`,
 /// even where the project declares a type of that name. `extendedTypeName` names such an
@@ -35,7 +35,8 @@ struct SugaredExtensionTargetTests {
     /// Member lines `--merge-extensions` marks as merged into a type (`<&bolt>`).
     private func mergedMembers(_ source: String) -> [String] {
         script(source, .plantuml, .merged).split(separator: "\n")
-            .map { $0.trimmingCharacters(in: .whitespaces) }.filter { $0.hasSuffix("<&bolt>") }
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { $0.hasSuffix("<&bolt>") }
     }
 
     private func mergedIds(_ source: String) -> [String] {
@@ -79,7 +80,7 @@ struct SugaredExtensionTargetTests {
 
     @Test("--merge-extensions leaves a project's Array, Optional, Dictionary and InlineArray alone")
     func mergeLeavesLocalTypesAlone() {
-        #expect(mergedMembers(Self.shadowing) == [])
+        #expect(mergedMembers(Self.shadowing).isEmpty)
         #expect(mergedIds(Self.shadowing) == [
             "Array", "Optional", "Dictionary", "InlineArray", "Array0", "Optional1", "Dictionary2", "InlineArray3"
         ])
@@ -88,7 +89,7 @@ struct SugaredExtensionTargetTests {
     @Test("a sugared extension draws no ext edge to a project's type",
           arguments: [DiagramFormat.plantuml, .mermaid, .nomnoml])
     func noExtEdgeToLocalType(format: DiagramFormat) {
-        #expect(extEdges(Self.shadowing, format) == [])
+        #expect(extEdges(Self.shadowing, format).isEmpty)
     }
 
     @Test("SVG hangs a type nested in a sugared extension off that extension", arguments: [
@@ -113,9 +114,9 @@ struct SugaredExtensionTargetTests {
     @Test("--hide-extensions gives a type nested in a sugared extension no edge to a project's type")
     func hiddenSugaredExtensionNestedType() {
         let source = "struct Array {}\nextension [Int] { struct Summary {} }"
-        #expect(graph(source, .hidden)?.edgeEnds == [])
-        #expect(ClassDiagramIds.lines(of: script(source, .plantuml, .hidden), containing: "+--") == [])
-        #expect(ClassDiagramIds.lines(of: script(source, .nomnoml, .hidden), containing: "+-") == [])
+        #expect(graph(source, .hidden)?.edgeEnds.isEmpty == true)
+        #expect(ClassDiagramIds.lines(of: script(source, .plantuml, .hidden), containing: "+--").isEmpty)
+        #expect(ClassDiagramIds.lines(of: script(source, .nomnoml, .hidden), containing: "+-").isEmpty)
     }
 
     // MARK: - Other spellings of the sugar
@@ -127,8 +128,8 @@ struct SugaredExtensionTargetTests {
             typealias JSON = [String: Int]
             extension JSON { var keyCount: Int { count } }
             """
-        #expect(mergedMembers(source) == [])
-        #expect(extEdges(source, .plantuml) == [])
+        #expect(mergedMembers(source).isEmpty)
+        #expect(extEdges(source, .plantuml).isEmpty)
     }
 
     /// `Outer.Numbers` and `[Int]` both extend Swift's `Array`, so they share the first one's box,
@@ -143,8 +144,8 @@ struct SugaredExtensionTargetTests {
             extension Outer.Numbers { var total: Int { reduce(0, +) } }
             extension [Int] { var doubled: [Int] { map { $0 * 2 } } }
             """
-        #expect(mergedMembers(source) == [])
-        #expect(extEdges(source, .plantuml) == [])
+        #expect(mergedMembers(source).isEmpty)
+        #expect(extEdges(source, .plantuml).isEmpty)
         #expect(mergedIds(source) == ["Outer", "Outer.Array", "Outer.Numbers"])
     }
 
@@ -156,8 +157,8 @@ struct SugaredExtensionTargetTests {
             struct Array { struct Index {} }
             extension [Int].Index { var next: Int { 0 } }
             """
-        #expect(mergedMembers(source) == [])
-        #expect(extEdges(source, .plantuml) == [])
+        #expect(mergedMembers(source).isEmpty)
+        #expect(extEdges(source, .plantuml).isEmpty)
     }
 
     /// Only the base of `[Int].Stats` is Swift's type. `Stats` is the project's, declared in an
@@ -165,7 +166,7 @@ struct SugaredExtensionTargetTests {
     @Test("a member the project declares in a sugared extension is the one a sugared path names", arguments: [
         (DiagramFormat.plantuml, "Array.Stats <.. Array.Stats0 : ext"),
         (.mermaid, "Array.Stats <.. Array.Stats0 : ext"),
-        (.nomnoml, "[Array.Stats0] --> ext [Array.Stats]")
+        (.nomnoml, "[Array.Stats0] --> ext [Array.Stats]"),
     ])
     func memberDeclaredInSugaredExtension(format: DiagramFormat, edge: String) {
         let source = """
@@ -264,9 +265,9 @@ struct SugaredExtensionTargetTests {
             == ["[Array0] +- [Array.Inner]"])
         #expect(graph(withBare)?.edgeEnds == ["Array_1 -> Array.Inner"])
         let sugaredOnly = "fileprivate struct Array { struct Inner {} }\nextension [Int] { var total: Int { 0 } }"
-        #expect(ClassDiagramIds.lines(of: script(sugaredOnly, .plantuml), containing: "+--") == [])
-        #expect(ClassDiagramIds.lines(of: script(sugaredOnly, .nomnoml), containing: "+-") == [])
-        #expect(graph(sugaredOnly)?.edgeEnds == [])
+        #expect(ClassDiagramIds.lines(of: script(sugaredOnly, .plantuml), containing: "+--").isEmpty)
+        #expect(ClassDiagramIds.lines(of: script(sugaredOnly, .nomnoml), containing: "+-").isEmpty)
+        #expect(graph(sugaredOnly)?.edgeEnds.isEmpty == true)
     }
 
     // MARK: - Controls
@@ -283,8 +284,8 @@ struct SugaredExtensionTargetTests {
     @Test("without a project type, a sugared extension gets no edge and nothing to merge into")
     func withoutLocalType() {
         let alone = "extension [Int] { var total: Int { 0 } }\nextension Int? { var orZero: Int { 0 } }"
-        #expect(mergedMembers(alone) == [])
-        #expect(extEdges(alone, .plantuml) == [])
+        #expect(mergedMembers(alone).isEmpty)
+        #expect(extEdges(alone, .plantuml).isEmpty)
     }
 
     @Test("without a project type, [Int] and a bare Array share one box (#66)")

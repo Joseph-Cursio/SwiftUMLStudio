@@ -1,9 +1,7 @@
-import Foundation
-import SwiftUI
-import Testing
-import ViewInspector
 @testable import SwiftUMLBridgeFramework
 @testable import SwiftUMLStudio
+import Testing
+import ViewInspector
 
 @Suite("DiagramExportMenu")
 @MainActor
@@ -22,9 +20,10 @@ struct DiagramExportMenuTests {
 
     /// Titles of the menu's items, in order.
     private func itemTitles(_ viewModel: DiagramViewModel) async throws -> [String] {
-        try await DiagramExportMenu(viewModel: viewModel, viewport: DiagramViewport()).inspectHosted { view in
+        try await DiagramExportMenu(viewModel: viewModel).inspectHosted { view in
             try view.find(ViewType.Menu.self)
-                .findAll(ViewType.Button.self).compactMap { try? $0.labelView().text().string() }
+                .findAll(ViewType.Button.self)
+                .compactMap { try? $0.labelView().text().string() }
         }
     }
 
@@ -53,7 +52,7 @@ struct DiagramExportMenuTests {
         arguments: [
             (DiagramFormat.plantuml, "puml"),
             (.mermaid, "mmd"),
-            (.nomnoml, "nomnoml")
+            (.nomnoml, "nomnoml"),
         ]
     )
     func sourceExport(format: DiagramFormat, ext: String) async throws {
@@ -72,10 +71,12 @@ struct DiagramExportMenuTests {
 
     @Test("menu is labelled with the share icon and identifiable for UI tests")
     func labelAndIdentifier() async throws {
-        let menu = DiagramExportMenu(viewModel: makeViewModel(), viewport: DiagramViewport())
+        let menu = DiagramExportMenu(viewModel: makeViewModel())
         try await menu.inspectHosted { view in
-            let label = try view.find(viewWithAccessibilityIdentifier: "diagramExportMenu").menu()
-                .labelView().label()
+            let label = try view.find(viewWithAccessibilityIdentifier: "diagramExportMenu")
+                .menu()
+                .labelView()
+                .label()
             #expect(try label.title().text().string() == "Export")
             #expect(try label.icon().image().actualImage().name() == "square.and.arrow.up")
         }

@@ -1,7 +1,7 @@
 import Foundation
+@testable import SwiftUMLBridgeFramework
 import Synchronization
 import Testing
-@testable import SwiftUMLBridgeFramework
 
 /// The lines an echo sink was handed.
 private final class EchoedLines: Sendable {
