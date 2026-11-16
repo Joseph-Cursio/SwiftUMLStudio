@@ -98,10 +98,11 @@ extension LayoutGraphBuilder.TypeLookup {
     }
 
     /// The `candidates` recorded under `name` that it can mean from `scope`. A name built on an
-    /// enclosing type takes only those of that type's root, and with no module, where an
-    /// extension adds one of them, only those of that very type (`membersOfEnclosingType`,
-    /// #252). A bare name takes those the file
-    /// sees (`seenAtFileScope(_:named:from:)`). A dotted name as written takes the members of the
+    /// enclosing type takes only those of that type's root; with a module, where it starts at the
+    /// type around the writer (`enclosingStart(of:depth:)`), only the members of that type the
+    /// writer sees, as for a dotted name; and with no module, where an extension adds one of them,
+    /// only those of that very type (`membersOfEnclosingType`, #252). A bare name takes those the
+    /// file sees (`seenAtFileScope(_:named:from:)`). A dotted name as written takes the members of the
     /// type its first component means there. Where that is worked out (`started(_:from:depth:)`),
     /// they are the members of that very type, an extension's if the writer's module loads it.
     /// Otherwise, as for sources read without their package or a first component read as a
@@ -119,13 +120,7 @@ extension LayoutGraphBuilder.TypeLookup {
     ) -> [LayoutGraphBuilder.Declared] {
         switch name.root {
         case .projectType:
-            // A name built on `extension Analytics.Event` reads its qualifier as the extension
-            // does, so `Inner` in it is not one nested in a namespace the file does not import.
-            let seen = name.isRecorded
-                ? candidates : seenWhenQualifierIsModule(candidates, named: name.name, from: scope, depth: depth)
-            let fitted = seen.filter { !isInExtensionOfOutsideType($0, depth: depth) }
-            guard fitted.count > 1, fitted.contains(where: { $0.extended != nil }) else { return fitted }
-            return membersOfEnclosingType(fitted, from: scope, depth: depth)
+            return fittingTypesAround(candidates, for: name, from: scope, depth: depth)
 
         case .outsideType:
             return candidates.filter { isInExtensionOfOutsideType($0, depth: depth) }
@@ -151,6 +146,27 @@ extension LayoutGraphBuilder.TypeLookup {
             let startsOutside = firstComponentType(of: name.name, from: scope, depth: depth) == nil
             return zip(narrowed, isOutside).filter { $0.1 == startsOutside }.map(\.0)
         }
+    }
+
+    /// `fitting(_:for:from:depth:)` for a name built on project types around `scope`. Started at
+    /// the outermost of them (`enclosingStart(of:depth:)`), as a dotted name is, it takes only that
+    /// type's members the writer sees. With none, the name has no declaration there and is read on
+    /// through the module it may be spelled in (`moduleMatch`) or further out, as Swift reads it: a
+    /// member the writer does not see, or one of another type of that name, does not stop it.
+    private func fittingTypesAround(
+        _ candidates: [LayoutGraphBuilder.Declared],
+        for name: LayoutGraphBuilder.QualifiedName,
+        from scope: LayoutGraphBuilder.Scope,
+        depth: Int
+    ) -> [LayoutGraphBuilder.Declared] {
+        // A name built on `extension Analytics.Event` reads its qualifier as the extension
+        // does, so `Inner` in it is not one nested in a namespace the file does not import.
+        let seen = name.isRecorded
+            ? candidates : seenWhenQualifierIsModule(candidates, named: name.name, from: scope, depth: depth)
+        let fitted = seen.filter { !isInExtensionOfOutsideType($0, depth: depth) }
+        if let start = name.start { return members(of: start, among: fitted, from: scope, depth: depth) ?? [] }
+        guard fitted.count > 1, fitted.contains(where: { $0.extended != nil }) else { return fitted }
+        return membersOfEnclosingType(fitted, from: scope, depth: depth)
     }
 
     /// In a file of no known module, where no start is worked out (`started(_:from:depth:)`), the

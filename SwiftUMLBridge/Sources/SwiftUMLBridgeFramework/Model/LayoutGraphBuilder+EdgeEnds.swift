@@ -77,6 +77,8 @@ extension LayoutGraphBuilder {
         /// written apart (`fitsEachAlone(_:from:)`), as an unlisted member so declared does too
         /// (`unlistedNamesWithExtendedTypes`).
         private var namesWithExtendedTypes: Set<String> = []
+        /// What follows a recorded dotted name's first component, `Foo.V` for `ModA.Foo.V` (`mayBeStartedMember`).
+        private(set) var namesPastFirstComponent: Set<String> = []
         /// Every extension recorded, with the name it was recorded under, in recording order.
         private(set) var recordedExtensions: [(name: String, declared: Declared)] = []
         /// The names a typealias is recorded under (`namesTypealias(_:)`), so asking costs no scan
@@ -124,6 +126,7 @@ extension LayoutGraphBuilder {
                     typesForNameInFile[name, default: [:]][filePath, default: []].append(declared)
                 }
                 if declared.extended != nil { namesWithExtendedTypes.insert(name) }
+                if name.contains(".") { namesPastFirstComponent.insert(String(name.drop { $0 != "." }.dropFirst())) }
                 for file in [declared.scope.filePath, declared.rankScope.filePath].compactMap(\.self) {
                     filesOfName[name, default: []].insert(file)
                 }
@@ -258,13 +261,19 @@ extension LayoutGraphBuilder {
             // is recorded under, one a module may be read in, or one a superclass may declare.
             let throughModule = { (probeName: String) in readingModules && mayReadModule(probeName) }
             guard probes.contains(where: {
-                typesForName[$0.name] != nil || throughModule($0.name) || mayBeInherited($0.name)
+                typesForName[$0.name] != nil || mayBeStartedMember($0.name, from: scope) || throughModule($0.name)
+                    || mayBeInherited($0.name)
             }) else {
                 return asWritten
             }
             let root = enclosingRoot(of: scope, depth: depth)
+            let start = root == .projectType ? enclosingStart(of: scope, depth: depth) : nil
             return probes.lazy
-                .map { probe in (probe, QualifiedName(name: probe.name, root: root, isRecorded: probe.isRecorded)) }
+                .map { probe in
+                    let begun = probe.isRecorded || probe.enclosing == scope.enclosingTypes.last ? start : nil
+                    let built = QualifiedName(name: probe.name, root: root, isRecorded: probe.isRecorded, start: begun)
+                    return (probe, built)
+                }
                 .first { probe, qualified in
                     let meant = meansMember(qualified, from: scope, depth: depth, readingModules: readingModules)
                     if meant != .noDeclaration { return meant == .member }

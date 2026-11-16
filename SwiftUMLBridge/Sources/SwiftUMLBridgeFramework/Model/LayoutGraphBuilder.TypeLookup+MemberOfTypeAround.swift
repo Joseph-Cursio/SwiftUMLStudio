@@ -24,6 +24,41 @@ extension LayoutGraphBuilder.TypeLookup {
         return isMember ? .member : .notMember
     }
 
+    /// The type a name `qualifiedName(ofWritten:from:depth:readingModules:)` builds on the
+    /// outermost type around `scope`, or on the type its extension is spelled through, starts at,
+    /// as the dotted name spelling it out starts there (`started(_:from:depth:)`): that type,
+    /// ModA's `Foo` both in `extension Foo` and in `extension ModA.Foo` of a file that means
+    /// ModA's, as the extension's own lookup finds it. Swift looks the bare `V` in such an
+    /// extension up among that type's members, which `spellings(of:)` finds however another
+    /// module's extension spells the type, and only among those the writer sees: an extension's
+    /// in a module the writer's module loads, or with `MemberImportVisibility`, one its file
+    /// imports (`members(of:among:from:depth:)`). A name built on a type nested in it gets no
+    /// start: `Foo.S.V` in `extension Foo { struct S { … } }` means a member of the writer's own
+    /// `S`, not of every `Foo.S` another module adds. `nil` in a file of no known module, where
+    /// same-named types are told apart by directory instead (`membersOfEnclosingType`), and at
+    /// top level. Kept per outermost name and file (`EnclosingLookups`), as each writer there
+    /// asks it of every name it builds on them.
+    func enclosingStart(of scope: Scope, depth: Int) -> LayoutGraphBuilder.NameStart? {
+        guard scope.module != nil, depth < 8, let outermost = scope.enclosingTypes.last else { return nil }
+        let isSugared = scope.enclosingExtension?.isSugared ?? false
+        let key = LayoutGraphBuilder.EnclosingOwnerKey(
+            outermost: outermost, isSugared: isSugared, filePath: scope.filePath.map { Array($0.utf8) },
+            imports: scope.imports, depth: depth
+        )
+        return enclosingLookups.start(for: key) {
+            extendedType(named: outermost, from: scope.fileScope, isSugared: isSugared, depth: depth + 1)
+                .map { .projectType(owningType(of: $0, depth: depth), renamedTo: nil) }
+        }
+    }
+
+    /// Whether `name`, built on the types around a writer in `scope`, may mean a member only once
+    /// it starts there (`enclosingStart(of:depth:)`): a member `extension ModA.Foo` adds is recorded
+    /// under `ModA.Foo.V`, which the started `Foo.V` spells (`spellings(of:)`). A name is started
+    /// only in a file of a known module. A dictionary check, before any lookup.
+    func mayBeStartedMember(_ name: String, from scope: Scope) -> Bool {
+        scope.module != nil && namesPastFirstComponent.contains(name)
+    }
+
     /// Whether `found`, the declaration `name` means from `scope`, lets a name built on the types
     /// around `scope` mean it. With the writer's module known, it does not when neither it nor any
     /// other candidate of the name belongs to the outermost of those types (`enclosingOwner`) where

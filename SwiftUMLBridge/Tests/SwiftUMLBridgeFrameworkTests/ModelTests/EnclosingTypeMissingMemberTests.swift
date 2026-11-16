@@ -168,8 +168,9 @@ struct EnclosingTypeMissingMemberTests {
     }
 
     /// `W`'s `Foo` is A's, which has an `X`, so the name stays built on it, and the top-level `X`
-    /// beside `W` is not meant. Of the two `Foo.X`, Swift means A's; the nearest, though, is the
-    /// alias B's own module adds to C's `Foo`, an older gap the lookup still has.
+    /// beside `W` is not meant. Of the two `Foo.X`, Swift means A's, not the nearer alias B's own
+    /// module adds to C's `Foo`: the name starts at A's `Foo`, as `Foo.X` spelled out does, and
+    /// takes that type's members alone (verified with swiftc).
     @Test("a writer whose type has the member never falls back to the top-level type", arguments: [false, true])
     func ownMemberFarther(reversed: Bool) throws {
         let files: [ModuleFixture.File] = [
@@ -188,10 +189,7 @@ struct EnclosingTypeMissingMemberTests {
             """),
         ]
         let lines = try ModuleFixture.inheritsLines(files, reversed: reversed)
-        #expect(lines.count == 1 && !lines.contains("X <|-- Foo.W : inherits"), "\(lines)")
-        withKnownIssue("the nearest Foo.X is C's, from B's own module") {
-            #expect(lines == ["RA <|-- Foo.W : inherits"])
-        }
+        #expect(lines == ["RA <|-- Foo.W : inherits"])
     }
 
     // MARK: Without modules

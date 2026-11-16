@@ -156,12 +156,27 @@ config files, the CLI, and the diagrams it writes do not.
   default traits, including the traits those enable. If `dump-package`
   fails, a warning says so and every target reads as before. A target
   without the setting is read as before, and so is every target without
-  `--package`, where none is known. Still read without the imports, in any
-  target: a name written bare inside an extension of the type, as `V` in
-  `extension Foo { class C: V {} }`. `SPMTargetDescription` gains
-  `enablesMemberImportVisibility`, and `SPMPackageReader` gains
-  `memberImportVisibilityTargets(inManifest:)` and a `manifest:` argument
-  to `parse`.
+  `--package`, where none is known. A name written bare inside an extension
+  of the type is read the same way; see the next entry.
+  `SPMTargetDescription` gains `enablesMemberImportVisibility`, and
+  `SPMPackageReader` gains `memberImportVisibilityTargets(inManifest:)` and
+  a `manifest:` argument to `parse`.
+- **With `--package`, a name written bare inside an extension of a type is
+  read as the dotted name spelling it out**. Swift reads the `V` in
+  `extension Foo { final class C: V {} }` as `Foo.V`: a member of ModA's
+  `Foo` that the writer sees. The lookup took any module's `Foo.V`,
+  whichever modules the writer loads, so when ModB and ModD each add a `V`
+  and only ModD is loaded, `C` could end on ModB's. And when ModB and ModD
+  wrote `extension ModA.Foo` while the writer wrote `extension Foo`, it
+  dangled on a bare `V`. It now goes by the modules the writer's target
+  loads, or with `MemberImportVisibility` by its file's own imports (#201),
+  however each extension spells `Foo`. With no such member the writer sees,
+  the name is read further out, as Swift does, for instance as the target's
+  own top-level `V`; a member of another type named `Foo`, such as ModA's
+  where a re-exporter's own `Foo` shadows it, no longer stops it. A writer
+  in a type's body likewise finds a member that an extension in its own
+  module spells with the module (`extension ModC.Bar`). Without `--package`
+  nothing changes.
 - **An edge through a typealias of a type outside the diagram ends on an
   extension of that type, not on the first of that spelling** (#231). Each
   target can have its own `typealias Base`, and each target's
