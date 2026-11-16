@@ -134,6 +134,24 @@ struct TypeAliasResolver {
         return lookup.resolvedName(of: qualified, from: scope, readingModules: false)
     }
 
+    /// The type name `name` comes to where a declaration in `scope` writes it, as
+    /// `resolve(_:from:)`, but with a module qualifier read, as SVG reads it: `ModB.Base` comes
+    /// to ModB's `Base`, and so to `Base`, while `ModA.Base` for a `Base` nested in an
+    /// `enum ModA` stays as written. For `deps --types --package`, whose ends carry their
+    /// modules (#202).
+    func resolveReadingModules(_ name: String, from scope: DeclarationScope) -> String {
+        guard let lookup else { return name }
+        return lookup.resolvedName(of: lookup.qualifiedName(ofWritten: name, from: scope), from: scope)
+    }
+
+    /// The name the type the extension `anExtension` extends is declared under, as it finds that
+    /// type (`TypeLookup.extendedType(of:)`): `Base` for `extension ModB.Base`; `nil` for a type
+    /// outside the project.
+    func extendedTypeName(of anExtension: SyntaxStructure) -> String? {
+        guard let lookup, let type = lookup.extendedType(of: anExtension) else { return nil }
+        return lookup.recordedName(of: type.declaration)
+    }
+
     /// The module of the type `name` means where a declaration in `scope` writes it in its
     /// inheritance clause, the one the class diagram ends that edge on: the nearest of the types
     /// the file sees, by its imports and module, with every typealias followed and a module

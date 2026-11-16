@@ -191,10 +191,28 @@ config files, the CLI, and the diagrams it writes do not.
   sees no project type is a type outside the package: Swift's
   `Identifiable` beside ModA's own, in a file that does not import ModA, is
   no longer tagged ModA. Such a type takes the first target that extends
-  it, as an extension of Swift's `String` does, or no tag. `deps` still
-  keys its nodes by name, so ModA's and ModB's `Base` share one node when
-  both are edge ends. That node takes the module most of its edge ends
-  mean, a tie going to the first in path order.
+  it, as an extension of Swift's `String` does, or no tag. Where two
+  targets' types of one name are both edge ends, or one target's and a
+  type outside the package, they are now separate nodes: the targets'
+  spelled with their modules as Swift does, `ModA.Base <<ModA>>` and
+  `ModB.Base <<ModB>>`, each with its own edges, in every format and in
+  the SVG's module boxes, and the outside type with its plain name. They
+  shared one `Base` node, which carried one target's tag on the other's
+  edges. The prefix is the module, not an enclosing type. An extension
+  of a target's own type no longer tags the outside type of its name, so
+  ModA's `extension Identifiable` of its own protocol leaves Swift's
+  untagged. An end written with its module, `ModB.Base`, now meets ModB's
+  `Base` node, and an extension's end is the type it extends, as
+  `classdiagram` finds it, so `extension Alias`, for an alias of a
+  package type, ends on that type. A type nested in an `enum ModA`,
+  written `ModA.Base`, stays apart from ModA's `Base`, as
+  `ModA.ModA.Base`. `--exclude` also matches a type spelled with its
+  module, so `--exclude ModA.Base` hides ModA's `Base` and keeps ModB's.
+  The PlantUML output sets `namespaceSeparator none`, as `classdiagram`
+  does, so a dotted name is one class rather than a member of a package.
+  8 of 15 packages measured give the same output apart from that line.
+  FHIRModels, whose model targets each declare the same types, goes from
+  2,043 tagged nodes to 5,906.
 - **An edge through a typealias of a type outside the diagram ends on an
   extension of that type, not on the first of that spelling** (#231). Each
   target can have its own `typealias Base`, and each target's
