@@ -1,42 +1,24 @@
-/// The module each type name of a package belongs to, which `deps --types --package` tags both
-/// ends of an edge with: the target that declares the type, or, when no target does, the first
-/// that extends it. A declaration wins over any extension, whatever order they are recorded in.
-/// Otherwise the first record wins, so the caller records the files in path order
-/// (`sourceFilesInPathOrder`), and the answer is the same however the package lists its files.
+/// The first module that extends each type name of a package, which `deps --types --package`
+/// tags an edge end with when the writer's file sees no project type of that name: a type outside
+/// the package, as Swift's `String`, which only an extension can tag. Every other end takes the
+/// module of the declaration the class diagram ends it on (#202). The first record wins, so the
+/// caller records the files in path order (`sourceFilesInPathOrder`), and the answer is the same
+/// however the package lists its files.
 ///
 /// When a type's label came from the last edge that named it, an extension in another target
 /// could label the type with that target's module, and which target that was followed hash
 /// order (#70).
 struct PackageTypeOwners {
-    private var declaring: [String: String] = [:]
     private var extending: [String: String] = [:]
 
-    /// Records the types `item` declares as `module`'s, nested ones under their qualified names
-    /// (`Outer.Inner`, as `extension Outer.Inner` and `struct X: Outer.Inner` name them), or, for
-    /// an extension, `module` as one that extends the type.
+    /// Records `module` as one that extends the type `item` names, when `item` is an extension.
     mutating func record(_ item: SyntaxStructure, in module: String) {
-        guard let kind = item.kind, ElementKind.processable.contains(kind), let name = item.name else { return }
-        if kind == .extension {
-            extending[name] = extending[name] ?? module
-        } else {
-            declaring[name] = declaring[name] ?? module
-        }
-        recordNestedTypes(of: item, qualifiedAs: name, in: module)
+        guard item.kind == .extension, let name = item.name else { return }
+        extending[name] = extending[name] ?? module
     }
 
-    /// The module that declares the type `name`, or else the first that extends it; nil for a
-    /// type the package neither declares nor extends.
-    func module(of name: String) -> String? {
-        declaring[name] ?? extending[name]
-    }
-
-    private mutating func recordNestedTypes(of item: SyntaxStructure, qualifiedAs name: String, in module: String) {
-        for child in item.substructure ?? [] {
-            guard let kind = child.kind, kind != .extension, ElementKind.processable.contains(kind),
-                  let childName = child.name else { continue }
-            let qualified = "\(name).\(childName)"
-            declaring[qualified] = declaring[qualified] ?? module
-            recordNestedTypes(of: child, qualifiedAs: qualified, in: module)
-        }
+    /// The first module that extends the type `name`; nil for a type the package does not extend.
+    func extendingModule(of name: String) -> String? {
+        extending[name]
     }
 }

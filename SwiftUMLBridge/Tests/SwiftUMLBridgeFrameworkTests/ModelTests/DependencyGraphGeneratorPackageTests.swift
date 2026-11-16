@@ -114,6 +114,8 @@ struct DependencyGraphGeneratorPackageTests {
         public protocol Service {}
         """.write(to: coreDir.appendingPathComponent("Service.swift"), atomically: true, encoding: .utf8)
         try """
+        import Core
+
         public struct HTTPClient: Service {}
         """.write(to: netDir.appendingPathComponent("HTTPClient.swift"), atomically: true, encoding: .utf8)
 

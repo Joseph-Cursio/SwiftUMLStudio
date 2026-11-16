@@ -63,10 +63,11 @@ public struct DependencyGraphGenerator: DependencyGraphGenerating, Sendable {
     /// and each node is tagged with its target kind (`<<library>>` /
     /// `<<executable>>`) so emitters can stereotype them. In `.types` mode
     /// each end of an inheritance/conformance edge is tagged with its type's
-    /// module (`PackageTypeOwners`): the target that declares the type or,
-    /// for a type no target declares, the first target in path order that
-    /// extends it. So an extension's edge carries its type's module, not
-    /// necessarily its own. Test targets are excluded.
+    /// module: the target that declares the type the writer's file means,
+    /// through its imports, as the class diagram reads it (#202), or, for a
+    /// type outside the package, the first target in path order that extends
+    /// it (`PackageTypeOwners`). So an extension's edge carries its type's
+    /// module, not necessarily its own. Test targets are excluded.
     public func generateScript(
         forPackage description: SPMPackageDescription,
         packageRoot: URL,
@@ -110,27 +111,42 @@ public struct DependencyGraphGenerator: DependencyGraphGenerating, Sendable {
     }
 
     /// The inheritance and conformance edges of `items`, each from a declaration to a supertype
-    /// it names, with each end tagged with the module `module` gives its type. That is `nil` for
-    /// loose files, and the owning target for a package (#209).
+    /// it names. For a package (`owners`), each end is tagged with its type's module (#209): the
+    /// module of the declaration the class diagram ends that edge on, read through the writer's
+    /// imports (`TypeAliasResolver.declaringModule(of:from:)`, #202), so where ModA and ModB each
+    /// declare a `Base` and the file imports only ModB, its `Base` is ModB's. A declaration's own
+    /// end is its own module, and an extension's that of the type it extends. A name for which
+    /// the writer's file sees no project type means one outside the package, as Swift's `String`
+    /// or `Identifiable` beside a target's own: it takes the first module that extends it
+    /// (`PackageTypeOwners.extendingModule(of:)`), and none where no module does. Loose files
+    /// carry no tags.
     private func typeEdges(
         from items: [SyntaxStructure],
         configuration: Configuration,
-        module: (String) -> String? = { _ in nil }
+        owners: PackageTypeOwners? = nil
     ) -> [DependencyEdge] {
         let aliases = TypeAliasResolver(items: items)
         var edges: [DependencyEdge] = []
         for item in items {
             guard let basis = typeEdgeBasis(for: item, configuration: configuration) else { continue }
+            let fromModule = owners.flatMap { owners in
+                (item.kind == .extension ? aliases.extendedTypeModule(of: item) : item.module)
+                    ?? owners.extendingModule(of: basis.name)
+            }
             for parent in basis.inheritedTypes {
                 guard let parentName = supertypeName(
                     of: parent, in: item, aliases: aliases, configuration: configuration
                 ) else { continue }
+                let toModule = owners.flatMap { owners in
+                    parent.name.flatMap { aliases.declaringModule(of: $0, from: DeclarationScope(of: item)) }
+                        ?? owners.extendingModule(of: parentName)
+                }
                 edges.append(DependencyEdge(
                     from: basis.name,
                     toNode: parentName,
                     kind: basis.edgeKind,
-                    fromModule: module(basis.name),
-                    toModule: module(parentName)
+                    fromModule: fromModule,
+                    toModule: toModule
                 ))
             }
         }
@@ -215,10 +231,10 @@ public struct DependencyGraphGenerator: DependencyGraphGenerating, Sendable {
         configuration: Configuration,
         sdkPath: String?
     ) -> [DependencyEdge] {
-        // First pass: record the module of every type the package declares or
-        // extends, so each edge can carry the module of both its ends. The
-        // declarations' imports are widened with `@_exported` re-exports, as
-        // the class diagram reads them.
+        // First pass: record the first module that extends each type, for the
+        // edge ends whose type is outside the package. The declarations'
+        // imports are widened with `@_exported` re-exports, as the class
+        // diagram reads them.
         var owners = PackageTypeOwners()
         let parsedItems = SyntaxStructure.declarations(
             inPackage: description, packageRoot: packageRoot, sdkPath: sdkPath
@@ -226,7 +242,7 @@ public struct DependencyGraphGenerator: DependencyGraphGenerating, Sendable {
         for item in parsedItems {
             if let module = item.module { owners.record(item, in: module) }
         }
-        return typeEdges(from: parsedItems, configuration: configuration) { owners.module(of: $0) }
+        return typeEdges(from: parsedItems, configuration: configuration, owners: owners)
     }
 
     /// Common per-item gate for type-edge extraction: apply the skip filter, then

@@ -177,6 +177,24 @@ config files, the CLI, and the diagrams it writes do not.
   in a type's body likewise finds a member that an extension in its own
   module spells with the module (`extension ModC.Bar`). Without `--package`
   nothing changes.
+- **`deps --types --package` tags a supertype with the module the writer's
+  file means** (#202). Each end of an edge was tagged with the first target,
+  in path order, that declares a type of its name, whatever the writer
+  imports. So where ModA and ModB each declare `open class Base` and ModC's
+  file imports only ModB, `final class C: Base {}` drew `Base <<ModA>>`,
+  while `classdiagram` ended the edge on ModB's `Base`, as Swift does. Each
+  end is now tagged with the module of the declaration `classdiagram` ends
+  it on: through the file's imports and re-exports, a module qualifier
+  (`ModB.Base`), and typealiases. A declaration's own end is its own
+  module, so ModB's `struct Thing: Q` beside ModA's `Thing` is ModB's, and
+  an extension's that of the type it extends. A name for which the file
+  sees no project type is a type outside the package: Swift's
+  `Identifiable` beside ModA's own, in a file that does not import ModA, is
+  no longer tagged ModA. Such a type takes the first target that extends
+  it, as an extension of Swift's `String` does, or no tag. `deps` still
+  keys its nodes by name, so ModA's and ModB's `Base` share one node when
+  both are edge ends. That node takes the module most of its edge ends
+  mean, a tie going to the first in path order.
 - **An edge through a typealias of a type outside the diagram ends on an
   extension of that type, not on the first of that spelling** (#231). Each
   target can have its own `typealias Base`, and each target's

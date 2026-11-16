@@ -134,6 +134,23 @@ struct TypeAliasResolver {
         return lookup.resolvedName(of: qualified, from: scope, readingModules: false)
     }
 
+    /// The module of the type `name` means where a declaration in `scope` writes it in its
+    /// inheritance clause, the one the class diagram ends that edge on: the nearest of the types
+    /// the file sees, by its imports and module, with every typealias followed and a module
+    /// qualifier read, so `ModA.Base` is ModA's (#202). `nil` when it means no type the project
+    /// declares, as for Swift's `Encodable`, a typealias of `[Int]`, or sources read without
+    /// their package.
+    func declaringModule(of name: String, from scope: DeclarationScope) -> String? {
+        guard let lookup else { return nil }
+        return lookup.type(lookup.qualifiedName(ofWritten: name, from: scope), from: scope)?.scope.module
+    }
+
+    /// The module of the type the extension `anExtension` extends, as it finds that type
+    /// (`TypeLookup.extendedType(of:)`); `nil` for a type outside the project.
+    func extendedTypeModule(of anExtension: SyntaxStructure) -> String? {
+        lookup?.extendedType(of: anExtension)?.scope.module
+    }
+
     /// Whether `patterns` exclude the supertype edge to `supertype`, written in `scope`: by the
     /// name as written, as before, or by the type it comes to, so excluding `Proto` also hides
     /// `struct S: Q` after `typealias Q = Proto`, and excluding `Outer.Base` hides `class Near:
