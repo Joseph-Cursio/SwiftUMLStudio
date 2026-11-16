@@ -295,13 +295,14 @@ extension LayoutGraphBuilder.TypeLookup {
     }
 
     /// Whether a file in `scope` sees `member`: one declared in its own module or in the module of
-    /// the type it belongs to, or one an extension in a module that `scope`'s module loads adds.
+    /// the type it belongs to, or one an extension in a module that `scope`'s module loads adds,
+    /// or with `MemberImportVisibility`, that `scope`'s file imports (#201).
     private func isLoaded(
         _ member: LayoutGraphBuilder.Declared, from scope: LayoutGraphBuilder.Scope, depth: Int
     ) -> Bool {
         guard let module = member.scope.module, let writer = scope.module,
               module != owningModule(of: member, depth: depth) else { return true }
-        return moduleLoads.loads(module, in: writer)
+        return moduleLoads.loads(module, in: writer, imports: scope.imports)
     }
 
     /// `name` spelled through the type its first component is another name for, as that type is

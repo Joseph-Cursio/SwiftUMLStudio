@@ -89,6 +89,12 @@ internal class SyntaxStructure: NSObject, Codable, @unchecked Sendable {
     /// `SyntaxStructure.declarations(inPackageFiles:)`; nil when unknown.
     internal var reexportedModules: Set<String>?
 
+    /// Whether the declaration's module enables `MemberImportVisibility` (SE-0444), so a file of
+    /// it sees another module's extension members only through its own `imports`, not every
+    /// module in `loadedModules` (`ModuleLoads.loads(_:in:imports:)`, #201). Stamped by
+    /// `SyntaxStructure.declarations(inPackageFiles:)`.
+    internal var seesOnlyImportedMembers = false
+
     /// Set by `mergeExtensions` on an extension it merges away: the item that now shows its
     /// members. A type nested in that extension keeps the extension as its `parent`, which its
     /// name, scope and access come from, and is drawn hanging off this item (`nestingParent`).
@@ -179,6 +185,7 @@ internal class SyntaxStructure: NSObject, Codable, @unchecked Sendable {
         module = original.module
         imports = original.imports
         loadedModules = original.loadedModules
+        seesOnlyImportedMembers = original.seesOnlyImportedMembers
         reexportedModules = original.reexportedModules
         carriedSupertypes = original.carriedSupertypes
         mergedExtensions = original.mergedExtensions

@@ -134,6 +134,26 @@ config files, the CLI, and the diagrams it writes do not.
   which still ends on ModA's; and an internal type seen through
   `@testable import`. Without `--package` no file has a target, so none of this
   applies.
+- **With `--package`, a target that enables `MemberImportVisibility` reads
+  only the extension members each file imports** (#201). Under SE-0444, a
+  file sees a member another module's extension adds only when it imports
+  that module itself. The lookup counted every module any file of the
+  target loads, so when ModB and ModD each add a `V` to ModA's `Foo`, and
+  one file of ModC imports ModB, ModC's `final class C: Foo.V` ended on
+  ModB's `V` though its own file imports only ModD, in every format and
+  however the extensions spell `Foo`. Such a file now goes by its own
+  imports: a whole module, a declaration of one
+  (`import class ModD.Other`), or one an `@_exported import` brings in. The
+  setting is read from `swift package dump-package`, since `describe` leaves
+  settings out, so reading a package now runs SwiftPM twice. It counts
+  through `enableUpcomingFeature`, `enableExperimentalFeature` or
+  `unsafeFlags`, under a condition when it holds for a debug build on
+  macOS. If `dump-package` fails, a warning says so and every target reads
+  as before. A target without the setting is read as before. Without
+  `--package` no target is known, so nothing changes there.
+  `SPMTargetDescription` gains `enablesMemberImportVisibility`, and
+  `SPMPackageReader` gains `memberImportVisibilityTargets(inManifest:)` and
+  a `manifest:` argument to `parse`.
 - **An edge through a typealias of a type outside the diagram ends on an
   extension of that type, not on the first of that spelling** (#231). Each
   target can have its own `typealias Base`, and each target's

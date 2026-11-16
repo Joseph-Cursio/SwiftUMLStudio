@@ -8,8 +8,11 @@ import Testing
 /// extension up under `ModA.Foo`, which no type is named, so it was never merged into its type and
 /// got no `ext` edge (#124).
 /// Each file parsed as `generateScript(forPackage:)` parses it, in the order given, under its
-/// module; `module` is `nil` for a directory-mode parse.
-func moduleQualifiedItems(_ files: [(module: String?, source: String)]) throws -> [SyntaxStructure] {
+/// module; `module` is `nil` for a directory-mode parse. The modules in `memberImportVisibility`
+/// enable `MemberImportVisibility`.
+func moduleQualifiedItems(
+    _ files: [(module: String?, source: String)], memberImportVisibility: Set<String> = []
+) throws -> [SyntaxStructure] {
     let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
     try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
     defer { try? FileManager.default.removeItem(at: directory) }
@@ -19,7 +22,7 @@ func moduleQualifiedItems(_ files: [(module: String?, source: String)]) throws -
         try file.source.write(to: url, atomically: true, encoding: .utf8)
         urls.append((url, file.module))
     }
-    return SyntaxStructure.declarations(inPackageFiles: urls)
+    return SyntaxStructure.declarations(inPackageFiles: urls, memberImportVisibilityModules: memberImportVisibility)
 }
 
 @Suite("Module-qualified extensions find the type they extend")

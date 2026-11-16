@@ -21,8 +21,12 @@ internal extension SyntaxStructure {
     /// `imports` widened to every module its file sees through an `@_exported import`
     /// (`ModuleReexports`), in a file of its own module or of a module it imports, and its
     /// `loadedModules` read from every file's imports, those of a file that declares nothing too.
+    /// A declaration of one of `memberImportVisibilityModules` is marked
+    /// `seesOnlyImportedMembers`.
     static func declarations(
-        inPackageFiles files: [(url: URL, module: String?)], sdkPath: String? = nil
+        inPackageFiles files: [(url: URL, module: String?)],
+        sdkPath: String? = nil,
+        memberImportVisibilityModules: Set<String> = []
     ) -> [SyntaxStructure] {
         var items: [SyntaxStructure] = []
         var reexports = ModuleReexports()
@@ -41,6 +45,7 @@ internal extension SyntaxStructure {
             if let module = item.module {
                 item.loadedModules = loads.loaded(by: module)
                 item.reexportedModules = reexports.widened([], in: module)
+                item.seesOnlyImportedMembers = memberImportVisibilityModules.contains(module)
             }
             item.substructure?.forEach(stamp)
         }
@@ -58,7 +63,8 @@ internal extension SyntaxStructure {
         let files = description.sourceFilesInPathOrder(packageRoot: packageRoot).map { file in
             (url: URL(fileURLWithPath: file.path), module: Optional(file.module))
         }
-        return declarations(inPackageFiles: files, sdkPath: sdkPath)
+        let seesOnlyImported = Set(description.targets.filter(\.enablesMemberImportVisibility).map(\.name))
+        return declarations(inPackageFiles: files, sdkPath: sdkPath, memberImportVisibilityModules: seesOnlyImported)
     }
 
     private static func parsed(_ fileOnDisk: URL, sdkPath: String?, module: String?) -> ParsedFile? {

@@ -10,8 +10,8 @@ struct SyntaxStructureCloneTests {
     static let storedProperties = [
         "accessibility", "attribute", "attributes", "elements", "inheritedTypes", "kind", "name",
         "runtimename", "substructure", "typename", "memberSuffix", "parent", "sourceLocation", "module",
-        "imports", "loadedModules", "reexportedModules", "mergedInto", "carriedSupertypes", "mergedExtensions",
-        "standsInFor",
+        "imports", "loadedModules", "reexportedModules", "seesOnlyImportedMembers", "mergedInto",
+        "carriedSupertypes", "mergedExtensions", "standsInFor",
         "boundGenericArguments", "isSugared", "isSPI", "isSPIInEveryBuild", "isConditional", "unavailability",
     ]
 
@@ -36,6 +36,7 @@ struct SyntaxStructureCloneTests {
         item.imports = ["Foundation"]
         item.loadedModules = ["Core"]
         item.reexportedModules = ["Core"]
+        item.seesOnlyImportedMembers = true
         item.mergedInto = parent
         item.standsInFor = parent
         let sendable = SyntaxStructure(kind: .protocol, name: "Sendable")

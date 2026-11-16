@@ -23,6 +23,8 @@ struct ImportAwareRankTests {
         /// With nested types hidden, the name the text formats end `C`'s edge on when that type
         /// is a hidden nested one, which no box draws; `nil` when it is drawn either way.
         let hiddenLabel: String?
+        /// The modules that enable `MemberImportVisibility` (#201).
+        var memberImportVisibility: Set<String> = []
 
         var testDescription: String { name }
     }
@@ -184,7 +186,7 @@ struct ImportAwareRankTests {
     static func expectMeans(_ testCase: Case, reversed: Bool) throws {
         let given = testCase.files.map { (module: Optional($0.module), source: $0.source) }
         let files = reversed ? given.reversed() : given
-        let items = { try moduleQualifiedItems(files) }
+        let items = { try moduleQualifiedItems(files, memberImportVisibility: testCase.memberImportVisibility) }
         for mode in [ExtensionVisualization.all, .merged] {
             let shown = LayoutGraphBuilder.buildClassDiagram(
                 from: try items(),
