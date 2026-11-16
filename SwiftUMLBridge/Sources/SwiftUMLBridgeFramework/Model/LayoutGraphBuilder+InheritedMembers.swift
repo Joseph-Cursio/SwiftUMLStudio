@@ -192,9 +192,12 @@ extension LayoutGraphBuilder.TypeLookup {
         }
         let spelled = spellings(of: name)
         // One its body declares ranks in its own file, found without the many same-named members
-        // of other files; Swift rejects a second one an extension would add.
+        // of other files; Swift rejects a second one an extension would add. With
+        // `MemberImportVisibility`, a file that does not import the type's module sees none of
+        // them, and then the extensions' members it does see are looked for (#201).
         if let file = owner.filePath {
-            let body = spelled.flatMap { typesForNameInFile[$0]?[file] ?? [] }.filter(isOwn)
+            let inFile = spelled.flatMap { typesForNameInFile[$0]?[file] ?? [] }.filter(isOwn)
+            let body = loaded(inFile, from: scope, depth: depth)
             if !body.isEmpty { return InheritableMembers(recorded: body) }
         }
         let recordedMembers = spelled.flatMap { typesForName[$0] ?? [] }.filter(isOwn)

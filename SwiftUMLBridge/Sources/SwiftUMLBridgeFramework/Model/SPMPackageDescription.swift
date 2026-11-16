@@ -8,6 +8,11 @@ public struct SPMTargetDescription: Sendable, Equatable {
     public let path: String
     public let sources: [String]
     public let dependencies: [String]
+    /// Whether the target enables `MemberImportVisibility` (SE-0444), so each of its files sees
+    /// the members another module's extension adds only when it imports that module itself
+    /// (`ModuleLoads.loads(_:in:imports:)`, #201). `swift package describe` leaves settings out;
+    /// `SPMPackageReader.describe(at:)` reads them from `swift package dump-package`.
+    public let enablesMemberImportVisibility: Bool
 
     /// The target's kind. One shared `ComponentKind`, also used by the UML `Component` model.
     public typealias Kind = ComponentKind
@@ -17,18 +22,21 @@ public struct SPMTargetDescription: Sendable, Equatable {
         kind: Kind,
         path: String,
         sources: [String],
-        dependencies: [String]
+        dependencies: [String],
+        enablesMemberImportVisibility: Bool = false
     ) {
         self.name = name
         self.kind = kind
         self.path = path
         self.sources = sources
         self.dependencies = dependencies
+        self.enablesMemberImportVisibility = enablesMemberImportVisibility
     }
 }
 
 /// Reads SPM package descriptions. The pure `parse` step is unit-testable;
-/// `describe(at:)` shells out to `swift package describe --type json`.
+/// `describe(at:)` shells out to `swift package describe --type json`, and to
+/// `swift package dump-package` for the target settings `describe` leaves out.
 public enum SPMPackageReader {
     public enum ReadError: Error, Equatable {
         case swiftToolFailed(exitStatus: Int32, stderr: String)
@@ -37,8 +45,10 @@ public enum SPMPackageReader {
         case timedOut(seconds: TimeInterval)
     }
 
-    /// Parse JSON output produced by `swift package describe --type json`.
-    public static func parse(_ data: Data) throws -> SPMPackageDescription {
+    /// Parse JSON output produced by `swift package describe --type json`, with each target's
+    /// `enablesMemberImportVisibility` read from `manifest`, the output of
+    /// `swift package dump-package`, when given (`memberImportVisibilityTargets(inManifest:)`).
+    public static func parse(_ data: Data, manifest: Data? = nil) throws -> SPMPackageDescription {
         guard
             let root = try? JSONSerialization.jsonObject(with: data),
             let dict = root as? [String: Any]
@@ -49,11 +59,95 @@ public enum SPMPackageReader {
             throw ReadError.malformedJSON("missing 'name'")
         }
         let targetDicts = (dict["targets"] as? [[String: Any]]) ?? []
-        let targets = targetDicts.compactMap(parseTarget(_:))
+        let seesOnlyImported = manifest.map(memberImportVisibilityTargets(inManifest:)) ?? []
+        let targets = targetDicts.compactMap { parseTarget($0, memberImportVisibility: seesOnlyImported) }
         return SPMPackageDescription(name: name, targets: targets)
     }
 
-    private static func parseTarget(_ dict: [String: Any]) -> SPMTargetDescription? {
+    /// The upcoming or experimental feature that limits a file to the extension members of the
+    /// modules it imports (SE-0444).
+    static let memberImportVisibility = "MemberImportVisibility"
+
+    /// The names of the targets in `manifest`, the output of `swift package dump-package`, that
+    /// enable `MemberImportVisibility` for Swift: by `enableUpcomingFeature`,
+    /// `enableExperimentalFeature`, or `unsafeFlags` (`memberImportVisibility(in:defaultTraits:)`).
+    /// A setting with a condition counts when it holds for the build `swift build` makes here: a
+    /// debug build on macOS, with the package's default traits. Empty when `manifest` is not that
+    /// JSON.
+    public static func memberImportVisibilityTargets(inManifest manifest: Data) -> Set<String> {
+        guard let root = try? JSONSerialization.jsonObject(with: manifest) as? [String: Any],
+              let targets = root["targets"] as? [[String: Any]] else { return [] }
+        let defaultTraits = defaultTraits(in: root)
+        return Set(targets.compactMap { target in
+            guard let name = target["name"] as? String,
+                  let settings = target["settings"] as? [[String: Any]],
+                  memberImportVisibility(in: settings, defaultTraits: defaultTraits) else { return nil }
+            return name
+        })
+    }
+
+    /// The traits a dumped manifest turns on by default: those its `default` trait enables, and
+    /// in turn those each of them enables, as `swift build` does.
+    private static func defaultTraits(in root: [String: Any]) -> Set<String> {
+        var enabledByTrait: [String: [String]] = [:]
+        for trait in root["traits"] as? [[String: Any]] ?? [] {
+            guard let name = trait["name"] as? String else { continue }
+            enabledByTrait[name] = trait["enabledTraits"] as? [String] ?? []
+        }
+        var enabled: Set<String> = []
+        var pending = enabledByTrait["default"] ?? []
+        while let next = pending.popLast() {
+            if enabled.insert(next).inserted { pending += enabledByTrait[next] ?? [] }
+        }
+        return enabled
+    }
+
+    /// Whether a dumped target's `settings` leave `MemberImportVisibility` on for Swift, read in
+    /// order as `swift build` passes them to the compiler, so the last that turns it on or off
+    /// wins: a feature setting turns it on, and in `unsafeFlags`, with any `-Xfrontend` dropped,
+    /// `-enable-upcoming-feature` or `-enable-experimental-feature` before its name turns it on
+    /// and `-disable-upcoming-feature` turns it off. Settings whose condition does not hold
+    /// (`holds(_:defaultTraits:)`) are skipped.
+    private static func memberImportVisibility(
+        in settings: [[String: Any]], defaultTraits: Set<String>
+    ) -> Bool {
+        var isOn = false
+        for setting in settings {
+            guard setting["tool"] as? String == "swift", let kind = setting["kind"] as? [String: Any],
+                  holds(setting["condition"] as? [String: Any], defaultTraits: defaultTraits) else { continue }
+            let features = ["enableUpcomingFeature", "enableExperimentalFeature"]
+            if features.contains(where: { (kind[$0] as? [String: Any])?["_0"] as? String == memberImportVisibility }) {
+                isOn = true
+            }
+            let unsafeFlags = (kind["unsafeFlags"] as? [String: Any])?["_0"] as? [String] ?? []
+            let flags = unsafeFlags.filter { $0 != "-Xfrontend" }
+            for (flag, value) in zip(flags, flags.dropFirst()) where value == memberImportVisibility {
+                switch flag {
+                case "-enable-upcoming-feature", "-enable-experimental-feature": isOn = true
+                case "-disable-upcoming-feature": isOn = false
+                default: break
+                }
+            }
+        }
+        return isOn
+    }
+
+    /// Whether a dumped setting's `condition` holds for a debug build on macOS with
+    /// `defaultTraits` on: each part it names must, and a list of traits holds when any of them
+    /// is on. No condition always holds.
+    private static func holds(_ condition: [String: Any]?, defaultTraits: Set<String>) -> Bool {
+        guard let condition else { return true }
+        if let platforms = condition["platformNames"] as? [String], !platforms.isEmpty,
+           !platforms.contains("macos") { return false }
+        if let config = condition["config"] as? String, config != "debug" { return false }
+        if let traits = condition["traits"] as? [String], !traits.isEmpty,
+           defaultTraits.isDisjoint(with: traits) { return false }
+        return true
+    }
+
+    private static func parseTarget(
+        _ dict: [String: Any], memberImportVisibility: Set<String>
+    ) -> SPMTargetDescription? {
         guard let name = dict["name"] as? String,
               let path = dict["path"] as? String
         else { return nil }
@@ -63,7 +157,8 @@ public enum SPMPackageReader {
         let dependencies = (dict["target_dependencies"] as? [String]) ?? []
         return SPMTargetDescription(
             name: name, kind: kind, path: path,
-            sources: sources, dependencies: dependencies
+            sources: sources, dependencies: dependencies,
+            enablesMemberImportVisibility: memberImportVisibility.contains(name)
         )
     }
 
@@ -78,9 +173,12 @@ public enum SPMPackageReader {
     public static let describeTimeout: TimeInterval = 300
 
     /// Run `swift package describe --type json` against the package at
-    /// `packageRoot` (the directory containing `Package.swift`).
+    /// `packageRoot` (the directory containing `Package.swift`), then
+    /// `swift package dump-package` for the target settings `describe` leaves out
+    /// (`SPMTargetDescription.enablesMemberImportVisibility`). When only the second fails, the
+    /// targets read as enabling no setting, and a warning says so.
     ///
-    /// - Throws: `ReadError.timedOut` if the tool outlives `describeTimeout`,
+    /// - Throws: `ReadError.timedOut` if `describe` outlives `describeTimeout`,
     ///   `ReadError.swiftToolFailed` on a non-zero exit, `ReadError.malformedJSON`
     ///   if the output cannot be parsed.
     public static func describe(at packageRoot: URL) throws -> SPMPackageDescription {
@@ -97,13 +195,26 @@ public enum SPMPackageReader {
             .appendingPathComponent("swiftumlbridge-spm-\(UUID().uuidString)")
         defer { try? FileManager.default.removeItem(at: scratch) }
 
+        let described = try runSwiftPackage(["describe", "--type", "json"], at: packageRoot, scratch: scratch)
+        let manifest: Data?
+        do {
+            manifest = try runSwiftPackage(["dump-package"], at: packageRoot, scratch: scratch)
+        } catch {
+            BridgeLogger.shared.warning(
+                "swift package dump-package failed (\(error)), "
+                    + "so no target is read as enabling \(memberImportVisibility)"
+            )
+            manifest = nil
+        }
+        return try parse(described, manifest: manifest)
+    }
+
+    /// The standard output of `swift package <command>` run in `packageRoot` with `scratch` as
+    /// its scratch path, killed after `describeTimeout`.
+    private static func runSwiftPackage(_ command: [String], at packageRoot: URL, scratch: URL) throws -> Data {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
-        process.arguments = [
-            "swift", "package",
-            "--scratch-path", scratch.path,
-            "describe", "--type", "json",
-        ]
+        process.arguments = ["swift", "package", "--scratch-path", scratch.path] + command
         // Absolute: the setter drops each `..` of a relative URL that climbs above its base, so
         // `../Pkg` ran in `<cwd>/Pkg` and `..` in the cwd itself, where SwiftPM's upward search
         // could find another package (#141).
@@ -168,7 +279,7 @@ public enum SPMPackageReader {
                 stderr: String(data: stderrData.withLock { $0 }, encoding: .utf8) ?? ""
             )
         }
-        return try parse(stdout)
+        return stdout
     }
 }
 

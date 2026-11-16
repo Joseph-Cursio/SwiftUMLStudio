@@ -5,11 +5,15 @@
 /// that ModB adds to ModA's `Foo` though the file that writes it imports only ModA
 /// (`TypeLookup.isLoaded(_:from:depth:)`). Modules are matched by the name Swift code writes for
 /// them (`ModuleQualifiers.c99Name(of:)`), as imports name them, and each set also holds the
-/// target names of the modules it has, so a declaration's `module` is looked up as it is.
+/// target names of the modules it has, so a declaration's `module` is looked up as it is. A
+/// module that enables `MemberImportVisibility` shows each file only the extension members of
+/// the modules it imports itself (`loads(_:in:imports:)`, #201).
 struct ModuleLoads {
     private var loadedForModule: [String: Set<String>] = [:]
     /// The modules whose loads count every file of them (`knowsEveryLoad(of:)`).
     private var modulesReadWhole: Set<String> = []
+    /// The modules that enable `MemberImportVisibility` (`SyntaxStructure.seesOnlyImportedMembers`).
+    private var modulesSeeingOnlyImported: Set<String> = []
 
     /// The loads of the modules whose files import `importsForModule`, as
     /// `ImportExtractor.importedModules(in:)` reads them: a scoped import loads its whole module.
@@ -44,8 +48,10 @@ struct ModuleLoads {
         var importsForModule: [String: Set<String>] = [:]
         // Every item of a module carries the same `loadedModules`, so they are read once.
         var readWhole: Set<String> = []
+        var seeingOnlyImported: Set<String> = []
         func gather(_ item: SyntaxStructure) {
             defer { item.mergedExtensions.forEach(gather) }
+            if item.seesOnlyImportedMembers, let module = item.module { seeingOnlyImported.insert(module) }
             guard let module = item.module, !readWhole.contains(module),
                   let imports = item.loadedModules ?? item.imports else { return }
             if item.loadedModules != nil { readWhole.insert(module) }
@@ -54,6 +60,7 @@ struct ModuleLoads {
         items.forEach(gather)
         self.init(importsForModule: importsForModule)
         modulesReadWhole = readWhole
+        modulesSeeingOnlyImported = seeingOnlyImported
     }
 
     /// `module` and every module it loads.
@@ -69,8 +76,26 @@ struct ModuleLoads {
         modulesReadWhole.contains(module)
     }
 
-    /// Whether a file of `writer` sees the members that an extension in `module` adds.
-    func loads(_ module: String, in writer: String) -> Bool {
-        module == writer || loaded(by: writer).contains(module)
+    /// Whether `writer` enables `MemberImportVisibility`, so each file of it sees only the members
+    /// of the modules it imports (`loads(_:in:imports:)`).
+    func seesOnlyImportedMembers(in writer: String) -> Bool {
+        modulesSeeingOnlyImported.contains(writer)
+    }
+
+    /// Whether a file of `writer` that imports `imports` sees the members that an extension in
+    /// `module` adds. When `writer` enables `MemberImportVisibility` and the file's imports are
+    /// known, only a module it imports counts, all of it or a declaration of it, directly or
+    /// through an `@_exported import`, as `SyntaxStructure.imports` holds them; otherwise any
+    /// module `writer` loads does.
+    func loads(_ module: String, in writer: String, imports: Set<String>? = nil) -> Bool {
+        guard module != writer else { return true }
+        guard let imports, modulesSeeingOnlyImported.contains(writer) else {
+            return loaded(by: writer).contains(module)
+        }
+        let name = ModuleQualifiers.c99Name(of: module)
+        return imports.contains { entry in
+            !entry.hasPrefix(ModuleReexports.directImportPrefix) && entry != ImportExtractor.spiImport
+                && ModuleQualifiers.c99Name(of: String(entry.prefix { $0 != "." })) == name
+        }
     }
 }

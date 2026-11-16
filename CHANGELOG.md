@@ -134,6 +134,34 @@ config files, the CLI, and the diagrams it writes do not.
   which still ends on ModA's; and an internal type seen through
   `@testable import`. Without `--package` no file has a target, so none of this
   applies.
+- **With `--package`, a target that enables `MemberImportVisibility` reads
+  a dotted name through each file's own imports** (#201). Under SE-0444, a
+  file sees a member another module's extension adds only when it imports
+  that module itself. The lookup counted every module any file of the
+  target loads, so when ModB and ModD each add a `V` to ModA's `Foo`, and
+  one file of ModC imports ModB, ModC's `final class C: Foo.V` ended on
+  ModB's `V` though its own file imports only ModD, in every format and
+  however the extensions spell `Foo`. Such a file now goes by its own
+  imports: a whole module, a declaration of one
+  (`import class ModD.Other`), or one an `@_exported import` brings in. That
+  holds for the members of `Foo`'s own module too, those of its body
+  included: a file that reaches `Foo` through a subclass or typealias, and
+  does not import ModA, no longer ends `Sub.V` or `F.V` on ModA's `V`. The
+  setting is read from `swift package dump-package`, since `describe`
+  leaves settings out, so reading a package now runs SwiftPM twice. It
+  counts through `enableUpcomingFeature`, `enableExperimentalFeature` or
+  `unsafeFlags`, with or without `-Xfrontend`, read in order so that a later
+  `-disable-upcoming-feature` turns it off. A condition counts when it
+  holds for `swift build` here: a debug build on macOS with the package's
+  default traits, including the traits those enable. If `dump-package`
+  fails, a warning says so and every target reads as before. A target
+  without the setting is read as before, and so is every target without
+  `--package`, where none is known. Still read without the imports, in any
+  target: a name written bare inside an extension of the type, as `V` in
+  `extension Foo { class C: V {} }`. `SPMTargetDescription` gains
+  `enablesMemberImportVisibility`, and `SPMPackageReader` gains
+  `memberImportVisibilityTargets(inManifest:)` and a `manifest:` argument
+  to `parse`.
 - **An edge through a typealias of a type outside the diagram ends on an
   extension of that type, not on the first of that spelling** (#231). Each
   target can have its own `typealias Base`, and each target's

@@ -281,7 +281,8 @@ extension LayoutGraphBuilder.TypeLookup {
 
     /// `members` of the type a dotted name starts at, or of the type a module-qualified name
     /// names (#245), without those an extension in a module that `scope`'s module does not load
-    /// adds (`isLoaded(_:from:depth:)`). Items built without
+    /// adds, or with `MemberImportVisibility`, those of a module `scope`'s file does not import
+    /// (`isLoaded(_:from:depth:)`, #201). Items built without
     /// `SyntaxStructure.loadedModules` miss the imports of a file that declares nothing
     /// (`ModuleLoads.knowsEveryLoad(of:)`), so for them every member is kept when none is loaded.
     func loaded(
@@ -296,12 +297,17 @@ extension LayoutGraphBuilder.TypeLookup {
 
     /// Whether a file in `scope` sees `member`: one declared in its own module or in the module of
     /// the type it belongs to, or one an extension in a module that `scope`'s module loads adds.
+    /// With `MemberImportVisibility` and the file's imports known, only one of its own module or
+    /// of a module the file imports, even the type's own: SE-0444 hides `Foo`'s members, those of
+    /// its body too, from a file that reaches `Foo` without importing its module (#201).
     private func isLoaded(
         _ member: LayoutGraphBuilder.Declared, from scope: LayoutGraphBuilder.Scope, depth: Int
     ) -> Bool {
-        guard let module = member.scope.module, let writer = scope.module,
-              module != owningModule(of: member, depth: depth) else { return true }
-        return moduleLoads.loads(module, in: writer)
+        guard let module = member.scope.module, let writer = scope.module else { return true }
+        if let imports = scope.imports, moduleLoads.seesOnlyImportedMembers(in: writer) {
+            return moduleLoads.loads(module, in: writer, imports: imports)
+        }
+        return module == owningModule(of: member, depth: depth) || moduleLoads.loads(module, in: writer)
     }
 
     /// `name` spelled through the type its first component is another name for, as that type is
