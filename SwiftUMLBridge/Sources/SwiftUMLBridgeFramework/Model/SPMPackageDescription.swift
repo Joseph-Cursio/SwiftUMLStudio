@@ -70,38 +70,79 @@ public enum SPMPackageReader {
 
     /// The names of the targets in `manifest`, the output of `swift package dump-package`, that
     /// enable `MemberImportVisibility` for Swift: by `enableUpcomingFeature`,
-    /// `enableExperimentalFeature`, or the matching `unsafeFlags`. A setting with a condition
-    /// counts when it holds for a debug build on macOS, the build `swift build` makes here. Empty
-    /// when `manifest` is not that JSON.
+    /// `enableExperimentalFeature`, or `unsafeFlags` (`memberImportVisibility(in:defaultTraits:)`).
+    /// A setting with a condition counts when it holds for the build `swift build` makes here: a
+    /// debug build on macOS, with the package's default traits. Empty when `manifest` is not that
+    /// JSON.
     public static func memberImportVisibilityTargets(inManifest manifest: Data) -> Set<String> {
         guard let root = try? JSONSerialization.jsonObject(with: manifest) as? [String: Any],
               let targets = root["targets"] as? [[String: Any]] else { return [] }
+        let defaultTraits = defaultTraits(in: root)
         return Set(targets.compactMap { target in
             guard let name = target["name"] as? String,
                   let settings = target["settings"] as? [[String: Any]],
-                  settings.contains(where: enablesMemberImportVisibility) else { return nil }
+                  memberImportVisibility(in: settings, defaultTraits: defaultTraits) else { return nil }
             return name
         })
     }
 
-    /// Whether `setting`, one entry of a dumped target's `settings`, enables
-    /// `MemberImportVisibility` for a debug build on macOS.
-    private static func enablesMemberImportVisibility(_ setting: [String: Any]) -> Bool {
-        guard setting["tool"] as? String == "swift", let kind = setting["kind"] as? [String: Any] else { return false }
-        if let condition = setting["condition"] as? [String: Any] {
-            if let platforms = condition["platformNames"] as? [String], !platforms.isEmpty,
-               !platforms.contains("macos") { return false }
-            if let config = condition["config"] as? String, config != "debug" { return false }
+    /// The traits a dumped manifest turns on by default: those its `default` trait enables, and
+    /// in turn those each of them enables, as `swift build` does.
+    private static func defaultTraits(in root: [String: Any]) -> Set<String> {
+        var enabledByTrait: [String: [String]] = [:]
+        for trait in root["traits"] as? [[String: Any]] ?? [] {
+            guard let name = trait["name"] as? String else { continue }
+            enabledByTrait[name] = trait["enabledTraits"] as? [String] ?? []
         }
-        let features = ["enableUpcomingFeature", "enableExperimentalFeature"]
-        if features.contains(where: { (kind[$0] as? [String: Any])?["_0"] as? String == memberImportVisibility }) {
-            return true
+        var enabled: Set<String> = []
+        var pending = enabledByTrait["default"] ?? []
+        while let next = pending.popLast() {
+            if enabled.insert(next).inserted { pending += enabledByTrait[next] ?? [] }
         }
-        guard let flags = (kind["unsafeFlags"] as? [String: Any])?["_0"] as? [String] else { return false }
-        return zip(flags, flags.dropFirst()).contains { flag, value in
-            value == memberImportVisibility
-                && (flag == "-enable-upcoming-feature" || flag == "-enable-experimental-feature")
+        return enabled
+    }
+
+    /// Whether a dumped target's `settings` leave `MemberImportVisibility` on for Swift, read in
+    /// order as `swift build` passes them to the compiler, so the last that turns it on or off
+    /// wins: a feature setting turns it on, and in `unsafeFlags`, with any `-Xfrontend` dropped,
+    /// `-enable-upcoming-feature` or `-enable-experimental-feature` before its name turns it on
+    /// and `-disable-upcoming-feature` turns it off. Settings whose condition does not hold
+    /// (`holds(_:defaultTraits:)`) are skipped.
+    private static func memberImportVisibility(
+        in settings: [[String: Any]], defaultTraits: Set<String>
+    ) -> Bool {
+        var isOn = false
+        for setting in settings {
+            guard setting["tool"] as? String == "swift", let kind = setting["kind"] as? [String: Any],
+                  holds(setting["condition"] as? [String: Any], defaultTraits: defaultTraits) else { continue }
+            let features = ["enableUpcomingFeature", "enableExperimentalFeature"]
+            if features.contains(where: { (kind[$0] as? [String: Any])?["_0"] as? String == memberImportVisibility }) {
+                isOn = true
+            }
+            let unsafeFlags = (kind["unsafeFlags"] as? [String: Any])?["_0"] as? [String] ?? []
+            let flags = unsafeFlags.filter { $0 != "-Xfrontend" }
+            for (flag, value) in zip(flags, flags.dropFirst()) where value == memberImportVisibility {
+                switch flag {
+                case "-enable-upcoming-feature", "-enable-experimental-feature": isOn = true
+                case "-disable-upcoming-feature": isOn = false
+                default: break
+                }
+            }
         }
+        return isOn
+    }
+
+    /// Whether a dumped setting's `condition` holds for a debug build on macOS with
+    /// `defaultTraits` on: each part it names must, and a list of traits holds when any of them
+    /// is on. No condition always holds.
+    private static func holds(_ condition: [String: Any]?, defaultTraits: Set<String>) -> Bool {
+        guard let condition else { return true }
+        if let platforms = condition["platformNames"] as? [String], !platforms.isEmpty,
+           !platforms.contains("macos") { return false }
+        if let config = condition["config"] as? String, config != "debug" { return false }
+        if let traits = condition["traits"] as? [String], !traits.isEmpty,
+           defaultTraits.isDisjoint(with: traits) { return false }
+        return true
     }
 
     private static func parseTarget(

@@ -5,12 +5,22 @@ import Testing
 /// `swift package describe` leaves target settings out, so whether a target enables
 /// `MemberImportVisibility` is read from `swift package dump-package`, whose settings look like
 /// `{"kind": {"enableUpcomingFeature": {"_0": "MemberImportVisibility"}}, "tool": "swift"}` (#201).
+/// Each manifest declares the traits of a real dump: `default` enables Base, which enables
+/// Chained, and Off is on only when asked for, so `swift build` turns on Base and Chained.
 @Suite("SPMPackageReader reads MemberImportVisibility from the dumped manifest")
 struct SPMManifestSettingsTests {
-    /// A dumped manifest whose one target, `Mod`, has `setting` alone.
-    private static func manifest(_ setting: String) -> Data {
-        Data(#"{"name": "Probe", "targets": [{"name": "Mod", "settings": [\#(setting)]}]}"#.utf8)
+    private static let traits = #"""
+        [{"enabledTraits": ["Chained"], "name": "Base"}, {"enabledTraits": [], "name": "Chained"},
+         {"enabledTraits": [], "name": "Off"}, {"enabledTraits": ["Base"], "name": "default"}]
+        """#
+
+    /// A dumped manifest whose one target, `Mod`, has `settings`, a comma-separated list.
+    private static func manifest(_ settings: String) -> Data {
+        Data(#"{"name": "Probe", "traits": \#(traits), "targets": [{"name": "Mod", "settings": [\#(settings)]}]}"#.utf8)
     }
+
+    private static let upcoming = #"{"enableUpcomingFeature": {"_0": "MemberImportVisibility"}}"#
+    private static let disabling = #"{"unsafeFlags": {"_0": ["-disable-upcoming-feature", "MemberImportVisibility"]}}"#
 
     private static func swiftSetting(_ kind: String, condition: String? = nil) -> String {
         #"{"kind": \#(kind), "tool": "swift""# + (condition.map { #", "condition": \#($0)"# } ?? "") + "}"
@@ -29,6 +39,18 @@ struct SPMManifestSettingsTests {
         ("a condition on debug builds", swiftSetting(
             #"{"enableUpcomingFeature": {"_0": "MemberImportVisibility"}}"#, condition: #"{"config": "debug"}"#
         )),
+        ("a condition on a default trait", swiftSetting(upcoming, condition: #"{"traits": ["Base"]}"#)),
+        ("a condition on a trait a default one enables", swiftSetting(
+            upcoming, condition: #"{"traits": ["Chained"]}"#
+        )),
+        ("a condition on traits, one of them on", swiftSetting(upcoming, condition: #"{"traits": ["Off", "Base"]}"#)),
+        ("unsafe flags through -Xfrontend", swiftSetting(
+            #"""
+            {"unsafeFlags": {"_0": ["-Xfrontend", "-enable-upcoming-feature",
+                                    "-Xfrontend", "MemberImportVisibility"]}}
+            """#
+        )),
+        ("a feature after a flag that disables it", swiftSetting(disabling) + ", " + swiftSetting(upcoming)),
     ]
 
     static let notEnabling: [(String, String)] = [
@@ -42,6 +64,14 @@ struct SPMManifestSettingsTests {
         ("a condition on release builds", swiftSetting(
             #"{"enableUpcomingFeature": {"_0": "MemberImportVisibility"}}"#, condition: #"{"config": "release"}"#
         )),
+        ("a condition on a trait that is not on by default", swiftSetting(
+            upcoming, condition: #"{"traits": ["Off"]}"#
+        )),
+        ("a flag that disables a feature before it", swiftSetting(upcoming) + ", " + swiftSetting(disabling)),
+        ("unsafe flags that enable and then disable it", swiftSetting(#"""
+            {"unsafeFlags": {"_0": ["-enable-upcoming-feature", "MemberImportVisibility",
+                                    "-disable-upcoming-feature", "MemberImportVisibility"]}}
+            """#)),
     ]
 
     @Test("a setting that enables the feature", arguments: enabling)
