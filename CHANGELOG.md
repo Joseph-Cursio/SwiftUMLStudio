@@ -412,6 +412,17 @@ config files, the CLI, and the diagrams it writes do not.
   The dashboard's suggestion cards, fed by the same list, no longer offer a
   local function.
 
+### Documentation
+
+- **The docs name the keyword methods `--entry` finds only as declared**
+  (#240). The reference and Troubleshooting said a method named with a
+  keyword is typed with or without its backticks. That holds for `default`,
+  `import` and the rest, but not for `self`, `Self` and `init`, nor for
+  `Type` and `Protocol`: ``func `self`()`` is ``'Keyed.`self`'``, and
+  `Keyed.self` draws an empty diagram, as for a method that does not exist. The three places now
+  name the exceptions, and `MemberReferenceNameTests` gains rows for `Self`,
+  `Protocol` and the escaped `self` and `init`, which no row pinned.
+
 ## [1.2.0] — 2026-11-06
 
 The first release since v1.1.0 (2026-08-16), covering about 350 commits, not
