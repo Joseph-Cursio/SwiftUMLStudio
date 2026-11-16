@@ -10,7 +10,9 @@ struct MemberReferenceNameTests {
     static let spellings: [(String, String)] = [
         ("default", "`default`"), ("`default`", "`default`"), ("import", "`import`"), ("class", "`class`"),
         ("helper", "helper"), ("`helper`", "helper"), ("open", "open"), ("async", "async"),
-        ("init", "init"), ("self", "self"), ("Type", "Type"), ("`Type`", "`Type`"), ("`go now`", "`go now`"),
+        ("init", "init"), ("`init`", "`init`"), ("self", "self"), ("`self`", "`self`"), ("Self", "Self"),
+        ("`Self`", "`Self`"), ("Type", "Type"), ("`Type`", "`Type`"), ("Protocol", "Protocol"),
+        ("`Protocol`", "`Protocol`"), ("`go now`", "`go now`"),
     ]
 
     @Test("the name after x. reads as its declaration does", arguments: spellings)

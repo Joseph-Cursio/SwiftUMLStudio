@@ -77,7 +77,7 @@ Means the toolchain doesn't understand `swift-tools-version: 6.2`. Same fix as a
 grep -n "func myMethod" Sources/
 ```
 
-A method named with a keyword is declared with backticks, as ``func `default`()``. Type it with or without them: `--entry Keyed.default`, or ``--entry 'Keyed.`default`'`` with the backticks quoted for the shell. In 1.1.0 and earlier, only the escaped spelling is found.
+A method named with a keyword is declared with backticks, as ``func `default`()``. Type it with or without them: `--entry Keyed.default`, or ``--entry 'Keyed.`default`'`` with the backticks quoted for the shell. In 1.1.0 and earlier, only the escaped spelling is found. Either spelling does not work for `self`, `Self`, `init`, `Type` and `Protocol`, which are found only as they are declared: ``func `self`()`` is ``'Keyed.`self`'``, and `Keyed.self` draws an empty diagram, with a warning on stderr that the entry came to no method with a body. `func Type()`, declared without backticks, is `Keyed.Type`.
 
 Pass `--depth 1` first to confirm the entry method itself is being found. If depth-1 returns a single participant, the resolver found the entry — increase depth to expand.
 
