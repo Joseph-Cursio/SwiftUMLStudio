@@ -8,6 +8,11 @@ public struct SPMTargetDescription: Sendable, Equatable {
     public let path: String
     public let sources: [String]
     public let dependencies: [String]
+    /// Whether the target enables `MemberImportVisibility` (SE-0444), so each of its files sees
+    /// the members another module's extension adds only when it imports that module itself
+    /// (`ModuleLoads.loads(_:in:imports:)`, #201). `swift package describe` leaves settings out;
+    /// `SPMPackageReader.describe(at:)` reads them from `swift package dump-package`.
+    public let enablesMemberImportVisibility: Bool
 
     /// The target's kind. One shared `ComponentKind`, also used by the UML `Component` model.
     public typealias Kind = ComponentKind
@@ -17,18 +22,21 @@ public struct SPMTargetDescription: Sendable, Equatable {
         kind: Kind,
         path: String,
         sources: [String],
-        dependencies: [String]
+        dependencies: [String],
+        enablesMemberImportVisibility: Bool = false
     ) {
         self.name = name
         self.kind = kind
         self.path = path
         self.sources = sources
         self.dependencies = dependencies
+        self.enablesMemberImportVisibility = enablesMemberImportVisibility
     }
 }
 
 /// Reads SPM package descriptions. The pure `parse` step is unit-testable;
-/// `describe(at:)` shells out to `swift package describe --type json`.
+/// `describe(at:)` shells out to `swift package describe --type json`, and to
+/// `swift package dump-package` for the target settings `describe` leaves out.
 public enum SPMPackageReader {
     public enum ReadError: Error, Equatable {
         case swiftToolFailed(exitStatus: Int32, stderr: String)
@@ -37,8 +45,10 @@ public enum SPMPackageReader {
         case timedOut(seconds: TimeInterval)
     }
 
-    /// Parse JSON output produced by `swift package describe --type json`.
-    public static func parse(_ data: Data) throws -> SPMPackageDescription {
+    /// Parse JSON output produced by `swift package describe --type json`, with each target's
+    /// `enablesMemberImportVisibility` read from `manifest`, the output of
+    /// `swift package dump-package`, when given (`memberImportVisibilityTargets(inManifest:)`).
+    public static func parse(_ data: Data, manifest: Data? = nil) throws -> SPMPackageDescription {
         guard
             let root = try? JSONSerialization.jsonObject(with: data),
             let dict = root as? [String: Any]
@@ -49,11 +59,54 @@ public enum SPMPackageReader {
             throw ReadError.malformedJSON("missing 'name'")
         }
         let targetDicts = (dict["targets"] as? [[String: Any]]) ?? []
-        let targets = targetDicts.compactMap(parseTarget(_:))
+        let seesOnlyImported = manifest.map(memberImportVisibilityTargets(inManifest:)) ?? []
+        let targets = targetDicts.compactMap { parseTarget($0, memberImportVisibility: seesOnlyImported) }
         return SPMPackageDescription(name: name, targets: targets)
     }
 
-    private static func parseTarget(_ dict: [String: Any]) -> SPMTargetDescription? {
+    /// The upcoming or experimental feature that limits a file to the extension members of the
+    /// modules it imports (SE-0444).
+    static let memberImportVisibility = "MemberImportVisibility"
+
+    /// The names of the targets in `manifest`, the output of `swift package dump-package`, that
+    /// enable `MemberImportVisibility` for Swift: by `enableUpcomingFeature`,
+    /// `enableExperimentalFeature`, or the matching `unsafeFlags`. A setting with a condition
+    /// counts when it holds for a debug build on macOS, the build `swift build` makes here. Empty
+    /// when `manifest` is not that JSON.
+    public static func memberImportVisibilityTargets(inManifest manifest: Data) -> Set<String> {
+        guard let root = try? JSONSerialization.jsonObject(with: manifest) as? [String: Any],
+              let targets = root["targets"] as? [[String: Any]] else { return [] }
+        return Set(targets.compactMap { target in
+            guard let name = target["name"] as? String,
+                  let settings = target["settings"] as? [[String: Any]],
+                  settings.contains(where: enablesMemberImportVisibility) else { return nil }
+            return name
+        })
+    }
+
+    /// Whether `setting`, one entry of a dumped target's `settings`, enables
+    /// `MemberImportVisibility` for a debug build on macOS.
+    private static func enablesMemberImportVisibility(_ setting: [String: Any]) -> Bool {
+        guard setting["tool"] as? String == "swift", let kind = setting["kind"] as? [String: Any] else { return false }
+        if let condition = setting["condition"] as? [String: Any] {
+            if let platforms = condition["platformNames"] as? [String], !platforms.isEmpty,
+               !platforms.contains("macos") { return false }
+            if let config = condition["config"] as? String, config != "debug" { return false }
+        }
+        let features = ["enableUpcomingFeature", "enableExperimentalFeature"]
+        if features.contains(where: { (kind[$0] as? [String: Any])?["_0"] as? String == memberImportVisibility }) {
+            return true
+        }
+        guard let flags = (kind["unsafeFlags"] as? [String: Any])?["_0"] as? [String] else { return false }
+        return zip(flags, flags.dropFirst()).contains { flag, value in
+            value == memberImportVisibility
+                && (flag == "-enable-upcoming-feature" || flag == "-enable-experimental-feature")
+        }
+    }
+
+    private static func parseTarget(
+        _ dict: [String: Any], memberImportVisibility: Set<String>
+    ) -> SPMTargetDescription? {
         guard let name = dict["name"] as? String,
               let path = dict["path"] as? String
         else { return nil }
@@ -63,7 +116,8 @@ public enum SPMPackageReader {
         let dependencies = (dict["target_dependencies"] as? [String]) ?? []
         return SPMTargetDescription(
             name: name, kind: kind, path: path,
-            sources: sources, dependencies: dependencies
+            sources: sources, dependencies: dependencies,
+            enablesMemberImportVisibility: memberImportVisibility.contains(name)
         )
     }
 
@@ -78,9 +132,12 @@ public enum SPMPackageReader {
     public static let describeTimeout: TimeInterval = 300
 
     /// Run `swift package describe --type json` against the package at
-    /// `packageRoot` (the directory containing `Package.swift`).
+    /// `packageRoot` (the directory containing `Package.swift`), then
+    /// `swift package dump-package` for the target settings `describe` leaves out
+    /// (`SPMTargetDescription.enablesMemberImportVisibility`). When only the second fails, the
+    /// targets read as enabling no setting, and a warning says so.
     ///
-    /// - Throws: `ReadError.timedOut` if the tool outlives `describeTimeout`,
+    /// - Throws: `ReadError.timedOut` if `describe` outlives `describeTimeout`,
     ///   `ReadError.swiftToolFailed` on a non-zero exit, `ReadError.malformedJSON`
     ///   if the output cannot be parsed.
     public static func describe(at packageRoot: URL) throws -> SPMPackageDescription {
@@ -97,13 +154,26 @@ public enum SPMPackageReader {
             .appendingPathComponent("swiftumlbridge-spm-\(UUID().uuidString)")
         defer { try? FileManager.default.removeItem(at: scratch) }
 
+        let described = try runSwiftPackage(["describe", "--type", "json"], at: packageRoot, scratch: scratch)
+        let manifest: Data?
+        do {
+            manifest = try runSwiftPackage(["dump-package"], at: packageRoot, scratch: scratch)
+        } catch {
+            BridgeLogger.shared.warning(
+                "swift package dump-package failed (\(error)), "
+                    + "so no target is read as enabling \(memberImportVisibility)"
+            )
+            manifest = nil
+        }
+        return try parse(described, manifest: manifest)
+    }
+
+    /// The standard output of `swift package <command>` run in `packageRoot` with `scratch` as
+    /// its scratch path, killed after `describeTimeout`.
+    private static func runSwiftPackage(_ command: [String], at packageRoot: URL, scratch: URL) throws -> Data {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
-        process.arguments = [
-            "swift", "package",
-            "--scratch-path", scratch.path,
-            "describe", "--type", "json",
-        ]
+        process.arguments = ["swift", "package", "--scratch-path", scratch.path] + command
         // Absolute: the setter drops each `..` of a relative URL that climbs above its base, so
         // `../Pkg` ran in `<cwd>/Pkg` and `..` in the cwd itself, where SwiftPM's upward search
         // could find another package (#141).
@@ -168,7 +238,7 @@ public enum SPMPackageReader {
                 stderr: String(data: stderrData.withLock { $0 }, encoding: .utf8) ?? ""
             )
         }
-        return try parse(stdout)
+        return stdout
     }
 }
 
