@@ -76,6 +76,12 @@ struct ModuleLoads {
         modulesReadWhole.contains(module)
     }
 
+    /// Whether `writer` enables `MemberImportVisibility`, so each file of it sees only the members
+    /// of the modules it imports (`loads(_:in:imports:)`).
+    func seesOnlyImportedMembers(in writer: String) -> Bool {
+        modulesSeeingOnlyImported.contains(writer)
+    }
+
     /// Whether a file of `writer` that imports `imports` sees the members that an extension in
     /// `module` adds. When `writer` enables `MemberImportVisibility` and the file's imports are
     /// known, only a module it imports counts, all of it or a declaration of it, directly or
