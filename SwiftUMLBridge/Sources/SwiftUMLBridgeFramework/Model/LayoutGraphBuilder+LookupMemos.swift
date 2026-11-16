@@ -68,6 +68,7 @@ extension LayoutGraphBuilder {
         private let ownerForKey = Mutex<[EnclosingOwnerKey: OwningDeclaration?]>([:])
         private let candidatesForKey = Mutex<[EnclosingCandidatesKey: [Declared]]>([:])
         private let isMemberForKey = Mutex<[EnclosingMemberKey: Bool]>([:])
+        private let startForKey = Mutex<[EnclosingOwnerKey: NameStart?]>([:])
 
         /// The owner for `key`, from `lookUp` the first time, which runs outside the lock.
         func owner(for key: EnclosingOwnerKey, lookUp: () -> OwningDeclaration?) -> OwningDeclaration? {
@@ -75,6 +76,16 @@ extension LayoutGraphBuilder {
             let owner = lookUp()
             ownerForKey.withLock { $0[key] = .some(owner) }
             return owner
+        }
+
+        /// The start of the names built on the types around a writer of a known module
+        /// (`TypeLookup.enclosingStart(of:depth:)`) for `key`, from `lookUp` the first time, which
+        /// runs outside the lock.
+        func start(for key: EnclosingOwnerKey, lookUp: () -> NameStart?) -> NameStart? {
+            if let known = startForKey.withLock({ $0[key] }) { return known }
+            let start = lookUp()
+            startForKey.withLock { $0[key] = .some(start) }
+            return start
         }
 
         /// The candidates for `key`, from `lookUp` the first time, which runs outside the lock.
@@ -121,8 +132,9 @@ extension LayoutGraphBuilder {
         let depth: Int
     }
 
-    /// What `EnclosingLookups` keeps an owner for: the outermost name around a writer, how its file
-    /// reads it, and the lookup's depth, which its guards depend on. The file is its path's bytes,
+    /// What `EnclosingLookups` keeps an owner or a start for: the outermost name around a writer, how
+    /// its file reads it, and the lookup's depth, which its guards depend on. The file stands for its
+    /// module too, as each file has one. The file is its path's bytes,
     /// as for `EnclosingCandidatesKey`, since which type the name means can go by its directory.
     struct EnclosingOwnerKey: Hashable {
         let outermost: String
