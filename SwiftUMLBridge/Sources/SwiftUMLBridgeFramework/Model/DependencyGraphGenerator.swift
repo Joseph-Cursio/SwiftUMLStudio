@@ -63,10 +63,11 @@ public struct DependencyGraphGenerator: DependencyGraphGenerating, Sendable {
     /// and each node is tagged with its target kind (`<<library>>` /
     /// `<<executable>>`) so emitters can stereotype them. In `.types` mode
     /// each end of an inheritance/conformance edge is tagged with its type's
-    /// module (`PackageTypeOwners`): the target that declares the type or,
-    /// for a type no target declares, the first target in path order that
-    /// extends it. So an extension's edge carries its type's module, not
-    /// necessarily its own. Test targets are excluded.
+    /// module: the target that declares the type the writer's file means,
+    /// through its imports, as the class diagram reads it (#202), or, for a
+    /// type outside the package, the first target in path order that extends
+    /// it (`PackageTypeOwners`). So an extension's edge carries its type's
+    /// module, not necessarily its own. Test targets are excluded.
     public func generateScript(
         forPackage description: SPMPackageDescription,
         packageRoot: URL,
@@ -106,31 +107,54 @@ public struct DependencyGraphGenerator: DependencyGraphGenerating, Sendable {
         // Every file is parsed before any edge is drawn, so a typealias in one file is followed
         // from all the others (#125).
         let items = files.flatMap { SyntaxStructure.create(from: $0)?.substructure ?? [] }
-        return typeEdges(from: items, configuration: configuration)
+        return typeEdges(from: items, configuration: configuration).map(\.edge)
     }
 
     /// The inheritance and conformance edges of `items`, each from a declaration to a supertype
-    /// it names, with each end tagged with the module `module` gives its type. That is `nil` for
-    /// loose files, and the owning target for a package (#209).
+    /// it names. For a package (`owners`), each end is tagged with its type's module (#209): the
+    /// module of the declaration the class diagram ends that edge on, read through the writer's
+    /// imports (`TypeAliasResolver.declaringModule(of:from:)`, #202), so where ModA and ModB each
+    /// declare a `Base` and the file imports only ModB, its `Base` is ModB's. A declaration's own
+    /// end is its own module, and an extension's that of the type it extends. A name for which
+    /// the writer's file sees no project type means one outside the package, as Swift's `String`
+    /// or `Identifiable` beside a target's own: it takes the first module that extends it
+    /// (`PackageTypeOwners.extendingModule(of:)`), and none where no module does, and no module
+    /// declares it; an extension of a package type tags no type outside it. A package's ends
+    /// also read a module qualifier, so `ModB.Base` ends on ModB's `Base`
+    /// (`TypeAliasResolver.resolveReadingModules(_:from:)`), and an extension's end is the type
+    /// it extends, as the class diagram finds it, so `extension ModB.Base` is ModB's `Base`, and
+    /// `extension Alias`, for an alias of a package type, that type. Loose files carry no tags.
     private func typeEdges(
         from items: [SyntaxStructure],
         configuration: Configuration,
-        module: (String) -> String? = { _ in nil }
-    ) -> [DependencyEdge] {
+        inPackage: Bool = false
+    ) -> [PackageTypeEdge] {
         let aliases = TypeAliasResolver(items: items)
-        var edges: [DependencyEdge] = []
+        let owners = inPackage ? PackageTypeOwners.recordingExtensions(of: items, aliases: aliases) : nil
+        var edges: [PackageTypeEdge] = []
         for item in items {
             guard let basis = typeEdgeBasis(for: item, configuration: configuration) else { continue }
+            let isExtension = item.kind == .extension
+            let fromDeclaring = owners == nil ? nil : isExtension ? aliases.extendedTypeModule(of: item) : item.module
+            let fromName = owners != nil && isExtension ? aliases.extendedTypeName(of: item) ?? basis.name : basis.name
+            let fromModule = owners.flatMap { fromDeclaring ?? $0.extendingModule(of: basis.name) }
             for parent in basis.inheritedTypes {
                 guard let parentName = supertypeName(
-                    of: parent, in: item, aliases: aliases, configuration: configuration
+                    of: parent, in: item, aliases: aliases, configuration: configuration, readingModules: owners != nil
                 ) else { continue }
-                edges.append(DependencyEdge(
-                    from: basis.name,
-                    toNode: parentName,
-                    kind: basis.edgeKind,
-                    fromModule: module(basis.name),
-                    toModule: module(parentName)
+                let toDeclaring = owners == nil ? nil : parent.name.flatMap {
+                    aliases.declaringModule(of: $0, from: DeclarationScope(of: item))
+                }
+                edges.append(PackageTypeEdge(
+                    edge: DependencyEdge(
+                        from: fromName,
+                        toNode: parentName,
+                        kind: basis.edgeKind,
+                        fromModule: fromModule,
+                        toModule: owners.flatMap { toDeclaring ?? $0.extendingModule(of: parentName) }
+                    ),
+                    fromDeclaring: fromDeclaring,
+                    toDeclaring: toDeclaring
                 ))
             }
         }
@@ -139,17 +163,21 @@ public struct DependencyGraphGenerator: DependencyGraphGenerating, Sendable {
 
     /// The name `item`'s edge to its supertype `parent` ends on: the type it comes to where
     /// `item` writes it, so `struct S: Q` after `typealias Q = Proto` ends on `Proto` (#125).
-    /// `nil` when the name as written, or the type it comes to, is excluded.
+    /// `nil` when the name as written, or the type it comes to, is excluded. `readingModules`
+    /// reads a module qualifier, for a package's ends.
     private func supertypeName(
         of parent: SyntaxStructure,
         in item: SyntaxStructure,
         aliases: TypeAliasResolver,
-        configuration: Configuration
+        configuration: Configuration,
+        readingModules: Bool
     ) -> String? {
         guard let written = parent.name, !shouldExclude(name: written, configuration: configuration) else {
             return nil
         }
-        let resolved = aliases.resolve(written, from: DeclarationScope(of: item))
+        let scope = DeclarationScope(of: item)
+        let resolved = readingModules
+            ? aliases.resolveReadingModules(written, from: scope) : aliases.resolve(written, from: scope)
         return shouldExclude(name: resolved, configuration: configuration) ? nil : resolved
     }
 
@@ -215,18 +243,16 @@ public struct DependencyGraphGenerator: DependencyGraphGenerating, Sendable {
         configuration: Configuration,
         sdkPath: String?
     ) -> [DependencyEdge] {
-        // First pass: record the module of every type the package declares or
-        // extends, so each edge can carry the module of both its ends. The
-        // declarations' imports are widened with `@_exported` re-exports, as
-        // the class diagram reads them.
-        var owners = PackageTypeOwners()
+        // The declarations' imports are widened with `@_exported` re-exports, as the class
+        // diagram reads them.
         let parsedItems = SyntaxStructure.declarations(
             inPackage: description, packageRoot: packageRoot, sdkPath: sdkPath
         )
-        for item in parsedItems {
-            if let module = item.module { owners.record(item, in: module) }
+        // A split name is excluded by its drawn spelling too, and by its module's, so
+        // `--exclude ModA.Base` hides ModA's `Base` where ModB's is drawn beside it.
+        return PackageTypeEdge.drawn(typeEdges(from: parsedItems, configuration: configuration, inPackage: true)) {
+            shouldExclude(name: $0, configuration: configuration)
         }
-        return typeEdges(from: parsedItems, configuration: configuration) { owners.module(of: $0) }
     }
 
     /// Common per-item gate for type-edge extraction: apply the skip filter, then

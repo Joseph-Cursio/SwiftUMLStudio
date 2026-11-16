@@ -34,7 +34,9 @@ struct PackageTypeModuleTests {
     @Test("an extension's only edge carries the module that declares its type", arguments: [false, true])
     func extensionsOnlyEdge(reversed: Bool) throws {
         let package = try TemporaryPackage([
-            (name: "App", files: [(name: "Format+CLI.swift", source: "extension Format: CustomStringConvertible {}")]),
+            (name: "App", files: [
+                (name: "Format+CLI.swift", source: "import Core\n\nextension Format: CustomStringConvertible {}")
+            ]),
             (name: "Core", files: [(name: "Format.swift", source: "public enum Format { case plain }")]),
         ])
         defer { package.remove() }
@@ -45,10 +47,14 @@ struct PackageTypeModuleTests {
     @Test("a parent extended elsewhere keeps the module that declares it", arguments: [false, true])
     func extendedParent(reversed: Bool) throws {
         let package = try TemporaryPackage([
-            (name: "App", files: [(name: "Ping.swift", source: "extension Service { func ping() {} }")]),
+            (name: "App", files: [(name: "Ping.swift", source: "import Core\n\nextension Service { func ping() {} }")]),
             (name: "Core", files: [(name: "Service.swift", source: "public protocol Service {}")]),
-            (name: "Networking", files: [(name: "HTTPClient.swift", source: "struct HTTPClient: Service {}")]),
-            (name: "Zed", files: [(name: "Service+Sendable.swift", source: "extension Service: Sendable {}")]),
+            (name: "Networking", files: [
+                (name: "HTTPClient.swift", source: "import Core\n\nstruct HTTPClient: Service {}")
+            ]),
+            (name: "Zed", files: [
+                (name: "Service+Sendable.swift", source: "import Core\n\nextension Service: Sendable {}")
+            ]),
         ])
         defer { package.remove() }
         let text = dependencyGraph(package, reversed: reversed)
@@ -69,15 +75,23 @@ struct PackageTypeModuleTests {
     func nestedType(reversed: Bool) throws {
         let package = try TemporaryPackage([
             (name: "App", files: [
-                (name: "Inner+Sendable.swift", source: "extension Outer.Inner: Sendable {}"),
-                (name: "MidInner+Sendable.swift", source: "extension Outer.Mid.Inner: Sendable {}"),
-                (name: "Outer+Deep.swift", source: "extension Outer { class Deep {} }"),
+                (name: "Inner+Sendable.swift", source: "import Core\n\nextension Outer.Inner: Sendable {}"),
+                (name: "MidInner+Sendable.swift", source: "import Core\n\nextension Outer.Mid.Inner: Sendable {}"),
+                (name: "Outer+Deep.swift", source: "import Core\n\nextension Outer { open class Deep {} }"),
             ]),
             (name: "Core", files: [
-                (name: "Outer.swift", source: "enum Outer { class Inner {}\n enum Mid { class Inner {} } }")
+                (name: "Outer.swift", source: """
+                    public enum Outer {
+                        open class Inner {}
+                        public enum Mid { open class Inner {} }
+                    }
+                    """),
             ]),
             (name: "Zed", files: [
                 (name: "Subclasses.swift", source: """
+                    import App
+                    import Core
+
                     class Sub: Outer.Inner {}
                     class Sub2: Outer.Deep {}
                     class Sub3: Outer.Mid.Inner {}
@@ -91,21 +105,15 @@ struct PackageTypeModuleTests {
         #expect(text.contains("class \"Outer.Deep\" as Outer.Deep <<App>>"), "\(text)")
     }
 
-    @Test("the declaration wins whichever is recorded first")
-    func declarationWinsInEitherOrder() {
-        let declaration = SyntaxStructure(kind: .enum, name: "Format")
-        let extensions = [
-            SyntaxStructure(kind: .extension, name: "Format"), SyntaxStructure(kind: .extension, name: "Format")
-        ]
-        var extensionFirst = PackageTypeOwners()
-        extensionFirst.record(extensions[0], in: "App")
-        extensionFirst.record(declaration, in: "Core")
-        extensionFirst.record(extensions[1], in: "Zed")
-        var declarationFirst = PackageTypeOwners()
-        declarationFirst.record(declaration, in: "Core")
-        declarationFirst.record(extensions[0], in: "App")
-        #expect(extensionFirst.module(of: "Format") == "Core")
-        #expect(declarationFirst.module(of: "Format") == "Core")
-        #expect(extensionFirst.module(of: "String") == nil)
+    /// The owners tag only a type outside the package, by its first extension; a declaration
+    /// tags its own ends through the lookup (#202), so recording one changes nothing here.
+    @Test("the first extension recorded wins, and a declaration is not recorded")
+    func firstExtensionWins() {
+        var owners = PackageTypeOwners()
+        owners.record(SyntaxStructure(kind: .extension, name: "String"), in: "App")
+        owners.record(SyntaxStructure(kind: .enum, name: "Format"), in: "Core")
+        owners.record(SyntaxStructure(kind: .extension, name: "String"), in: "Zed")
+        #expect(owners.extendingModule(of: "String") == "App")
+        #expect(owners.extendingModule(of: "Format") == nil)
     }
 }

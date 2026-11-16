@@ -19,10 +19,12 @@ struct PackageModeOrderTests {
                 (name: "StringCore.swift", source: "extension String { func core() {} }"),
             ]),
             (name: "App", files: [
-                (name: "Format+CLI.swift", source: "extension Format: CustomStringConvertible {}"),
+                (name: "Format+CLI.swift", source: "import Core\n\nextension Format: CustomStringConvertible {}"),
                 (name: "StringApp.swift", source: "extension String { func app() {} }"),
             ]),
-            (name: "Zed", files: [(name: "Format+ID.swift", source: "extension Format: Identifiable {}")]),
+            (name: "Zed", files: [
+                (name: "Format+ID.swift", source: "import Core\n\nextension Format: Identifiable {}")
+            ]),
         ])
     }
 

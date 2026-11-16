@@ -2,7 +2,9 @@
 
 extension DepsScript {
     static func buildPlantUMLText(model: DependencyGraphModel, cycleNodes: Set<String>) -> String {
-        var lines: [String] = ["@startuml"]
+        // A dotted name, as a split `ModA.Base` (#202) or a nested `Outer.Inner`, is one node,
+        // not a member of a package `ModA`, as the class diagram also sets.
+        var lines: [String] = ["@startuml", "set namespaceSeparator none"]
 
         let nodeDeclarations = packageNodeDeclarations(model: model)
         if !nodeDeclarations.isEmpty {

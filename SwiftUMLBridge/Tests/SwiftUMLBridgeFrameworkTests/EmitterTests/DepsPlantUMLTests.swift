@@ -13,10 +13,10 @@ struct DepsPlantUMLTests {
 
     // MARK: - Structure
 
-    @Test("PlantUML output starts with @startuml")
+    @Test("PlantUML output starts with @startuml, then reads a dotted name as one node")
     func startsWithStartUML() {
         let script = makeScript(edges: [])
-        #expect(script.text.hasPrefix("@startuml"))
+        #expect(script.text.hasPrefix("@startuml\nset namespaceSeparator none\n"))
     }
 
     @Test("PlantUML output ends with @enduml")
