@@ -261,9 +261,7 @@ extension DiagramViewModel {
         let description = packageDescription
         let root = packageRoot
         analysisTask = Task {
-            let (summary, newInsights, newSuggestions) = await Task.detached(
-                priority: .userInitiated
-            ) {
+            let (summary, newInsights, newSuggestions) = await cancellableDetached {
                 let result: ProjectSummary
                 if let description, let root {
                     result = ProjectAnalyzer.analyze(package: description, packageRoot: root)
@@ -275,7 +273,7 @@ extension DiagramViewModel {
                     from: result, isProUnlocked: proUnlocked
                 )
                 return (result, insights, suggestions)
-            }.value
+            }
             guard !Task.isCancelled else { return }
             projectSummary = summary
             insights = newInsights

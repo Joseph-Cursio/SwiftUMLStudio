@@ -19,7 +19,7 @@ extension DiagramViewModel {
         let packageRoot = self.packageRoot
 
         let generator = classGenerator
-        let result = await Task.detached(priority: .userInitiated) {
+        let result = await cancellableDetached {
             var config = Configuration.default
             config.format = format
             if let packageDescription, let packageRoot {
@@ -31,7 +31,7 @@ extension DiagramViewModel {
                 )
             }
             return generator.generateScript(for: paths, with: config)
-        }.value
+        }
 
         guard !Task.isCancelled else { return }
         script = result
@@ -51,7 +51,7 @@ extension DiagramViewModel {
         let packageRoot = self.packageRoot
 
         let generator = depsGenerator
-        let result = await Task.detached(priority: .userInitiated) {
+        let result = await cancellableDetached {
             var config = Configuration.default
             config.format = format
             if let packageDescription, let packageRoot {
@@ -64,7 +64,7 @@ extension DiagramViewModel {
                 )
             }
             return generator.generateScript(for: paths, mode: mode, with: config)
-        }.value
+        }
 
         guard !Task.isCancelled else { return }
         depsScript = result
@@ -83,13 +83,13 @@ extension DiagramViewModel {
         let identifier = stateIdentifier
 
         let generator = stateGenerator
-        let result = await Task.detached(priority: .userInitiated) {
+        let result = await cancellableDetached {
             var config = Configuration.default
             config.format = format
             return generator.generateScript(
                 for: paths, stateIdentifier: identifier, with: config
             )
-        }.value
+        }
 
         guard !Task.isCancelled else { return }
         stateScript = result
@@ -116,14 +116,14 @@ extension DiagramViewModel {
         let format = diagramFormat
 
         let generator = activityGenerator
-        let result = await Task.detached(priority: .userInitiated) {
+        let result = await cancellableDetached {
             var config = Configuration.default
             config.format = format
             return generator.generateScript(
                 for: paths, entryType: entryType,
                 entryMethod: entryMethod, with: config
             )
-        }.value
+        }
 
         guard !Task.isCancelled else { return }
         activityScript = result
@@ -147,13 +147,13 @@ extension DiagramViewModel {
 
         let format = diagramFormat
         let generator = componentGenerator
-        let result = await Task.detached(priority: .userInitiated) {
+        let result = await cancellableDetached {
             var config = Configuration.default
             config.format = format
             return generator.generateScript(
                 forPackage: description, packageRoot: root, with: config
             )
-        }.value
+        }
 
         guard !Task.isCancelled else { return }
         componentScript = result
@@ -170,11 +170,11 @@ extension DiagramViewModel {
         let format = diagramFormat
 
         let generator = erGenerator
-        let result = await Task.detached(priority: .userInitiated) {
+        let result = await cancellableDetached {
             var config = Configuration.default
             config.format = format
             return generator.generateScript(for: paths, with: config)
-        }.value
+        }
 
         guard !Task.isCancelled else { return }
         erScript = result
@@ -189,14 +189,14 @@ extension DiagramViewModel {
         let depth = sequenceDepth
 
         let generator = sequenceGenerator
-        let result = await Task.detached(priority: .userInitiated) {
+        let result = await cancellableDetached {
             var config = Configuration.default
             config.format = format
             return generator.generateScript(
                 for: paths, entryType: entryType,
                 entryMethod: entryMethod, depth: depth, with: config
             )
-        }.value
+        }
 
         guard !Task.isCancelled else { return }
         sequenceScript = result

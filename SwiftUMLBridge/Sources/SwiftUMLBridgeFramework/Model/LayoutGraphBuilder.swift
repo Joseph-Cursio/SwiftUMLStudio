@@ -23,6 +23,8 @@ enum LayoutGraphBuilder {
         let aliases = TypeAliasResolver(flattened: prepared)
 
         for entry in entries {
+            // A cancelled caller's result is dropped, so it draws no further (#236).
+            guard !ParsingStack.callerIsCancelled else { return LayoutGraph(nodes: [], edges: []) }
             // Draw the types the text formats draw, by the same `isDrawn(in:)` filter, after
             // extensions merge (#74). A hidden type gets no node, but it still decides which type
             // its name means, so an edge to it never moves to a same-named type elsewhere.
