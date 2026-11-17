@@ -41,6 +41,28 @@ struct NearestDirectoryCostTests {
         #expect(text.contains("Base6 <|-- Sub7 : inherits"))
     }
 
+    /// Each writer in a directory of its own, all 400 candidates equally near it, so each scan
+    /// reads every candidate's module directory for an import (#233): half the writers import
+    /// one of them, the last read, and half import nothing any directory names.
+    @Test("many writers among many same-named types equally near, with imports")
+    func manyWritersAmongTiedCandidates() throws {
+        let root = "/Users/someone/Developer/a/rather/long/path/to/the/project/Sources"
+        let files: [Fixture.File] = (0..<400).map { ("\(root)/Dir\($0)/Base.swift", "public class Base {}") }
+            + (0..<400).map { index in
+                let imported = index.isMultiple(of: 2) ? "Dir399" : "Elsewhere"
+                let source = "import Foundation\nimport \(imported)\nclass Sub\(index): Base {}"
+                return ("\(root)/Writer\(index)/Sub.swift", source)
+            }
+        let items = try Fixture.parsed(files)
+        var text = ""
+        let elapsed = cpuSeconds {
+            text = DiagramScript(items: items, configuration: Configuration(format: .plantuml)).text
+        }
+        #expect(elapsed < 2, "\(elapsed)")
+        #expect(text.contains("Base398 <|-- Sub0 : inherits"))
+        #expect(text.contains("Base <|-- Sub1 : inherits"))
+    }
+
     /// 600 directories, each with a chain of typealiases through a type's members, every link in
     /// a sibling of the last's directory, so no two links of a chain share an answer.
     @Test("many alias chains across sibling directories")

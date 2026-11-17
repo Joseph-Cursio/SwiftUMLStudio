@@ -27,7 +27,8 @@ final class ImportExtractor: SyntaxVisitor {
     /// declaration: `ModA.Foo` for `import struct ModA.Foo`. A file that imports anything with
     /// `@_spi(...)` also gets `spiImport`, an entry no module or declaration name can spell, so
     /// whatever is kept per file's imports keeps it as well, while a module looked up among them
-    /// is not found in it (`ModuleLoads` leaves it out).
+    /// is not found in it (`ModuleLoads` leaves it out). A module imported with `@testable` also
+    /// gets an entry of `testablePrefix` and its name.
     static func importedModules(in sourceFile: SourceFileSyntax) -> Set<String> {
         importedModules(in: sourceFile, exportedOnly: false)
     }
@@ -35,6 +36,11 @@ final class ImportExtractor: SyntaxVisitor {
     /// The entry `importedModules(in:)` records for a file that imports with `@_spi(...)`. Which
     /// module's SPI it opens is not kept: without a package, a member's module is not known.
     static let spiImport = "@_spi"
+
+    /// The entry `importedModules(in:)` records, before the module's name, for each module a file
+    /// imports with `@testable`, which shows it the module's `internal` declarations too. No
+    /// module's name holds it.
+    static let testablePrefix = "@testable "
 
     /// The modules `sourceFile` re-exports with `@_exported import`, read as
     /// `importedModules(in:)` reads them. Swift lets every file of the module, and every file
@@ -57,6 +63,7 @@ final class ImportExtractor: SyntaxVisitor {
                         modules.insert(module)
                     }
                     if !exportedOnly, importDecl.attributes.hasSPI { modules.insert(spiImport) }
+                    if !exportedOnly, !scoped, isTestable(importDecl) { modules.insert(testablePrefix + module) }
                 } else if let ifConfig = statement.item.as(IfConfigDeclSyntax.self) {
                     for clause in ifConfig.clauses {
                         if case .statements(let nested)? = clause.elements { collect(nested) }
@@ -66,6 +73,12 @@ final class ImportExtractor: SyntaxVisitor {
         }
         collect(sourceFile.statements)
         return modules
+    }
+
+    private static func isTestable(_ importDecl: ImportDeclSyntax) -> Bool {
+        importDecl.attributes.contains { element in
+            element.as(AttributeSyntax.self)?.attributeName.trimmedDescription == "testable"
+        }
     }
 
     private static func isExported(_ importDecl: ImportDeclSyntax) -> Bool {

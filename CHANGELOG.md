@@ -275,6 +275,39 @@ config files, the CLI, and the diagrams it writes do not.
   in a project superclass, as `P.Inner` in a subclass of
   `class Parent { typealias P = First }`. A name that spells out the alias's
   type, as `Mine.Base.Inner`, still ends on no box.
+- **Without `--package`, a tie by directory goes to the target the file
+  imports, not the first read** (#233). Of same-named types equally near a
+  writer, the first read won, so with `Sources/ModA/Base.swift` and
+  `Sources/ModB/Base.swift`, `import ModB` and `final class C: Base {}` in
+  `Sources/ModC` ended on ModA's `Base` whenever ModA was read first. Both
+  orders now end on ModB's: of those equally near, a `public`, `open` or
+  `package` type of a target the file imports whole, or an `internal` one
+  through `@testable import`. The target is read from
+  SwiftPM's layout, the directory right after the last `Sources`, `Source`,
+  `src`, `srcs`, `Tests` or `Plugins`, and the rule applies only when each
+  tied candidate has one past what it shares with the writer, all right
+  after the shared `Sources` or all deeper. Folders of one target, such as
+  `Sources/ModZ/Foundation` beside the writer's `Sources/ModZ/Views`, and
+  folders outside that layout, such as an Xcode project's `Shared/`, still
+  go by read order, as a name there may be the writer's own target's.
+  Imports of Apple's SDKs and the toolchain, such as `Foundation` and
+  `UIKit`, never count, so a folder `Source/UIKit` of another module is not
+  taken for that import. A nearer directory still wins. Sequence and
+  activity diagrams now pass each file's imports to the typealias lookup,
+  so a call through a typealias declared in two targets ends where the
+  class diagram's edge does: with `typealias Svc` in ModA and ModB,
+  `Svc.make()` in a file that imports ModB calls ModB's type. Scanned
+  without `--package`, 6 edges of OpenAPIKit and swift-syntax and 14 more
+  across 15 packages read together now end where Swift means, such as
+  SwiftLint's `extension Trivia` on SwiftSyntax's `Trivia`, not a code
+  generator's; no other edge changes. Still the first read: when both
+  targets are imported, when a scoped import such as `import class
+  ModB.Base` names one of them, when the imported target's type is
+  internal and not imported with `@testable`, and for a target whose directory is not named for it, such as
+  `Net` in `Sources/Networking`. Still wrong: an Xcode project that keeps
+  one target's folders right under `Sources/`, as `Sources/Models` beside
+  the writer's `Sources/Views`, has them read as targets, so a type of a
+  module the file imports can win over the writer's own.
 - **With nested types hidden, an extension of a nested type is judged by the
   nearest one, not the first read** (#232). With `showNestedTypes: false`,
   whether `extension Box.Inner.Stamp` extends a project type took the first
