@@ -12,8 +12,12 @@ struct SPMPackageReaderDescribeTests {
         try FileManager.default.createDirectory(at: tempRoot, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: tempRoot) }
 
-        #expect(throws: SPMPackageReader.ReadError.self) {
+        let error = try #require(throws: SPMPackageReader.ReadError.self) {
             _ = try SPMPackageReader.describe(at: tempRoot)
         }
+
+        // Read in words, quoting SwiftPM (#282).
+        #expect(error.localizedDescription.hasPrefix("`swift package` exited with status "), "\(error)")
+        #expect(error.localizedDescription.contains("Package.swift"), "\(error)")
     }
 }

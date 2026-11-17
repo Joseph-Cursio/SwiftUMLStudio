@@ -129,4 +129,55 @@ struct PackageRootPathTests {
         #expect(run.status != 0)
         #expect(run.output.contains("--package ../NoSuchPkg: no such directory"), "\(run.output)")
     }
+
+    /// The run stops with a non-zero status and says what is missing, in words, rather than
+    /// dumping `SPMPackageReader.ReadError.swiftToolFailed` (#282).
+    @Test("a directory with no Package.swift says so", arguments: subcommands)
+    func noManifest(subcommand: [String]) throws {
+        let layout = try Layout.make()
+        defer { try? FileManager.default.removeItem(at: layout.root) }
+
+        let run = try runCLI(subcommand + ["--package", "../run", "--output", "consoleOnly"], in: layout.run)
+
+        #expect(run.status != 0)
+        #expect(
+            run.output.contains("Error: --package ../run: no Package.swift found in that directory"), "\(run.output)"
+        )
+        #expect(!run.output.contains("swiftToolFailed"), "\(run.output)")
+    }
+
+    /// SwiftPM searches upward, so `swift package describe` in `Pkg/Sources` succeeded on `Pkg`,
+    /// and the diagrams read its target paths against `Pkg/Sources`, finding no files.
+    @Test("a subdirectory of a package is not the package", arguments: subcommands)
+    func subdirectoryOfPackage(subcommand: [String]) throws {
+        let layout = try Layout.make()
+        defer { try? FileManager.default.removeItem(at: layout.root) }
+
+        let run = try runCLI(subcommand + ["--package", "../Pkg/Sources", "--output", "consoleOnly"], in: layout.run)
+
+        #expect(run.status != 0)
+        #expect(
+            run.output.contains("Error: --package ../Pkg/Sources: no Package.swift found in that directory"),
+            "\(run.output)"
+        )
+    }
+
+    /// A manifest that is there but fails is reported by what `swift package` said, not as missing.
+    @Test("a broken Package.swift quotes swift package")
+    func brokenManifest() throws {
+        let layout = try Layout.make()
+        defer { try? FileManager.default.removeItem(at: layout.root) }
+        try "this is not swift".write(
+            to: layout.package.appendingPathComponent("Package.swift"), atomically: true, encoding: .utf8
+        )
+
+        let run = try runCLI(["component", "--package", "../Pkg", "--output", "consoleOnly"], in: layout.run)
+
+        #expect(run.status != 0)
+        #expect(
+            run.output.contains("Error: --package ../Pkg: `swift package` exited with status 1: error: "),
+            "\(run.output)"
+        )
+        #expect(!run.output.contains("swiftToolFailed"), "\(run.output)")
+    }
 }

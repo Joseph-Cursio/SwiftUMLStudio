@@ -201,7 +201,7 @@ public enum SPMPackageReader {
             manifest = try runSwiftPackage(["dump-package"], at: packageRoot, scratch: scratch)
         } catch {
             BridgeLogger.shared.warning(
-                "swift package dump-package failed (\(error)), "
+                "swift package dump-package failed (\(error.localizedDescription)), "
                     + "so no target is read as enabling \(memberImportVisibility)"
             )
             manifest = nil
