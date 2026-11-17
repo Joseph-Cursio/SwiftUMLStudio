@@ -88,6 +88,22 @@ config files, the CLI, and the diagrams it writes do not.
   sees, so a new `sourceKitTime` case keeps a wall-clock bound, 10 s, on
   the shape that doubles in SourceKit alone, 26 deep: 27 s uncut, under
   0.1 s cut. It is the only limit left on `WallClockLimit`, so off CI only.
+- **A test now shows that writers with a module read the shared memo**
+  (#238). The memo is the `SharedLookup` that `TypeLookup.typeWithSureKind`
+  keeps for the text formats. Only `memoShapeWithModule` covered these
+  writers, and it checks the memo's shape, which is the same whether
+  anything reads it or not. So turning off any of the three reads for them
+  (finding the memo, its kept answer, or whether every candidate comes to
+  a protocol) passed the whole suite. These reads change no diagram, only
+  the time spent.
+  `answerIsReadWithModule` and `everyIsReadWithModule` in
+  `NearestDirectoryMemoTests` plant a wrong value and see it come back, as
+  the tests for writers without a module already did. Each of the three
+  changes now fails at least one of them. Two older gaps, which applied to
+  every writer, are closed as well. The new `notEveryIsRead` reads back a
+  planted `.notEvery`, where only `.every` had been planted. The answer
+  tests now plant an unsure answer, so returning a kept answer as sure
+  fails them.
 
 ### Fixed — Bridge
 

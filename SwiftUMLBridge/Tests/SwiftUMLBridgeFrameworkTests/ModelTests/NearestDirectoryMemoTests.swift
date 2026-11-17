@@ -51,15 +51,73 @@ struct NearestDirectoryMemoTests {
     // A wrong value planted in the memo shows it is read: losing either read changes no answer,
     // and neither shows in a timing bound.
 
+    /// The writer's own answer is the class, sure, so the planted unsure answer shows both halves
+    /// are read.
     @Test("a directory's kept answer is the one a writer there gets")
     func answerIsRead() throws {
         let lookup = LayoutGraphBuilder.TypeLookup(of: try Fixture.parsed(Self.candidates))
         let kinds = LayoutGraphBuilder.AliasKinds()
-        let scope = DeclarationScope(filePath: "PkgB/Sources/B/SubB.swift", module: nil)
-        #expect(lookUpBase(from: scope, in: lookup, kinds: kinds).type != nil)
+        let scope = DeclarationScope(filePath: "PkgA/Sources/A/SubA.swift", module: nil)
+        let own = lookUpBase(from: scope, in: lookup, kinds: kinds)
+        #expect(own.type?.kind == .class && own.kindIsSure)
+        #expect(kinds.shared.count == 1)
         let shared = try #require(kinds.shared.values.first)
-        shared.answerInDirectory[scope.rankingDirectory] = (nil, true)
-        #expect(lookUpBase(from: scope, in: lookup, kinds: kinds).type == nil)
+        shared.answerInDirectory[scope.rankingDirectory] = (nil, false)
+        let kept = lookUpBase(from: scope, in: lookup, kinds: kinds)
+        #expect(kept.type == nil && !kept.kindIsSure)
+    }
+
+    /// `memoShapeWithModule` holds whether or not the answer kept under `nil` is ever read (#238).
+    /// With no candidate in its module, a writer takes the first listed, the class, sure.
+    @Test("a writer with a module gets the answer kept for its module, from any directory")
+    func answerIsReadWithModule() throws {
+        let lookup = LayoutGraphBuilder.TypeLookup(of: try Fixture.parsed(Self.candidates))
+        let kinds = LayoutGraphBuilder.AliasKinds()
+        let first = DeclarationScope(filePath: "PkgA/Sources/A/W.swift", module: "App")
+        let own = lookUpBase(from: first, in: lookup, kinds: kinds)
+        #expect(own.type?.kind == .class && own.kindIsSure)
+        #expect(kinds.shared.count == 1)
+        let shared = try #require(kinds.shared.values.first)
+        shared.answerInDirectory[nil] = (nil, false)
+        let second = DeclarationScope(filePath: "PkgB/Sources/B/W.swift", module: "App")
+        let kept = lookUpBase(from: second, in: lookup, kinds: kinds)
+        #expect(kept.type == nil && !kept.kindIsSure)
+    }
+
+    /// The candidates are listed in reverse so the writer lands on the protocol, the one way to
+    /// reach the verdict.
+    @Test("a writer with a module reads whether every candidate comes to a protocol")
+    func everyIsReadWithModule() throws {
+        let lookup = LayoutGraphBuilder.TypeLookup(of: try Fixture.parsed(Self.candidates.reversed()))
+        let kinds = LayoutGraphBuilder.AliasKinds()
+        let scope = DeclarationScope(filePath: "PkgB/Sources/B/W.swift", module: "App")
+        #expect(lookUpBase(from: scope, in: lookup, kinds: kinds).kindIsSure == false)
+        #expect(kinds.shared.count == 1)
+        let shared = try #require(kinds.shared.values.first)
+        shared.everyComesToProtocol = .every
+        shared.answerInDirectory.removeAll()
+        #expect(lookUpBase(from: scope, in: lookup, kinds: kinds).kindIsSure == true)
+    }
+
+    /// The other verdict: where every candidate is a protocol, a planted `.notEvery` makes the
+    /// writer unsure, so it is read back and not worked out again.
+    @Test("a verdict that not every candidate comes to a protocol is read back too",
+          arguments: [nil, "App"])
+    func notEveryIsRead(module: String?) throws {
+        let protocols: [Fixture.File] = [
+            ("PkgA/Sources/A/Base.swift", "protocol Base {}"),
+            ("PkgB/Sources/B/Base.swift", "protocol Base {}"),
+        ]
+        let lookup = LayoutGraphBuilder.TypeLookup(of: try Fixture.parsed(protocols))
+        let kinds = LayoutGraphBuilder.AliasKinds()
+        let scope = DeclarationScope(filePath: "PkgB/Sources/B/W.swift", module: module)
+        #expect(lookUpBase(from: scope, in: lookup, kinds: kinds).kindIsSure == true)
+        #expect(kinds.shared.count == 1)
+        let shared = try #require(kinds.shared.values.first)
+        #expect(shared.everyComesToProtocol == .every)
+        shared.everyComesToProtocol = .notEvery
+        shared.answerInDirectory.removeAll()
+        #expect(lookUpBase(from: scope, in: lookup, kinds: kinds).kindIsSure == false)
     }
 
     @Test("whether every candidate comes to a protocol is worked out once")
