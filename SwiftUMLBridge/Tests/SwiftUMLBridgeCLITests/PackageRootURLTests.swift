@@ -52,4 +52,17 @@ struct PackageRootURLTests {
 
         #expect(throws: CLIError.self) { try file.path.packageRootURL() }
     }
+
+    // MARK: - Unreadable package (#282)
+
+    @Test("a directory with no Package.swift says so, by the path as typed")
+    func noManifest() throws {
+        let root = try Self.makeRoot()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let typed = root.path + "/Pkg"
+
+        let error = try #require(throws: CLIError.self) { try typed.loadedPackage() }
+
+        #expect(error.description == "--package \(typed): no Package.swift found in that directory")
+    }
 }

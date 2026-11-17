@@ -8,6 +8,9 @@ enum CLIError: Error, CustomStringConvertible {
     case componentModelNotFound
     case noSwiftFiles
     case packageDirectoryNotFound(path: String)
+    /// The directory `--package path` names holds no `Package.swift`, or `swift package describe`
+    /// could not read it.
+    case packageNotRead(path: String, reason: String)
     case invalidConfiguration(path: String, reason: String)
 
     var description: String {
@@ -32,6 +35,9 @@ enum CLIError: Error, CustomStringConvertible {
 
         case .packageDirectoryNotFound(let path):
             return "--package \(path): no such directory"
+
+        case let .packageNotRead(path, reason):
+            return "--package \(path): \(reason)"
 
         case let .invalidConfiguration(path, reason):
             return "--config \(path): \(reason)"

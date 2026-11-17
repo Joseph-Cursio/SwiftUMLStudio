@@ -107,6 +107,22 @@ config files, the CLI, and the diagrams it writes do not.
 
 ### Fixed — Bridge
 
+- **`--package` names a directory with no `Package.swift` in words (#282).**
+  `classdiagram`, `deps` and `component` printed
+  `Error: swiftToolFailed(exitStatus: 1, stderr: "error: Could not find
+  Package.swift …")`. They now print `Error: --package <path>: no
+  Package.swift found in that directory`, by the path as typed, and still
+  exit non-zero. This also covers a subdirectory of a package, such as
+  `--package Pkg/Sources`. SwiftPM's upward search used to describe `Pkg`
+  from there and exit 0, but the diagrams read its target paths against
+  `Pkg/Sources`. `classdiagram` and `deps` drew no files and `component`
+  drew the parent's targets. Any other failure of `swift package` gives its
+  exit status and what SwiftPM said. Unreadable output and a timeout also
+  say what happened. `SPMPackageReader.ReadError` is now a
+  `LocalizedError`, so these messages reach `localizedDescription` for any
+  caller, including the warning logged when `swift package dump-package`
+  fails.
+
 - **A config file's camelCase theme is written in PlantUML's kebab-case.**
   The reference said `theme: carbonGray` writes `!theme carbon-gray`, but
   every config value was written as typed, so `!theme carbonGray` named no
