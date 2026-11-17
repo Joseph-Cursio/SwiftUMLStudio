@@ -8,8 +8,8 @@ extension DiagramViewModel {
     /// only those about a selected file or a file in a selected folder, once each (#148).
     ///
     /// The framework keeps its notices for the whole process, and a generation a newer one
-    /// replaced still runs to its end and records what it finds. Filtering by the selection keeps
-    /// a parse of files no longer selected out of the banner.
+    /// replaced records what it found in the files it parsed before the cancel reached it (#236).
+    /// Filtering by the selection keeps a parse of files no longer selected out of the banner.
     func collectSourceReadNotices(_ drained: [String] = SourceReadNotices.drain()) {
         let selected = selectedPaths.map(Self.resolvedPath)
         for notice in drained where !sourceReadNotices.contains(notice) {

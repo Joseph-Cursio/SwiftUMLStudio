@@ -23,12 +23,15 @@ public struct DiagramScript: @unchecked Sendable {
     internal init(items: [SyntaxStructure], configuration: Configuration = .default) {
         format = configuration.format
         context = DiagramContext(configuration: configuration)
+        // A cancelled Studio generation's result is dropped, so it draws nothing: the files it
+        // parsed before the cancel would otherwise be drawn in full (#236).
+        let drawn = ParsingStack.callerIsCancelled ? [] : items
 
         let methodStart = ContinuousClock.now
         // `.svg` is laid out by `LayoutGraphBuilder` from the items themselves, so text definitions
         // built for it would be thrown away, and preparing the items for them was a second
         // preparation that duplicated merged members and nested types (#73).
-        let definitions = format == .svg ? "" : buildDefinitions(from: items)
+        let definitions = format == .svg ? "" : buildDefinitions(from: drawn)
 
         switch format {
         case .plantuml:
@@ -41,15 +44,18 @@ public struct DiagramScript: @unchecked Sendable {
             text = buildNomnomlText(configuration: configuration, definitions: definitions)
 
         case .svg:
-            text = buildSVGText(items: items, configuration: configuration)
+            text = buildSVGText(items: drawn, configuration: configuration)
         }
 
         let elapsed = (ContinuousClock.now - methodStart).seconds
         BridgeLogger.shared.debug("DiagramScript created in \(elapsed) seconds")
     }
 
+    /// Each step checks for a cancelled caller, whose result is dropped, and draws no further
+    /// (#236).
     private func buildDefinitions(from items: [SyntaxStructure]) -> String {
         let adjustedItems = items.preparedForClassDiagram(with: context.configuration)
+        guard !ParsingStack.callerIsCancelled else { return "" }
 
         // Exactly what the loop below will draw; the context adds the names their edges use.
         context.reserveIdentifiers(
@@ -60,6 +66,7 @@ public struct DiagramScript: @unchecked Sendable {
         var mainContent = newLine
 
         for (index, element) in adjustedItems.enumerated() {
+            guard !ParsingStack.callerIsCancelled else { return "" }
             if let elementText = processStructureItem(item: element, index: index) {
                 mainContent.appendAsNewLine(elementText)
             }
@@ -154,6 +161,8 @@ public struct DiagramScript: @unchecked Sendable {
 
     private mutating func buildSVGText(items: [SyntaxStructure], configuration: Configuration) -> String {
         let graph = LayoutGraphBuilder.buildClassDiagram(from: items, configuration: configuration)
+        // Laying out is the dearest step, and a cancelled caller's result is dropped (#236).
+        guard !ParsingStack.callerIsCancelled else { return "" }
         let positioned = DagreLayoutEngine.layout(graph)
         layoutGraph = positioned
         return SVGRenderer.render(positioned)

@@ -30,10 +30,24 @@ enum ParsingStack {
     /// level, so 256 levels fit in `size`.
     static let maximumNestingLevel = 256
 
+    /// Whether the task that asked for this parse was cancelled (#236): read on the task's own
+    /// thread, or, on a parsing thread `run` started, as it was when the task called `run`. A
+    /// parsing thread has no task of its own, so `Task.isCancelled` alone is false there.
+    static var callerIsCancelled: Bool {
+        Task.isCancelled || Thread.current.threadDictionary[cancelledKey] != nil
+    }
+
     /// `source` parsed as a Swift file, as deep as `maximumNestingLevel`, with a chain of `[`
     /// nested past `NestedSquareBrackets.limit` cut short, so the parse ends (#148). `file`, where
     /// the source was read from, names it in the notice that records the cut. Call it inside `run`.
+    /// For a cancelled caller (`callerIsCancelled`) it parses nothing, so every extractor finds
+    /// nothing and a replaced Studio generation ends after reading its files, not parsing them:
+    /// its result is dropped anyway (#236).
     static func parse(_ source: String, file: URL? = nil) -> SourceFileSyntax {
+        guard !callerIsCancelled else {
+            var empty = Parser("")
+            return SourceFileSyntax.parse(from: &empty)
+        }
         var parser = Parser(NestedSquareBrackets.readable(source, file: file), maximumNestingLevel: maximumNestingLevel)
         return SourceFileSyntax.parse(from: &parser)
     }
@@ -52,7 +66,9 @@ enum ParsingStack {
         }
         let result = Mutex<T?>(nil)
         let finished = DispatchSemaphore(value: 0)
+        let isCancelled = Task.isCancelled
         let thread = Thread {
+            if isCancelled { Thread.current.threadDictionary[cancelledKey] = true }
             let value = body()
             result.withLock { $0 = value }
             finished.signal()
@@ -67,4 +83,7 @@ enum ParsingStack {
         }
         return value
     }
+
+    /// The parsing thread's entry that says its caller was cancelled (`callerIsCancelled`).
+    private static let cancelledKey = "SwiftUMLBridge.ParsingStack.callerIsCancelled"
 }

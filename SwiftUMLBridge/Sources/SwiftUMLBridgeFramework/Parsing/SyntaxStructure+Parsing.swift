@@ -166,7 +166,8 @@ internal extension SyntaxStructure {
     /// SourceKit's parser doubles its time with each `[` in a chain as SwiftParser does, so it is
     /// given the source SwiftParser is, with the same bytes, and so the same offsets (#148).
     static func buildTypenameMap(from source: String, sdkPath: String?, file fileURL: URL? = nil) -> [Int: String] {
-        if BridgeConfiguration.skipSourceKitTypenameSupplement {
+        // A cancelled caller's parse reads nothing (`ParsingStack.parse`), so neither does this.
+        if BridgeConfiguration.skipSourceKitTypenameSupplement || ParsingStack.callerIsCancelled {
             return [:]
         }
         let readable = NestedSquareBrackets.readable(source, file: fileURL)

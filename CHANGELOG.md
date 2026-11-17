@@ -523,6 +523,21 @@ config files, the CLI, and the diagrams it writes do not.
   the pane, not in an alert, since generating follows each pause in typing.
   The dashboard's suggestion cards, fed by the same list, no longer offer a
   local function.
+- **A generation that a newer one replaces stops, rather than running to its
+  end** (#236). `generate()` cancelled the run before it, but the work ran in
+  a detached task, which takes on no cancellation, and nothing in the Bridge
+  checked for one. So each quick change of files, format or entry cost a full
+  generation, and on a very large project the newest run could wait for a
+  thread. The cancel now reaches the work, every diagram's and the project
+  analysis's: a cancelled caller's parses read nothing and its class diagram
+  stops between drawing steps, so a replaced run ends soon after the cancel,
+  and its result is dropped as before. Twelve class-diagram runs 350 ms
+  apart on 240,000 lines took 7.9 s of CPU in place of 43.0 s, and four
+  500 ms apart on 120,000 lines 2.7 s in place of 4.8 s, in a release build
+  of the shape of Studio's code. Still run to their end once started: the
+  parse of a single file; the drawing of a sequence, activity, state, ER,
+  dependency or component diagram, which take a fraction of a class
+  diagram's time; and an SVG class diagram's layout and rendering.
 
 ### Documentation
 
