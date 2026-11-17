@@ -23,6 +23,8 @@ struct DeclarationScope {
     /// `SyntaxStructure.isSugared`. Its type decides which type those names are members of: for
     /// `extension [Int]`, Swift's `Array`, not a project `Array` (`TypeLookup.enclosingRoot(of:depth:)`).
     let enclosingExtension: (name: String, isSugared: Bool)?
+    /// The declaration's own access level, as the parser reports it; nil when not known.
+    let accessibility: ElementAccessibility?
 
     /// The scope of `item`, a member of `container` when `item.parent` is not set: a typealias
     /// is never flattened out of its type's members.
@@ -31,6 +33,7 @@ struct DeclarationScope {
         module = item.module ?? container?.module
         imports = item.imports ?? container?.imports
         reexports = item.reexportedModules ?? container?.reexportedModules
+        accessibility = item.accessibility
         let enclosing = item.kind == .extension ? [] : Self.enclosingTypes(from: container ?? item.parent)
         enclosingTypes = enclosing.compactMap { $0.fullName ?? $0.name }
         enclosingExtension = enclosing.last.flatMap { outermost in
@@ -45,6 +48,7 @@ struct DeclarationScope {
         reexports = nil
         enclosingTypes = []
         enclosingExtension = nil
+        accessibility = nil
     }
 
     /// This scope's file, module and imports alone: where an extension's own clause is read,
@@ -97,15 +101,18 @@ struct DeclarationScope {
     }
 
     /// The first of `candidates` whose file shares the most leading directories with this scope's,
-    /// or `nil` when none shares any. Separate targets and packages are separate directory trees,
-    /// so this stands in for the module the sources were read without. A shorter run never wins
-    /// and a tie goes to the first, so a directory every candidate is under, the scan's root or
-    /// `/`, decides nothing, with no need to know where the scan began. Directories are compared
-    /// whole and as spelled, so `Sources/Foo` shares only `Sources` with `Sources/FooBar`, a relative
-    /// path shares nothing with an absolute one, and two spellings of one directory, as through a
-    /// symlink, share only what they spell alike. It reads paths alone and calls nothing on the
-    /// lookup, so it adds no recursion. A name can have thousands of candidates, so it compares
-    /// bytes: `hasPrefix` or splitting the paths took seconds.
+    /// or `nil` when none shares any and none is in a target named for an import. Separate
+    /// targets and packages are separate directory trees, so this stands in for the module the
+    /// sources were read without. A shorter run never wins, and of those tied, outside the
+    /// writer's own directory, the first whose SwiftPM target's directory is named for a module
+    /// the writer's file imports wins (`importedAmong(_:sharing:scope:)`, #233), and otherwise the
+    /// first. So a directory every candidate is under, the scan's root or `/`, decides nothing,
+    /// with no need to know where the scan began. Directories are compared whole and as spelled,
+    /// so `Sources/Foo` shares only `Sources` with `Sources/FooBar`, a relative path shares nothing
+    /// with an absolute one, and two spellings of one directory, as through a symlink, share only
+    /// what they spell alike. It reads paths alone and calls nothing on the lookup, so it adds no
+    /// recursion. A name can have thousands of candidates, so it compares bytes: `hasPrefix` or
+    /// splitting the paths took seconds.
     private func nearestByDirectory<Candidate>(
         among candidates: [Candidate], scope: (Candidate) -> Self
     ) -> Candidate? {
@@ -116,19 +123,27 @@ struct DeclarationScope {
             let start = writerBytes.firstIndex { $0 != Self.slash } ?? writerBytes.endIndex
             let lengths = writerBytes[start...].indices.filter { writerBytes[$0] == Self.slash }.map { $0 + 1 }
             var shared = 0
-            var near: Candidate?
-            for candidate in candidates {
+            var nearIndex: Int?
+            for index in candidates.indices {
                 guard shared < lengths.count else { break }
-                guard var path = scope(candidate).filePath else { continue }
+                guard var path = scope(candidates[index]).filePath else { continue }
                 path.withUTF8 { bytes in
                     while shared < lengths.count, bytes.count >= lengths[shared],
                           memcmp(writerBytes.baseAddress, bytes.baseAddress, lengths[shared]) == 0 {
                         shared += 1
-                        near = candidate
+                        nearIndex = index
                     }
                 }
             }
-            return near
+            let near = nearIndex.map { candidates[$0] }
+            // Sharing every directory, the candidates are in the writer's own, which no import
+            // decides: past it no tied candidate has a target, so the scan is skipped. Otherwise
+            // those tied with `near` are it and the later ones that share as many: an earlier one
+            // shares fewer, and any that shared more would have won.
+            guard shared < lengths.count, imports?.isEmpty == false else { return near }
+            let prefix = UnsafeBufferPointer(rebasing: writerBytes[..<(shared == 0 ? 0 : lengths[shared - 1])])
+            return importedAmong(candidates[(nearIndex ?? candidates.startIndex)...], sharing: prefix, scope: scope)
+                ?? near
         }
     }
 

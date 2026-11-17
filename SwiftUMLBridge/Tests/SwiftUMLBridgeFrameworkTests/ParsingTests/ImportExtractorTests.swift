@@ -85,4 +85,13 @@ struct ImportExtractorTests {
         let modules = ParsingStack.run { ImportExtractor.importedModules(in: ParsingStack.parse(source)) }
         #expect(modules == ["ModA", "ModB.Foo", "ModC.run", "ModD"])
     }
+
+    /// A `@testable` import also shows the module's `internal` declarations, so it is marked
+    /// with an entry of its own, which no module's name spells (#233).
+    @Test("a testable import is marked beside its module")
+    func testableImportIsMarked() {
+        let source = "@testable import ModA\nimport ModB\n@testable import struct ModC.Foo"
+        let modules = ParsingStack.run { ImportExtractor.importedModules(in: ParsingStack.parse(source)) }
+        #expect(modules == ["ModA", "\(ImportExtractor.testablePrefix)ModA", "ModB", "ModC.Foo"])
+    }
 }

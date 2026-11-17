@@ -24,7 +24,10 @@ struct ModuleLoads {
             let name = ModuleQualifiers.c99Name(of: module)
             targetsForName[name, default: []].insert(module)
             imported[name, default: []].formUnion(
-                imports.filter { $0 != ImportExtractor.spiImport && !$0.hasPrefix(ModuleReexports.directImportPrefix) }
+                imports.filter {
+                    $0 != ImportExtractor.spiImport && !$0.hasPrefix(ModuleReexports.directImportPrefix)
+                        && !$0.hasPrefix(ImportExtractor.testablePrefix)
+                }
                     .map { ModuleQualifiers.c99Name(of: String($0.prefix { $0 != "." })) }
             )
         }
@@ -95,6 +98,7 @@ struct ModuleLoads {
         let name = ModuleQualifiers.c99Name(of: module)
         return imports.contains { entry in
             !entry.hasPrefix(ModuleReexports.directImportPrefix) && entry != ImportExtractor.spiImport
+                && !entry.hasPrefix(ImportExtractor.testablePrefix)
                 && ModuleQualifiers.c99Name(of: String(entry.prefix { $0 != "." })) == name
         }
     }

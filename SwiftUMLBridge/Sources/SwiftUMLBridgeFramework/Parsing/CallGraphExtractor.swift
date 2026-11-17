@@ -205,7 +205,8 @@ final class CallGraphExtractor: TypeStackVisitor {
             let sourceFile = ParsingStack.parse(source, file: file)
             let extractor = CallGraphExtractor(viewMode: .sourceAccurate)
             extractor.file = file
-            extractor.resolveTypeName = { aliases.resolve($0, in: file) }
+            let imports = ImportExtractor.importedModules(in: sourceFile)
+            extractor.resolveTypeName = { aliases.resolve($0, in: file, imports: imports) }
             extractor.walk(sourceFile)
             return ExtractionResult(
                 edges: extractor.edges, methods: Array(extractor.methods).sorted(), bodies: extractor.bodies
