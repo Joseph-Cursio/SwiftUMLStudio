@@ -27,22 +27,21 @@ extension DiagramViewModel {
         let pickerFormat = DiagramFormat(rawValue: formatString)
         diagramFormat = pickerFormat ?? Self.buildDefaultFormat
 
-        if diagramMode == .sequenceDiagram {
+        if diagramMode == .sequenceDiagram || diagramMode == .activityDiagram {
             entryPoint = entity.entryPoint ?? ""
-            refreshEntryPoints()
         } else if diagramMode == .dependencyGraph {
             depsMode = DepsMode(rawValue: entity.entryPoint ?? "") ?? .types
         } else if diagramMode == .stateMachine {
             stateIdentifier = entity.entryPoint ?? ""
-            refreshStateMachines()
-        } else if diagramMode == .activityDiagram {
-            entryPoint = entity.entryPoint ?? ""
-            refreshEntryPoints()
         }
 
         sequenceDepth = entity.sequenceDepth
 
         restoreSelection(from: entity)
+        // After the selection is restored, so the scan reads the entry's files. It ran before,
+        // on the selection being replaced, when it was synchronous and its result was overwritten
+        // at once; a background scan of the old selection would only be dropped (#281).
+        refreshModeDerivedData()
 
         if let text = entity.scriptText {
             // The picker restores to what the user chose, but the script keeps the format its text
@@ -321,30 +320,5 @@ extension DiagramViewModel {
         packageRoot = nil
         packageDescription = nil
         packageLoadError = nil
-    }
-
-    // MARK: - Entry Points & State Machines
-
-    func refreshEntryPoints() {
-        guard !selectedPaths.isEmpty else {
-            availableEntryPoints = []
-            return
-        }
-        availableEntryPoints = sequenceGenerator.findEntryPoints(for: selectedPaths)
-    }
-
-    func refreshStateMachines() {
-        guard !selectedPaths.isEmpty else {
-            availableStateMachines = []
-            return
-        }
-        availableStateMachines = stateGenerator.findCandidates(for: selectedPaths)
-        let identifiers = availableStateMachines.map(\.identifier)
-        if !identifiers.contains(stateIdentifier) {
-            // A diagram saved before names were read as Swift reads them may spell one with
-            // backticks it doesn't need, as in `` `Lamp`.Light ``, which is now listed `Lamp.Light`.
-            let listed = StateMachineGenerator.listedIdentifier(stateIdentifier)
-            stateIdentifier = identifiers.contains(listed) ? listed : identifiers.first ?? ""
-        }
     }
 }

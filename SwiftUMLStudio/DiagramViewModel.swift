@@ -100,6 +100,11 @@ final class DiagramViewModel {
     /// The running `analyzeProject()` pass. A newer pass cancels it so its results,
     /// which may arrive after the newer pass's, are dropped rather than shown.
     var analysisTask: Task<Void, Never>?
+    /// The running scan for `availableEntryPoints` (`refreshEntryPoints()`). A newer scan cancels it.
+    var entryPointsTask: Task<Void, Never>?
+    /// The running scan for `availableStateMachines` (`refreshStateMachines()`). A newer scan
+    /// cancels it.
+    var stateMachinesTask: Task<Void, Never>?
     let modelContext: ModelContext
     let classGenerator: any ClassDiagramGenerating
     let sequenceGenerator: any SequenceDiagramGenerating

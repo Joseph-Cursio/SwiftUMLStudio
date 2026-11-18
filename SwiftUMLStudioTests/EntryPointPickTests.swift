@@ -52,9 +52,10 @@ struct EntryPointPickTests {
     }
 
     @Test("the list offers the nested type's method by its whole name, and no local function")
-    func listOffersOnlyMembers() throws {
+    func listOffersOnlyMembers() async throws {
         let viewModel = try viewModel(mode: .sequenceDiagram)
         viewModel.refreshEntryPoints()
+        await viewModel.entryPointsTask?.value
         #expect(viewModel.availableEntryPoints.contains("NS.Real.run"))
         #expect(viewModel.availableEntryPoints.contains("Host.work"))
         #expect(!viewModel.availableEntryPoints.contains("Host.setup"))

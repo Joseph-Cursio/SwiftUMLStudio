@@ -92,6 +92,34 @@ struct CancelledCallerTests {
         #expect(!cancelled.contains(name), "\(cancelled)")
     }
 
+    /// Studio runs these scans in a task that a newer scan cancels (#281). Each file is parsed in
+    /// its own `ParsingStack.run`, which reads the cancel afresh; this checks a cancel that lands
+    /// before the scan starts, as every test here does.
+    @Test("the entry-point and state-machine scans find nothing")
+    func scansFindNothing() async throws {
+        let path = try Self.directory()
+        defer { try? FileManager.default.removeItem(atPath: path) }
+        try """
+            enum Light { case red, green }
+            final class Lamp {
+                var light: Light = .red
+                func toggle() { switch light { case .red: light = .green; case .green: light = .red } }
+            }
+            """.write(toFile: path + "/Lamp.swift", atomically: true, encoding: .utf8)
+
+        let (entryPoints, allEntryPoints) = await Self.cancelledAndNot {
+            SequenceDiagramGenerator().findEntryPoints(for: [path])
+        }
+        let (machines, allMachines) = await Self.cancelledAndNot {
+            StateMachineGenerator().findCandidates(for: [path]).map(\.identifier)
+        }
+
+        #expect(allEntryPoints.contains("Shop.buy"), "\(allEntryPoints)")
+        #expect(entryPoints.isEmpty, "\(entryPoints)")
+        #expect(allMachines == ["Lamp.Light"])
+        #expect(machines.isEmpty, "\(machines)")
+    }
+
     /// Items parsed before the cancel are not drawn: in the text formats, and in SVG's layout.
     @Test("items parsed before the cancel are not drawn", arguments: [DiagramFormat.plantuml, .mermaid, .svg])
     func drawingStops(format: DiagramFormat) async throws {

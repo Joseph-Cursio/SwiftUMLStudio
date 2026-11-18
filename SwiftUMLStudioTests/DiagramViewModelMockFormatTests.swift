@@ -76,7 +76,7 @@ struct DiagramViewModelMockFormatTests {
 
     @Test("refreshEntryPoints calls mock sequence generator findEntryPoints")
     @MainActor
-    func refreshEntryPointsUsesMock() {
+    func refreshEntryPointsUsesMock() async {
         let mockSequence = MockSequenceGenerator()
         mockSequence.cannedEntryPoints = ["Controller.viewDidLoad", "Service.fetch"]
         let viewModel = DiagramViewModel(
@@ -86,6 +86,7 @@ struct DiagramViewModelMockFormatTests {
         viewModel.selectedPaths = ["/tmp/Foo.swift"]
 
         viewModel.refreshEntryPoints()
+        await viewModel.entryPointsTask?.value
 
         #expect(mockSequence.findEntryPointsCallCount == 1)
         #expect(viewModel.availableEntryPoints == ["Controller.viewDidLoad", "Service.fetch"])
