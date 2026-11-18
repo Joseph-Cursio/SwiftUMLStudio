@@ -6,8 +6,9 @@
 /// its file imports, then looks the rest up among the members of the type it means: those its body
 /// declares and those extensions add.
 extension LayoutGraphBuilder {
-    /// The type a dotted name as written starts at, in a file of a known module whose imports are
-    /// known (`TypeLookup.started(_:from:depth:)`).
+    /// The type a dotted name as written starts at (`TypeLookup.started(_:from:depth:)`): in a file
+    /// of a known module whose imports are known, and in one of no known module only when the first
+    /// component is another name for a project type (`TypeLookup.startedWithoutModule`).
     enum NameStart: Hashable {
         /// A type the project declares, which belongs to the outermost type `owner`, `nil` when
         /// that is unknown, as for a type in an extension of a type outside the diagram.
@@ -37,7 +38,8 @@ extension LayoutGraphBuilder {
 // written out in full.
 extension LayoutGraphBuilder.TypeLookup {
     /// `name` with the type its first component means worked out (`QualifiedName.start`), when
-    /// it is a dotted name as written in a file whose module and imports are known, and its first
+    /// it is a dotted name as written in a file whose module and imports are known, or in one of no
+    /// known module, another name for a project type (`startedWithoutModule`), and its first
     /// component is read as a type: no module of the diagram has its name, the file cannot write
     /// that module (`canName`), or a type the file sees shadows it (`shadows`), as in
     /// `seenWhenQualifierIsModule`. Then a candidate is what the name means only as a member of
@@ -45,13 +47,15 @@ extension LayoutGraphBuilder.TypeLookup {
     func started(
         _ name: LayoutGraphBuilder.QualifiedName, from scope: LayoutGraphBuilder.Scope, depth: Int
     ) -> LayoutGraphBuilder.QualifiedName {
-        guard name.root == .asWritten, name.start == nil, scope.module != nil, scope.imports != nil,
-              let dot = name.name.firstIndex(of: ".") else { return name }
+        guard name.root == .asWritten, name.start == nil, let dot = name.name.firstIndex(of: ".") else { return name }
         let first = String(name.name[..<dot])
         let named = modules.modules(namedBy: first)
         guard named.isEmpty || !canName(first, modules: named, from: scope)
             || shadows(first, from: scope, depth: depth) else {
             return name
+        }
+        guard scope.module != nil, scope.imports != nil else {
+            return startedWithoutModule(name, first: first, from: scope, depth: depth)
         }
         var started = name
         started.start = start(of: first, in: name.name, from: scope, depth: depth)
@@ -95,7 +99,7 @@ extension LayoutGraphBuilder.TypeLookup {
     /// (`resolvedName(of:from:readingModules:depth:)`): `Date` for `Array` after
     /// `typealias Array = Date`, and `Array` for `Arr` after `typealias Arr = [Int]`. `nil` when
     /// `first` is that type's own name.
-    private func outsideSpelling(of first: String, from scope: LayoutGraphBuilder.Scope, depth: Int) -> String? {
+    func outsideSpelling(of first: String, from scope: LayoutGraphBuilder.Scope, depth: Int) -> String? {
         let written = qualifiedName(ofWritten: first, from: scope, depth: depth + 1)
         let spelled = resolvedName(of: written, from: scope, depth: depth + 1)
         return spelled == first ? nil : spelled
@@ -333,31 +337,6 @@ extension LayoutGraphBuilder.TypeLookup {
         return typesForName[spelled] == nil ? spelled : nil
     }
 
-    /// The start of the dotted name `name` written in a file of no known module, as sources read
-    /// without their package are, where `started(_:from:depth:)` works out none, when its first
-    /// component, read as a bare name (`firstComponentType(of:from:depth:)`), is a type outside
-    /// the diagram: spelled through the typealias that component is (`outsideSpelling`). So
-    /// `Base.Inner` after `typealias Base = Second` is `Second.Inner`, and two directories' own
-    /// `typealias Base` and `extension Base.Inner` stay apart, as two targets' do. With no
-    /// modules, a leading component of what the alias comes to may be one, so a spelling that
-    /// ends in a name the project records, as `Main.Real` after `typealias O = Main.Real` in the
-    /// module `Main`, may be the project's own `Real` and is no sure outside type. `nil` for any
-    /// other name; only the spelling reads it, never the lookup's candidates.
-    private func outsideStartWithoutModule(
-        of name: LayoutGraphBuilder.QualifiedName, from scope: LayoutGraphBuilder.Scope, depth: Int
-    ) -> LayoutGraphBuilder.NameStart? {
-        guard scope.module == nil, name.root == .asWritten, name.start == nil,
-              let dot = name.name.firstIndex(of: "."),
-              firstComponentType(of: name.name, from: scope, depth: depth) == nil,
-              let spelled = outsideSpelling(of: String(name.name[..<dot]), from: scope, depth: depth)
-        else { return nil }
-        let parts = spelled.split(separator: ".")
-        guard !parts.indices.contains(where: { typesForName[parts[$0...].joined(separator: ".")] != nil }) else {
-            return nil
-        }
-        return .outsideType(spelledAs: spelled)
-    }
-
     /// The name a start's type is recorded or spelled under when the first component is another
     /// name for it, `nil` otherwise.
     private func startSpelling(of start: LayoutGraphBuilder.NameStart?) -> String? {
@@ -380,8 +359,12 @@ extension LayoutGraphBuilder.TypeLookup {
     /// `Date.V`, and not the `Array.V` that `extension [Int]` declares.
     func spellings(of name: LayoutGraphBuilder.QualifiedName) -> [String] {
         if case let .outsideType(spelled?) = name.start { return [spelled + name.name.drop { $0 != "." }] }
-        guard case let .projectType(owner?, renamed) = name.start, let module = owner.module else {
-            return [name.name]
+        guard case let .projectType(owner?, renamed) = name.start else { return [name.name] }
+        guard let module = owner.module else {
+            // A type of no known module, as a start worked out without one is
+            // (`startedWithoutModule`): the rest is also looked for under its recorded name.
+            let respelled = renamed.map { $0 + name.name.drop { $0 != "." } }
+            return [name.name] + (respelled.map { $0 == name.name ? [] : [$0] } ?? [])
         }
         let qualifiers = Set([module, modules.writtenName(of: module)]).sorted()
         var written = [name.name]

@@ -432,9 +432,8 @@ config files, the CLI, and the diagrams it writes do not.
   `Other.Foo`, even in a module named ModA. With `--package`, the diagram
   read `ModA` as the module and ended the edge on its `Foo`, in every
   format. It now follows the enclosing alias, at any depth and from an
-  extension of the enclosing type too. Without a known module, where no
-  enclosing alias is followed under any name, such an edge ends on an
-  undeclared `ModA.Foo` box rather than the module's `Foo`.
+  extension of the enclosing type too. Without a known module, it now
+  follows the alias as well (#283, below).
 - **A typealias of a type outside the diagram starts a dotted name at that
   type** (#247). After `typealias Array = Date`, Swift reads `Array.V` as
   `Date.V`. With `--package`, the diagram searched the name as written, so
@@ -554,6 +553,24 @@ config files, the CLI, and the diagrams it writes do not.
   lacks; a `package` one, which a file of the same package sees and one of
   another package does not; and a member of a `Foo` that shares its name
   with another type.
+- **Without `--package`, a typealias of a project type starts a dotted name
+  at that type** (#283). After `typealias Q = Other`, Swift reads `Q.Foo`
+  as `Other.Foo`. Read without its package, the diagram looked the name up
+  as written and ended the edge on an undeclared `Q.Foo` box, in every
+  format, whether the alias sat at file scope or in a type around the
+  writer. Through an alias of a nested type, `typealias A2 = A1.X`, a member
+  an extension adds to `A1.X` wasn't read either. Each now ends where
+  `--package` ends it. The edge ends on a member of the very `Other` the
+  alias names, even when the writer's own file or a directory that sorts
+  first declares another `Other` with a `Foo` of its own, and another
+  target's `enum Q` with its own `Foo` isn't mixed in. As for `Other.Foo`
+  written out, a `public` member of the type's body comes before another
+  directory's extension member (#253), and a type split across `#if`
+  clauses counts as one. A dotted name whose first component isn't an alias
+  is read as before. On a deliberately alias-dense file, eight levels of
+  typealiases each spelled through eight aliased parts, the class diagram
+  takes about five times the CPU it did; no real codebase we measured
+  changed speed.
 
 ### Fixed — Studio
 
