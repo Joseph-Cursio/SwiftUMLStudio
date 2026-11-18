@@ -125,22 +125,24 @@ struct BackgroundScanTests {
     }
 
     /// The cancel reaches the scan while it runs, so the generators stop parsing at the next file
-    /// (`ParsingStack.parse`) rather than reading the whole replaced selection.
+    /// (`ParsingStack.parse`) rather than reading the whole replaced selection. The running scan
+    /// starts the newer one itself (see `CancelAwaitingSequenceGenerator`).
     @Test("a newer scan cancels the running one's work, not only its result")
     func cancelReachesRunningScan() async throws {
-        let generator = ScanStandIns.GatedSequenceGenerator()
+        let generator = ScanStandIns.CancelAwaitingSequenceGenerator()
         let viewModel = DiagramViewModel(persistenceController: .init(inMemory: true), sequenceGenerator: generator)
+        generator.whenStarted {
+            viewModel.selectedPaths = ["/tmp/B.swift"]
+            viewModel.refreshEntryPoints()
+        }
         viewModel.selectedPaths = ["/tmp/A.swift"]
         viewModel.refreshEntryPoints()
         let older = try #require(viewModel.entryPointsTask)
-        await Task.detached { generator.waitUntilStarted() }.value
-
-        viewModel.selectedPaths = ["/tmp/B.swift"]
-        viewModel.refreshEntryPoints()
-        generator.release.signal()
         await older.value
+        await viewModel.entryPointsTask?.value
 
         #expect(generator.firstCallSawCancel)
+        #expect(viewModel.selectedPaths == ["/tmp/B.swift"])
         #expect(viewModel.availableEntryPoints != ["Gated.run"])
     }
 

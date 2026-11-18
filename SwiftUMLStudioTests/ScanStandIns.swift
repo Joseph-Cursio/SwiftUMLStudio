@@ -11,9 +11,9 @@ import Synchronization
 
 /// Generators that stand in for the real scans in `BackgroundScanTests`, and what they record.
 enum ScanStandIns {
-    /// How long a gated stand-in waits before going on without its signal. A scan that wrongly runs on
-    /// the main actor blocks the test that would signal it; the timeout turns that deadlock into a
-    /// failed expectation instead of a hung run.
+    /// How long a gated stand-in waits before going on without its signal or cancel. A scan that
+    /// wrongly runs on the main actor blocks the code that would send it; the timeout turns that
+    /// deadlock into a failed expectation instead of a hung run.
     static let gateTimeout = DispatchTimeInterval.seconds(10)
 
     /// Which threads a scan ran on, recorded by the stand-in generators below.
@@ -75,19 +75,24 @@ enum ScanStandIns {
         }
     }
 
-    /// An entry-point scan whose first call waits for `release` (or the gate timeout) after saying it
-    /// `started`, then records whether its task was cancelled by then. Later calls return at once.
-    final class GatedSequenceGenerator: SequenceDiagramGenerating {
-        private let started = DispatchSemaphore(value: 0)
-        let release = DispatchSemaphore(value: 0)
+    /// An entry-point scan whose first call runs `onStart` on the main queue, then waits (up to
+    /// `gateTimeout`) for its task to be cancelled and records whether it was. Later calls return at
+    /// once.
+    ///
+    /// The scan sets the newer scan off itself, rather than signalling the test to. The test, woken
+    /// while this scan held a cooperative thread, could need that thread to resume; on CI's few
+    /// cores, and on a one-thread pool (`LIBDISPATCH_COOPERATIVE_POOL_STRICT=1`), it waited out the
+    /// gate. The main queue is not part of the pool.
+    final class CancelAwaitingSequenceGenerator: SequenceDiagramGenerating {
+        private let onStart = Mutex<(@Sendable @MainActor () -> Void)?>(nil)
         private let calls = Mutex(0)
         private let cancelled = Mutex(false)
 
         var firstCallSawCancel: Bool { cancelled.withLock { $0 } }
 
-        /// Blocks until the first call has started. Call it off the main actor.
-        func waitUntilStarted() {
-            _ = started.wait(timeout: .now() + ScanStandIns.gateTimeout)
+        /// Sets what the first call runs on the main queue once it has started.
+        func whenStarted(_ action: @escaping @Sendable @MainActor () -> Void) {
+            onStart.withLock { $0 = action }
         }
 
         func findEntryPoints(for _: [String]) -> [String] {
@@ -96,8 +101,13 @@ enum ScanStandIns {
                 return count
             }
             guard call == 1 else { return [] }
-            started.signal()
-            _ = release.wait(timeout: .now() + ScanStandIns.gateTimeout)
+            if let action = onStart.withLock({ $0 }) {
+                DispatchQueue.main.async { MainActor.assumeIsolated { action() } }
+            }
+            let deadline = DispatchTime.now() + ScanStandIns.gateTimeout
+            while !Task.isCancelled, DispatchTime.now() < deadline {
+                Thread.sleep(forTimeInterval: 0.001)
+            }
             let isCancelled = Task.isCancelled
             cancelled.withLock { $0 = isCancelled }
             return ["Gated.run"]
