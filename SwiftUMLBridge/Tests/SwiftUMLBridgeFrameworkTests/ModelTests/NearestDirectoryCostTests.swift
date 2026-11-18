@@ -10,6 +10,13 @@ struct NearestDirectoryCostTests {
     /// The bound is for a debug build, by this thread's CPU clock, so suites running beside this
     /// one do not count (8e939be). Each writer's scan is one comparison per candidate, not a
     /// split of each path, which took seconds; the memo shares the candidates among directories.
+    /// The bound for the two heaviest tests here, which take 0.6 to 0.75 s alone in a local debug
+    /// build and measured 2.02 to 2.2 s on CI's xcode-27 runner, about three times as long, which
+    /// failed main's CI and #297's against 2 s. Splitting each path per candidate, the regression
+    /// these guard, takes the tied test to 1.86 s locally, about 5.6 s on that runner, so this still
+    /// catches it there. The shared memo has a test of its own (`NearestDirectoryMemoTests`).
+    static let heavyBound = 4.0
+
     private func cpuSeconds(_ work: () throws -> Void) rethrows -> Double {
         let start = clock_gettime_nsec_np(CLOCK_THREAD_CPUTIME_ID)
         try work()
@@ -58,7 +65,7 @@ struct NearestDirectoryCostTests {
         let elapsed = cpuSeconds {
             text = DiagramScript(items: items, configuration: Configuration(format: .plantuml)).text
         }
-        #expect(elapsed < 2, "\(elapsed)")
+        #expect(elapsed < Self.heavyBound, "\(elapsed)")
         #expect(text.contains("Base398 <|-- Sub0 : inherits"))
         #expect(text.contains("Base <|-- Sub1 : inherits"))
     }
@@ -81,7 +88,7 @@ struct NearestDirectoryCostTests {
         let elapsed = cpuSeconds {
             text = DiagramScript(items: items, configuration: Configuration(format: .plantuml)).text
         }
-        #expect(elapsed < 2, "\(elapsed)")
+        #expect(elapsed < Self.heavyBound, "\(elapsed)")
         #expect(text.contains("<|.. Writer : conforms to"))
     }
 }
