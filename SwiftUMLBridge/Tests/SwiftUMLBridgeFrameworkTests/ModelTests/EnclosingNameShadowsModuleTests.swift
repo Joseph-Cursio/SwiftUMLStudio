@@ -70,15 +70,14 @@ struct EnclosingNameShadowsModuleTests {
                 """),
         ], expected: ["P2 <|.. E.W : conforms to", "P1 <|.. W0 : conforms to"]),
         // Writers of no module share a lookup by name, module and imports, which these two hold
-        // alike, so the enclosing alias must keep each to its own answer. With no start worked out,
-        // an enclosing alias is not followed under any name, so `E.W` ends on an undeclared
-        // `ModA.Foo`, as `Q.Foo` does there, and not on the module's `Foo`.
+        // alike, so the enclosing alias must keep each to its own answer. Without a module, the
+        // alias still gives `ModA.Foo` a start at `Other` (#283), so `E.W` means `Other.Foo`.
         Case(name: "writers of no module, with and without the alias", files: [
             File(module: "ModA", source: "public protocol P1 {}\npublic typealias Foo = P1"),
             File(module: nil, source: "import ModA\nprotocol P2 {}\nenum Other { typealias Foo = P2 }"),
             File(module: nil, source: "import ModA\nenum E { typealias ModA = Other; struct W: ModA.Foo {} }"),
             File(module: nil, source: "import ModA\nstruct W0: ModA.Foo {}"),
-        ], expected: ["ModA.Foo <|-- E.W : inherits", "P1 <|.. W0 : conforms to"]),
+        ], expected: ["P2 <|.. E.W : conforms to", "P1 <|.. W0 : conforms to"]),
     ]
 
     /// Each case is read with its files in the order given and reversed, so no answer comes from

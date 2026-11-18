@@ -123,9 +123,9 @@ extension LayoutGraphBuilder.TypeLookup {
 
     /// Whether a type around `scope` can change what the dotted `name` means there in a way its
     /// `SharedLookupKey` does not hold: with no start worked out (`QualifiedName.start`), as in a
-    /// file of no known module, a member of it named like a module keeps the first component from
-    /// being read as that module (`shadows`), so a writer in it takes no other's answer, nor gives
-    /// one (#246).
+    /// file of no known module unless the first component is another name for a type, a member of
+    /// it named like a module keeps the first component from being read as that module
+    /// (`shadows`), so a writer in it takes no other's answer, nor gives one (#246).
     private func enclosingTypeBears(
         on name: LayoutGraphBuilder.QualifiedName, from scope: LayoutGraphBuilder.Scope, depth: Int
     ) -> Bool {

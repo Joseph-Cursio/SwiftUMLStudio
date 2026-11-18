@@ -105,6 +105,9 @@ extension LayoutGraphBuilder.TypeLookup {
     /// file sees (`seenAtFileScope(_:named:from:)`). A dotted name as written takes the members of the
     /// type its first component means there. Where that is worked out (`started(_:from:depth:)`),
     /// they are the members of that very type, an extension's if the writer's module loads it.
+    /// Without a module, where it starts at another name for a type, they are those of a type of
+    /// that type's name (`membersOfRenamedStart`), then of the very type it names
+    /// (`membersOfWrittenStart`), fitted on as below.
     /// Otherwise, as for sources read without their package or a first component read as a
     /// module, they are those of its root, the project's `Array` unless a nearer one shadows it,
     /// but only when the candidates are not all of one root: a name the diagram does not mix up
@@ -128,7 +131,13 @@ extension LayoutGraphBuilder.TypeLookup {
         case .asWritten:
             var narrowed = seenWhenQualifierIsModule(candidates, named: name.name, from: scope, depth: depth)
             guard name.name.contains(".") else { return seenAtFileScope(narrowed, named: name.name, from: scope) }
-            if let start = name.start {
+            if let renamed = membersOfRenamedStart(narrowed, for: name, from: scope, depth: depth) {
+                // Same-named types may each declare the member in their body, so the one the alias
+                // names picks among them, whether or not an extension adds one.
+                narrowed = renamed.amongSameNamedTypes
+                    ? membersOfWrittenStart(renamed.members, named: name.name, from: scope, depth: depth)
+                    : renamed.members
+            } else if let start = name.start {
                 if let members = members(of: start, among: narrowed, from: scope, depth: depth) { return members }
                 narrowed = fallbackCandidates(narrowed, for: name, from: scope, depth: depth)
             } else {
@@ -169,9 +178,10 @@ extension LayoutGraphBuilder.TypeLookup {
         return membersOfEnclosingType(fitted, from: scope, depth: depth)
     }
 
-    /// In a file of no known module, where no start is worked out (`started(_:from:depth:)`), the
-    /// `candidates` of the dotted `name` that belong to the type its first component means from
-    /// `scope` (`members(ownedBy:among:from:depth:)`, #230).
+    /// In a file of no known module, where no start is worked out (`started(_:from:depth:)`) or
+    /// only one through another name for a type (`membersOfRenamedStart`), the `candidates` of the
+    /// dotted `name` that belong to the type its first component means from `scope`
+    /// (`members(ownedBy:among:from:depth:)`, #230).
     private func membersOfWrittenStart(
         _ candidates: [LayoutGraphBuilder.Declared],
         named name: String,

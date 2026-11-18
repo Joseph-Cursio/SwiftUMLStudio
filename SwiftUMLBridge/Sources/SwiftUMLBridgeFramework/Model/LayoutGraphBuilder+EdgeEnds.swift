@@ -345,19 +345,19 @@ extension LayoutGraphBuilder {
             return nearest
         }
 
-        /// Whether `fitting(_:for:from:depth:)` takes or drops each candidate on its own, so the
-        /// candidates of one file fit as they do among the rest, and without reading what the first
-        /// component, or the type around the writer, means to it. A dotted name as written, and in
-        /// a file of no known module a name built on an enclosing type, is fitted by what the whole
-        /// set holds, but only when a type declared in an extension is among them, or a nested type
-        /// the items do not list so declared, which `unlistedMemberShadows` fits beside them.
+        /// Whether `fitting(_:for:from:depth:)` takes or drops each candidate on its own, so a file's
+        /// candidates fit as among the rest, without reading what the first component, or the type
+        /// around the writer, means to it. A dotted name as written, and without a module one built
+        /// on an enclosing type, is fitted by the whole set when a type declared in an extension is
+        /// among them, or an unlisted nested type so declared (`unlistedMemberShadows`), and always
+        /// when it starts at an alias without a module (`startsAtAliasWithoutModule`).
         func fitsEachAlone(_ name: QualifiedName, from scope: Scope) -> Bool {
             switch name.root {
             case .outsideType: return true
             case .projectType: guard scope.module == nil else { return true }
             case .asWritten: guard name.name.contains(".") else { return true }
             }
-            return !spellings(of: name).contains { spelling in
+            return !startsAtAliasWithoutModule(name, from: scope) && !spellings(of: name).contains { spelling in
                 namesWithExtendedTypes.contains(spelling) || unlistedNamesWithExtendedTypes.contains(spelling)
             }
         }

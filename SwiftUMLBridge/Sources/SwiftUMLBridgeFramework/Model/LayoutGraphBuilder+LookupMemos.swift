@@ -25,13 +25,16 @@ extension LayoutGraphBuilder {
 
     /// The type each dotted name's first component means (`TypeLookup.started(_:from:depth:)`)
     /// for a writer at file scope with no declaration of that name in its own file, where the
-    /// answer depends on the writer's module and imports alone, filled the first time one asks: a
-    /// name's start is worked out only with a module, and a directory ranks only without one.
+    /// answer depends on the writer's module and imports alone, filled the first time one asks,
+    /// and for a writer of no module, where a directory ranks, on its imports and directory
+    /// (`DeclarationScope.rankingDirectory`), the start or none (`TypeLookup.startedWithoutModule`).
     /// Without it, every dotted name looked its first component up among all of its same-named
     /// types again. A class behind a lock, as `EnclosingTypes` is, which the lookup starts anew
     /// whenever it records a declaration.
     final class NameStarts: Sendable {
         private let startForKey = Mutex<[NameStartKey: NameStart]>([:])
+        private let startWithoutModuleForKey = Mutex<[NameStartKey: NameStart?]>([:])
+        private let startInScopeForKey = Mutex<[ScopedNameStartKey: NameStart?]>([:])
 
         /// The start for `key`, from `lookUp` the first time, which runs outside the lock.
         func start(for key: NameStartKey, lookUp: () -> NameStart) -> NameStart {
@@ -40,13 +43,46 @@ extension LayoutGraphBuilder {
             startForKey.withLock { $0[key] = start }
             return start
         }
+
+        /// The start, or none, for a writer of no module at `key`, from `lookUp` the first time,
+        /// which runs outside the lock.
+        func startWithoutModule(for key: NameStartKey, lookUp: () -> NameStart?) -> NameStart? {
+            if let known = startWithoutModuleForKey.withLock({ $0[key] }) { return known }
+            let start = lookUp()
+            startWithoutModuleForKey.withLock { $0[key] = .some(start) }
+            return start
+        }
+
+        /// The start, or none, for a writer of no module inside a type or an extension, or whose
+        /// file declares the first component, at `key`: asked for again by each step of one lookup.
+        func startWithoutModule(for key: ScopedNameStartKey, lookUp: () -> NameStart?) -> NameStart? {
+            if let known = startInScopeForKey.withLock({ $0[key] }) { return known }
+            let start = lookUp()
+            startInScopeForKey.withLock { $0[key] = .some(start) }
+            return start
+        }
     }
 
-    /// A first component `NameStarts` keeps the start of, with the writer's module and imports.
+    /// A first component a writer of no module writes, with all of its scope a start there reads
+    /// (`TypeLookup.startedWithoutModule`).
+    struct ScopedNameStartKey: Hashable {
+        let first: String
+        let filePath: String?
+        let imports: Set<String>?
+        let reexports: Set<String>?
+        let enclosingTypes: [String]
+        let enclosingExtension: String?
+        let isSugared: Bool
+        let depth: Int
+    }
+
+    /// A first component `NameStarts` keeps the start of, with the writer's module and imports,
+    /// and without a module, its directory (`DeclarationScope.rankingDirectory`).
     struct NameStartKey: Hashable {
         let first: String
         let module: String?
         let imports: Set<String>?
+        var directory: [UInt8]?
         let depth: Int
     }
 
