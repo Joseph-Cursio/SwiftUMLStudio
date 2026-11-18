@@ -157,6 +157,23 @@ extension LayoutGraphBuilder.TypeLookup {
         }
     }
 
+    /// Whether `fitting(_:for:from:depth:)` takes or drops each candidate on its own, so a file's
+    /// candidates fit as among the rest, without reading what the first component, or the type
+    /// around the writer, means to it. A dotted name as written, and without a module one built
+    /// on an enclosing type, is fitted by the whole set when a type declared in an extension is
+    /// among them, or an unlisted nested type so declared (`unlistedMemberShadows`), and always
+    /// when it starts at an alias without a module (`startsAtAliasWithoutModule`).
+    func fitsEachAlone(_ name: LayoutGraphBuilder.QualifiedName, from scope: LayoutGraphBuilder.Scope) -> Bool {
+        switch name.root {
+        case .outsideType: return true
+        case .projectType: guard scope.module == nil else { return true }
+        case .asWritten: guard name.name.contains(".") else { return true }
+        }
+        return !startsAtAliasWithoutModule(name, from: scope) && !spellings(of: name).contains { spelling in
+            namesWithExtendedTypes.contains(spelling) || unlistedNamesWithExtendedTypes.contains(spelling)
+        }
+    }
+
     /// `fitting(_:for:from:depth:)` for a name built on project types around `scope`. Started at
     /// the outermost of them (`enclosingStart(of:depth:)`), as a dotted name is, it takes only that
     /// type's members the writer sees. With none, the name has no declaration there and is read on

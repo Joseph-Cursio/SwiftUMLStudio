@@ -16,7 +16,9 @@ extension LayoutGraphBuilder.TypeLookup {
     func startedWithoutModule(
         _ name: LayoutGraphBuilder.QualifiedName, first: String, from scope: LayoutGraphBuilder.Scope, depth: Int
     ) -> LayoutGraphBuilder.QualifiedName {
-        guard depth < 8 else { return name }
+        // Only a typealias gives a first component another name, so with none written as `first`
+        // the lookup is skipped, as for `NS.A1` in `struct NS`.
+        guard depth < 8, aliasLastComponents.contains(first) else { return name }
         func lookUp() -> LayoutGraphBuilder.NameStart? {
             guard let type = firstComponentType(of: name.name, from: scope, depth: depth),
                   let recorded = recordedName(of: type.declaration), recorded != first,

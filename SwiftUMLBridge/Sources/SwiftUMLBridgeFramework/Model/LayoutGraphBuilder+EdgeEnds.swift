@@ -76,7 +76,7 @@ extension LayoutGraphBuilder {
         /// The names a type declared in an extension is recorded under, which tell a dotted name as
         /// written apart (`fitsEachAlone(_:from:)`), as an unlisted member so declared does too
         /// (`unlistedNamesWithExtendedTypes`).
-        private var namesWithExtendedTypes: Set<String> = []
+        private(set) var namesWithExtendedTypes: Set<String> = []
         /// What follows a recorded dotted name's first component, `Foo.V` for `ModA.Foo.V` (`mayBeStartedMember`).
         private(set) var namesPastFirstComponent: Set<String> = []
         /// Every extension recorded, with the name it was recorded under, in recording order.
@@ -84,6 +84,8 @@ extension LayoutGraphBuilder {
         /// The names a typealias is recorded under (`namesTypealias(_:)`), so asking costs no scan
         /// of a name's many same-named types.
         private(set) var aliasNames: Set<String> = []
+        /// The last component of each name in `aliasNames`, the name a typealias is written by.
+        private(set) var aliasLastComponents: Set<String> = []
         /// The names that may be a member a superclass declares, so another costs no lookup of one
         /// (`inheritedMember(_:from:depth:readingModules:)`).
         var inheritableNames = InheritableNames()
@@ -133,6 +135,7 @@ extension LayoutGraphBuilder {
             }
             if declared.aliasTarget != nil {
                 aliasNames.insert(name)
+                aliasLastComponents.insert(String(name.split(separator: ".").last ?? Substring(name)))
             }
             if !declared.isExtension {
                 inheritableNames.record(declared, named: name)
@@ -343,23 +346,6 @@ extension LayoutGraphBuilder {
                 return nil
             }
             return nearest
-        }
-
-        /// Whether `fitting(_:for:from:depth:)` takes or drops each candidate on its own, so a file's
-        /// candidates fit as among the rest, without reading what the first component, or the type
-        /// around the writer, means to it. A dotted name as written, and without a module one built
-        /// on an enclosing type, is fitted by the whole set when a type declared in an extension is
-        /// among them, or an unlisted nested type so declared (`unlistedMemberShadows`), and always
-        /// when it starts at an alias without a module (`startsAtAliasWithoutModule`).
-        func fitsEachAlone(_ name: QualifiedName, from scope: Scope) -> Bool {
-            switch name.root {
-            case .outsideType: return true
-            case .projectType: guard scope.module == nil else { return true }
-            case .asWritten: guard name.name.contains(".") else { return true }
-            }
-            return !startsAtAliasWithoutModule(name, from: scope) && !spellings(of: name).contains { spelling in
-                namesWithExtendedTypes.contains(spelling) || unlistedNamesWithExtendedTypes.contains(spelling)
-            }
         }
 
         /// The nearest candidate when one ranks in `scope`'s own file, found without the rest:
