@@ -31,7 +31,7 @@ struct StateIdentifierRestoreTests {
 
     @Test("an identifier saved with needless backticks selects the machine it named",
           arguments: ["`Lamp`.Light", "Lamp.Light"])
-    func savedIdentifierSelectsItsMachine(saved: String) throws {
+    func savedIdentifierSelectsItsMachine(saved: String) async throws {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("state-restore-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
@@ -44,6 +44,7 @@ struct StateIdentifierRestoreTests {
         viewModel.selectedPaths = [directory.path]
         viewModel.stateIdentifier = saved
         viewModel.refreshStateMachines()
+        await viewModel.stateMachinesTask?.value
 
         #expect(viewModel.availableStateMachines.map(\.identifier) == ["Alpha.Mode", "Lamp.Light"])
         #expect(viewModel.stateIdentifier == "Lamp.Light")

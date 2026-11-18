@@ -97,6 +97,11 @@ extension DiagramViewModel {
     }
 
     func generateStateMachineDiagram() async {
+        // A running scan may move `stateIdentifier` to a machine the new selection lists
+        // (`refreshStateMachines()`), so wait for it: drawing the old identifier meanwhile parsed
+        // the selection twice over and showed an empty diagram before the right one (#281).
+        await stateMachinesTask?.value
+        guard !Task.isCancelled else { return }
         guard !selectedPaths.isEmpty, !stateIdentifier.isEmpty else {
             isGenerating = false
             return
