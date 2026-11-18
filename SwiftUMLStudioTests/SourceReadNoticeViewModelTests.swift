@@ -4,10 +4,9 @@ import SwiftUMLBridgeFramework
 import Testing
 import ViewInspector
 
-/// The view model keeps the notices about the selection, and the preview shows them.
-///
-/// Serialized, because generating drains the framework's process-wide `SourceReadNotices`.
-@Suite("Source read notices in the view model", .serialized)
+/// The view model keeps the notices about the selection, and the preview shows them. Each
+/// generation collects its own (`SourceReadNotices.collector`), so these tests need not run alone.
+@Suite("Source read notices in the view model")
 @MainActor
 struct SourceReadNoticeViewModelTests {
     private func notice(_ path: String) -> String {
@@ -65,7 +64,6 @@ struct SourceReadNoticeViewModelTests {
         let chain = String(repeating: "[", count: 30) + "1" + String(repeating: "]", count: 30)
         try "import Foundation\nlet x = \(chain)\n".write(to: file, atomically: true, encoding: .utf8)
 
-        _ = SourceReadNotices.drain()
         let viewModel = makeViewModel(selecting: [directory.path])
         viewModel.diagramMode = .dependencyGraph
         viewModel.depsMode = .modules
@@ -79,6 +77,44 @@ struct SourceReadNoticeViewModelTests {
         #expect(viewModel.sourceReadNotices.isEmpty)
         await viewModel.currentTask?.value
         #expect(viewModel.sourceReadNotices.isEmpty)
+    }
+
+    /// Two windows, each with a file of its own and one they share. Generating drained the
+    /// process-wide list, so the window that finished first took both windows' notices and kept its
+    /// own, and the list's one copy of the shared file's notice reached one window only.
+    @Test("two windows generating at once each show their own notices")
+    func concurrentWindows() async throws {
+        let directory = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("studio-notice-windows-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let chain = String(repeating: "[", count: 30) + "1" + String(repeating: "]", count: 30)
+        let source = "import Foundation\nlet x = \(chain)\n"
+        let shared = directory.appendingPathComponent("Shared.swift").path
+        let own = (0..<2).map { directory.appendingPathComponent("Own\($0).swift").path }
+        for path in own + [shared] {
+            try source.write(toFile: path, atomically: true, encoding: .utf8)
+        }
+
+        for _ in 0..<3 {
+            let windows = own.map { makeViewModel(selecting: [$0, shared]) }
+            for window in windows {
+                window.diagramMode = .dependencyGraph
+                window.depsMode = .modules
+                window.generate()
+            }
+            for window in windows {
+                await window.currentTask?.value
+            }
+            for (window, file) in zip(windows, own) {
+                let files = window.sourceReadNotices.compactMap { SourceReadNoticeBanner.Place(notice: $0)?.file }
+                #expect(files.map(Self.resolved).sorted() == [file, shared].map(Self.resolved).sorted())
+            }
+        }
+    }
+
+    private static func resolved(_ path: String) -> String {
+        URL(fileURLWithPath: path).resolvingSymlinksInPath().path
     }
 
     @Test("the preview shows the banner when there are notices, and not while generating")

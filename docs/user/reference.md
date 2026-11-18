@@ -2391,10 +2391,28 @@ Subsystem: `name.JosephCursio.SwiftUMLBridge`
 public enum SourceReadNotices
 ```
 
-What the parsers were not given as written: so far, each file whose `[` nested more than 10 deep were read as spaces (see [Root Command](#root-command)). Each notice is one line, `<file>:<line>:<column>: <what was done>`. A file read by several passes gives one notice, and each is also logged through `BridgeLogger` as a warning. The notices are kept for the whole process, as the parse that finds one does not know which diagram it is for.
+What the parsers were not given as written: so far, each file whose `[` nested more than 10 deep were read as spaces (see [Root Command](#root-command)). Each notice is one line, `<file>:<line>:<column>: <what was done>`. A file read by several passes gives one notice, and each is also logged through `BridgeLogger` as a warning.
+
+A run that binds `collector` gets the notices its own parses find, and no other run's, so two runs at once (two Studio windows) each get their own. A parse on the Bridge's big-stack parsing thread records into the caller's collector too. A detached task takes no task-locals from the task that starts it, so bind the collector inside it. Without a collector, the notices are kept for the whole process until `drain()`, which is how the CLI reads them.
 
 ```swift
-static func drain() -> [String]   // the notices since the last call, in the order found; clears them
+@TaskLocal static var collector: SourceReadNoticeCollector?   // where the current task's notices go
+static func drain() -> [String]   // the notices recorded with no collector since the last call, in the order found; clears them
+```
+
+```swift
+public final class SourceReadNoticeCollector: Sendable {
+    public init()
+    public var notices: [String]   // the run's notices so far, once each, in the order found
+}
+```
+
+```swift
+let collector = SourceReadNoticeCollector()
+let script = SourceReadNotices.$collector.withValue(collector) {
+    ClassDiagramGenerator().generateScript(for: paths, with: .default)
+}
+print(collector.notices)
 ```
 
 ---

@@ -6,6 +6,32 @@ import SwiftUMLBridgeFramework
 
 extension DiagramViewModel {
 
+    /// Generates the diagram `diagramMode` names. `generate()` calls it after its pause.
+    func generateCurrentMode() async {
+        switch diagramMode {
+        case .classDiagram:
+            await generateClassDiagram()
+
+        case .sequenceDiagram:
+            await generateSequenceDiagram()
+
+        case .dependencyGraph:
+            await generateDependencyGraph()
+
+        case .stateMachine:
+            await generateStateMachineDiagram()
+
+        case .activityDiagram:
+            await generateActivityDiagram()
+
+        case .erDiagram:
+            await generateERDiagram()
+
+        case .componentDiagram:
+            await generateComponentDiagram()
+        }
+    }
+
     func generateClassDiagram() async {
         guard !selectedPaths.isEmpty else {
             isGenerating = false
