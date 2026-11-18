@@ -72,7 +72,7 @@ struct ContentView: View {
         viewModel.rebuildFileTree()
         viewModel.generate()
         viewModel.analyzeProject(isProUnlocked: subscriptionManager.isProUnlocked)
-        refreshModeDerivedData()
+        viewModel.refreshModeDerivedData()
     }
 
     /// Enforces the paywall for the newly selected diagram mode, then regenerates.
@@ -93,33 +93,7 @@ struct ContentView: View {
         }
 
         viewModel.generate()
-        refreshModeDerivedData()
-    }
-
-    /// Refreshes whatever the current mode derives from the selection.
-    ///
-    /// This decision existed twice — here and in the `selectedPaths` observer — and the two copies
-    /// disagreed. This one guarded each call with `!selectedPaths.isEmpty`; the other did not.
-    ///
-    /// That guard reads like an optimisation and is not one. `refreshEntryPoints()` and
-    /// `refreshStateMachines()` both open with `guard !selectedPaths.isEmpty else { … = []; return }`
-    /// — emptying the list is *what they do* when there is no selection. Skipping the call
-    /// therefore skipped the clearing, so switching to Sequence Diagram with nothing selected left
-    /// the entry-point picker showing candidates from files that were no longer selected, while
-    /// clearing the selection emptied it correctly.
-    ///
-    /// One copy, no caller-side guard: both paths now clear.
-    private func refreshModeDerivedData() {
-        switch viewModel.diagramMode {
-        case .sequenceDiagram, .activityDiagram:
-            viewModel.refreshEntryPoints()
-
-        case .stateMachine:
-            viewModel.refreshStateMachines()
-
-        default:
-            break
-        }
+        viewModel.refreshModeDerivedData()
     }
 
     var body: some View {

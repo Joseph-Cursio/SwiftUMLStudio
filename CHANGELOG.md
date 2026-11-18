@@ -547,6 +547,21 @@ config files, the CLI, and the diagrams it writes do not.
 
 ### Fixed — Studio
 
+- **Scanning the selection for entry points and state machines no longer
+  freezes the window** (#281). The Sequence and Activity entry list and the
+  State Machine list were filled by parsing every selected file on the main
+  actor, so a large selection or a slow file froze the UI until the parse
+  finished. Both scans now run in a background task and publish on the main
+  actor. A newer scan, or a switch to a mode that does not use the list,
+  cancels the running one, so the Bridge parses none of its remaining files
+  (#236). A result is dropped when it was cancelled or the selection has
+  changed since. A state diagram waits for a running scan before it draws,
+  so it is drawn once, for the machine the new list holds. It used to draw
+  the old identifier first. Reopening a saved sequence, activity or state
+  diagram now scans the files it was saved with, not the selection it
+  replaced. Until a scan finishes, the picker still shows the previous
+  list.
+
 - **Picking a nested type's method from the entry list draws it** (#234).
   Picking `NS.Real.run` generated nothing and set no error: the previous
   entry's diagram stayed up under its own title, or with none, the pane asked
