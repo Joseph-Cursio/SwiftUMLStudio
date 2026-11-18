@@ -231,7 +231,8 @@ struct SupertypeEdgeKindCertaintyTests {
     /// This thread's CPU clock, so the suites running beside this one do not count. Ranking by
     /// directory made this about 2.5 times the work, which took it past 2 s by the wall clock in a
     /// loaded full run, where it had stayed under. The bound guards only a gross regression;
-    /// `NearestDirectoryMemoTests` guards the shared memo.
+    /// `NearestDirectoryMemoTests` guards the shared memo. It takes about 0.53 s alone locally and
+    /// reached 2.07 s on CI's xcode-27 runner, so it shares `NearestDirectoryCostTests.heavyBound`.
     @Test("many alias chains through a type's members are checked once each")
     func manyDottedAliasChains() throws {
         let members = (1..<8).map { "    typealias A\($0) = \($0 == 7 ? "Proto" : "NS.A\($0 + 1)")" }
@@ -245,7 +246,7 @@ struct SupertypeEdgeKindCertaintyTests {
         let items = try parsed(files)
         var text: [String] = []
         let seconds = ThreadCPUClock.seconds { text = lines(items, .plantuml) }
-        #expect(seconds < 2, "\(seconds)")
+        #expect(seconds < NearestDirectoryCostTests.heavyBound, "\(seconds)")
         #expect(text.contains(edgeLine(.plantuml, "Proto", Self.realizes, "Writer", "conforms to")))
     }
 
