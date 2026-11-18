@@ -8,7 +8,8 @@ import Testing
 /// more than `NestedSquareBrackets.limit` deep written as a space, with its `]`.
 ///
 /// Serialized, because the cuts are recorded in the process-wide `SourceReadNotices`, which some
-/// of these tests drain, and so the times are not taken while the other cases run.
+/// of these tests drain, and so the times are not taken while the other cases run. The tests of
+/// a bound `SourceReadNotices.collector` are in `NestedSquareBracketTests+Collector.swift`.
 @Suite("Chains of nested [", .serialized)
 struct NestedSquareBracketTests {
     /// A file with `declaration` in `S`, then `let height` and `struct After`, to show the rest of
@@ -41,7 +42,7 @@ struct NestedSquareBracketTests {
         return (timed.result, timed.seconds)
     }
 
-    private func withSourceFile<Result>(_ source: String, _ body: (URL) throws -> Result) throws -> Result {
+    func withSourceFile<Result>(_ source: String, _ body: (URL) throws -> Result) throws -> Result {
         let url = FileManager.default.temporaryDirectory
             .appendingPathComponent("nested-brackets-\(UUID().uuidString).swift")
         try source.write(to: url, atomically: true, encoding: .utf8)

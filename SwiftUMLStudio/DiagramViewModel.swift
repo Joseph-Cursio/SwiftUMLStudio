@@ -50,8 +50,9 @@ final class DiagramViewModel {
     /// otherwise be lost without a word on the next launch.
     var saveError: String?
     /// What the parsers were not given as written in the selected files, as the framework's
-    /// `SourceReadNotices` records it: so far, `[` nested too deep to parse in time (#148). Cleared
-    /// when a generation starts and filled when it finishes.
+    /// `SourceReadNotices` records it for this view model's latest generation: so far, `[` nested
+    /// too deep to parse in time (#148). Cleared when a generation starts and filled when it
+    /// finishes.
     var sourceReadNotices: [String] = []
     var diagramFormat: DiagramFormat = DiagramViewModel.buildDefaultFormat
     var diagramMode: DiagramMode = .classDiagram
@@ -189,31 +190,15 @@ final class DiagramViewModel {
             try? await Task.sleep(for: .milliseconds(300))
             guard !Task.isCancelled else { return }
 
-            switch diagramMode {
-            case .classDiagram:
-                await generateClassDiagram()
-
-            case .sequenceDiagram:
-                await generateSequenceDiagram()
-
-            case .dependencyGraph:
-                await generateDependencyGraph()
-
-            case .stateMachine:
-                await generateStateMachineDiagram()
-
-            case .activityDiagram:
-                await generateActivityDiagram()
-
-            case .erDiagram:
-                await generateERDiagram()
-
-            case .componentDiagram:
-                await generateComponentDiagram()
+            // This run's own notices: a generation in another window, or one this run replaced,
+            // records into its own collector, not this one.
+            let notices = SourceReadNoticeCollector()
+            await SourceReadNotices.$collector.withValue(notices) {
+                await generateCurrentMode()
             }
 
             guard !Task.isCancelled else { return }
-            collectSourceReadNotices()
+            collectSourceReadNotices(notices.notices)
             isGenerating = false
         }
     }

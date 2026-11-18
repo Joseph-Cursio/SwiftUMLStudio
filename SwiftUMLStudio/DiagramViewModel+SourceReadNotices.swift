@@ -4,15 +4,15 @@ import SwiftUMLBridgeFramework
 // MARK: - Source read notices
 
 extension DiagramViewModel {
-    /// Moves `drained`, by default all of `SourceReadNotices`, into `sourceReadNotices`, keeping
-    /// only those about a selected file or a file in a selected folder, once each (#148).
+    /// Moves `collected`, the notices a generation's own parses found, into `sourceReadNotices`,
+    /// keeping only those about a selected file or a file in a selected folder, once each (#148).
     ///
-    /// The framework keeps its notices for the whole process, and a generation a newer one
-    /// replaced records what it found in the files it parsed before the cancel reached it (#236).
-    /// Filtering by the selection keeps a parse of files no longer selected out of the banner.
-    func collectSourceReadNotices(_ drained: [String] = SourceReadNotices.drain()) {
+    /// `generate()` collects them per run (`SourceReadNotices.collector`), so neither a run it
+    /// replaced (#236) nor one in another window adds to them, or takes them. The selection filter
+    /// stays as a guard against a run that read past the selection.
+    func collectSourceReadNotices(_ collected: [String]) {
         let selected = selectedPaths.map(Self.resolvedPath)
-        for notice in drained where !sourceReadNotices.contains(notice) {
+        for notice in collected where !sourceReadNotices.contains(notice) {
             guard let place = SourceReadNoticeBanner.Place(notice: notice) else { continue }
             let file = Self.resolvedPath(place.file)
             if selected.contains(where: { file == $0 || file.hasPrefix($0.hasSuffix("/") ? $0 : $0 + "/") }) {

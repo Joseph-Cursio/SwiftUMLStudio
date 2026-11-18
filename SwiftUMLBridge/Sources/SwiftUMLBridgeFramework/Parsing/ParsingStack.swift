@@ -56,7 +56,9 @@ enum ParsingStack {
     /// its stack is already that big. The calling thread waits for it, as it would have waited
     /// for the parse, and the parsing thread runs at the calling thread's quality of service: a
     /// semaphore lends the waiting thread's priority to no one, so a thread left at the default
-    /// would have demoted Studio's user-initiated generation and promoted background work.
+    /// would have demoted Studio's user-initiated generation and promoted background work. The
+    /// parsing thread also takes the caller's cancel (`callerIsCancelled`) and its
+    /// `SourceReadNotices.collector`, so a run's notices reach the run that bound it.
     ///
     /// `body` is escaping because the `Thread` keeps its block after the block returns, which
     /// `withoutActuallyEscaping` traps on.
@@ -67,9 +69,11 @@ enum ParsingStack {
         let result = Mutex<T?>(nil)
         let finished = DispatchSemaphore(value: 0)
         let isCancelled = Task.isCancelled
+        // The caller's notice collector, which a new thread does not inherit (`SourceReadNotices`).
+        let collector = SourceReadNotices.collector
         let thread = Thread {
             if isCancelled { Thread.current.threadDictionary[cancelledKey] = true }
-            let value = body()
+            let value = SourceReadNotices.$collector.withValue(collector, operation: body)
             result.withLock { $0 = value }
             finished.signal()
         }

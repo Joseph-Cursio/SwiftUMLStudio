@@ -8,6 +8,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — Bridge (API)
+
+- **`SourceReadNotices.collector`, a task-local `SourceReadNoticeCollector`,
+  gives one run the notices its own parses find.** Bound around a run, it gets
+  that run's notices, and the process-wide list that `drain()` reads gets
+  none. A parse on a `ParsingStack` thread records into it too. A detached
+  task takes no task-locals, so a run that starts one binds the collector
+  inside. Without a collector, notices go to the process-wide list as before,
+  which the CLI still drains.
+
 ### Changed — Bridge and Studio (build)
 
 - **Compiler warnings are errors.** `Package.swift` gives every Bridge
@@ -546,6 +556,16 @@ config files, the CLI, and the diagrams it writes do not.
   with another type.
 
 ### Fixed — Studio
+
+- **Two windows generating at once each show their own source-read notices.**
+  Every generation drained the framework's process-wide list of notices and
+  kept those about its own selection, so a window that finished first took
+  the other window's notices, and a file both windows read gave its notice
+  to one window only. Each generation now collects its own notices
+  (`SourceReadNotices.collector`), and `cancellableDetached` carries the
+  collector into its detached task. The same race made
+  `SourceReadNoticeViewModelTests/generation()` fail now and then when a
+  test in another suite generated at the same time.
 
 - **Picking a nested type's method from the entry list draws it** (#234).
   Picking `NS.Real.run` generated nothing and set no error: the previous
