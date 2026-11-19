@@ -72,7 +72,7 @@ public struct NodeCompartment: Sendable {
     public let title: String?
     public let items: [String]
 
-    public init(title: String? = nil, items: [String]) {
+    public init(items: [String], title: String? = nil) {
         self.title = title
         self.items = items
     }

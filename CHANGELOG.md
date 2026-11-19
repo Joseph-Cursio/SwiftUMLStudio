@@ -52,11 +52,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed — Bridge (API, breaking)
 
-Four public names are renamed to satisfy SwiftLint rules. Three passed only
-because the Bridge's own config loosened `identifier_name`, and the Bridge now
-lints with that rule as SwiftLint ships it; one broke the opt-in
-`discouraged_none_name`. Swift code that uses the old names must change;
-config files, the CLI, and the diagrams it writes do not.
+Four public names are renamed, and one initializer's parameters reordered, to
+satisfy SwiftLint rules. Three names passed only because the Bridge's own
+config loosened `identifier_name`, and the Bridge now lints with that rule as
+SwiftLint ships it; one broke the opt-in `discouraged_none_name`, and the
+initializer `function_default_parameter_at_end`. Swift code that uses the old
+names or order must change; config files, the CLI, and the diagrams it writes
+do not.
 
 - **`DependencyEdge.to` is `toNode`, and `ComponentDependency.to` is
   `toComponent`**, initializer labels included. Each keeps `from`, and names
@@ -73,6 +75,9 @@ config files, the CLI, and the diagrams it writes do not.
   reads as nil, the default, which draws every extension rather than hiding
   them; a test had already had to write `.some(.none)`. The raw value stays
   `"none"`, so `showExtensions: none` in a config file is unchanged.
+- **`NodeCompartment.init(title:items:)` is `init(items:title:)`** (#285), so
+  the defaulted `title` comes last. A call that passes only `items` is
+  unchanged; one that passes a title writes it after the items.
 
 ### Changed — Bridge (test infrastructure)
 

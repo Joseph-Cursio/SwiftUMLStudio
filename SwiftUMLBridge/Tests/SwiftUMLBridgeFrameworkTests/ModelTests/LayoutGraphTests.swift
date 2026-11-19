@@ -100,7 +100,7 @@ struct LayoutGraphTests {
 
     @Test("node initializes with all parameters")
     func nodeFullInit() {
-        let compartment = NodeCompartment(title: "Properties", items: ["name: String"])
+        let compartment = NodeCompartment(items: ["name: String"], title: "Properties")
         let node = LayoutNode(
             id: "cls",
             label: "MyClass",
@@ -136,7 +136,7 @@ struct LayoutGraphTests {
 
     @Test("compartment initializes with title and items")
     func compartmentInit() {
-        let comp = NodeCompartment(title: "Methods", items: ["foo()", "bar()"])
+        let comp = NodeCompartment(items: ["foo()", "bar()"], title: "Methods")
         #expect(comp.title == "Methods")
         #expect(comp.items.count == 2)
     }
