@@ -66,8 +66,8 @@ func richGraph() -> LayoutGraph {
             posY: 100,
             stereotype: "class",
             compartments: [
-                NodeCompartment(title: "Properties", items: ["session: URLSession", "retries: Int"]),
-                NodeCompartment(title: "Methods", items: ["send()", "cancel()"]),
+                NodeCompartment(items: ["session: URLSession", "retries: Int"], title: "Properties"),
+                NodeCompartment(items: ["send()", "cancel()"], title: "Methods"),
             ], module: "Networking"
         ),
         makeNode(id: "Transport", posX: 320, posY: 100, stereotype: "protocol", module: "Networking"),

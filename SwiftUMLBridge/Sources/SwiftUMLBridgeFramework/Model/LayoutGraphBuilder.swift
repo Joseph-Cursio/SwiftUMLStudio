@@ -101,8 +101,8 @@ enum LayoutGraphBuilder {
     ) -> LayoutNode {
         let (properties, methods) = extractMembers(from: item, configuration: configuration)
         var compartments: [NodeCompartment] = []
-        if !properties.isEmpty { compartments.append(NodeCompartment(title: nil, items: properties)) }
-        if !methods.isEmpty { compartments.append(NodeCompartment(title: nil, items: methods)) }
+        if !properties.isEmpty { compartments.append(NodeCompartment(items: properties)) }
+        if !methods.isEmpty { compartments.append(NodeCompartment(items: methods)) }
 
         // An extension's bound arguments tell `extension Foo<Int>` from `extension Foo<String>` (#66).
         let boundClause = configuration.elements.showGenerics ? item.boundGenericArguments.map { "<\($0)>" } : nil
